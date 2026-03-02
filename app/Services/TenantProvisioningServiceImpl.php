@@ -502,23 +502,31 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     private function sendWelcomeEmail(Organization $organization, string $tempPassword): void
     {
         try {
-            // TODO: Implement actual email sending using Laravel Mail
-            // For now, just log the credentials
-            Log::info("Welcome email would be sent to: {$organization->primary_email}", [
-                'org_name' => $organization->org_name,
-                'email' => $organization->primary_email,
-                'temp_password' => $tempPassword,
-                'tenant_db' => $organization->tenant_db_name
-            ]);
+            // Extract first name from email
+            $emailParts = explode('@', $organization->primary_email);
+            $firstName = ucfirst($emailParts[0]);
             
-            // Uncomment when email is configured:
-            // Mail::to($organization->primary_email)->send(
-            //     new WelcomeEmail($organization, $tempPassword)
-            // );
+            // Send welcome email
+            Mail::to($organization->primary_email)->send(
+                new \App\Mail\WelcomeEmail(
+                    $organization,
+                    $firstName,
+                    $organization->primary_email,
+                    $tempPassword
+                )
+            );
+            
+            Log::info("Welcome email sent to: {$organization->primary_email}", [
+                'org_id' => $organization->org_id,
+                'org_name' => $organization->org_name,
+            ]);
             
         } catch (\Exception $e) {
             // Don't fail provisioning if email fails
-            Log::warning("Failed to send welcome email: {$e->getMessage()}");
+            Log::warning("Failed to send welcome email: {$e->getMessage()}", [
+                'org_id' => $organization->org_id,
+                'email' => $organization->primary_email,
+            ]);
         }
     }
 

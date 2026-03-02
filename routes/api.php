@@ -36,6 +36,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', [App\Http\Controllers\AuthController::class, 'login']);
         Route::post('/refresh', [App\Http\Controllers\AuthController::class, 'refresh']);
         Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout']);
+        
+        // Firebase authentication
+        Route::post('/firebase-login', [App\Http\Controllers\FirebaseAuthController::class, 'firebaseLogin']);
     });
 
     // Organization registration (public)

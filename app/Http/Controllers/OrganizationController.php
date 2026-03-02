@@ -25,6 +25,8 @@ class OrganizationController extends Controller
             'org_slug' => 'required|string|max:100|regex:/^[a-z0-9-]+$/|unique:organizations,org_slug',
             'primary_email' => 'required|email|max:255|unique:organizations,primary_email',
             'primary_phone' => 'nullable|string|max:20',
+            'first_name' => 'nullable|string|max:100',
+            'last_name' => 'nullable|string|max:100',
             'address_line1' => 'nullable|string|max:255',
             'address_line2' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:100',
@@ -34,6 +36,11 @@ class OrganizationController extends Controller
             'timezone' => 'nullable|string|max:50',
             'currency_code' => 'nullable|string|size:3',
             'max_users' => 'nullable|integer|min:1',
+            'firebase_uid' => 'nullable|string',
+            'firebase_token' => 'nullable|string',
+            'provider' => 'nullable|string|in:google,email',
+            'photo_url' => 'nullable|string',
+            'selected_plan' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -76,6 +83,16 @@ class OrganizationController extends Controller
             // Queue tenant provisioning job (after commit)
             ProvisionTenantJob::dispatch($organization->org_id);
 
+            // Store additional user data for later use
+            $userData = [
+                'first_name' => $request->input('first_name'),
+                'last_name' => $request->input('last_name'),
+                'firebase_uid' => $request->input('firebase_uid'),
+                'provider' => $request->input('provider'),
+                'photo_url' => $request->input('photo_url'),
+                'selected_plan' => $request->input('selected_plan'),
+            ];
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -84,8 +101,10 @@ class OrganizationController extends Controller
                     'org_name' => $organization->org_name,
                     'registration_status' => $organization->registration_status,
                     'tenant_db_name' => $organization->tenant_db_name,
+                    'primary_email' => $organization->primary_email,
+                    'user_data' => $userData,
                 ],
-                'message' => 'Organization registered successfully. Provisioning in progress.',
+                'message' => 'Organization registered successfully. Provisioning in progress. You can now login.',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 201);

@@ -12,7 +12,7 @@ use App\Helpers\AuditLogger;
 use App\Models\Control\Organization;
 use App\Models\Tenant\User;
 use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Redis;
+use Illuminate\Support\Facades\Cache;
 use Tymon\JWTAuth\Facades\JWTAuth;
 use Tymon\JWTAuth\Facades\JWTFactory;
 use Tymon\JWTAuth\Exceptions\JWTException;
@@ -27,7 +27,7 @@ class AuthenticationServiceImpl implements AuthenticationService
 {
     private const ACCESS_TOKEN_TTL = 1440; // 24 hours in minutes
     private const REFRESH_TOKEN_TTL = 43200; // 30 days in minutes
-    private const REDIS_REFRESH_TOKEN_PREFIX = 'refresh_token:';
+    private const CACHE_REFRESH_TOKEN_PREFIX = 'refresh_token:';
     
     public function __construct(
         private DatabaseConnectionRouter $connectionRouter
@@ -44,7 +44,7 @@ class AuthenticationServiceImpl implements AuthenticationService
      * 5. Verify password using Hash::check()
      * 6. Update last_login_at timestamp
      * 7. Generate access token (24h) and refresh token (30d)
-     * 8. Store refresh token in Redis with user_id mapping
+     * 8. Store refresh token in Cache with user_id mapping
      * 9. Return tokens to client
      * 
      * @param string $email User email
@@ -256,7 +256,7 @@ class AuthenticationServiceImpl implements AuthenticationService
     }
     
     /**
-     * Store refresh token in Redis
+     * Store refresh token in Cache
      * 
      * @param string $refreshToken
      * @param int $userId
@@ -265,44 +265,38 @@ class AuthenticationServiceImpl implements AuthenticationService
      */
     private function storeRefreshToken(string $refreshToken, int $userId, int $orgId): void
     {
-        $key = self::REDIS_REFRESH_TOKEN_PREFIX . $refreshToken;
-        $data = json_encode([
+        $key = self::CACHE_REFRESH_TOKEN_PREFIX . $refreshToken;
+        $data = [
             'user_id' => $userId,
             'org_id' => $orgId,
             'created_at' => time()
-        ]);
+        ];
         
         // Store with 30-day expiration
-        Redis::setex($key, self::REFRESH_TOKEN_TTL * 60, $data);
+        Cache::put($key, $data, self::REFRESH_TOKEN_TTL * 60);
     }
     
     /**
-     * Get refresh token data from Redis
+     * Get refresh token data from Cache
      * 
      * @param string $refreshToken
      * @return array|null Token data or null if not found
      */
     private function getRefreshTokenData(string $refreshToken): ?array
     {
-        $key = self::REDIS_REFRESH_TOKEN_PREFIX . $refreshToken;
-        $data = Redis::get($key);
-        
-        if (!$data) {
-            return null;
-        }
-        
-        return json_decode($data, true);
+        $key = self::CACHE_REFRESH_TOKEN_PREFIX . $refreshToken;
+        return Cache::get($key);
     }
     
     /**
-     * Revoke refresh token from Redis
+     * Revoke refresh token from Cache
      * 
      * @param string $refreshToken
      * @return void
      */
     private function revokeRefreshToken(string $refreshToken): void
     {
-        $key = self::REDIS_REFRESH_TOKEN_PREFIX . $refreshToken;
-        Redis::del($key);
+        $key = self::CACHE_REFRESH_TOKEN_PREFIX . $refreshToken;
+        Cache::forget($key);
     }
 }
