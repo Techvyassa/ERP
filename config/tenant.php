@@ -24,6 +24,9 @@ return [
         'prefix' => '',
         'strict' => true,
         'engine' => 'InnoDB',
+        
+        // Grant host for database permissions (% = all hosts, localhost = local only)
+        'grant_host' => env('TENANT_DB_GRANT_HOST', '%'),
     ],
 
     // Provisioning settings

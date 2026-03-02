@@ -73,32 +73,40 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             Log::info("Generated tenant database name: {$tenantDbName}");
             $steps[] = "Generated database name: {$tenantDbName}";
             
+            // Verify tenant_db_name matches expected value
+            if ($organization->tenant_db_name !== $tenantDbName) {
+                throw new \Exception("Tenant database name mismatch. Expected: {$tenantDbName}, Got: {$organization->tenant_db_name}");
+            }
+            
             // Step 3: Create MySQL database
             $this->createTenantDatabase($tenantDbName);
             $steps[] = 'Created tenant database';
             
-            // Step 4: Update organization with tenant_db_name
-            $organization->tenant_db_name = $tenantDbName;
-            $organization->save();
-            $steps[] = 'Updated organization record';
+            // Step 4: Grant database permissions
+            $this->grantTenantDatabasePermissions($tenantDbName);
+            $steps[] = 'Granted database permissions';
             
-            // Step 5: Run tenant migrations
+            // Step 5: Update organization with tenant_db_name (already set, but verify)
+            // No need to update as it's already set during registration
+            $steps[] = 'Verified organization record';
+            
+            // Step 6: Run tenant migrations
             $this->runTenantMigrations($tenantDbName);
             $steps[] = 'Ran tenant migrations';
             
-            // Step 6: Seed default roles
+            // Step 7: Seed default roles
             $roles = $this->seedDefaultRoles($tenantDbName);
             $steps[] = 'Seeded default roles';
             
-            // Step 7: Seed role permissions
+            // Step 8: Seed role permissions
             $this->seedRolePermissions($tenantDbName, $roles);
             $steps[] = 'Seeded role permissions';
             
-            // Step 8: Create root department
+            // Step 9: Create root department
             $rootDepartment = $this->createRootDepartment($tenantDbName);
             $steps[] = 'Created root department';
             
-            // Step 9: Create initial admin user
+            // Step 10: Create initial admin user
             $tempPassword = $this->createInitialAdminUser(
                 $tenantDbName,
                 $organization->primary_email,
@@ -107,17 +115,17 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             );
             $steps[] = 'Created initial admin user';
             
-            // Step 10: Update organization status to ACTIVE
+            // Step 11: Update organization status to ACTIVE
             $organization->registration_status = 'ACTIVE';
             $organization->activated_at = now();
             $organization->save();
             $steps[] = 'Updated organization status to ACTIVE';
             
-            // Step 11: Create trial subscription
+            // Step 12: Create trial subscription
             $this->createTrialSubscription($orgId);
             $steps[] = 'Created trial subscription';
             
-            // Step 12: Send welcome email
+            // Step 13: Send welcome email
             $this->sendWelcomeEmail($organization, $tempPassword);
             $steps[] = 'Sent welcome email';
             
@@ -160,6 +168,17 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 );
             }
             
+            // Automatically rollback on failure
+            try {
+                Log::info("Attempting automatic rollback for org_id: {$orgId}");
+                $this->rollbackProvisioning($orgId);
+                Log::info("Automatic rollback completed for org_id: {$orgId}");
+            } catch (\Exception $rollbackError) {
+                Log::error("Automatic rollback failed for org_id: {$orgId}", [
+                    'error' => $rollbackError->getMessage()
+                ]);
+            }
+            
             // Send admin notification
             $this->sendAdminNotification($orgId, $e->getMessage());
             
@@ -197,9 +216,8 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 }
             }
             
-            // Reset organization to PENDING
+            // Reset organization to PENDING (keep tenant_db_name for retry)
             $organization->registration_status = 'PENDING';
-            $organization->tenant_db_name = null;
             $organization->activated_at = null;
             $organization->save();
             
@@ -240,10 +258,77 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     private function createTenantDatabase(string $tenantDbName): void
     {
         try {
-            DB::connection('control')->statement("CREATE DATABASE `{$tenantDbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci");
+            // Validate database name length (MySQL limit is 64 characters)
+            if (strlen($tenantDbName) > 64) {
+                throw new \Exception("Database name exceeds maximum length of 64 characters: {$tenantDbName}");
+            }
+            
+            // Note: max_execution_time is only available in MySQL 8.0+
+            // For older versions, timeout is controlled by PHP max_execution_time
+            
+            // Create database if it doesn't exist (idempotent)
+            DB::connection('control')->statement(
+                "CREATE DATABASE IF NOT EXISTS `{$tenantDbName}` CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci"
+            );
+            
             Log::info("Created tenant database: {$tenantDbName}");
+            
+            // Verify database is accessible
+            $this->verifyDatabaseConnection($tenantDbName);
+            
         } catch (\Exception $e) {
             throw new \Exception("Failed to create tenant database: {$e->getMessage()}");
+        }
+    }
+    
+    /**
+     * Verify tenant database connection
+     */
+    private function verifyDatabaseConnection(string $tenantDbName): void
+    {
+        try {
+            $this->connectionRouter->switchToTenant($tenantDbName);
+            DB::connection('tenant')->select('SELECT 1');
+            $this->connectionRouter->switchToControl();
+            
+            Log::info("Verified tenant database connection: {$tenantDbName}");
+        } catch (\Exception $e) {
+            throw new \Exception("Failed to verify tenant database connection: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Grant permissions to tenant database user
+     */
+    private function grantTenantDatabasePermissions(string $tenantDbName): void
+    {
+        try {
+            // Use fixed tenant user for all tenant databases
+            $username = 'erp_user';
+            $host = '%'; // Allow from any host
+            
+            // Grant all privileges on the tenant database
+            DB::connection('control')->statement(
+                "GRANT ALL PRIVILEGES ON `{$tenantDbName}`.* TO '{$username}'@'{$host}'"
+            );
+            
+            // Flush privileges to apply changes
+            DB::connection('control')->statement("FLUSH PRIVILEGES");
+            
+            Log::info("Granted permissions on tenant database: {$tenantDbName} to user: {$username}@{$host}");
+            
+        } catch (\Exception $e) {
+            // Log warning but don't fail provisioning for permission errors
+            // The user may already have privileges or GRANT may not be needed
+            $errorMessage = $e->getMessage();
+            
+            Log::warning("Could not grant permissions (continuing provisioning): {$errorMessage}", [
+                'tenant_db_name' => $tenantDbName,
+                'username' => 'erp_user',
+                'host' => '%',
+            ]);
+            
+            // Don't throw exception - allow provisioning to continue
         }
     }
 
@@ -284,17 +369,25 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             $roles = [];
             
             foreach (self::DEFAULT_ROLES as $roleData) {
-                $role = Role::create([
-                    'role_code' => $roleData['code'],
-                    'role_name' => $roleData['name'],
-                    'description' => $roleData['description'],
-                    'is_active' => true,
-                    'is_system_role' => true,
-                    'created_by' => null
-                ]);
+                // Check if role already exists (idempotent)
+                $role = Role::where('role_code', $roleData['code'])->first();
+                
+                if (!$role) {
+                    $role = Role::create([
+                        'role_code' => $roleData['code'],
+                        'role_name' => $roleData['name'],
+                        'description' => $roleData['description'],
+                        'is_active' => true,
+                        'is_system_role' => true,
+                        'created_by' => null
+                    ]);
+                    
+                    Log::info("Created role: {$roleData['code']}");
+                } else {
+                    Log::info("Role already exists: {$roleData['code']}");
+                }
                 
                 $roles[$roleData['code']] = $role;
-                Log::info("Created role: {$roleData['code']}");
             }
             
             return $roles;
@@ -316,21 +409,28 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             
             foreach ($roles as $roleCode => $role) {
                 foreach (self::MODULE_CODES as $moduleCode) {
-                    $permissions = $this->getPermissionsForRole($roleCode);
+                    // Check if permission already exists (idempotent)
+                    $existingPermission = RolePermission::where('role_id', $role->role_id)
+                        ->where('module_code', $moduleCode)
+                        ->first();
                     
-                    RolePermission::create([
-                        'role_id' => $role->role_id,
-                        'module_code' => $moduleCode,
-                        'can_view' => $permissions['can_view'],
-                        'can_create' => $permissions['can_create'],
-                        'can_edit' => $permissions['can_edit'],
-                        'can_approve' => $permissions['can_approve'],
-                        'can_delete' => $permissions['can_delete'],
-                        'created_by' => null
-                    ]);
+                    if (!$existingPermission) {
+                        $permissions = $this->getPermissionsForRole($roleCode);
+                        
+                        RolePermission::create([
+                            'role_id' => $role->role_id,
+                            'module_code' => $moduleCode,
+                            'can_view' => $permissions['can_view'],
+                            'can_create' => $permissions['can_create'],
+                            'can_edit' => $permissions['can_edit'],
+                            'can_approve' => $permissions['can_approve'],
+                            'can_delete' => $permissions['can_delete'],
+                            'created_by' => null
+                        ]);
+                    }
                 }
                 
-                Log::info("Created permissions for role: {$roleCode}");
+                Log::info("Seeded permissions for role: {$roleCode}");
             }
             
         } catch (\Exception $e) {
@@ -392,15 +492,22 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
             
-            $department = Department::create([
-                'dept_code' => 'ROOT',
-                'dept_name' => 'Root Department',
-                'parent_dept_id' => null,
-                'is_active' => true,
-                'created_by' => null
-            ]);
+            // Check if root department already exists (idempotent)
+            $department = Department::where('dept_code', 'ROOT')->first();
             
-            Log::info("Created root department");
+            if (!$department) {
+                $department = Department::create([
+                    'dept_code' => 'ROOT',
+                    'dept_name' => 'Root Department',
+                    'parent_dept_id' => null,
+                    'is_active' => true,
+                    'created_by' => null
+                ]);
+                
+                Log::info("Created root department");
+            } else {
+                Log::info("Root department already exists");
+            }
             
             return $department;
             
@@ -422,6 +529,15 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     ): string {
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
+            
+            // Check if admin user already exists (idempotent)
+            $user = User::where('email', $email)->first();
+            
+            if ($user) {
+                Log::info("Admin user already exists: {$email}");
+                // Return a placeholder since we don't store the original temp password
+                return 'EXISTING_USER';
+            }
             
             // Generate random temporary password
             $tempPassword = Str::random(12);
@@ -463,8 +579,12 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     private function createTrialSubscription(int $orgId): void
     {
         try {
-            // Get the trial plan (assuming there's a plan with code 'TRIAL')
-            $trialPlan = SubscriptionPlan::where('plan_code', 'TRIAL')->first();
+            // Get trial configuration
+            $trialDays = (int) config('subscription.trial.duration_days', 14);
+            $trialPlanCode = config('subscription.trial.default_plan_code', 'TRIAL');
+            
+            // Get the trial plan
+            $trialPlan = SubscriptionPlan::where('plan_code', $trialPlanCode)->first();
             
             if (!$trialPlan) {
                 // If no trial plan exists, get the first active plan
@@ -476,7 +596,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             }
             
             $trialStartDate = now();
-            $trialEndDate = now()->addDays(14);
+            $trialEndDate = now()->addDays($trialDays);
             
             OrgSubscription::create([
                 'org_id' => $orgId,
@@ -489,7 +609,10 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 'next_billing_date' => $trialEndDate,
             ]);
             
-            Log::info("Created trial subscription for org_id: {$orgId}");
+            Log::info("Created trial subscription for org_id: {$orgId}", [
+                'trial_days' => $trialDays,
+                'plan_code' => $trialPlan->plan_code,
+            ]);
             
         } catch (\Exception $e) {
             throw new \Exception("Failed to create trial subscription: {$e->getMessage()}");

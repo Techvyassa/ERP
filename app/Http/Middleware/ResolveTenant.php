@@ -59,8 +59,18 @@ class ResolveTenant
             throw new TenantTerminatedException();
         }
         
-        // Only ACTIVE and PENDING organizations can proceed
-        if (!\in_array($organization->registration_status, ['ACTIVE', 'PENDING'], true)) {
+        // PENDING organizations cannot access the system yet (provisioning in progress)
+        if ($organization->registration_status === 'PENDING') {
+            throw new \App\Exceptions\ApiException(
+                'TENANT_PROVISIONING_IN_PROGRESS',
+                'Organization is being provisioned. Please try again in a few moments.',
+                [],
+                503
+            );
+        }
+        
+        // Only ACTIVE organizations can proceed
+        if ($organization->registration_status !== 'ACTIVE') {
             throw new \App\Exceptions\ApiException(
                 'INVALID_TENANT_STATUS',
                 'Invalid tenant status',

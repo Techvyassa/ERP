@@ -38,8 +38,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout']);
     });
 
-    // Organization registration (public)
-    Route::post('/organizations/register', [App\Http\Controllers\OrganizationController::class, 'register']);
+    // Organization registration (public, rate limited)
+    Route::post('/organizations/register', [App\Http\Controllers\OrganizationController::class, 'register'])
+        ->middleware('throttle:org-registration');
 
     // Protected routes (require authentication, tenant resolution, subscription validation, and RBAC)
     Route::middleware(['validate.jwt', 'resolve.tenant', 'validate.subscription'])->group(function () {

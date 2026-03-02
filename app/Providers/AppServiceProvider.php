@@ -52,10 +52,37 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        // Configure rate limiters
+        $this->configureRateLimiters();
+        
         // Validate configuration on startup (only in non-testing environments)
         if (!app()->environment('testing')) {
             $this->validateConfiguration();
         }
+    }
+    
+    /**
+     * Configure rate limiters for the application
+     */
+    private function configureRateLimiters(): void
+    {
+        \Illuminate\Support\Facades\RateLimiter::for('org-registration', function (\Illuminate\Http\Request $request) {
+            // Use database for rate limiting (doesn't require Redis)
+            return \Illuminate\Cache\RateLimiting\Limit::perHour(5)
+                ->by($request->ip())
+                ->response(function () {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code' => 'RATE_LIMIT_EXCEEDED',
+                            'details' => []
+                        ],
+                        'message' => 'Too many organization registration attempts. Please try again later.',
+                        'request_id' => \Illuminate\Support\Str::uuid()->toString(),
+                        'timestamp' => now()->toIso8601String()
+                    ], 429);
+                });
+        });
     }
 
     /**
