@@ -71,10 +71,10 @@ class OrganizationController extends Controller
                 'max_users' => $request->input('max_users', 10),
             ]);
 
-            // Queue tenant provisioning job
-            ProvisionTenantJob::dispatch($organization->org_id);
-
             DB::connection('control')->commit();
+
+            // Queue tenant provisioning job (after commit)
+            ProvisionTenantJob::dispatch($organization->org_id);
 
             return response()->json([
                 'success' => true,
@@ -90,7 +90,10 @@ class OrganizationController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 201);
         } catch (\Exception $e) {
-            DB::connection('control')->rollBack();
+            // Only rollback if transaction is still active
+            if (DB::connection('control')->transactionLevel() > 0) {
+                DB::connection('control')->rollBack();
+            }
             
             return response()->json([
                 'success' => false,
