@@ -228,7 +228,7 @@
                 }
             });
 
-            // Email/Password Sign-In with Firebase
+            // Email/Password Sign-In with Backend API
             document.getElementById('loginForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
@@ -246,16 +246,13 @@
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
                 
+                // Extract org_slug from URL (e.g., /org/acme/login -> acme)
+                const pathParts = window.location.pathname.split('/');
+                const orgSlug = pathParts[2]; // Assumes URL format: /org/{slug}/login
+                
                 try {
-                    // Sign in with Firebase
-                    const userCredential = await window.firebaseSignInWithEmailAndPassword(window.firebaseAuth, email, password);
-                    const user = userCredential.user;
-                    
-                    // Get Firebase ID token
-                    const idToken = await user.getIdToken();
-                    
-                    // Send to backend for verification and session creation
-                    const response = await fetch('/api/v1/auth/firebase-login', {
+                    // Send to backend for authentication
+                    const response = await fetch('/api/v1/auth/login', {
                         method: 'POST',
                         headers: {
                             'Content-Type': 'application/json',
@@ -264,20 +261,21 @@
                         },
                         credentials: 'include', // Important: allows cookies to be set
                         body: JSON.stringify({
-                            firebase_token: idToken,
-                            email: user.email,
-                            provider: 'email'
+                            email: email,
+                            password: password,
+                            org_slug: orgSlug
                         })
                     });
                     
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                        // Store user data in localStorage for quick access
+                        // Store user data and tokens in localStorage
                         localStorage.setItem('user', JSON.stringify(data.data.user));
-                        localStorage.setItem('firebase_uid', user.uid);
+                        localStorage.setItem('access_token', data.data.access_token);
+                        localStorage.setItem('refresh_token', data.data.refresh_token);
                         
-                        // Cookie is already set by server - no need to set it manually
+                        // Cookie is already set by server
                         // Redirect to dashboard
                         window.location.href = '/dashboard';
                     } else {
@@ -287,15 +285,7 @@
                     console.error('Sign-In Error:', error);
                     let errorMsg = 'Invalid credentials. Please try again.';
                     
-                    if (error.code === 'auth/user-not-found') {
-                        errorMsg = 'No account found with this email.';
-                    } else if (error.code === 'auth/wrong-password') {
-                        errorMsg = 'Incorrect password.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        errorMsg = 'Invalid email address.';
-                    } else if (error.code === 'auth/user-disabled') {
-                        errorMsg = 'This account has been disabled.';
-                    } else if (error.message) {
+                    if (error.message) {
                         errorMsg = error.message;
                     }
                     
