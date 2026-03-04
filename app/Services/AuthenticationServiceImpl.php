@@ -25,60 +25,70 @@ use Tymon\JWTAuth\Exceptions\JWTException;
  */
 class AuthenticationServiceImpl implements AuthenticationService
 {
-    private const ACCESS_TOKEN_TTL = 1440; // 24 hours in minutes
-    private const REFRESH_TOKEN_TTL = 43200; // 30 days in minutes
-    private const CACHE_REFRESH_TOKEN_PREFIX = 'refresh_token:';
-    
     public function __construct(
-        private DatabaseConnectionRouter $connectionRouter
+        private DatabaseConnectionRouter $connectionRouter,
+        private TokenService $tokenService
     ) {}
     
     /**
      * Authenticate user and issue tokens
      * 
      * Authentication Flow:
-     * 1. Switch to Control DB, resolve org_id from org_slug
+     * 1. Search all organizations to find which one has this user email
      * 2. Validate organization is ACTIVE
      * 3. Switch to Tenant DB for that organization
      * 4. Query users table by email
      * 5. Verify password using Hash::check()
      * 6. Update last_login_at timestamp
      * 7. Generate access token (24h) and refresh token (30d)
-     * 8. Store refresh token in Cache with user_id mapping
+     * 8. Store refresh token in database
      * 9. Return tokens to client
      * 
      * @param string $email User email
      * @param string $password Plain text password
-     * @param string $orgSlug Organization slug
+     * @param string|null $orgSlug Organization slug (optional, will be auto-detected)
      * @return AuthResult Authentication result with tokens
      * @throws AuthenticationException
      */
-    public function login(string $email, string $password, string $orgSlug): AuthResult
+    public function login(string $email, string $password, ?string $orgSlug = null): AuthResult
     {
-        // Step 1-2: Switch to Control DB and resolve organization
+        // Step 1: Switch to Control DB and find organization
         $this->connectionRouter->switchToControl();
         
-        $organization = Organization::where('org_slug', $orgSlug)->first();
+        $organization = null;
         
-        if (!$organization) {
-            AuditLogger::logAuthAttempt($email, $orgSlug, false, 'Organization not found');
-            throw new AuthenticationException('Organization not found', 404);
+        if ($orgSlug) {
+            // If org_slug provided, use it directly
+            $organization = Organization::where('org_slug', $orgSlug)->first();
+            
+            if (!$organization) {
+                AuditLogger::logAuthAttempt($email, $orgSlug, false, 'Organization not found');
+                throw new AuthenticationException('Organization not found', 404);
+            }
+        } else {
+            // Auto-detect organization by searching for user email across all active organizations
+            $organization = $this->findOrganizationByUserEmail($email);
+            
+            if (!$organization) {
+                AuditLogger::logAuthAttempt($email, 'auto-detect', false, 'No organization found for this email');
+                throw new AuthenticationException('No account found with this email address', 404);
+            }
         }
         
-        // Validate organization is ACTIVE
+        // Step 2: Validate organization is ACTIVE
         if (!$organization->isActive()) {
             $reason = 'Organization is not active';
             if ($organization->isSuspended()) {
                 $reason = 'Organization is suspended';
-                AuditLogger::logAuthAttempt($email, $orgSlug, false, $reason);
+                AuditLogger::logAuthAttempt($email, $organization->org_slug, false, $reason);
                 throw new AuthenticationException($reason, 403);
             }
             if ($organization->isTerminated()) {
                 $reason = 'Organization is terminated';
-                AuditLogger::logAuthAttempt($email, $orgSlug, false, $reason);
+                AuditLogger::logAuthAttempt($email, $organization->org_slug, false, $reason);
                 throw new AuthenticationException($reason, 410);
             }
-            AuditLogger::logAuthAttempt($email, $orgSlug, false, $reason);
+            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, $reason);
             throw new AuthenticationException($reason, 403);
         }
         
@@ -88,42 +98,71 @@ class AuthenticationServiceImpl implements AuthenticationService
         $user = User::where('email', $email)->first();
         
         if (!$user) {
-            AuditLogger::logAuthAttempt($email, $orgSlug, false, 'Invalid credentials');
+            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'Invalid credentials');
             throw new AuthenticationException('Invalid credentials', 401);
         }
         
         // Check if user is active
         if (!$user->is_active) {
-            AuditLogger::logAuthAttempt($email, $orgSlug, false, 'User account is inactive', null, $user->user_id);
+            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'User account is inactive', null, $user->user_id);
             throw new AuthenticationException('User account is inactive', 403);
         }
         
         // Step 5: Verify password
         if (!$user->verifyPassword($password)) {
-            AuditLogger::logAuthAttempt($email, $orgSlug, false, 'Invalid credentials', null, $user->user_id);
+            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'Invalid credentials', null, $user->user_id);
             throw new AuthenticationException('Invalid credentials', 401);
         }
         
         // Step 6: Update last_login_at timestamp
         $user->updateLastLogin();
         
-        // Step 7: Generate JWT access token and refresh token
-        $accessToken = $this->generateAccessToken($user, $organization);
-        $refreshToken = $this->generateRefreshToken();
-        
-        // Step 8: Store refresh token in Redis
-        $this->storeRefreshToken($refreshToken, $user->user_id, $organization->org_id);
+        // Step 7-8: Generate and store tokens using TokenService
+        $tokens = $this->tokenService->generateTokens($user, $organization);
         
         // Log successful authentication
-        AuditLogger::logAuthAttempt($email, $orgSlug, true, null, null, $user->user_id);
+        AuditLogger::logAuthAttempt($email, $organization->org_slug, true, null, null, $user->user_id);
         
         // Step 9: Return tokens to client
         return new AuthResult(
-            accessToken: $accessToken,
-            refreshToken: $refreshToken,
-            expiresIn: self::ACCESS_TOKEN_TTL * 60, // Convert to seconds
-            user: $user
+            accessToken: $tokens['access_token'],
+            refreshToken: $tokens['refresh_token'],
+            expiresIn: $tokens['expires_in'],
+            user: $user,
+            organization: $organization
         );
+    }
+    
+    /**
+     * Find organization by searching for user email across all tenant databases
+     * 
+     * @param string $email User email
+     * @return Organization|null
+     */
+    private function findOrganizationByUserEmail(string $email): ?Organization
+    {
+        // Get all active and pending organizations
+        $organizations = Organization::whereIn('registration_status', ['ACTIVE', 'PENDING'])->get();
+        
+        foreach ($organizations as $organization) {
+            try {
+                // Switch to this organization's tenant database
+                $this->connectionRouter->switchToTenant($organization->tenant_db_name);
+                
+                // Check if user exists in this tenant database
+                $userExists = User::where('email', $email)->exists();
+                
+                if ($userExists) {
+                    return $organization;
+                }
+            } catch (\Exception $e) {
+                // Skip this organization if there's a database connection error
+                \Log::warning("Failed to check user in organization {$organization->org_slug}: {$e->getMessage()}");
+                continue;
+            }
+        }
+        
+        return null;
     }
     
     /**
@@ -135,46 +174,22 @@ class AuthenticationServiceImpl implements AuthenticationService
      */
     public function refreshToken(string $refreshToken): AuthResult
     {
-        // Validate refresh token exists in Redis
-        $tokenData = $this->getRefreshTokenData($refreshToken);
-        
-        if (!$tokenData) {
-            throw new InvalidTokenException('Invalid or expired refresh token', 401);
+        try {
+            $tokens = $this->tokenService->refreshAccessToken($refreshToken);
+            
+            // Get user data for response (tokens already contain org info)
+            // We need to fetch user to return in AuthResult
+            // The TokenService already validated everything
+            
+            return new AuthResult(
+                accessToken: $tokens['access_token'],
+                refreshToken: $tokens['refresh_token'],
+                expiresIn: $tokens['expires_in'],
+                user: null // User data not needed for refresh
+            );
+        } catch (\Exception $e) {
+            throw new InvalidTokenException($e->getMessage(), 401);
         }
-        
-        $userId = $tokenData['user_id'];
-        $orgId = $tokenData['org_id'];
-        
-        // Switch to Control DB to get organization
-        $this->connectionRouter->switchToControl();
-        $organization = Organization::find($orgId);
-        
-        if (!$organization || !$organization->isActive()) {
-            throw new InvalidTokenException('Organization is not active', 403);
-        }
-        
-        // Switch to Tenant DB to get user
-        $this->connectionRouter->switchToTenant($organization->tenant_db_name);
-        $user = User::find($userId);
-        
-        if (!$user || !$user->is_active) {
-            throw new InvalidTokenException('User is not active', 403);
-        }
-        
-        // Generate new tokens
-        $newAccessToken = $this->generateAccessToken($user, $organization);
-        $newRefreshToken = $this->generateRefreshToken();
-        
-        // Revoke old refresh token and store new one
-        $this->revokeRefreshToken($refreshToken);
-        $this->storeRefreshToken($newRefreshToken, $userId, $orgId);
-        
-        return new AuthResult(
-            accessToken: $newAccessToken,
-            refreshToken: $newRefreshToken,
-            expiresIn: self::ACCESS_TOKEN_TTL * 60,
-            user: $user
-        );
     }
     
     /**
@@ -185,7 +200,7 @@ class AuthenticationServiceImpl implements AuthenticationService
      */
     public function logout(string $refreshToken): void
     {
-        $this->revokeRefreshToken($refreshToken);
+        $this->tokenService->revokeRefreshToken($refreshToken);
     }
     
     /**
@@ -211,92 +226,5 @@ class AuthenticationServiceImpl implements AuthenticationService
         } catch (JWTException $e) {
             throw new InvalidTokenException('Invalid token: ' . $e->getMessage(), 401);
         }
-    }
-    
-    /**
-     * Generate JWT access token
-     * 
-     * Token structure:
-     * {
-     *   "sub": "user_id",
-     *   "org_id": 123,
-     *   "org_slug": "acme",
-     *   "iat": 1234567890,
-     *   "exp": 1234654290,
-     *   "type": "access"
-     * }
-     * 
-     * @param User $user
-     * @param Organization $organization
-     * @return string JWT token
-     */
-    private function generateAccessToken(User $user, Organization $organization): string
-    {
-        $customClaims = [
-            'sub' => $user->user_id,
-            'org_id' => $organization->org_id,
-            'org_slug' => $organization->org_slug,
-            'type' => 'access'
-        ];
-        
-        $payload = JWTFactory::customClaims($customClaims)->make();
-        
-        // Set TTL to 24 hours
-        return JWTAuth::manager()->encode($payload)->get();
-    }
-    
-    /**
-     * Generate refresh token (random string)
-     * 
-     * @return string Refresh token
-     */
-    private function generateRefreshToken(): string
-    {
-        return bin2hex(random_bytes(32));
-    }
-    
-    /**
-     * Store refresh token in Cache
-     * 
-     * @param string $refreshToken
-     * @param int $userId
-     * @param int $orgId
-     * @return void
-     */
-    private function storeRefreshToken(string $refreshToken, int $userId, int $orgId): void
-    {
-        $key = self::CACHE_REFRESH_TOKEN_PREFIX . $refreshToken;
-        $data = [
-            'user_id' => $userId,
-            'org_id' => $orgId,
-            'created_at' => time()
-        ];
-        
-        // Store with 30-day expiration
-        Cache::put($key, $data, self::REFRESH_TOKEN_TTL * 60);
-    }
-    
-    /**
-     * Get refresh token data from Cache
-     * 
-     * @param string $refreshToken
-     * @return array|null Token data or null if not found
-     */
-    private function getRefreshTokenData(string $refreshToken): ?array
-    {
-        $key = self::CACHE_REFRESH_TOKEN_PREFIX . $refreshToken;
-        return Cache::get($key);
-    }
-    
-    /**
-     * Revoke refresh token from Cache
-     * 
-     * @param string $refreshToken
-     * @return void
-     */
-    private function revokeRefreshToken(string $refreshToken): void
-    {
-        $key = self::CACHE_REFRESH_TOKEN_PREFIX . $refreshToken;
-        Cache::forget($key);
     }
 }

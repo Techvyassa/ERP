@@ -32,7 +32,19 @@ class WebJWTAuth
                 $token = $request->cookie('auth_token');
             }
             
+            // Debug logging
+            \Log::info('WebJWTAuth Debug', [
+                'has_bearer_token' => !empty($request->bearerToken()),
+                'has_cookie_token' => !empty($request->cookie('auth_token')),
+                'cookie_value' => $request->cookie('auth_token') ? substr($request->cookie('auth_token'), 0, 20) . '...' : null,
+                'all_cookies' => array_keys($request->cookies->all()),
+            ]);
+            
             if (!$token) {
+                \Log::warning('No authentication token found', [
+                    'url' => $request->fullUrl(),
+                    'cookies' => array_keys($request->cookies->all()),
+                ]);
                 return $this->redirectToLogin($request, 'No authentication token found');
             }
             
@@ -57,12 +69,15 @@ class WebJWTAuth
             ]);
             
         } catch (TokenExpiredException $e) {
+            \Log::warning('Token expired', ['error' => $e->getMessage()]);
             return $this->redirectToLogin($request, 'Your session has expired. Please login again.');
             
         } catch (TokenInvalidException $e) {
+            \Log::warning('Token invalid', ['error' => $e->getMessage()]);
             return $this->redirectToLogin($request, 'Invalid authentication token');
             
         } catch (JWTException $e) {
+            \Log::error('JWT Exception', ['error' => $e->getMessage(), 'trace' => $e->getTraceAsString()]);
             return $this->redirectToLogin($request, 'Authentication failed');
         }
         

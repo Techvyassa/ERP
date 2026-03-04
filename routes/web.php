@@ -22,6 +22,11 @@ Route::get('/register', [PublicController::class, 'register'])->name('register')
 // Step 3: Login (public)
 Route::get('/login', [PublicController::class, 'login'])->name('login');
 
+// Cookie test page
+Route::get('/test-cookie', function () {
+    return view('test-cookie');
+})->name('test.cookie');
+
 // Google OAuth routes
 Route::get('/auth/google', function () {
     // Redirect to Google OAuth

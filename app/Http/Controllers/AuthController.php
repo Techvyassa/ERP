@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Contracts\AuthenticationService;
+use App\Services\TokenService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -11,7 +12,8 @@ use Illuminate\Support\Str;
 class AuthController extends Controller
 {
     public function __construct(
-        private AuthenticationService $authService
+        private AuthenticationService $authService,
+        private TokenService $tokenService
     ) {}
 
     /**
@@ -25,7 +27,7 @@ class AuthController extends Controller
         $validator = Validator::make($request->all(), [
             'email' => 'required|email',
             'password' => 'required|string',
-            'org_slug' => 'required|string',
+            'org_slug' => 'nullable|string', // Made optional
         ]);
 
         if ($validator->fails()) {
@@ -45,8 +47,14 @@ class AuthController extends Controller
             $result = $this->authService->login(
                 $request->input('email'),
                 $request->input('password'),
-                $request->input('org_slug')
+                $request->input('org_slug') // Can be null
             );
+
+            \Log::info('Login successful', [
+                'user_id' => $result->user->user_id,
+                'org_slug' => $result->organization->org_slug,
+                'token_length' => strlen($result->accessToken),
+            ]);
 
             return response()->json([
                 'success' => true,
@@ -63,6 +71,11 @@ class AuthController extends Controller
                         'last_name' => $result->user->last_name,
                         'role_id' => $result->user->role_id,
                         'dept_id' => $result->user->dept_id,
+                    ],
+                    'organization' => [
+                        'org_id' => $result->organization->org_id,
+                        'org_slug' => $result->organization->org_slug,
+                        'org_name' => $result->organization->org_name,
                     ]
                 ],
                 'message' => 'Login successful',
@@ -75,7 +88,7 @@ class AuthController extends Controller
                 60 * 24, // 24 hours in minutes
                 '/', // path
                 null, // domain
-                false, // secure (false for localhost, true for production)
+                request()->secure(), // secure
                 true, // httpOnly
                 false, // raw
                 'lax' // sameSite
@@ -120,22 +133,28 @@ class AuthController extends Controller
         }
 
         try {
-            $result = $this->authService->refreshToken(
+            $tokens = $this->tokenService->refreshAccessToken(
                 $request->input('refresh_token')
             );
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'access_token' => $result->accessToken,
-                    'refresh_token' => $result->refreshToken,
-                    'expires_in' => $result->expiresIn,
-                    'token_type' => 'Bearer',
-                ],
+                'data' => $tokens,
                 'message' => 'Token refreshed successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
-            ], 200);
+            ], 200)
+            ->cookie(
+                'auth_token',
+                $tokens['access_token'],
+                60 * 24, // 24 hours
+                '/',
+                null,
+                request()->secure(),
+                true,
+                false,
+                'lax'
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -176,7 +195,7 @@ class AuthController extends Controller
         }
 
         try {
-            $this->authService->logout(
+            $this->tokenService->revokeRefreshToken(
                 $request->input('refresh_token')
             );
 
@@ -186,7 +205,8 @@ class AuthController extends Controller
                 'message' => 'Logout successful',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
-            ], 200);
+            ], 200)
+            ->cookie(cookie()->forget('auth_token'));
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

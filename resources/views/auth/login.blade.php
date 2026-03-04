@@ -208,13 +208,18 @@
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                        // Store user data in localStorage for quick access
+                        // Store user data, tokens, and org_slug in localStorage
                         localStorage.setItem('user', JSON.stringify(data.data.user));
+                        localStorage.setItem('access_token', data.data.access_token);
+                        localStorage.setItem('refresh_token', data.data.refresh_token);
+                        localStorage.setItem('org_slug', data.data.organization.org_slug);
                         localStorage.setItem('firebase_uid', user.uid);
                         
-                        // Cookie is already set by server - no need to set it manually
-                        // Redirect to dashboard
-                        window.location.href = '/dashboard';
+                        // Cookie is set by server, give it a moment to be available
+                        // Then redirect to dashboard
+                        setTimeout(() => {
+                            window.location.href = '/dashboard';
+                        }, 100);
                     } else {
                         throw new Error(data.message || 'Authentication failed');
                     }
@@ -246,12 +251,8 @@
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
                 
-                // Extract org_slug from URL (e.g., /org/acme/login -> acme)
-                const pathParts = window.location.pathname.split('/');
-                const orgSlug = pathParts[2]; // Assumes URL format: /org/{slug}/login
-                
                 try {
-                    // Send to backend for authentication
+                    // Send to backend for authentication (org_slug will be auto-detected)
                     const response = await fetch('/api/v1/auth/login', {
                         method: 'POST',
                         headers: {
@@ -262,18 +263,18 @@
                         credentials: 'include', // Important: allows cookies to be set
                         body: JSON.stringify({
                             email: email,
-                            password: password,
-                            org_slug: orgSlug
+                            password: password
                         })
                     });
                     
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                        // Store user data and tokens in localStorage
+                        // Store user data, tokens, and org_slug (from response) in localStorage
                         localStorage.setItem('user', JSON.stringify(data.data.user));
                         localStorage.setItem('access_token', data.data.access_token);
                         localStorage.setItem('refresh_token', data.data.refresh_token);
+                        localStorage.setItem('org_slug', data.data.organization.org_slug);
                         
                         // Cookie is already set by server
                         // Redirect to dashboard

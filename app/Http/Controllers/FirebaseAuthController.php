@@ -4,21 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Models\Control\Organization;
 use App\Models\Tenant\User;
+use App\Services\TokenService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
-use Illuminate\Support\Facades\Hash;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
-use Tymon\JWTAuth\Facades\JWTAuth;
-use Tymon\JWTAuth\Facades\JWTFactory;
 
 class FirebaseAuthController extends Controller
 {
-    private const ACCESS_TOKEN_TTL = 1440; // 24 hours in minutes
-    private const REFRESH_TOKEN_TTL = 43200; // 30 days in minutes
-    private const CACHE_REFRESH_TOKEN_PREFIX = 'refresh_token:';
+    public function __construct(
+        private TokenService $tokenService
+    ) {}
 
     /**
      * Handle Firebase authentication (Login)
@@ -140,22 +137,21 @@ class FirebaseAuthController extends Controller
             // Update last login
             $user->updateLastLogin();
 
-            // Generate JWT access token
-            $accessToken = $this->generateAccessToken($user, $organization);
-            
-            // Generate refresh token (random string, not JWT)
-            $refreshToken = $this->generateRefreshToken();
-            
-            // Store refresh token in Cache with user_id and org_id mapping
-            $this->storeRefreshToken($refreshToken, $user->user_id, $organization->org_id);
+            // Generate tokens using TokenService
+            $tokens = $this->tokenService->generateTokens(
+                $user,
+                $organization,
+                $request->header('User-Agent'),
+                $request->ip()
+            );
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'access_token' => $accessToken,
-                    'refresh_token' => $refreshToken,
-                    'expires_in' => 86400, // 24 hours in seconds
-                    'token_type' => 'Bearer',
+                    'access_token' => $tokens['access_token'],
+                    'refresh_token' => $tokens['refresh_token'],
+                    'expires_in' => $tokens['expires_in'],
+                    'token_type' => $tokens['token_type'],
                     'user' => [
                         'user_id' => $user->user_id,
                         'email' => $user->email,
@@ -181,11 +177,11 @@ class FirebaseAuthController extends Controller
             ], 200)
             ->cookie(
                 'auth_token',
-                $accessToken,
+                $tokens['access_token'],
                 60 * 24, // 24 hours in minutes
                 '/', // path
-                null, // domain
-                false, // secure (false for localhost, true for production)
+                null, // domain (null = current domain)
+                request()->secure(), // secure (true for HTTPS, false for HTTP)
                 true, // httpOnly
                 false, // raw
                 'lax' // sameSite
@@ -208,58 +204,5 @@ class FirebaseAuthController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 401);
         }
-    }
-
-    /**
-     * Generate JWT access token
-     * 
-     * @param User $user
-     * @param Organization $organization
-     * @return string JWT token
-     */
-    private function generateAccessToken(User $user, Organization $organization): string
-    {
-        $customClaims = [
-            'sub' => $user->user_id,
-            'org_id' => $organization->org_id,
-            'org_slug' => $organization->org_slug,
-            'type' => 'access'
-        ];
-        
-        $payload = JWTFactory::customClaims($customClaims)->make();
-        
-        // Set TTL to 24 hours
-        return JWTAuth::manager()->encode($payload)->get();
-    }
-    
-    /**
-     * Generate refresh token (random string)
-     * 
-     * @return string Refresh token
-     */
-    private function generateRefreshToken(): string
-    {
-        return bin2hex(random_bytes(32));
-    }
-    
-    /**
-     * Store refresh token in Cache
-     * 
-     * @param string $refreshToken
-     * @param int $userId
-     * @param int $orgId
-     * @return void
-     */
-    private function storeRefreshToken(string $refreshToken, int $userId, int $orgId): void
-    {
-        $key = self::CACHE_REFRESH_TOKEN_PREFIX . $refreshToken;
-        $data = [
-            'user_id' => $userId,
-            'org_id' => $orgId,
-            'created_at' => time()
-        ];
-        
-        // Store with 30-day expiration
-        Cache::put($key, $data, self::REFRESH_TOKEN_TTL * 60);
     }
 }

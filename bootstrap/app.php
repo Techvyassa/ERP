@@ -20,6 +20,14 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'validate.jwt' => \App\Http\Middleware\ValidateJWT::class,
             'web.jwt' => \App\Http\Middleware\WebJWTAuth::class,
+            'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
+            'validate.subscription' => \App\Http\Middleware\ValidateSubscription::class,
+            'check.module.permission' => \App\Http\Middleware\CheckModulePermission::class,
+        ]);
+        
+        // Exclude auth_token from cookie encryption
+        $middleware->encryptCookies(except: [
+            'auth_token',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
