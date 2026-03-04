@@ -8,10 +8,11 @@ interface TenantProvisioningService
      * Provision a new tenant database
      * 
      * @param int $orgId Organization ID from Control DB
+     * @param array|null $userData Optional user data for initial admin user
      * @return ProvisioningResult
      * @throws \Exception
      */
-    public function provisionTenant(int $orgId): ProvisioningResult;
+    public function provisionTenant(int $orgId, ?array $userData = null): ProvisioningResult;
     
     /**
      * Rollback failed provisioning

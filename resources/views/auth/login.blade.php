@@ -195,6 +195,7 @@
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
+                        credentials: 'include', // Important: allows cookies to be set
                         body: JSON.stringify({
                             firebase_token: idToken,
                             email: user.email,
@@ -207,14 +208,12 @@
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                        // Store token in localStorage for API calls
-                        localStorage.setItem('auth_token', data.data.access_token);
+                        // Store user data in localStorage for quick access
                         localStorage.setItem('user', JSON.stringify(data.data.user));
                         localStorage.setItem('firebase_uid', user.uid);
                         
-                        // Set token as cookie for web routes
-                        document.cookie = `auth_token=${data.data.access_token}; path=/; max-age=${data.data.expires_in}; SameSite=Lax`;
-                        
+                        // Cookie is already set by server - no need to set it manually
+                        // Redirect to dashboard
                         window.location.href = '/dashboard';
                     } else {
                         throw new Error(data.message || 'Authentication failed');
@@ -263,6 +262,7 @@
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                         },
+                        credentials: 'include', // Important: allows cookies to be set
                         body: JSON.stringify({
                             firebase_token: idToken,
                             email: user.email,
@@ -273,14 +273,12 @@
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                        // Store token in localStorage for API calls
-                        localStorage.setItem('auth_token', data.data.access_token);
+                        // Store user data in localStorage for quick access
                         localStorage.setItem('user', JSON.stringify(data.data.user));
                         localStorage.setItem('firebase_uid', user.uid);
                         
-                        // Set token as cookie for web routes
-                        document.cookie = `auth_token=${data.data.access_token}; path=/; max-age=${data.data.expires_in}; SameSite=Lax`;
-                        
+                        // Cookie is already set by server - no need to set it manually
+                        // Redirect to dashboard
                         window.location.href = '/dashboard';
                     } else {
                         throw new Error(data.message || 'Authentication failed');

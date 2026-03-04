@@ -38,7 +38,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     /**
      * Provision a new tenant database
      */
-    public function provisionTenant(int $orgId): ProvisioningResult
+    public function provisionTenant(int $orgId, ?array $userData = null): ProvisioningResult
     {
         $steps = [];
         $tenantDbName = '';
@@ -103,7 +103,8 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 $tenantDbName,
                 $organization->primary_email,
                 $roles['ADMIN'],
-                $rootDepartment
+                $rootDepartment,
+                $userData
             );
             $steps[] = 'Created initial admin user';
             
@@ -418,23 +419,26 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         string $tenantDbName,
         string $email,
         Role $adminRole,
-        Department $rootDepartment
+        Department $rootDepartment,
+        ?array $userData = null
     ): string {
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
             
-            // Generate random temporary password
-            $tempPassword = Str::random(12);
+            // Use provided user data or generate defaults
+            $firstName = $userData['first_name'] ?? ucfirst(explode('@', $email)[0]);
+            $lastName = $userData['last_name'] ?? 'Admin';
+            $password = $userData['password'] ?? null;
+            $provider = $userData['provider'] ?? 'email';
             
-            // Extract first name from email
-            $emailParts = explode('@', $email);
-            $firstName = ucfirst($emailParts[0]);
+            // Generate random temporary password if not provided
+            $tempPassword = $password ?? Str::random(12);
             
             $user = new User([
                 'employee_code' => 'ADMIN001',
                 'email' => $email,
                 'first_name' => $firstName,
-                'last_name' => 'Admin',
+                'last_name' => $lastName,
                 'phone' => null,
                 'dept_id' => $rootDepartment->dept_id,
                 'role_id' => $adminRole->role_id,
@@ -446,7 +450,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             $user->password_hash = $tempPassword;
             $user->save();
             
-            Log::info("Created initial admin user: {$email}");
+            Log::info("Created initial admin user: {$email} (provider: {$provider})");
             
             return $tempPassword;
             

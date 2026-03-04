@@ -1,0 +1,94 @@
+# Implementation Plan
+
+- [x] 1. Write bug condition exploration test
+  - **Property 1: Fault Condition** - Cookie Available After Google OAuth
+  - **CRITICAL**: This test MUST FAIL on unfixed code - failure confirms the bug exists
+  - **DO NOT attempt to fix the test or the code when it fails**
+  - **NOTE**: This test encodes the expected behavior - it will validate the fix when it passes after implementation
+  - **GOAL**: Surface counterexamples that demonstrate the bug exists
+  - **Scoped PBT Approach**: Scope the property to Google OAuth authentication flows where client-side cookie setting occurs immediately before redirect
+  - Test that for Google OAuth authentication, the `auth_token` cookie is NOT available to `WebJWTAuth` middleware on unfixed code
+  - Simulate: Google OAuth login → JavaScript sets cookie via `document.cookie` → Immediate redirect to `/dashboard` → Verify cookie is NOT found by middleware
+  - Use browser automation (Laravel Dusk or similar) to test actual timing behavior
+  - The test assertions should verify: cookie is set server-side in HTTP response AND cookie is available to middleware on next request
+  - Run test on UNFIXED code
+  - **EXPECTED OUTCOME**: Test FAILS (this is correct - it proves the bug exists)
+  - Document counterexamples found: "Cookie not available to WebJWTAuth middleware after Google OAuth redirect due to timing issue"
+  - Mark task complete when test is written, run, and failure is documented
+  - _Requirements: 1.1, 1.2, 1.3, 2.1, 2.2, 2.3_
+
+- [-] 2. Write preservation property tests (BEFORE implementing fix)
+  - **Property 2: Preservation** - Existing Authentication Flows
+  - **IMPORTANT**: Follow observation-first methodology
+  - Observe behavior on UNFIXED code for non-buggy inputs (email/password, API calls, subsequent navigations)
+  - Write property-based tests capturing observed behavior patterns:
+    - Email/password authentication successfully sets cookie and redirects to dashboard
+    - API authentication with Bearer tokens in Authorization headers works correctly
+    - WebJWTAuth middleware validates JWT tokens from both cookies and headers
+    - Protected routes redirect to login when no valid token is present
+    - Session persistence across page navigations works correctly
+  - Property-based testing generates many test cases for stronger guarantees
+  - Run tests on UNFIXED code
+  - **EXPECTED OUTCOME**: Tests PASS (this confirms baseline behavior to preserve)
+  - Mark task complete when tests are written, run, and passing on unfixed code
+  - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
+
+- [ ] 3. Fix for Google Auth Token Missing
+
+  - [ ] 3.1 Implement server-side cookie setting in FirebaseAuthController
+    - Modify `firebaseLogin` method in `app/Http/Controllers/FirebaseAuthController.php`
+    - Add `withCookie()` call to the successful authentication response
+    - Use Laravel's `cookie()` helper to create secure cookie with attributes:
+      - Name: `auth_token`
+      - Value: JWT access token
+      - Max-Age: 86400 seconds (24 hours)
+      - Path: `/`
+      - SameSite: `Lax`
+      - Consider adding `Secure` flag for HTTPS environments
+      - Consider adding `HttpOnly` flag to prevent JavaScript access (improves security)
+    - Maintain existing JSON response structure unchanged
+    - _Bug_Condition: isBugCondition(input) where input.provider == 'google' AND input.cookieSetMethod == 'client-side-javascript' AND input.redirectMethod == 'immediate-window-location' AND input.cookieAvailableOnNextRequest == false_
+    - _Expected_Behavior: Response SHALL include server-side cookie that is available to WebJWTAuth middleware on next request_
+    - _Preservation: Email/password authentication, API authentication, JWT validation, and all protected route behaviors must remain unchanged_
+    - _Requirements: 2.1, 2.2, 2.3, 3.1, 3.2, 3.3, 3.4, 3.5_
+
+  - [ ] 3.2 Update frontend to remove client-side cookie setting
+    - Modify authentication handlers in `resources/views/auth/login.blade.php`
+    - Remove or comment out `document.cookie` line for Google OAuth handler
+    - Remove or comment out `document.cookie` line for email/password handler
+    - Keep localStorage operations for API calls
+    - Keep redirect logic unchanged
+    - Optional: Add small delay before redirect as additional safety measure
+    - _Bug_Condition: Client-side cookie setting creates timing issue with immediate redirect_
+    - _Expected_Behavior: Server-side cookie setting eliminates timing issue_
+    - _Preservation: Redirect behavior and localStorage operations must remain unchanged_
+    - _Requirements: 2.1, 2.2, 2.3_
+
+  - [ ] 3.3 Verify bug condition exploration test now passes
+    - **Property 1: Expected Behavior** - Cookie Available After Google OAuth
+    - **IMPORTANT**: Re-run the SAME test from task 1 - do NOT write a new test
+    - The test from task 1 encodes the expected behavior
+    - When this test passes, it confirms the expected behavior is satisfied
+    - Run bug condition exploration test from step 1
+    - **EXPECTED OUTCOME**: Test PASSES (confirms bug is fixed)
+    - Verify that `auth_token` cookie is now set server-side and available to WebJWTAuth middleware
+    - _Requirements: 2.1, 2.2, 2.3_
+
+  - [ ] 3.4 Verify preservation tests still pass
+    - **Property 2: Preservation** - Existing Authentication Flows
+    - **IMPORTANT**: Re-run the SAME tests from task 2 - do NOT write new tests
+    - Run preservation property tests from step 2
+    - **EXPECTED OUTCOME**: Tests PASS (confirms no regressions)
+    - Confirm all authentication flows still work correctly:
+      - Email/password authentication
+      - API authentication with Bearer tokens
+      - JWT validation from cookies and headers
+      - Protected route access control
+      - Session persistence
+
+- [ ] 4. Checkpoint - Ensure all tests pass
+  - Ensure all tests pass, ask the user if questions arise
+  - Verify Google OAuth authentication now works end-to-end
+  - Verify email/password authentication still works
+  - Verify API authentication still works
+  - Verify protected routes behave correctly

@@ -41,8 +41,18 @@ Route::prefix('v1')->group(function () {
         Route::post('/firebase-login', [App\Http\Controllers\FirebaseAuthController::class, 'firebaseLogin']);
     });
 
-    // Organization registration (public)
-    Route::post('/organizations/register', [App\Http\Controllers\OrganizationController::class, 'register']);
+    // Organization registration and utilities (public)
+    Route::prefix('organizations')->group(function () {
+        Route::post('/register', [App\Http\Controllers\OrganizationController::class, 'register']);
+        Route::get('/check-slug/{slug}', [App\Http\Controllers\OrganizationController::class, 'checkSlug']);
+        Route::post('/suggest-slug', [App\Http\Controllers\OrganizationController::class, 'suggestSlug']);
+    });
+
+    // Subscription plans (public)
+    Route::prefix('subscription-plans')->group(function () {
+        Route::get('/', [App\Http\Controllers\SubscriptionPlanController::class, 'index']);
+        Route::get('/{planCode}', [App\Http\Controllers\SubscriptionPlanController::class, 'show']);
+    });
 
     // Protected routes (require authentication, tenant resolution, subscription validation, and RBAC)
     Route::middleware(['validate.jwt', 'resolve.tenant', 'validate.subscription'])->group(function () {

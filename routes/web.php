@@ -1,11 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\PublicController;
 
-// Landing page
-Route::get('/', function () {
-    return view('landing');
-})->name('home');
+// Landing page with subscription plans
+Route::get('/', [PublicController::class, 'landing'])->name('home');
 
 // Firebase test page (for debugging)
 Route::get('/test-firebase', function () {
@@ -15,19 +14,13 @@ Route::get('/test-firebase', function () {
 // New Flow: Subscription → Register → Login → Dashboard
 
 // Step 1: Subscription selection (public)
-Route::get('/pricing', function () {
-    return view('subscription.select');
-})->name('pricing');
+Route::get('/pricing', [PublicController::class, 'pricing'])->name('pricing');
 
 // Step 2: Registration with selected plan (public)
-Route::get('/register', function () {
-    return view('auth.register');
-})->name('register');
+Route::get('/register', [PublicController::class, 'register'])->name('register');
 
 // Step 3: Login (public)
-Route::get('/login', function () {
-    return view('auth.login');
-})->name('login');
+Route::get('/login', [PublicController::class, 'login'])->name('login');
 
 // Google OAuth routes
 Route::get('/auth/google', function () {

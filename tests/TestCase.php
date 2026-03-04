@@ -4,6 +4,7 @@ namespace Tests;
 
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Contracts\Console\Kernel;
 use Tests\Traits\TenantTestTrait;
 use Tests\Traits\AuthenticationTestTrait;
 use Tests\Traits\SubscriptionTestTrait;
@@ -21,6 +22,11 @@ abstract class TestCase extends BaseTestCase
      */
     protected function setUp(): void
     {
+        // Set test database BEFORE parent setUp
+        putenv('DB_CONNECTION=control_test');
+        $_ENV['DB_CONNECTION'] = 'control_test';
+        $_SERVER['DB_CONNECTION'] = 'control_test';
+        
         parent::setUp();
 
         // Clear cache and Redis before each test
@@ -31,6 +37,20 @@ abstract class TestCase extends BaseTestCase
         config(['database.default' => 'control_test']);
         config(['database.connections.control' => config('database.connections.control_test')]);
         config(['database.connections.tenant' => config('database.connections.tenant_test')]);
+    }
+    
+    /**
+     * Refresh the in-memory database.
+     */
+    protected function refreshInMemoryDatabase(): void
+    {
+        $this->artisan('migrate', [
+            '--database' => 'control_test',
+            '--path' => 'database/migrations/control',
+            '--force' => true,
+        ]);
+
+        $this->app[Kernel::class]->setArtisan(null);
     }
 
     /**
