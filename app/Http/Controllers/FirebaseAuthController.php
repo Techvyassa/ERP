@@ -26,12 +26,14 @@ class FirebaseAuthController extends Controller
         \Log::info('Firebase login attempt', [
             'email' => $request->input('email'),
             'provider' => $request->input('provider'),
+            'org_slug' => $request->input('org_slug'),
             'has_token' => !empty($request->input('firebase_token'))
         ]);
         
         $validator = Validator::make($request->all(), [
             'firebase_token' => 'required|string',
             'email' => 'required|email',
+            'org_slug' => 'nullable|string',
             'provider' => 'required|string|in:google,email',
             'display_name' => 'nullable|string',
             'photo_url' => 'nullable|string',
@@ -53,25 +55,35 @@ class FirebaseAuthController extends Controller
 
         try {
             $email = $request->input('email');
+            $orgSlug = $request->input('org_slug');
             
-            // Find organization by email
-            $organization = Organization::where('primary_email', $email)->first();
+            // Try to find organization by slug first, then by email
+            if ($orgSlug) {
+                $organization = Organization::where('org_slug', $orgSlug)->first();
+            } else {
+                // If no slug provided, try to find by primary email
+                $organization = Organization::where('primary_email', $email)->first();
+            }
             
             if (!$organization) {
+                $message = $orgSlug 
+                    ? 'Organization not found. Please check your organization URL.'
+                    : 'No organization found with this email. Please register first or provide your organization slug.';
+                    
                 return response()->json([
                     'success' => false,
                     'error' => [
                         'code' => 'ORGANIZATION_NOT_FOUND',
                         'details' => []
                     ],
-                    'message' => 'No organization found with this email. Please register first.',
+                    'message' => $message,
                     'request_id' => $requestId,
                     'timestamp' => now()->toIso8601String()
                 ], 404);
             }
 
-            // Check if organization is active
-            if ($organization->registration_status !== 'ACTIVE') {
+            // Check if organization is active or pending (allow login during provisioning)
+            if (!in_array($organization->registration_status, ['ACTIVE', 'PENDING'])) {
                 return response()->json([
                     'success' => false,
                     'error' => [
@@ -89,29 +101,34 @@ class FirebaseAuthController extends Controller
             DB::purge('tenant');
             DB::reconnect('tenant');
 
-            // Find or create user in tenant database
+            // Find user in tenant database
             $user = User::where('email', $email)->first();
             
             if (!$user) {
-                // Extract name from display_name or email
-                $displayName = $request->input('display_name', '');
-                $nameParts = explode(' ', $displayName);
-                $firstName = $nameParts[0] ?? explode('@', $email)[0];
-                $lastName = implode(' ', array_slice($nameParts, 1)) ?: 'User';
-                
-                // Create new user
-                $user = User::create([
-                    'employee_code' => 'EMP' . str_pad(rand(1, 9999), 4, '0', STR_PAD_LEFT),
-                    'email' => $email,
-                    'password_hash' => Hash::make(Str::random(32)), // Random password for OAuth users
-                    'first_name' => $firstName,
-                    'last_name' => $lastName,
-                    'phone' => null,
-                    'dept_id' => null,
-                    'role_id' => null,
-                    'is_active' => true,
-                    'created_by' => null,
-                ]);
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'USER_NOT_FOUND',
+                        'details' => []
+                    ],
+                    'message' => 'User not found in this organization. Please contact your administrator.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 404);
+            }
+
+            // Check if user is active
+            if (!$user->is_active) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'USER_INACTIVE',
+                        'details' => []
+                    ],
+                    'message' => 'Your account is inactive. Please contact your administrator.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 403);
             }
 
             // Update last login
@@ -162,14 +179,31 @@ class FirebaseAuthController extends Controller
                         'org_id' => $organization->org_id,
                         'org_slug' => $organization->org_slug,
                         'org_name' => $organization->org_name,
+                        'organization_url' => url('/' . $organization->org_slug),
                     ]
                 ],
                 'message' => 'Authentication successful',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
-            ], 200);
+            ], 200)
+            ->cookie(
+                'auth_token',
+                $accessToken,
+                60 * 24, // 24 hours in minutes
+                '/', // path
+                null, // domain
+                false, // secure (false for localhost, true for production)
+                true, // httpOnly
+                false, // raw
+                'lax' // sameSite
+            );
             
         } catch (\Exception $e) {
+            \Log::error('Firebase authentication error', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'error' => [

@@ -68,7 +68,18 @@ class AuthController extends Controller
                 'message' => 'Login successful',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
-            ], 200);
+            ], 200)
+            ->cookie(
+                'auth_token',
+                $result->accessToken,
+                60 * 24, // 24 hours in minutes
+                '/', // path
+                null, // domain
+                false, // secure (false for localhost, true for production)
+                true, // httpOnly
+                false, // raw
+                'lax' // sameSite
+            );
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

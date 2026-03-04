@@ -13,6 +13,88 @@ use Illuminate\Support\Facades\DB;
 class OrganizationController extends Controller
 {
     /**
+     * Check if organization slug is available
+     * GET /api/v1/organizations/check-slug/{slug}
+     */
+    public function checkSlug(string $slug): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        
+        // Validate slug format
+        if (!preg_match('/^[a-z0-9-]+$/', $slug)) {
+            return response()->json([
+                'success' => false,
+                'data' => [
+                    'available' => false,
+                    'message' => 'Slug must contain only lowercase letters, numbers, and hyphens'
+                ],
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        }
+        
+        $exists = Organization::where('org_slug', $slug)->exists();
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'available' => !$exists,
+                'slug' => $slug,
+                'message' => $exists ? 'This slug is already taken' : 'This slug is available'
+            ],
+            'request_id' => $requestId,
+            'timestamp' => now()->toIso8601String()
+        ], 200);
+    }
+    
+    /**
+     * Generate a suggested slug from organization name
+     * POST /api/v1/organizations/suggest-slug
+     */
+    public function suggestSlug(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        
+        $validator = Validator::make($request->all(), [
+            'org_name' => 'required|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+        
+        $orgName = $request->input('org_name');
+        $baseSlug = Str::slug($orgName);
+        $slug = $baseSlug;
+        $counter = 1;
+        
+        // Find available slug
+        while (Organization::where('org_slug', $slug)->exists()) {
+            $slug = $baseSlug . '-' . $counter;
+            $counter++;
+        }
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'suggested_slug' => $slug,
+                'base_slug' => $baseSlug,
+            ],
+            'request_id' => $requestId,
+            'timestamp' => now()->toIso8601String()
+        ], 200);
+    }
+
+    /**
      * Register a new organization
      * POST /api/v1/organizations/register
      */
@@ -25,8 +107,9 @@ class OrganizationController extends Controller
             'org_slug' => 'required|string|max:100|regex:/^[a-z0-9-]+$/|unique:organizations,org_slug',
             'primary_email' => 'required|email|max:255|unique:organizations,primary_email',
             'primary_phone' => 'nullable|string|max:20',
-            'first_name' => 'nullable|string|max:100',
-            'last_name' => 'nullable|string|max:100',
+            'first_name' => 'required|string|max:100',
+            'last_name' => 'required|string|max:100',
+            'password' => 'required_without:firebase_uid|string|min:8',
             'address_line1' => 'nullable|string|max:255',
             'address_line2' => 'nullable|string|max:255',
             'city' => 'nullable|string|max:100',
@@ -80,18 +163,19 @@ class OrganizationController extends Controller
 
             DB::connection('control')->commit();
 
-            // Queue tenant provisioning job (after commit)
-            ProvisionTenantJob::dispatch($organization->org_id);
-
-            // Store additional user data for later use
-            $userData = [
-                'first_name' => $request->input('first_name'),
-                'last_name' => $request->input('last_name'),
-                'firebase_uid' => $request->input('firebase_uid'),
-                'provider' => $request->input('provider'),
-                'photo_url' => $request->input('photo_url'),
-                'selected_plan' => $request->input('selected_plan'),
-            ];
+            // Queue tenant provisioning job with user data
+            ProvisionTenantJob::dispatch(
+                $organization->org_id,
+                [
+                    'first_name' => $request->input('first_name'),
+                    'last_name' => $request->input('last_name'),
+                    'email' => $request->input('primary_email'),
+                    'password' => $request->input('password'),
+                    'firebase_uid' => $request->input('firebase_uid'),
+                    'provider' => $request->input('provider', 'email'),
+                    'photo_url' => $request->input('photo_url'),
+                ]
+            );
 
             return response()->json([
                 'success' => true,
@@ -102,7 +186,7 @@ class OrganizationController extends Controller
                     'registration_status' => $organization->registration_status,
                     'tenant_db_name' => $organization->tenant_db_name,
                     'primary_email' => $organization->primary_email,
-                    'user_data' => $userData,
+                    'organization_url' => url('/' . $organization->org_slug),
                 ],
                 'message' => 'Organization registered successfully. Provisioning in progress. You can now login.',
                 'request_id' => $requestId,

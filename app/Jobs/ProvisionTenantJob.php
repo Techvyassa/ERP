@@ -33,7 +33,8 @@ class ProvisionTenantJob implements ShouldQueue
      * Create a new job instance.
      */
     public function __construct(
-        public int $orgId
+        public int $orgId,
+        public ?array $userData = null
     ) {}
 
     /**
@@ -44,8 +45,8 @@ class ProvisionTenantJob implements ShouldQueue
         Log::info("ProvisionTenantJob started for org_id: {$this->orgId}");
         
         try {
-            // Execute tenant provisioning
-            $result = $provisioningService->provisionTenant($this->orgId);
+            // Execute tenant provisioning with user data
+            $result = $provisioningService->provisionTenant($this->orgId, $this->userData);
             
             if ($result->success) {
                 Log::info("ProvisionTenantJob completed successfully for org_id: {$this->orgId}", [

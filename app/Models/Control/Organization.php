@@ -3,9 +3,12 @@
 namespace App\Models\Control;
 
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 
 class Organization extends Model
 {
+    use HasFactory;
+    
     protected $connection = 'control';
     protected $table = 'organizations';
     protected $primaryKey = 'org_id';
