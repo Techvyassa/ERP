@@ -4,7 +4,49 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
-    <div x-data="{ user: {} }" x-init="user = JSON.parse(localStorage.getItem('user') || '{}')">
+    <div x-data="dashboardData()" x-init="init()">
+    <!-- Profile Completion Alert -->
+    <div x-show="profileCompletion && profileCompletion.percentage < 100" x-cloak
+         class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-exclamation-triangle text-yellow-400 text-xl mr-3"></i>
+                <div>
+                    <p class="text-sm font-medium text-yellow-800">Complete your organization profile</p>
+                    <p class="text-xs text-yellow-700 mt-1">
+                        Your profile is <span x-text="profileCompletion.percentage"></span>% complete. 
+                        Complete it to unlock all features.
+                    </p>
+                </div>
+            </div>
+            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/profile-completion' : '/org/' . $organization->org_slug . '/profile-completion') }}" 
+               class="px-4 py-2 bg-yellow-400 text-yellow-900 rounded-lg hover:bg-yellow-500 transition-colors text-sm font-medium">
+                Complete Now
+            </a>
+        </div>
+    </div>
+
+    <!-- Master Data Setup Alert -->
+    <div x-show="masterDataStatus && masterDataStatus.percentage < 50" x-cloak
+         class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center">
+                <i class="fas fa-database text-blue-400 text-xl mr-3"></i>
+                <div>
+                    <p class="text-sm font-medium text-blue-800">Setup your master data</p>
+                    <p class="text-xs text-blue-700 mt-1">
+                        <span x-text="masterDataStatus.setup_count"></span> of <span x-text="masterDataStatus.total_count"></span> masters configured. 
+                        Setup essential data to start using the system.
+                    </p>
+                </div>
+            </div>
+            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/master-setup' : '/org/' . $organization->org_slug . '/master-setup') }}" 
+               class="px-4 py-2 bg-blue-400 text-blue-900 rounded-lg hover:bg-blue-500 transition-colors text-sm font-medium">
+                Setup Masters
+            </a>
+        </div>
+    </div>
+    
     <!-- Welcome Banner -->
     <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 mb-8 text-white">
         <h1 class="text-3xl font-bold mb-2">
@@ -127,4 +169,81 @@
             </div>
         </div>
     </div>
+
+    <script>
+        function dashboardData() {
+            return {
+                user: {},
+                profileCompletion: null,
+                masterDataStatus: null,
+
+                async init() {
+                    this.user = JSON.parse(localStorage.getItem('user') || '{}');
+                    console.log('Dashboard initialized with user:', this.user);
+                    await this.loadProfileCompletion();
+                    await this.loadMasterDataStatus();
+                },
+
+                async loadProfileCompletion() {
+                    try {
+                        const token = localStorage.getItem('access_token');
+                        if (!token) {
+                            console.error('No access token found');
+                            return;
+                        }
+                        
+                        console.log('Loading profile completion...');
+                        const response = await fetch('/api/v1/profile-completion/status', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        console.log('Profile completion response status:', response.status);
+                        const data = await response.json();
+                        console.log('Profile completion data:', data);
+                        
+                        if (response.ok && data.success) {
+                            this.profileCompletion = data.data;
+                        } else {
+                            console.error('Profile completion error:', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Failed to load profile completion:', error);
+                    }
+                },
+
+                async loadMasterDataStatus() {
+                    try {
+                        const token = localStorage.getItem('access_token');
+                        if (!token) {
+                            console.error('No access token found');
+                            return;
+                        }
+                        
+                        console.log('Loading master data status...');
+                        const response = await fetch('/api/v1/profile-completion/master-data-status', {
+                            headers: {
+                                'Authorization': `Bearer ${token}`,
+                                'Accept': 'application/json'
+                            }
+                        });
+                        
+                        console.log('Master data status response status:', response.status);
+                        const data = await response.json();
+                        console.log('Master data status data:', data);
+                        
+                        if (response.ok && data.success) {
+                            this.masterDataStatus = data.data;
+                        } else {
+                            console.error('Master data status error:', data.message);
+                        }
+                    } catch (error) {
+                        console.error('Failed to load master data status:', error);
+                    }
+                }
+            }
+        }
+    </script>
 @endsection

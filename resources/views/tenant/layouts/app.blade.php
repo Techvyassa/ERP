@@ -42,42 +42,57 @@
             <nav class="flex-1 overflow-y-auto p-4">
                 <ul class="space-y-2">
                     <li>
-                        <a href="{{ tenantRoute('dashboard', $organization->org_slug) }}" 
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/dashboard' : '/org/' . $organization->org_slug . '/dashboard') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.dashboard') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <i class="fas fa-home text-lg w-5"></i>
                             <span x-show="sidebarOpen" class="font-medium">Dashboard</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{{ tenantRoute('users', $organization->org_slug) }}" 
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/profile-completion' : '/org/' . $organization->org_slug . '/profile-completion') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.profile-completion') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-tasks text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Profile Setup</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/master-setup' : '/org/' . $organization->org_slug . '/master-setup') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.master-setup') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-database text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Master Setup</span>
+                        </a>
+                    </li>
+                    <li class="pt-2 border-t border-gray-200"></li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/users' : '/org/' . $organization->org_slug . '/users') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.users.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <i class="fas fa-users text-lg w-5"></i>
                             <span x-show="sidebarOpen" class="font-medium">Users</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{{ tenantRoute('departments', $organization->org_slug) }}" 
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/departments' : '/org/' . $organization->org_slug . '/departments') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.departments.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <i class="fas fa-building text-lg w-5"></i>
                             <span x-show="sidebarOpen" class="font-medium">Departments</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{{ tenantRoute('roles', $organization->org_slug) }}" 
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/roles' : '/org/' . $organization->org_slug . '/roles') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.roles.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <i class="fas fa-user-shield text-lg w-5"></i>
                             <span x-show="sidebarOpen" class="font-medium">Roles</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{{ tenantRoute('reports', $organization->org_slug) }}" 
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/reports' : '/org/' . $organization->org_slug . '/reports') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.reports.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <i class="fas fa-chart-bar text-lg w-5"></i>
                             <span x-show="sidebarOpen" class="font-medium">Reports</span>
                         </a>
                     </li>
                     <li>
-                        <a href="{{ tenantRoute('settings', $organization->org_slug) }}" 
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/settings' : '/org/' . $organization->org_slug . '/settings') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.settings') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <i class="fas fa-cog text-lg w-5"></i>
                             <span x-show="sidebarOpen" class="font-medium">Settings</span>
@@ -103,11 +118,12 @@
                     <!-- Dropdown Menu -->
                     <div x-show="open" @click.away="open = false" x-cloak
                          class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                        <a href="{{ tenantRoute('profile', $organization->org_slug) }}" class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/profile' : '/org/' . $organization->org_slug . '/profile') }}" 
+                           class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <i class="fas fa-user w-4"></i>
                             <span>Profile</span>
                         </a>
-                        <form action="{{ tenantRoute('logout', $organization->org_slug) }}" method="POST">
+                        <form action="{{ url(request()->get('tenant_type') === 'subdomain' ? '/logout' : '/org/' . $organization->org_slug . '/logout') }}" method="POST">
                             @csrf
                             <button type="submit" class="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left">
                                 <i class="fas fa-sign-out-alt w-4"></i>

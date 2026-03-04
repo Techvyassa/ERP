@@ -27,6 +27,33 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         ]);
     })->name('tenant.dashboard');
     
+    // Profile Completion
+    Route::get('/profile-completion', function () {
+        $org = request()->get('tenant_organization');
+        return view('tenant.profile-completion', [
+            'organization' => $org,
+            'tenantType' => request()->get('tenant_type')
+        ]);
+    })->name('tenant.profile-completion');
+    
+    // Master Data Setup
+    Route::get('/master-setup', function () {
+        $org = request()->get('tenant_organization');
+        return view('tenant.master-setup', [
+            'organization' => $org,
+            'tenantType' => request()->get('tenant_type')
+        ]);
+    })->name('tenant.master-setup');
+    
+    // Debug Profile (for troubleshooting)
+    Route::get('/debug-profile', function () {
+        $org = request()->get('tenant_organization');
+        return view('tenant.debug-profile', [
+            'organization' => $org,
+            'tenantType' => request()->get('tenant_type')
+        ]);
+    })->name('tenant.debug-profile');
+    
     // Organization Settings
     Route::get('/settings', function () {
         $org = request()->get('tenant_organization');
@@ -36,42 +63,71 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
     // Users Management
     Route::prefix('users')->name('tenant.users.')->group(function () {
         Route::get('/', function () {
-            return view('tenant.users.index');
+            $org = request()->get('tenant_organization');
+            return view('tenant.users.index', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
         })->name('index');
         
         Route::get('/create', function () {
-            return view('tenant.users.create');
+            $org = request()->get('tenant_organization');
+            return view('tenant.users.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
         })->name('create');
         
         Route::get('/{id}', function ($id) {
-            return view('tenant.users.show', ['userId' => $id]);
+            $org = request()->get('tenant_organization');
+            return view('tenant.users.show', [
+                'userId' => $id,
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
         })->name('show');
     });
     
     // Departments Management
     Route::prefix('departments')->name('tenant.departments.')->group(function () {
         Route::get('/', function () {
-            return view('tenant.departments.index');
+            $org = request()->get('tenant_organization');
+            return view('tenant.departments.index', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
         })->name('index');
     });
     
     // Roles Management
     Route::prefix('roles')->name('tenant.roles.')->group(function () {
         Route::get('/', function () {
-            return view('tenant.roles.index');
+            $org = request()->get('tenant_organization');
+            return view('tenant.roles.index', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
         })->name('index');
     });
     
     // Reports
     Route::prefix('reports')->name('tenant.reports.')->group(function () {
         Route::get('/', function () {
-            return view('tenant.reports.index');
+            $org = request()->get('tenant_organization');
+            return view('tenant.reports.index', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
         })->name('index');
     });
     
     // Profile
     Route::get('/profile', function () {
-        return view('tenant.profile');
+        $org = request()->get('tenant_organization');
+        return view('tenant.profile', [
+            'organization' => $org,
+            'tenantType' => request()->get('tenant_type')
+        ]);
     })->name('tenant.profile');
     
     // Logout

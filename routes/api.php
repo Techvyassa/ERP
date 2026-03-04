@@ -60,6 +60,13 @@ Route::prefix('v1')->group(function () {
         // Rate limit status endpoint (excluded from rate limiting)
         Route::get('/rate-limit/status', [App\Http\Controllers\RateLimitController::class, 'status']);
 
+        // Profile completion endpoints
+        Route::prefix('profile-completion')->group(function () {
+            Route::get('/status', [App\Http\Controllers\ProfileCompletionController::class, 'status']);
+            Route::put('/organization', [App\Http\Controllers\ProfileCompletionController::class, 'updateOrganization']);
+            Route::get('/master-data-status', [App\Http\Controllers\ProfileCompletionController::class, 'masterDataStatus']);
+        });
+
         // Subscription management endpoints
         Route::prefix('subscriptions')->group(function () {
             Route::get('/current', [App\Http\Controllers\SubscriptionController::class, 'current']);

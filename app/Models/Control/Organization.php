@@ -31,6 +31,8 @@ class Organization extends Model
         'timezone',
         'currency_code',
         'max_users',
+        'profile_completion',
+        'profile_completion_percentage',
     ];
     
     protected $casts = [
@@ -38,6 +40,8 @@ class Organization extends Model
         'suspended_at' => 'datetime',
         'terminated_at' => 'datetime',
         'created_at' => 'datetime',
+        'profile_completed_at' => 'datetime',
+        'profile_completion' => 'array',
     ];
     
     /**
