@@ -17,6 +17,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Application Domain
+    |--------------------------------------------------------------------------
+    |
+    | The main domain for your application (without protocol or subdomain)
+    | Used for multi-tenancy subdomain routing
+    | Example: yoursite.com (not https://yoursite.com or www.yoursite.com)
+    |
+    */
+
+    'domain' => env('APP_DOMAIN', 'localhost'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Application URL Protocol
+    |--------------------------------------------------------------------------
+    |
+    | The protocol to use for generating URLs (http or https)
+    |
+    */
+
+    'url_protocol' => env('APP_URL_PROTOCOL', 'https'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Environment
     |--------------------------------------------------------------------------
     |

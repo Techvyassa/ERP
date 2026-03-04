@@ -11,9 +11,20 @@ return Application::configure(basePath: dirname(__DIR__))
         commands: __DIR__ . '/../routes/console.php',
         health: '/up',
         then: function () {
+            // API routes
             Route::middleware('api')
                 ->prefix('api')
                 ->group(base_path('routes/api.php'));
+            
+            // Tenant routes - Subdomain-based
+            Route::domain('{tenant}.' . config('app.domain'))
+                ->middleware('web')
+                ->group(base_path('routes/tenant.php'));
+            
+            // Tenant routes - Path-based
+            Route::prefix('org/{tenant}')
+                ->middleware('web')
+                ->group(base_path('routes/tenant.php'));
         },
     )
     ->withMiddleware(function (Middleware $middleware): void {
@@ -23,6 +34,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
             'validate.subscription' => \App\Http\Middleware\ValidateSubscription::class,
             'check.module.permission' => \App\Http\Middleware\CheckModulePermission::class,
+            'detect.tenant' => \App\Http\Middleware\DetectTenantContext::class,
         ]);
         
         // Exclude auth_token from cookie encryption

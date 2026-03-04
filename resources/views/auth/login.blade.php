@@ -216,10 +216,18 @@
                         localStorage.setItem('firebase_uid', user.uid);
                         
                         // Cookie is set by server, give it a moment to be available
-                        // Then redirect to dashboard
+                        // Then redirect to tenant dashboard
+                        const orgSlug = data.data.organization.org_slug;
+                        
+                        // Use path-based URL for reliability (works immediately)
                         setTimeout(() => {
-                            window.location.href = '/dashboard';
+                            window.location.href = `/org/${orgSlug}/dashboard`;
                         }, 100);
+                        
+                        // Alternative: Use subdomain if XAMPP is configured
+                        // const domain = '{{ config("app.domain") }}';
+                        // const protocol = '{{ config("app.url_protocol") }}';
+                        // window.location.href = `${protocol}://${orgSlug}.${domain}/dashboard`;
                     } else {
                         throw new Error(data.message || 'Authentication failed');
                     }
@@ -277,8 +285,16 @@
                         localStorage.setItem('org_slug', data.data.organization.org_slug);
                         
                         // Cookie is already set by server
-                        // Redirect to dashboard
-                        window.location.href = '/dashboard';
+                        // Redirect to tenant dashboard using path-based URL (works without XAMPP config)
+                        const orgSlug = data.data.organization.org_slug;
+                        
+                        // Use path-based URL for reliability (works immediately)
+                        window.location.href = `/org/${orgSlug}/dashboard`;
+                        
+                        // Alternative: Use subdomain if XAMPP is configured
+                        // const domain = '{{ config("app.domain") }}';
+                        // const protocol = '{{ config("app.url_protocol") }}';
+                        // window.location.href = `${protocol}://${orgSlug}.${domain}/dashboard`;
                     } else {
                         throw new Error(data.message || 'Authentication failed');
                     }

@@ -2,6 +2,7 @@
 
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicController;
+use App\Models\Control\Organization;
 
 // Landing page with subscription plans
 Route::get('/', [PublicController::class, 'landing'])->name('home');
@@ -27,6 +28,35 @@ Route::get('/test-cookie', function () {
     return view('test-cookie');
 })->name('test.cookie');
 
+// Tenant diagnostic page
+Route::get('/test-tenant', function () {
+    $host = request()->getHost();
+    $mainDomain = config('app.domain', 'localhost');
+    
+    // Extract subdomain
+    $hostParts = explode(':', $host)[0];
+    $pattern = '/^(.+)\.' . preg_quote($mainDomain, '/') . '$/';
+    $subdomain = null;
+    if (preg_match($pattern, $hostParts, $matches)) {
+        $subdomain = $matches[1];
+    }
+    
+    // Get all organizations
+    $organizations = Organization::all();
+    
+    return view('test-tenant', [
+        'host' => $host,
+        'mainDomain' => $mainDomain,
+        'subdomain' => $subdomain,
+        'organizations' => $organizations,
+        'config' => [
+            'app_domain' => config('app.domain'),
+            'tenant_mode' => config('tenant.default_mode'),
+            'allow_both' => config('tenant.allow_both_modes'),
+        ]
+    ]);
+})->name('test.tenant');
+
 // Google OAuth routes
 Route::get('/auth/google', function () {
     // Redirect to Google OAuth
@@ -46,9 +76,24 @@ Route::get('/auth/google/callback', function () {
 
 // Protected routes (require authentication)
 Route::middleware(['web.jwt'])->group(function () {
-    // Dashboard
+    // Old dashboard route (will redirect to tenant dashboard)
     Route::get('/dashboard', function () {
-        return view('dashboard.index');
+        $orgSlug = request()->get('tenant_org_slug') ?? currentOrgSlug();
+        
+        if (!$orgSlug) {
+            // Try to get from localStorage via redirect
+            return view('redirect-to-tenant');
+        }
+        
+        // Redirect to tenant dashboard
+        $tenantMode = config('tenant.default_mode');
+        if ($tenantMode === 'subdomain') {
+            $domain = config('app.domain');
+            $protocol = config('app.url_protocol');
+            return redirect("{$protocol}://{$orgSlug}.{$domain}/dashboard");
+        } else {
+            return redirect("/org/{$orgSlug}/dashboard");
+        }
     })->name('dashboard');
     
     // Organization setup
