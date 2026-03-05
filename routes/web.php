@@ -4,21 +4,28 @@ use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicController;
 use App\Models\Control\Organization;
 
-// Landing page with subscription plans
+/*
+|--------------------------------------------------------------------------
+| Web Routes
+|--------------------------------------------------------------------------
+| Public Routes: Landing, Pricing, Auth
+| Protected Routes: Dashboard, Control Panel, Tenant Routes
+|--------------------------------------------------------------------------
+*/
+
+// ============================================================================
+// PUBLIC ROUTES
+// ============================================================================
+
+// Landing & Marketing Pages
 Route::get('/', [PublicController::class, 'landing'])->name('home');
-
-// New Flow: Subscription → Register → Login → Dashboard
-
-// Step 1: Subscription selection (public)
 Route::get('/pricing', [PublicController::class, 'pricing'])->name('pricing');
 
-// Step 2: Registration with selected plan (public)
+// Authentication Pages
 Route::get('/register', [PublicController::class, 'register'])->name('register');
-
-// Step 3: Login (public)
 Route::get('/login', [PublicController::class, 'login'])->name('login');
 
-// Google OAuth routes
+// Google OAuth
 Route::get('/auth/google', function () {
     return redirect()->away('https://accounts.google.com/o/oauth2/auth?' . http_build_query([
         'client_id' => env('GOOGLE_CLIENT_ID'),
@@ -32,65 +39,88 @@ Route::get('/auth/google/callback', function () {
     return redirect()->route('dashboard');
 })->name('auth.google.callback');
 
-// Protected routes (require authentication)
+// ============================================================================
+// PROTECTED ROUTES (Require Authentication)
+// ============================================================================
+
 Route::middleware(['web.jwt'])->group(function () {
-    // Main dashboard route (redirects to org-specific dashboard)
+    
+    // ------------------------------------------------------------------------
+    // MAIN DASHBOARD (Entry Point)
+    // ------------------------------------------------------------------------
     Route::get('/dashboard', function () {
         return view('dashboard.main');
     })->name('dashboard');
     
-    // Super Admin / Control Panel Routes
+    // ------------------------------------------------------------------------
+    // SUPER ADMIN / CONTROL PANEL ROUTES
+    // ------------------------------------------------------------------------
     Route::prefix('control')->name('control.')->group(function () {
+        // Dashboard
         Route::get('/dashboard', function () {
             return view('control.dashboard');
         })->name('dashboard');
         
+        // Organizations Management
         Route::get('/organizations', function () {
             return view('control.organizations.index');
         })->name('organizations.index');
         
+        // Subscriptions Management
         Route::get('/subscriptions', function () {
             return view('control.subscriptions.index');
         })->name('subscriptions.index');
         
+        // Subscription Plans Management
         Route::get('/plans', function () {
             return view('control.plans.index');
         })->name('plans.index');
         
+        // Payments Management
         Route::get('/payments', function () {
             return view('control.payments.index');
         })->name('payments.index');
         
+        // Feature Control
         Route::get('/features', function () {
             return view('control.features.index');
         })->name('features.index');
         
+        // System Settings
         Route::get('/settings', function () {
             return view('control.settings');
         })->name('settings');
         
+        // Admin Profile
         Route::get('/profile', function () {
             return view('control.profile');
         })->name('profile');
     });
     
-    // Organization-specific routes (path-based tenant routing)
-    Route::prefix('org/{org_slug}')->group(function () {
-        // Helper function to get organization
+    // ------------------------------------------------------------------------
+    // TENANT ROUTES (Organization-specific)
+    // Pattern: /org/{org_slug}/...
+    // ------------------------------------------------------------------------
+    Route::prefix('org/{org_slug}')->name('tenant.')->group(function () {
+        // Helper function to get organization and tenant type
         $getOrg = function ($orgSlug) {
             $org = Organization::where('org_slug', $orgSlug)->firstOrFail();
             $tenantType = 'path';
             return compact('org', 'tenantType');
         };
         
-        // Main Dashboard
+        // ====================================================================
+        // DASHBOARD & SETUP
+        // ====================================================================
+        
+        // Main Tenant Dashboard
         Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.dashboard', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.dashboard');
+        })->name('dashboard');
         
         // Profile Completion
         Route::get('/profile-completion', function ($orgSlug) use ($getOrg) {
@@ -99,166 +129,184 @@ Route::middleware(['web.jwt'])->group(function () {
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.profile-completion');
+        })->name('profile-completion');
         
         // Master Data Setup Dashboard
         Route::get('/master-setup', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.master-setup', [
+            return view('tenant.masters.dashboard', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.master-setup');
+        })->name('master-setup');
         
-        // Organization Masters
+        // ====================================================================
+        // ORGANIZATION MASTERS
+        // ====================================================================
+        
         Route::get('/departments', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.departments.index', [
+            return view('tenant.masters.organization.departments.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.departments.index');
+        })->name('departments.index');
         
         Route::get('/roles', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.roles.index', [
+            return view('tenant.masters.organization.roles.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.roles.index');
+        })->name('roles.index');
         
         Route::get('/users', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.users.index', [
+            return view('tenant.masters.organization.users.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.users.index');
+        })->name('users.index');
         
         Route::get('/approval-matrix', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.approval-matrix.index', [
+            return view('tenant.masters.organization.approval-matrix.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.approval-matrix.index');
+        })->name('approval-matrix.index');
         
-        // Inventory Masters
+        // ====================================================================
+        // INVENTORY MASTERS
+        // ====================================================================
+        
         Route::get('/materials', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.materials.index', [
+            return view('tenant.masters.inventory.materials.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.materials.index');
+        })->name('materials.index');
         
         Route::get('/products', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.products.index', [
+            return view('tenant.masters.inventory.products.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.products.index');
+        })->name('products.index');
         
         Route::get('/warehouses', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.warehouses.index', [
+            return view('tenant.masters.inventory.warehouses.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.warehouses.index');
+        })->name('warehouses.index');
         
         Route::get('/bin-locations', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.bin-locations.index', [
+            return view('tenant.masters.inventory.bin-locations.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.bin-locations.index');
+        })->name('bin-locations.index');
         
         Route::get('/uom', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.uom.index', [
+            return view('tenant.masters.inventory.uom.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.uom.index');
+        })->name('uom.index');
         
-        // Vendor Masters
+        // ====================================================================
+        // VENDOR MASTERS
+        // ====================================================================
+        
         Route::get('/vendors', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.vendors.index', [
+            return view('tenant.masters.vendor.vendors.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.vendors.index');
+        })->name('vendors.index');
         
         Route::get('/vendor-contacts', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.vendor-contacts.index', [
+            return view('tenant.masters.vendor.vendor-contacts.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.vendor-contacts.index');
+        })->name('vendor-contacts.index');
         
         Route::get('/vendor-material-map', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.vendor-material-map.index', [
+            return view('tenant.masters.vendor.vendor-material-map.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.vendor-material-map.index');
+        })->name('vendor-material-map.index');
         
-        // Tax Masters
+        // ====================================================================
+        // TAX MASTERS
+        // ====================================================================
+        
         Route::get('/hsn-codes', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.hsn-codes.index', [
+            return view('tenant.masters.tax.hsn-codes.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.hsn-codes.index');
+        })->name('hsn-codes.index');
         
         Route::get('/gst-taxes', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.gst-taxes.index', [
+            return view('tenant.masters.tax.gst-taxes.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.gst-taxes.index');
+        })->name('gst-taxes.index');
         
         Route::get('/currency', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.currency.index', [
+            return view('tenant.masters.tax.currency.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.currency.index');
+        })->name('currency.index');
         
-        // BOM Masters
+        // ====================================================================
+        // BOM MASTERS
+        // ====================================================================
+        
         Route::get('/bom-header', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.bom-header.index', [
+            return view('tenant.masters.bom.bom-header.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.bom-header.index');
+        })->name('bom-header.index');
         
         Route::get('/bom-detail', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
-            return view('tenant.bom-detail.index', [
+            return view('tenant.masters.bom.bom-detail.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.bom-detail.index');
+        })->name('bom-detail.index');
         
-        // Other Pages
+        // ====================================================================
+        // OTHER PAGES
+        // ====================================================================
+        
         Route::get('/reports', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.reports.index', [
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.reports.index');
+        })->name('reports.index');
         
         Route::get('/settings', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -266,7 +314,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.settings');
+        })->name('settings');
         
         Route::get('/profile', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -274,10 +322,12 @@ Route::middleware(['web.jwt'])->group(function () {
                 'organization' => $org,
                 'tenantType' => $tenantType
             ]);
-        })->name('tenant.profile');
+        })->name('profile');
     });
 
-    // Logout
+    // ------------------------------------------------------------------------
+    // LOGOUT
+    // ------------------------------------------------------------------------
     Route::post('/logout', function () {
         return redirect()->route('home')
             ->withCookie(cookie()->forget('auth_token'))
@@ -285,7 +335,10 @@ Route::middleware(['web.jwt'])->group(function () {
     })->name('logout');
 });
 
-// Test routes (for debugging)
+// ============================================================================
+// TEST & DEBUG ROUTES (Remove in production)
+// ============================================================================
+
 Route::get('/test-firebase', function () {
     return view('test-firebase');
 })->name('test.firebase');
@@ -315,58 +368,6 @@ Route::get('/test-tenant', function () {
         $subdomain = $matches[1];
     }
 
-    $organizations = Organization::all();
-
-    return view('test-tenant', [
-        'host' => $host,
-        'mainDomain' => $mainDomain,
-        'subdomain' => $subdomain,
-        'organizations' => $organizations,
-        'config' => [
-            'app_domain' => config('app.domain'),
-            'tenant_mode' => config('tenant.default_mode'),
-            'allow_both' => config('tenant.allow_both_modes'),
-        ]
-    ]);
-})->name('test.tenant');
-
-
-
-
-// Firebase test page (for debugging)
-Route::get('/test-firebase', function () {
-    return view('test-firebase');
-})->name('test.firebase');
-
-// Cookie test page
-Route::get('/test-cookie', function () {
-    return view('test-cookie');
-})->name('test.cookie');
-
-Route::get('/test-email-template', function () {
-    return view('emails.welcome', [
-        'firstName' => 'John',
-        'organizationName' => 'Acme Manufacturing Ltd.',
-        'email' => 'john@acme.com',
-        'tempPassword' => 'TempPass123!',
-        'loginUrl' => url('/login'),
-    ]);
-})->name('emails.template');
-
-// Tenant diagnostic page
-Route::get('/test-tenant', function () {
-    $host = request()->getHost();
-    $mainDomain = config('app.domain', 'localhost');
-
-    // Extract subdomain
-    $hostParts = explode(':', $host)[0];
-    $pattern = '/^(.+)\.' . preg_quote($mainDomain, '/') . '$/';
-    $subdomain = null;
-    if (preg_match($pattern, $hostParts, $matches)) {
-        $subdomain = $matches[1];
-    }
-
-    // Get all organizations
     $organizations = Organization::all();
 
     return view('test-tenant', [
