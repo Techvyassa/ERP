@@ -28,11 +28,21 @@ Route::get('/test-cookie', function () {
     return view('test-cookie');
 })->name('test.cookie');
 
+Route::get('/test-email-template', function () {
+    return view('emails.welcome', [
+        'firstName' => 'John',
+        'organizationName' => 'Acme Manufacturing Ltd.',
+        'email' => 'john@acme.com',
+        'tempPassword' => 'TempPass123!',
+        'loginUrl' => url('/login'),
+    ]);
+})->name('emails.template');
+
 // Tenant diagnostic page
 Route::get('/test-tenant', function () {
     $host = request()->getHost();
     $mainDomain = config('app.domain', 'localhost');
-    
+
     // Extract subdomain
     $hostParts = explode(':', $host)[0];
     $pattern = '/^(.+)\.' . preg_quote($mainDomain, '/') . '$/';
@@ -40,10 +50,10 @@ Route::get('/test-tenant', function () {
     if (preg_match($pattern, $hostParts, $matches)) {
         $subdomain = $matches[1];
     }
-    
+
     // Get all organizations
     $organizations = Organization::all();
-    
+
     return view('test-tenant', [
         'host' => $host,
         'mainDomain' => $mainDomain,
@@ -79,12 +89,12 @@ Route::middleware(['web.jwt'])->group(function () {
     // Old dashboard route (will redirect to tenant dashboard)
     Route::get('/dashboard', function () {
         $orgSlug = request()->get('tenant_org_slug') ?? currentOrgSlug();
-        
+
         if (!$orgSlug) {
             // Try to get from localStorage via redirect
             return view('redirect-to-tenant');
         }
-        
+
         // Redirect to tenant dashboard
         $tenantMode = config('tenant.default_mode');
         if ($tenantMode === 'subdomain') {
@@ -95,12 +105,12 @@ Route::middleware(['web.jwt'])->group(function () {
             return redirect("/org/{$orgSlug}/dashboard");
         }
     })->name('dashboard');
-    
+
     // Organization setup
     Route::get('/setup/organization', function () {
         return view('setup.organization');
     })->name('setup.organization');
-    
+
     // Logout
     Route::post('/logout', function () {
         return redirect()->route('home')
