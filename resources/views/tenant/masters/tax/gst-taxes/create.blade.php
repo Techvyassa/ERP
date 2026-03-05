@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.tax')
 
 @section('title', 'Create GST Tax')
 @section('page-title', 'Create New GST Tax Rate')

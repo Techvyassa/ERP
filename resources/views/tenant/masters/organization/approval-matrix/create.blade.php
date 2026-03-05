@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.organization')
 
 @section('title', 'Create Approval Rule')
 @section('page-title', 'Create Approval Matrix Rule')

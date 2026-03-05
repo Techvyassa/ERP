@@ -81,7 +81,7 @@
 
         <!-- Back Button -->
         <div class="flex justify-start">
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/dashboard' : '/org/' . $organization->org_slug . '/dashboard') }}" 
+            <a href="{{ url($tenantType === 'subdomain' ? '/dashboard' : '/org/' . $organization->org_slug . '/dashboard') }}" 
                class="px-6 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
                 <i class="fas fa-arrow-left mr-2"></i>Back to Dashboard
             </a>
@@ -118,7 +118,7 @@
 
                 openMaster(master) {
                     // Map master keys to routes
-                    const tenantType = '{{ request()->get("tenant_type") }}';
+                    const tenantType = '{{ $tenantType }}';
                     const orgSlug = '{{ $organization->org_slug }}';
                     const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
                     
@@ -148,7 +148,7 @@
                         'vendor_material_map': `${baseUrl}/vendor-material-map`,
                         
                         // BOM
-                        'bom_header': `${baseUrl}/bom`,
+                        'bom_header': `${baseUrl}/bom-header`,
                         'bom_detail': `${baseUrl}/bom-detail`
                     };
                     

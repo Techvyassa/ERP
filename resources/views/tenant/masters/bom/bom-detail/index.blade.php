@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.bom')
 
 @section('title', 'BOM Detail')
 @section('page-title', 'Bill of Materials - Detail Lines')

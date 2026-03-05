@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.inventory')
 
 @section('title', 'Create Bin Location')
 @section('page-title', 'Create New Bin Location')

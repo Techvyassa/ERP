@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.inventory')
 
 @section('title', 'Create Warehouse')
 @section('page-title', 'Create New Warehouse')

@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.vendor')
 
 @section('title', 'Vendor Material Map')
 @section('page-title', 'Vendor Material Mapping')

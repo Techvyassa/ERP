@@ -94,6 +94,7 @@ class DetectTenantContext
         
         // Share with views
         view()->share('currentOrg', $organization);
+        view()->share('organization', $organization); // Alias for consistency
         view()->share('tenantType', $tenantType);
         
         \Log::info('Tenant context set successfully', [

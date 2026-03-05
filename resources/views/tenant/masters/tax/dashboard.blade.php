@@ -151,13 +151,42 @@ function taxDashboard() {
         },
 
         async loadData() {
-            // TODO: Load from API
-            this.stats = {
-                hsnCodes: 15,
-                gstTaxes: 6,
-                currencies: 3,
-                baseCurrency: 'INR'
-            };
+            try {
+                const token = this.getToken();
+                
+                // Load HSN codes count
+                const hsnResponse = await fetch('/api/v1/hsn-codes?is_active=1', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const hsnData = await hsnResponse.json();
+                if (hsnData.success) {
+                    this.stats.hsnCodes = hsnData.data.hsn_codes.length;
+                }
+                
+                // Load GST taxes count
+                const gstResponse = await fetch('/api/v1/gst-taxes?is_active=1', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const gstData = await gstResponse.json();
+                if (gstData.success) {
+                    this.stats.gstTaxes = gstData.data.gst_taxes.length;
+                }
+                
+                // Load currencies count and base currency
+                const currencyResponse = await fetch('/api/v1/currencies?is_active=1', {
+                    headers: { 'Authorization': `Bearer ${token}` }
+                });
+                const currencyData = await currencyResponse.json();
+                if (currencyData.success) {
+                    this.stats.currencies = currencyData.data.currencies.length;
+                    const baseCurrency = currencyData.data.currencies.find(c => c.is_base_currency);
+                    if (baseCurrency) {
+                        this.stats.baseCurrency = baseCurrency.currency_code;
+                    }
+                }
+            } catch (e) {
+                console.error('Failed to load tax dashboard data:', e);
+            }
         },
 
         navigateTo(page) {
@@ -171,6 +200,10 @@ function taxDashboard() {
             if (routes[page]) {
                 window.location.href = routes[page];
             }
+        },
+        
+        getToken() {
+            return document.cookie.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1] || '';
         }
     }
 }

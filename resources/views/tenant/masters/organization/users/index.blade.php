@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.organization')
 
 @section('title', 'Users')
 @section('page-title', 'User Management')

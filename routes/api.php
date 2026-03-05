@@ -106,6 +106,33 @@ Route::prefix('v1')->group(function () {
             Route::put('/{id}/permissions', [App\Http\Controllers\RolePermissionController::class, 'update']);
         });
 
+        // HSN Code management endpoints (with RBAC middleware for SETTINGS module)
+        Route::middleware(['check.module.permission:SETTINGS'])->prefix('hsn-codes')->group(function () {
+            Route::get('/', [App\Http\Controllers\HSNCodeController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\HSNCodeController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\HSNCodeController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\HSNCodeController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\HSNCodeController::class, 'destroy']);
+        });
+
+        // GST Tax management endpoints (with RBAC middleware for SETTINGS module)
+        Route::middleware(['check.module.permission:SETTINGS'])->prefix('gst-taxes')->group(function () {
+            Route::get('/', [App\Http\Controllers\GSTTaxController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\GSTTaxController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\GSTTaxController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\GSTTaxController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\GSTTaxController::class, 'destroy']);
+        });
+
+        // Currency management endpoints (with RBAC middleware for SETTINGS module)
+        Route::middleware(['check.module.permission:SETTINGS'])->prefix('currencies')->group(function () {
+            Route::get('/', [App\Http\Controllers\CurrencyController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\CurrencyController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\CurrencyController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\CurrencyController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\CurrencyController::class, 'destroy']);
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {

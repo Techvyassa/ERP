@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.tax')
 
 @section('title', 'Create HSN Code')
 @section('page-title', 'Create New HSN Code')

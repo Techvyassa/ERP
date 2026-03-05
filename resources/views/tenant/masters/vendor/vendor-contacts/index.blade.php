@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.vendor')
 
 @section('title', 'Vendor Contacts')
 @section('page-title', 'Vendor Contact Master')

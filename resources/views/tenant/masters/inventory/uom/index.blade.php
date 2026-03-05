@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.inventory')
 
 @section('title', 'UOM')
 @section('page-title', 'Unit of Measurement Master')

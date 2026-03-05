@@ -1,4 +1,4 @@
-@extends('tenant.layouts.app')
+@extends('tenant.layouts.bom')
 
 @section('title', 'Create BOM Detail')
 @section('page-title', 'Create New BOM Component')
