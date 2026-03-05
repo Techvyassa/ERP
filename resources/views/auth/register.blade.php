@@ -5,60 +5,69 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>Create Account - Zap ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800;900&display=swap" rel="stylesheet" />
+    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
-    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
     
     <!-- Firebase Configuration -->
     @include('components.firebase-config')
     
+    <script>
+        tailwind.config = {
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#193261",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                },
+            },
+        }
+    </script>
+    
     <style>
         body {
-            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
         }
     </style>
 </head>
-<body class="min-h-screen flex items-center justify-center p-4">
+<body class="bg-gray-50 min-h-screen flex flex-col font-display">
     <!-- Header -->
-    <header class="absolute top-0 left-0 right-0 bg-transparent">
-        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 flex items-center justify-between">
-            <div class="flex items-center space-x-2">
-                <div class="w-10 h-10 bg-white rounded-lg flex items-center justify-center shadow-lg">
-                    <i class="fas fa-zap text-blue-600 text-xl"></i>
+    <header class="w-full border-b border-gray-200 bg-white shadow-sm">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-4 flex items-center justify-between">
+            <a href="/" class="flex items-center gap-3">
+                <div class="bg-primary p-1.5 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined text-white text-2xl">precision_manufacturing</span>
                 </div>
-                <span class="text-xl font-semibold text-white">Zap ERP</span>
-            </div>
-            <div class="flex items-center space-x-4 text-white">
-                <span class="text-sm">Already have an account?</span>
-                <a href="/login" class="px-4 py-2 bg-white text-blue-600 rounded-lg font-medium hover:bg-gray-100">Sign In</a>
+                <h2 class="text-gray-900 text-xl font-bold tracking-tight">Zap ERP</h2>
+            </a>
+            <div class="flex items-center gap-4">
+                <span class="text-sm text-gray-600">Already have an account?</span>
+                <a href="/login" class="px-4 py-2 bg-white text-gray-900 border-2 border-gray-300 rounded-lg text-sm font-bold hover:bg-gray-50 transition-all">Sign In</a>
             </div>
         </div>
     </header>
 
     <!-- Registration Card -->
-    <div class="w-full max-w-2xl">
-        <div class="bg-white rounded-2xl shadow-2xl p-8">
-            <!-- Step Indicator -->
-            <div class="text-center mb-6">
-                <span class="inline-block px-3 py-1 bg-blue-100 text-blue-700 text-xs font-semibold rounded-full">
-                    STEP 2 OF 3: CREATE YOUR ACCOUNT
-                </span>
-            </div>
-
-            <!-- Selected Plan Badge -->
-            <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
-                <div class="flex items-center justify-between">
-                    <div>
-                        <span class="text-sm text-gray-600">Selected Plan:</span>
-                        <span class="ml-2 font-semibold text-gray-900" id="selectedPlan">Professional</span>
+    <div class="flex-1 flex items-center justify-center p-4">
+        <div class="w-full max-w-2xl">
+            <div class="bg-white rounded-2xl shadow-lg border border-gray-200 p-8">
+                <!-- Selected Plan Badge -->
+                <div class="mb-6 p-4 bg-blue-50 rounded-lg border border-blue-200">
+                    <div class="flex items-center justify-between">
+                        <div>
+                            <span class="text-sm text-gray-600">Selected Plan:</span>
+                            <span class="ml-2 font-bold text-gray-900" id="selectedPlan">Professional</span>
+                        </div>
+                        <a href="/pricing" class="text-sm text-primary hover:text-primary/80 font-bold">Change Plan</a>
                     </div>
-                    <a href="/pricing" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Change Plan</a>
                 </div>
-            </div>
 
-            <!-- Title -->
-            <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Create Your Account</h1>
-            <p class="text-gray-600 text-center mb-8">Set up your organization and start your 14-day free trial</p>
+                <!-- Title -->
+                <h1 class="text-3xl font-bold text-gray-900 text-center mb-2">Create Your Account</h1>
+                <p class="text-gray-600 text-center mb-8">Set up your organization and start your 14-day free trial</p>
 
             <!-- Google Sign Up -->
             <button type="button" id="googleSignUpBtn" class="w-full flex items-center justify-center space-x-3 px-6 py-3 bg-white border-2 border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors mb-6">
@@ -87,9 +96,9 @@
                     <!-- First Name -->
                     <div>
                         <label for="first_name" class="block text-sm font-medium text-gray-700 mb-2">First Name</label>
-                        <input type="text" id="first_name" name="first_name" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
-                            placeholder="John">
+                    <input type="text" id="first_name" name="first_name" required
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
+                        placeholder="John">
                         <span class="text-xs text-red-600 hidden" id="first_name_error"></span>
                     </div>
 
@@ -97,7 +106,7 @@
                     <div>
                         <label for="last_name" class="block text-sm font-medium text-gray-700 mb-2">Last Name</label>
                         <input type="text" id="last_name" name="last_name" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                             placeholder="Doe">
                         <span class="text-xs text-red-600 hidden" id="last_name_error"></span>
                     </div>
@@ -107,7 +116,7 @@
                 <div>
                     <label for="org_name" class="block text-sm font-medium text-gray-700 mb-2">Organization Name</label>
                     <input type="text" id="org_name" name="org_name" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                         placeholder="Acme Manufacturing Ltd.">
                     <span class="text-xs text-red-600 hidden" id="org_name_error"></span>
                 </div>
@@ -116,7 +125,7 @@
                 <div>
                     <label for="email" class="block text-sm font-medium text-gray-700 mb-2">Work Email</label>
                     <input type="email" id="email" name="email" required
-                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                        class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent"
                         placeholder="john@company.com">
                     <span class="text-xs text-red-600 hidden" id="email_error"></span>
                 </div>
@@ -126,11 +135,11 @@
                     <label for="password" class="block text-sm font-medium text-gray-700 mb-2">Password</label>
                     <div class="relative">
                         <input type="password" id="password" name="password" required
-                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent pr-12"
+                            class="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-primary focus:border-transparent pr-12"
                             placeholder="••••••••">
                         <button type="button" onclick="togglePassword()"
                             class="absolute right-3 top-1/2 transform -translate-y-1/2 text-gray-400 hover:text-gray-600">
-                            <i class="far fa-eye" id="toggleIcon"></i>
+                            <span class="material-symbols-outlined text-xl" id="toggleIcon">visibility</span>
                         </button>
                     </div>
                     <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
@@ -140,24 +149,24 @@
                 <!-- Terms & Conditions -->
                 <div class="flex items-start">
                     <input type="checkbox" id="terms" name="terms" required
-                        class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500 mt-1">
+                        class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary mt-1">
                     <label for="terms" class="ml-2 text-sm text-gray-700">
-                        I agree to the <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Terms of Service</a> and 
-                        <a href="#" class="text-blue-600 hover:text-blue-700 font-medium">Privacy Policy</a>
+                        I agree to the <a href="#" class="text-primary hover:text-primary/80 font-bold">Terms of Service</a> and 
+                        <a href="#" class="text-primary hover:text-primary/80 font-bold">Privacy Policy</a>
                     </label>
                 </div>
 
                 <!-- Error Message -->
                 <div id="errorMessage" class="hidden bg-red-50 border border-red-200 text-red-700 px-4 py-3 rounded-lg">
                     <div class="flex items-center">
-                        <i class="fas fa-exclamation-circle mr-2"></i>
+                        <span class="material-symbols-outlined mr-2">error</span>
                         <span id="errorText"></span>
                     </div>
                 </div>
 
                 <!-- Submit Button -->
                 <button type="submit" id="submitBtn"
-                    class="w-full px-6 py-3 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:ring-4 focus:ring-blue-300 transition-colors">
+                    class="w-full px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
                     Create Account & Continue
                 </button>
             </form>
@@ -165,15 +174,18 @@
             <!-- Sign In Link -->
             <div class="mt-6 text-center">
                 <span class="text-sm text-gray-600">Already have an account? </span>
-                <a href="/login" class="text-sm text-blue-600 hover:text-blue-700 font-medium">Sign In</a>
+                <a href="/login" class="text-sm text-primary hover:text-primary/80 font-bold">Sign In</a>
             </div>
         </div>
-
-        <!-- Footer -->
-        <div class="mt-6 text-center text-sm text-white">
-            <p>🔒 Enterprise Grade Security • SOC2 Compliant • © 2024 Zap ERP</p>
-        </div>
     </div>
+</div>
+
+<!-- Footer -->
+<footer class="bg-white border-t border-gray-200 py-6">
+    <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center text-sm text-gray-600">
+        <p>🔒 Enterprise Grade Security • SOC2 Compliant • © 2024 Zap ERP Systems</p>
+    </div>
+</footer>
 
     <script>
         // Get selected plan from URL or localStorage
@@ -198,12 +210,10 @@
             
             if (passwordInput.type === 'password') {
                 passwordInput.type = 'text';
-                toggleIcon.classList.remove('fa-eye');
-                toggleIcon.classList.add('fa-eye-slash');
+                toggleIcon.textContent = 'visibility_off';
             } else {
                 passwordInput.type = 'password';
-                toggleIcon.classList.remove('fa-eye-slash');
-                toggleIcon.classList.add('fa-eye');
+                toggleIcon.textContent = 'visibility';
             }
         }
 
@@ -222,7 +232,7 @@
                     }
                     
                     this.disabled = true;
-                    this.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Signing up with Google...';
+                    this.innerHTML = '<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>Signing up with Google...';
                     
                     const result = await window.firebaseSignInWithPopup(window.firebaseAuth, window.googleProvider);
                     const user = result.user;
@@ -302,7 +312,7 @@
                 
                 // Disable submit button
                 submitBtn.disabled = true;
-                submitBtn.innerHTML = '<i class="fas fa-spinner fa-spin mr-2"></i>Creating your account...';
+                submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin mr-2">progress_activity</span>Creating your account...';
                 
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
