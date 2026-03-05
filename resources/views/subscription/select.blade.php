@@ -73,10 +73,10 @@
                 <div class="mb-6">
                     <span class="text-4xl font-bold text-gray-900 plan-price" 
                           data-monthly="{{ $plan->price_amount }}"
-                          data-yearly="{{ $plan->price_amount * 12 * 0.8 }}">
+                          data-currency="{{ $plan->currency_code }}">
                         {{ $plan->currency_code }} {{ number_format($plan->price_amount, 0) }}
                     </span>
-                    <span class="text-gray-600 billing-period">/{{ strtolower($plan->billing_cycle) }}</span>
+                    <span class="text-gray-600 billing-period">/monthly</span>
                 </div>
                 
                 @if($plan->description)
@@ -357,10 +357,10 @@
                 
                 // Update all plan prices to yearly (with 20% discount)
                 document.querySelectorAll('.plan-price').forEach(priceElement => {
-                    const yearlyPrice = parseFloat(priceElement.dataset.yearly);
-                    const currencyMatch = priceElement.textContent.match(/^[A-Z]{3}/);
-                    const currency = currencyMatch ? currencyMatch[0] : '$';
-                    priceElement.textContent = currency + ' ' + Math.round(yearlyPrice).toLocaleString();
+                    const monthlyPrice = parseFloat(priceElement.dataset.monthly);
+                    const yearlyPrice = monthlyPrice * 12 * 0.8;
+                    const currencyCode = priceElement.dataset.currency;
+                    priceElement.textContent = currencyCode + ' ' + Math.round(yearlyPrice).toLocaleString();
                 });
                 
                 // Update billing period text
@@ -376,14 +376,13 @@
                 // Reset to monthly prices
                 document.querySelectorAll('.plan-price').forEach(priceElement => {
                     const monthlyPrice = parseFloat(priceElement.dataset.monthly);
-                    const currencyMatch = priceElement.textContent.match(/^[A-Z]{3}/);
-                    const currency = currencyMatch ? currencyMatch[0] : '$';
-                    priceElement.textContent = currency + ' ' + Math.round(monthlyPrice).toLocaleString();
+                    const currencyCode = priceElement.dataset.currency;
+                    priceElement.textContent = currencyCode + ' ' + Math.round(monthlyPrice).toLocaleString();
                 });
                 
                 // Update billing period text
                 document.querySelectorAll('.billing-period').forEach(period => {
-                    period.textContent = '/month';
+                    period.textContent = '/monthly';
                 });
             }
         }

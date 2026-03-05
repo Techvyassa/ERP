@@ -187,10 +187,10 @@
             renderPlans();
         }
 
-        // Fetch subscription plans
+        // Fetch subscription plans from API
         async function fetchPlans() {
             try {
-                const response = await fetch('/api/v1/subscriptions/plans', {
+                const response = await fetch('/api/v1/subscription-plans', {
                     headers: {
                         'Accept': 'application/json',
                     }
@@ -199,12 +199,13 @@
                 const data = await response.json();
                 
                 if (response.ok && data.success) {
-                    plans = data.data;
+                    plans = data.data.plans;
                     renderPlans();
                 } else {
                     showError('Failed to load subscription plans');
                 }
             } catch (error) {
+                console.error('Error fetching plans:', error);
                 showError('Network error. Please refresh the page.');
             }
         }
@@ -224,9 +225,20 @@
             }
             
             container.innerHTML = plans.map(plan => {
-                const price = isYearly ? (plan.price_monthly * 12 * 0.8).toFixed(2) : plan.price_monthly;
+                const monthlyPrice = parseFloat(plan.price_amount);
+                const yearlyPrice = monthlyPrice * 12 * 0.8;
+                const price = isYearly ? yearlyPrice.toFixed(2) : monthlyPrice.toFixed(2);
                 const period = isYearly ? 'year' : 'month';
-                const isPopular = plan.plan_name.toLowerCase().includes('professional');
+                const isPopular = plan.plan_code === 'PROFESSIONAL';
+                
+                const features = [];
+                if (plan.max_users) features.push(`Up to ${plan.max_users >= 999999 ? 'unlimited' : plan.max_users} users`);
+                if (plan.storage_gb) features.push(`${plan.storage_gb >= 999999 ? 'Unlimited' : plan.storage_gb + 'GB'} storage`);
+                if (plan.max_warehouses) features.push(`${plan.max_warehouses >= 999999 ? 'Unlimited' : plan.max_warehouses} warehouse${plan.max_warehouses > 1 ? 's' : ''}`);
+                if (plan.api_rate_limit_day) features.push(`${plan.api_rate_limit_day.toLocaleString()} API calls/day`);
+                if (plan.modules_included && plan.modules_included.length > 0) {
+                    features.push(`${plan.modules_included.length} modules included`);
+                }
                 
                 return `
                     <div class="relative bg-white rounded-xl shadow-lg p-6 border-2 ${isPopular ? 'border-blue-600' : 'border-gray-200'} hover:shadow-xl transition-shadow">
@@ -235,31 +247,23 @@
                         <div class="text-center mb-6">
                             <h3 class="text-xl font-bold text-gray-900 mb-2">${plan.plan_name}</h3>
                             <div class="flex items-baseline justify-center mb-2">
-                                <span class="text-4xl font-bold text-gray-900">$${price}</span>
+                                <span class="text-4xl font-bold text-gray-900">${plan.currency_code} ${Math.round(price).toLocaleString()}</span>
                                 <span class="text-gray-600 ml-2">/${period}</span>
                             </div>
                             <p class="text-sm text-gray-600">${plan.description || ''}</p>
                         </div>
                         
                         <ul class="space-y-3 mb-6">
-                            <li class="flex items-start">
-                                <i class="fas fa-check text-green-600 mt-1 mr-2"></i>
-                                <span class="text-sm text-gray-700">Up to ${plan.max_users} users</span>
-                            </li>
-                            <li class="flex items-start">
-                                <i class="fas fa-check text-green-600 mt-1 mr-2"></i>
-                                <span class="text-sm text-gray-700">${plan.storage_gb}GB storage</span>
-                            </li>
-                            ${plan.features ? plan.features.split(',').map(f => `
+                            ${features.map(f => `
                                 <li class="flex items-start">
                                     <i class="fas fa-check text-green-600 mt-1 mr-2"></i>
-                                    <span class="text-sm text-gray-700">${f.trim()}</span>
+                                    <span class="text-sm text-gray-700">${f}</span>
                                 </li>
-                            `).join('') : ''}
+                            `).join('')}
                         </ul>
                         
                         <button 
-                            onclick="selectPlan('${plan.plan_id}')"
+                            onclick="selectPlan('${plan.plan_code}')"
                             class="w-full px-6 py-3 ${isPopular ? 'bg-blue-600 text-white hover:bg-blue-700' : 'bg-gray-100 text-gray-900 hover:bg-gray-200'} font-medium rounded-lg transition-colors">
                             Select ${plan.plan_name}
                         </button>
@@ -269,16 +273,17 @@
         }
 
         // Select a plan
-        async function selectPlan(planId) {
+        async function selectPlan(planCode) {
             // Store selected plan and redirect to final setup
-            localStorage.setItem('selected_plan', planId);
-            window.location.href = '/setup/final';
+            localStorage.setItem('selected_plan', planCode.toLowerCase());
+            localStorage.setItem('billing_period', isYearly ? 'yearly' : 'monthly');
+            window.location.href = '/register?plan=' + planCode.toLowerCase();
         }
 
         // Skip subscription
         function skipSubscription() {
             if (confirm('Are you sure you want to skip? You will start with a 14-day trial.')) {
-                window.location.href = '/setup/final';
+                window.location.href = '/register';
             }
         }
 
