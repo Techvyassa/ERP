@@ -1,10 +1,41 @@
 @extends('tenant.layouts.app')
 
-@section('title', 'Dashboard')
-@section('page-title', 'Dashboard')
+@section('title', $organization->org_name . ' - Dashboard')
+@section('page-title', $organization->org_name)
 
 @section('content')
 <div x-data="dashboardData()" x-init="init()">
+    <!-- Organization Info Banner -->
+    <div class="bg-gradient-to-r from-primary to-blue-700 rounded-xl p-6 mb-6 text-white shadow-lg">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-white/20 p-4 rounded-xl">
+                    <span class="material-symbols-outlined text-white text-4xl">business</span>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold mb-1">{{ $organization->org_name }}</h2>
+                    <div class="flex items-center gap-4 text-sm text-white/90">
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">location_on</span>
+                            {{ $organization->city ?? 'Not Set' }}, {{ $organization->state ?? 'Not Set' }}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">email</span>
+                            {{ $organization->primary_email ?? 'Not Set' }}
+                        </span>
+                        <span class="flex items-center gap-1">
+                            <span class="material-symbols-outlined text-base">phone</span>
+                            {{ $organization->primary_phone ?? 'Not Set' }}
+                        </span>
+                    </div>
+                </div>
+            </div>
+            <div class="text-right">
+                <div class="text-xs text-white/80 mb-1">Organization ID</div>
+                <div class="text-lg font-bold">{{ $organization->org_slug }}</div>
+            </div>
+        </div>
+    </div>
     <!-- Subscription Status Banner -->
     <div x-show="subscription.status === 'trial'" x-cloak
          class="bg-gradient-to-r from-amber-50 to-orange-50 border-2 border-amber-300 rounded-xl p-5 mb-6 shadow-sm">
@@ -40,7 +71,7 @@
 
     <!-- Active Subscription Banner -->
     <div x-show="subscription.status === 'active'" x-cloak
-         class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 mb-6 shadow-sm"></div>
+         class="bg-gradient-to-r from-green-50 to-emerald-50 border-2 border-green-300 rounded-xl p-5 mb-6 shadow-sm">
         <div class="flex items-center justify-between">
             <div class="flex items-center gap-4">
                 <div class="bg-green-100 p-3 rounded-xl">
@@ -269,8 +300,6 @@
             </div>
         </div>
 
-div>
-
         <!-- Right Column - Quick Actions & Recent Activity -->
         <div class="space-y-6">
             <!-- Quick Actions -->
@@ -318,172 +347,213 @@ div>
                         </div>
                         <span class="text-xs text-green-600 font-bold">Online</span>
                     </div>
-                    <div class="flex items-center justify-between p-3 bg-blue-50 rounded-lg">
+                    <div class="flex items-center justify-between p-3 bg-green-50 rounded-lg">
                         <div class="flex items-center gap-2">
-                            <span class="w-2 h-2 bg-blue-500 rounded-full animate-pulse"></span>
-                            <span class="text-sm font-semibold text-gray-900">Last Sync</span>
+                            <span class="w-2 h-2 bg-green-500 rounded-full"></span>
+                            <span class="text-sm font-semibold text-gray-900">Backup System</span>
                         </div>
-                        <span class="text-xs text-blue-600 font-bold" x-text="lastSync">Just now</span>
+                        <span class="text-xs text-green-600 font-bold">Active</span>
                     </div>
                 </div>
-            </div>
-
-            <!-- Storage Usage -->
-            <div class="bg-white rounded-xl border border-gray-200 p-6">
-                <h3 class="text-lg font-bold text-gray-900 mb-4">Storage Usage</h3>
-                <div class="mb-3">
-                    <div class="flex items-center justify-between text-sm mb-2">
-                        <span class="text-gray-600">Used Storage</span>
-                        <span class="font-bold text-gray-900" x-text="storage.used + ' / ' + storage.total">0 GB / 10 GB</span>
-                    </div>
-                    <div class="w-full bg-gray-200 rounded-full h-3">
-                        <div class="bg-gradient-to-r from-blue-500 to-primary h-3 rounded-full transition-all" 
-                             :style="`width: ${storage.percentage}%`"></div>
-                    </div>
-                </div>
-                <p class="text-xs text-gray-500">
-                    <span class="font-semibold" x-text="storage.remaining">10 GB</span> remaining
-                </p>
             </div>
         </div>
     </div>
 
-
     <!-- Module Access Cards -->
     <div class="mb-6">
-        <h3 class="text-xl font-bold text-gray-900 mb-4">Module Access</h3>
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-            <!-- Departments -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('departments')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-purple-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-purple-600">apartment</span>
+        <h3 class="text-xl font-bold text-gray-900 mb-4">Master Data Categories</h3>
+        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6"></div>
+            <!-- Organization & Access Control -->
+            <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
+                 @click="navigateTo('organization-dashboard')">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-purple-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-purple-600 text-3xl">apartment</span>
                     </div>
-                    <h4 class="font-bold text-gray-900">Departments</h4>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-lg">Organization & Access</h4>
+                        <p class="text-xs text-gray-600">Users, roles, departments</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-600 mb-2">Manage departments</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.departments + ' Active'">0 Active</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-purple-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" x-text="masterData.departments">0</div>
+                        <div class="text-xs text-gray-600">Departments</div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" x-text="masterData.roles">0</div>
+                        <div class="text-xs text-gray-600">Roles</div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600" x-text="masterData.users">0</div>
+                        <div class="text-xs text-gray-600">Users</div>
+                    </div>
+                    <div class="bg-purple-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-purple-600">1</div>
+                        <div class="text-xs text-gray-600">Approval Matrix</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-purple-600 font-semibold">View Dashboard</span>
+                    <span class="material-symbols-outlined text-purple-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </div>
             </div>
 
-            <!-- Roles -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('roles')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-indigo-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-indigo-600">badge</span>
+            <!-- Inventory & Material Management -->
+            <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
+                 @click="navigateTo('inventory-dashboard')">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-blue-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-blue-600 text-3xl">inventory</span>
                     </div>
-                    <h4 class="font-bold text-gray-900">Roles</h4>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-lg">Inventory & Materials</h4>
+                        <p class="text-xs text-gray-600">Materials, products, warehouses</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-600 mb-2">Manage user roles</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.roles + ' Defined'">0 Defined</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" x-text="masterData.materials">0</div>
+                        <div class="text-xs text-gray-600">Materials</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" x-text="masterData.products">0</div>
+                        <div class="text-xs text-gray-600">Products</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600" x-text="masterData.warehouses">0</div>
+                        <div class="text-xs text-gray-600">Warehouses</div>
+                    </div>
+                    <div class="bg-blue-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-blue-600">5</div>
+                        <div class="text-xs text-gray-600">UOM</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-blue-600 font-semibold">View Dashboard</span>
+                    <span class="material-symbols-outlined text-blue-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </div>
             </div>
 
-            <!-- Users -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('users')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-pink-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-pink-600">groups</span>
+            <!-- Vendor & Procurement -->
+            <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-amber-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
+                 @click="navigateTo('vendor-dashboard')">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-amber-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-amber-600 text-3xl">handshake</span>
                     </div>
-                    <h4 class="font-bold text-gray-900">Users</h4>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-lg">Vendor & Procurement</h4>
+                        <p class="text-xs text-gray-600">Vendors, contacts, AVL</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-600 mb-2">Team management</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.users + ' Members'">0 Members</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-amber-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-amber-600" x-text="masterData.vendors">0</div>
+                        <div class="text-xs text-gray-600">Vendors</div>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-amber-600" x-text="masterData.vendorContacts">0</div>
+                        <div class="text-xs text-gray-600">Contacts</div>
+                    </div>
+                    <div class="bg-amber-50 p-3 rounded-lg col-span-2">
+                        <div class="text-2xl font-bold text-amber-600" x-text="masterData.vendorMappings">0</div>
+                        <div class="text-xs text-gray-600">Vendor Material Mappings (AVL)</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-amber-600 font-semibold">View Dashboard</span>
+                    <span class="material-symbols-outlined text-amber-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </div>
             </div>
 
-            <!-- Materials -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('materials')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-blue-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-blue-600">inventory_2</span>
+            <!-- Tax & Financial -->
+            <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
+                 @click="navigateTo('tax-dashboard')">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-green-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-green-600 text-3xl">receipt_long</span>
                     </div>
-                    <h4 class="font-bold text-gray-900">Materials</h4>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-lg">Tax & Financial</h4>
+                        <p class="text-xs text-gray-600">HSN, GST, currency</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-600 mb-2">Material master</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.materials + ' Items'">0 Items</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-green-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" x-text="masterData.hsnCodes">0</div>
+                        <div class="text-xs text-gray-600">HSN Codes</div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-green-600" x-text="masterData.gstTaxes">0</div>
+                        <div class="text-xs text-gray-600">GST Taxes</div>
+                    </div>
+                    <div class="bg-green-50 p-3 rounded-lg col-span-2">
+                        <div class="text-2xl font-bold text-green-600">3</div>
+                        <div class="text-xs text-gray-600">Currency</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-green-600 font-semibold">View Dashboard</span>
+                    <span class="material-symbols-outlined text-green-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </div>
             </div>
 
-            <!-- Products -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('products')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-purple-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-purple-600">category</span>
+            <!-- Production & BOM -->
+            <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
+                 @click="navigateTo('production-dashboard')">
+                <div class="flex items-center gap-3 mb-4">
+                    <div class="bg-orange-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-orange-600 text-3xl">precision_manufacturing</span>
                     </div>
-                    <h4 class="font-bold text-gray-900">Products</h4>
+                    <div>
+                        <h4 class="font-bold text-gray-900 text-lg">Production & BOM</h4>
+                        <p class="text-xs text-gray-600">BOM, work orders</p>
+                    </div>
                 </div>
-                <p class="text-xs text-gray-600 mb-2">Product catalog</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.products + ' Items'">0 Items</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
+                <div class="grid grid-cols-2 gap-3 mb-4">
+                    <div class="bg-orange-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-orange-600" x-text="masterData.boms">0</div>
+                        <div class="text-xs text-gray-600">BOM Headers</div>
+                    </div>
+                    <div class="bg-orange-50 p-3 rounded-lg">
+                        <div class="text-2xl font-bold text-orange-600">0</div>
+                        <div class="text-xs text-gray-600">BOM Details</div>
+                    </div>
+                    <div class="bg-orange-50 p-3 rounded-lg col-span-2">
+                        <div class="text-2xl font-bold text-orange-600" x-text="stats.production">0</div>
+                        <div class="text-xs text-gray-600">Active Production Orders</div>
+                    </div>
+                </div>
+                <div class="flex items-center justify-between text-sm">
+                    <span class="text-orange-600 font-semibold">View Dashboard</span>
+                    <span class="material-symbols-outlined text-orange-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
                 </div>
             </div>
 
-            <!-- Vendors -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('vendors')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-amber-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-amber-600">handshake</span>
-                    </div>
-                    <h4 class="font-bold text-gray-900">Vendors</h4>
-                </div>
-                <p class="text-xs text-gray-600 mb-2">Vendor management</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.vendors + ' Active'">0 Active</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
-                </div>
-            </div>
 
-            <!-- Warehouses -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('warehouses')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-cyan-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-cyan-600">warehouse</span>
-                    </div>
-                    <h4 class="font-bold text-gray-900">Warehouses</h4>
-                </div>
-                <p class="text-xs text-gray-600 mb-2">Storage locations</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.warehouses + ' Locations'">0 Locations</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
-                </div>
-            </div>
+        </div>
+    </div>
 
-            <!-- BOMs -->
-            <div class="bg-white rounded-xl border border-gray-200 hover:border-primary hover:shadow-lg transition-all cursor-pointer group p-5" 
-                 @click="navigateTo('bom-header')">
-                <div class="flex items-center gap-3 mb-3">
-                    <div class="bg-green-100 p-2 rounded-lg group-hover:scale-110 transition-transform">
-                        <span class="material-symbols-outlined text-green-600">account_tree</span>
-                    </div>
-                    <h4 class="font-bold text-gray-900">BOMs</h4>
-                </div>
-                <p class="text-xs text-gray-600 mb-2">Bill of materials</p>
-                <div class="flex items-center justify-between">
-                    <span class="text-sm font-bold text-primary" x-text="masterData.boms + ' Defined'">0 Defined</span>
-                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary text-sm">arrow_forward</span>
-                </div>
+    <!-- Storage Usage -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
+        <h3 class="text-lg font-bold text-gray-900 mb-4">Storage Usage</h3>
+        <div class="space-y-3">
+            <div class="flex items-center justify-between text-sm">
+                <span class="text-gray-600">Used Storage</span>
+                <span class="font-bold text-gray-900" x-text="storage.used">0 GB</span>
+            </div>
+            <div class="w-full bg-gray-200 rounded-full h-3">
+                <div class="bg-gradient-to-r from-blue-500 to-primary h-3 rounded-full transition-all" 
+                     :style="`width: ${storage.percentage}%`"></div>
+            </div>
+            <div class="flex items-center justify-between text-xs text-gray-600">
+                <span x-text="storage.remaining + ' remaining'">0 GB remaining</span>
+                <span x-text="storage.total + ' total'">0 GB total</span>
             </div>
         </div>
     </div>
 </div>
-
 
 <script>
 function dashboardData() {
@@ -551,33 +621,11 @@ function dashboardData() {
         async loadAllData() {
             try {
                 const token = localStorage.getItem('access_token');
-                const orgSlug = localStorage.getItem('org_slug');
                 
-                if (!token || !orgSlug) {
-                    console.error('Missing authentication data');
-                    return;
-                }
-                
-                const headers = {
-                    'Authorization': `Bearer ${token}`,
-                    'Accept': 'application/json',
-                    'X-Org-Slug': orgSlug
-                };
-
-                // Load profile completion
-                const profileResponse = await fetch('/api/v1/profile-completion/status', { headers });
-                if (profileResponse.ok) {
-                    const data = await profileResponse.json();
-                    this.profilePercentage = data.data.percentage;
-                }
-
-                // Load master data status
-                const masterResponse = await fetch('/api/v1/profile-completion/master-data-status', { headers });
-                if (masterResponse.ok) {
-                    const data = await profileResponse.json();
-                    this.masterPercentage = data.data.percentage;
-                }
-
+                // TODO: Replace with actual API calls
+                // Mock profile completion data
+                this.profilePercentage = 65;
+                this.masterPercentage = 45;
                 this.overallPercentage = Math.round((this.profilePercentage + this.masterPercentage) / 2);
 
                 // Load subscription data (mock for now - replace with actual API)
@@ -655,15 +703,31 @@ function dashboardData() {
             const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
             
             const routes = {
+                // Category Dashboards
+                'organization-dashboard': `${baseUrl}/organization-dashboard`,
+                'inventory-dashboard': `${baseUrl}/inventory-dashboard`,
+                'vendor-dashboard': `${baseUrl}/vendor-dashboard`,
+                'tax-dashboard': `${baseUrl}/tax-dashboard`,
+                'production-dashboard': `${baseUrl}/production-dashboard`,
+                
+                // Setup & Profile
                 'profile-completion': `${baseUrl}/profile-completion`,
                 'master-setup': `${baseUrl}/master-setup`,
+                
+                // Organization Modules
                 'departments': `${baseUrl}/departments`,
                 'roles': `${baseUrl}/roles`,
                 'users': `${baseUrl}/users`,
+                
+                // Inventory Modules
                 'materials': `${baseUrl}/materials`,
                 'products': `${baseUrl}/products`,
                 'warehouses': `${baseUrl}/warehouses`,
+                
+                // Vendor Modules
                 'vendors': `${baseUrl}/vendors`,
+                
+                // BOM & Production
                 'bom-header': `${baseUrl}/bom-header`,
                 'production': `${baseUrl}/production`,
                 'inventory': `${baseUrl}/inventory`

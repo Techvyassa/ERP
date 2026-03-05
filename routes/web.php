@@ -141,6 +141,55 @@ Route::middleware(['web.jwt'])->group(function () {
         })->name('master-setup');
         
         // ====================================================================
+        // CATEGORY DASHBOARDS
+        // ====================================================================
+        
+        // Organization & Access Control Dashboard
+        Route::get('/organization-dashboard', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.dashboard', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('organization-dashboard');
+        
+        // Inventory & Material Management Dashboard
+        Route::get('/inventory-dashboard', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.inventory.dashboard', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('inventory-dashboard');
+        
+        // Vendor & Procurement Dashboard
+        Route::get('/vendor-dashboard', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.vendor.dashboard', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('vendor-dashboard');
+        
+        // Tax & Financial Dashboard
+        Route::get('/tax-dashboard', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.tax.dashboard', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('tax-dashboard');
+        
+        // Production & BOM Dashboard
+        Route::get('/production-dashboard', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.dashboard', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('production-dashboard');
+        
+        // ====================================================================
         // ORGANIZATION MASTERS
         // ====================================================================
         
