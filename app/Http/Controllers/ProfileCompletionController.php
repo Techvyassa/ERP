@@ -280,6 +280,7 @@ class ProfileCompletionController extends Controller
     private function getMasterDataStatus(): array
     {
         $masters = [
+            // Organization Masters
             [
                 'key' => 'departments',
                 'name' => 'Departments',
@@ -309,6 +310,164 @@ class ProfileCompletionController extends Controller
                 'color' => 'green',
                 'critical' => true,
                 'description' => 'System users mapped to departments and roles'
+            ],
+            [
+                'key' => 'zones',
+                'name' => 'Zones',
+                'table' => 'zone_master',
+                'group' => 'Organization',
+                'icon' => 'map-marked-alt',
+                'color' => 'teal',
+                'critical' => false,
+                'description' => 'Geographic zones for operations'
+            ],
+            [
+                'key' => 'approval_matrix',
+                'name' => 'Approval Matrix',
+                'table' => 'approval_matrix_master',
+                'group' => 'Organization',
+                'icon' => 'check-double',
+                'color' => 'indigo',
+                'critical' => false,
+                'description' => 'Configurable approval thresholds'
+            ],
+            
+            // Inventory Masters
+            [
+                'key' => 'uom',
+                'name' => 'Units of Measurement',
+                'table' => 'uom_master',
+                'group' => 'Inventory',
+                'icon' => 'balance-scale',
+                'color' => 'yellow',
+                'critical' => false,
+                'description' => 'Units with base UOM conversion factors'
+            ],
+            [
+                'key' => 'materials',
+                'name' => 'Materials',
+                'table' => 'material_master',
+                'group' => 'Inventory',
+                'icon' => 'boxes',
+                'color' => 'orange',
+                'critical' => true,
+                'description' => 'Raw materials, packaging, and consumables'
+            ],
+            [
+                'key' => 'products',
+                'name' => 'Products',
+                'table' => 'product_master',
+                'group' => 'Inventory',
+                'icon' => 'box-open',
+                'color' => 'red',
+                'critical' => true,
+                'description' => 'Finished goods master'
+            ],
+            [
+                'key' => 'warehouses',
+                'name' => 'Warehouses',
+                'table' => 'warehouse_master',
+                'group' => 'Inventory',
+                'icon' => 'warehouse',
+                'color' => 'gray',
+                'critical' => false,
+                'description' => 'Physical storage locations'
+            ],
+            [
+                'key' => 'bin_locations',
+                'name' => 'Bin Locations',
+                'table' => 'bin_locations',
+                'group' => 'Inventory',
+                'icon' => 'th',
+                'color' => 'slate',
+                'critical' => false,
+                'description' => 'Rack/Bin structural master for warehouses'
+            ],
+            
+            // Tax Masters
+            [
+                'key' => 'hsn_codes',
+                'name' => 'HSN Codes',
+                'table' => 'hsn_codes',
+                'group' => 'Tax',
+                'icon' => 'barcode',
+                'color' => 'lime',
+                'critical' => false,
+                'description' => 'Harmonized System of Nomenclature codes'
+            ],
+            [
+                'key' => 'gst_taxes',
+                'name' => 'GST Taxes',
+                'table' => 'gst_taxes',
+                'group' => 'Tax',
+                'icon' => 'percent',
+                'color' => 'emerald',
+                'critical' => false,
+                'description' => 'GST rate slab master'
+            ],
+            [
+                'key' => 'currency',
+                'name' => 'Currency',
+                'table' => 'currency_master',
+                'group' => 'Tax',
+                'icon' => 'dollar-sign',
+                'color' => 'amber',
+                'critical' => false,
+                'description' => 'Multi-currency support'
+            ],
+            
+            // Vendor Masters
+            [
+                'key' => 'vendors',
+                'name' => 'Vendors',
+                'table' => 'vendor_master',
+                'group' => 'Vendor',
+                'icon' => 'handshake',
+                'color' => 'pink',
+                'critical' => true,
+                'description' => 'Approved supplier registry'
+            ],
+            [
+                'key' => 'vendor_contacts',
+                'name' => 'Vendor Contacts',
+                'table' => 'vendor_contacts',
+                'group' => 'Vendor',
+                'icon' => 'address-book',
+                'color' => 'rose',
+                'critical' => false,
+                'description' => 'Multiple contacts per vendor'
+            ],
+            [
+                'key' => 'vendor_material_map',
+                'name' => 'Vendor Material Map',
+                'table' => 'vendor_material_map',
+                'group' => 'Vendor',
+                'icon' => 'link',
+                'color' => 'fuchsia',
+                'critical' => false,
+                'description' => 'Approved Vendor List (AVL)'
+            ],
+            
+            // BOM Masters
+            [
+                'key' => 'bom_header',
+                'name' => 'BOM Header',
+                'table' => 'bom_header',
+                'group' => 'BOM',
+                'icon' => 'list-alt',
+                'color' => 'cyan',
+                'critical' => true,
+                'description' => 'Bill of Materials header with version management'
+            ],
+            [
+                'key' => 'bom_detail',
+                'name' => 'BOM Detail',
+                'table' => 'bom_detail',
+                'group' => 'BOM',
+                'icon' => 'list-ul',
+                'color' => 'sky',
+                'critical' => true,
+                'description' => 'BOM component lines per header'
             ],
         ];
         

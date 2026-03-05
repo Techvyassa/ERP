@@ -123,21 +123,37 @@
                     const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
                     
                     const routeMap = {
+                        // Organization
                         'departments': `${baseUrl}/departments`,
                         'roles': `${baseUrl}/roles`,
                         'users': `${baseUrl}/users`,
-                        'zones': '#', // TODO: Add route
-                        'approval_matrix': '#', // TODO: Add route
-                        'uom': '#', // TODO: Add route
-                        'materials': '#', // TODO: Add route
-                        'products': '#', // TODO: Add route
-                        'warehouses': '#', // TODO: Add route
-                        'vendors': '#', // TODO: Add route
-                        'bom': '#' // TODO: Add route
+                        'zones': `${baseUrl}/zones`,
+                        'approval_matrix': `${baseUrl}/approval-matrix`,
+                        
+                        // Inventory
+                        'uom': `${baseUrl}/uom`,
+                        'materials': `${baseUrl}/materials`,
+                        'products': `${baseUrl}/products`,
+                        'warehouses': `${baseUrl}/warehouses`,
+                        'bin_locations': `${baseUrl}/bin-locations`,
+                        
+                        // Tax
+                        'hsn_codes': `${baseUrl}/hsn-codes`,
+                        'gst_taxes': `${baseUrl}/gst-taxes`,
+                        'currency': `${baseUrl}/currency`,
+                        
+                        // Vendor
+                        'vendors': `${baseUrl}/vendors`,
+                        'vendor_contacts': `${baseUrl}/vendor-contacts`,
+                        'vendor_material_map': `${baseUrl}/vendor-material-map`,
+                        
+                        // BOM
+                        'bom_header': `${baseUrl}/bom`,
+                        'bom_detail': `${baseUrl}/bom-detail`
                     };
                     
                     const route = routeMap[master.key];
-                    if (route && route !== '#') {
+                    if (route) {
                         window.location.href = route;
                     } else {
                         alert(`${master.name} management page coming soon!`);
