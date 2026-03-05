@@ -4,246 +4,290 @@
 @section('page-title', 'Dashboard')
 
 @section('content')
-    <div x-data="dashboardData()" x-init="init()">
-    <!-- Profile Completion Alert -->
-    <div x-show="profileCompletion && profileCompletion.percentage < 100" x-cloak
-         class="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6 rounded-r-lg">
+<div x-data="dashboardData()" x-init="init()">
+    <!-- Profile Completion Banner -->
+    <div x-show="showBanner && overallPercentage < 100" x-cloak
+         class="bg-gradient-to-r from-blue-50 to-indigo-50 border border-blue-200 rounded-xl p-6 mb-6">
         <div class="flex items-center justify-between">
-            <div class="flex items-center">
-                <i class="fas fa-exclamation-triangle text-yellow-400 text-xl mr-3"></i>
-                <div>
-                    <p class="text-sm font-medium text-yellow-800">Complete your organization profile</p>
-                    <p class="text-xs text-yellow-700 mt-1">
-                        Your profile is <span x-text="profileCompletion.percentage"></span>% complete. 
-                        Complete it to unlock all features.
-                    </p>
+            <div class="flex items-center gap-4 flex-1">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-blue-600 text-2xl">info</span>
+                </div>
+                <div class="flex-1">
+                    <h3 class="text-base font-bold text-gray-900 mb-1">Complete Your Profile Setup</h3>
+                    <p class="text-sm text-gray-600 mb-3">Finish setting up your organization profile and master data to unlock all features</p>
+                    <div class="flex items-center gap-4">
+                        <div class="flex-1 max-w-md">
+                            <div class="flex items-center justify-between text-xs text-gray-600 mb-1">
+                                <span>Overall Progress</span>
+                                <span x-text="overallPercentage + '%'" class="font-bold">0%</span>
+                            </div>
+                            <div class="w-full bg-gray-200 rounded-full h-2">
+                                <div class="bg-primary h-2 rounded-full transition-all duration-500" 
+                                     :style="`width: ${overallPercentage}%`"></div>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/profile-completion' : '/org/' . $organization->org_slug . '/profile-completion') }}" 
-               class="px-4 py-2 bg-yellow-400 text-yellow-900 rounded-lg hover:bg-yellow-500 transition-colors text-sm font-medium">
-                Complete Now
-            </a>
-        </div>
-    </div>
-
-    <!-- Master Data Setup Alert -->
-    <div x-show="masterDataStatus && masterDataStatus.percentage < 50" x-cloak
-         class="bg-blue-50 border-l-4 border-blue-400 p-4 mb-6 rounded-r-lg">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center">
-                <i class="fas fa-database text-blue-400 text-xl mr-3"></i>
-                <div>
-                    <p class="text-sm font-medium text-blue-800">Setup your master data</p>
-                    <p class="text-xs text-blue-700 mt-1">
-                        <span x-text="masterDataStatus.setup_count"></span> of <span x-text="masterDataStatus.total_count"></span> masters configured. 
-                        Setup essential data to start using the system.
-                    </p>
-                </div>
-            </div>
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/master-setup' : '/org/' . $organization->org_slug . '/master-setup') }}" 
-               class="px-4 py-2 bg-blue-400 text-blue-900 rounded-lg hover:bg-blue-500 transition-colors text-sm font-medium">
-                Setup Masters
-            </a>
-        </div>
-    </div>
-    
-    <!-- Welcome Banner -->
-    <div class="bg-gradient-to-r from-blue-600 to-purple-600 rounded-xl p-8 mb-8 text-white">
-        <h1 class="text-3xl font-bold mb-2">
-            <span x-text="user.first_name ? 'Welcome back, ' + user.first_name + '!' : 'Welcome to ' + '{{ $organization->org_name }}'"></span> 👋
-        </h1>
-        <p class="text-blue-100 mb-4">
-            You're accessing via 
-            @if($tenantType === 'subdomain')
-                <strong>subdomain</strong> ({{ $organization->org_slug }}.{{ config('app.domain') }})
-            @else
-                <strong>path-based URL</strong> (/org/{{ $organization->org_slug }})
-            @endif
-        </p>
-        <div class="flex space-x-4">
-            <button class="px-6 py-2 bg-white text-blue-600 font-medium rounded-lg hover:bg-gray-100 transition-colors">
-                <i class="fas fa-play mr-2"></i>Quick Tour
+            <button @click="dismissBanner" class="text-gray-400 hover:text-gray-600">
+                <span class="material-symbols-outlined">close</span>
             </button>
-            @if($tenantType === 'subdomain')
-                <a href="{{ url('/org/' . $organization->org_slug . '/dashboard') }}" class="px-6 py-2 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 transition-colors">
-                    <i class="fas fa-link mr-2"></i>Switch to Path-based URL
-                </a>
-            @else
-                <a href="{{ 'https://' . $organization->org_slug . '.' . config('app.domain') . '/dashboard' }}" class="px-6 py-2 bg-blue-700 text-white font-medium rounded-lg hover:bg-blue-800 transition-colors">
-                    <i class="fas fa-globe mr-2"></i>Switch to Subdomain
-                </a>
-            @endif
         </div>
     </div>
 
-        <!-- Stats Grid -->
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-users text-blue-600 text-xl"></i>
-                    </div>
-                    <span class="text-green-600 text-sm font-semibold">+12%</span>
-                </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-1">0</h3>
-                <p class="text-gray-600 text-sm">Total Users</p>
-            </div>
+    <!-- Welcome Section -->
+    <div class="mb-6">
+        <h2 class="text-2xl font-bold text-gray-900 mb-2">Welcome back, <span x-text="userName">User</span>!</h2>
+        <p class="text-gray-600">Here's what's happening with your manufacturing operations today.</p>
+    </div>
 
-            <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-building text-green-600 text-xl"></i>
-                    </div>
-                    <span class="text-green-600 text-sm font-semibold">+8%</span>
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-blue-600">inventory_2</span>
                 </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-1">0</h3>
-                <p class="text-gray-600 text-sm">Departments</p>
+                <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">Live</span>
             </div>
-
-            <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-user-shield text-yellow-600 text-xl"></i>
-                    </div>
-                    <span class="text-blue-600 text-sm font-semibold">Active</span>
-                </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-1">0</h3>
-                <p class="text-gray-600 text-sm">Roles</p>
-            </div>
-
-            <div class="bg-white rounded-xl shadow p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <div class="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
-                        <i class="fas fa-chart-line text-purple-600 text-xl"></i>
-                    </div>
-                    <span class="text-green-600 text-sm font-semibold">+15%</span>
-                </div>
-                <h3 class="text-2xl font-bold text-gray-900 mb-1">$0</h3>
-                <p class="text-gray-600 text-sm">Revenue</p>
-            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-1" x-text="stats.materials">0</h3>
+            <p class="text-sm text-gray-600">Active Materials</p>
         </div>
 
-        <!-- Quick Actions & Recent Activity -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-            <!-- Quick Actions -->
-            <div class="bg-white rounded-xl shadow p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h2>
-                <div class="grid grid-cols-2 gap-4">
-                    <button class="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-lg hover:border-blue-600 hover:bg-blue-50 transition-colors">
-                        <i class="fas fa-user-plus text-3xl text-blue-600 mb-2"></i>
-                        <span class="text-sm font-medium text-gray-900">Add User</span>
-                    </button>
-                    <button class="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-lg hover:border-green-600 hover:bg-green-50 transition-colors">
-                        <i class="fas fa-building text-3xl text-green-600 mb-2"></i>
-                        <span class="text-sm font-medium text-gray-900">Add Department</span>
-                    </button>
-                    <button class="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-lg hover:border-yellow-600 hover:bg-yellow-50 transition-colors">
-                        <i class="fas fa-user-shield text-3xl text-yellow-600 mb-2"></i>
-                        <span class="text-sm font-medium text-gray-900">Manage Roles</span>
-                    </button>
-                    <button class="flex flex-col items-center justify-center p-6 border-2 border-gray-200 rounded-lg hover:border-purple-600 hover:bg-purple-50 transition-colors">
-                        <i class="fas fa-file-alt text-3xl text-purple-600 mb-2"></i>
-                        <span class="text-sm font-medium text-gray-900">Generate Report</span>
-                    </button>
+        <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-green-600">factory</span>
                 </div>
+                <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">Active</span>
             </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-1" x-text="stats.production">0</h3>
+            <p class="text-sm text-gray-600">Production Orders</p>
+        </div>
 
-            <!-- Recent Activity -->
-            <div class="bg-white rounded-xl shadow p-6">
-                <h2 class="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
-                <div class="space-y-4">
-                    <div class="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
-                            <i class="fas fa-check text-green-600 text-sm"></i>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-sm font-medium text-gray-900">Organization setup completed</p>
-                            <p class="text-xs text-gray-600">Just now</p>
-                        </div>
-                    </div>
-                    <div class="text-center py-8 text-gray-500">
-                        <i class="fas fa-inbox text-4xl mb-2"></i>
-                        <p class="text-sm">No recent activity yet</p>
-                    </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-amber-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-amber-600">handshake</span>
                 </div>
+                <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded">Approved</span>
             </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-1" x-text="stats.vendors">0</h3>
+            <p class="text-sm text-gray-600">Active Vendors</p>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-purple-600">groups</span>
+                </div>
+                <span class="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">Team</span>
+            </div>
+            <h3 class="text-2xl font-bold text-gray-900 mb-1" x-text="stats.users">0</h3>
+            <p class="text-sm text-gray-600">Team Members</p>
         </div>
     </div>
 
-    <script>
-        function dashboardData() {
-            return {
-                user: {},
-                profileCompletion: null,
-                masterDataStatus: null,
+    <!-- Main Dashboard Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <!-- Organization Profile Card -->
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" 
+             @click="navigateTo('profile-completion')">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-gradient-to-br from-blue-500 to-primary p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-white text-2xl">business</span>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">arrow_forward</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Organization Profile</h3>
+                <p class="text-sm text-gray-600 mb-4">Manage company details, address, and settings</p>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="bg-primary h-2 rounded-full transition-all" 
+                             :style="`width: ${profilePercentage}%`"></div>
+                    </div>
+                    <span class="text-xs font-bold text-gray-600" x-text="profilePercentage + '%'">0%</span>
+                </div>
+            </div>
+        </div>
 
-                async init() {
-                    this.user = JSON.parse(localStorage.getItem('user') || '{}');
-                    console.log('Dashboard initialized with user:', this.user);
-                    await this.loadProfileCompletion();
-                    await this.loadMasterDataStatus();
-                },
+        <!-- Master Data Card -->
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" 
+             @click="navigateTo('master-setup')">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-gradient-to-br from-emerald-500 to-teal-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-white text-2xl">database</span>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">arrow_forward</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Master Data Setup</h3>
+                <p class="text-sm text-gray-600 mb-4">Configure materials, vendors, BOMs, and more</p>
+                <div class="flex items-center gap-2">
+                    <div class="flex-1 bg-gray-200 rounded-full h-2">
+                        <div class="bg-emerald-500 h-2 rounded-full transition-all" 
+                             :style="`width: ${masterPercentage}%`"></div>
+                    </div>
+                    <span class="text-xs font-bold text-gray-600" x-text="masterPercentage + '%'">0%</span>
+                </div>
+            </div>
+        </div>
 
-                async loadProfileCompletion() {
-                    try {
-                        const token = localStorage.getItem('access_token');
-                        if (!token) {
-                            console.error('No access token found');
-                            return;
-                        }
-                        
-                        console.log('Loading profile completion...');
-                        const response = await fetch('/api/v1/profile-completion/status', {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        console.log('Profile completion response status:', response.status);
-                        const data = await response.json();
-                        console.log('Profile completion data:', data);
-                        
-                        if (response.ok && data.success) {
-                            this.profileCompletion = data.data;
-                        } else {
-                            console.error('Profile completion error:', data.message);
-                        }
-                    } catch (error) {
-                        console.error('Failed to load profile completion:', error);
+        <!-- Departments Card -->
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" 
+             @click="navigateTo('departments')">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-gradient-to-br from-purple-500 to-indigo-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-white text-2xl">apartment</span>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">arrow_forward</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Departments</h3>
+                <p class="text-sm text-gray-600 mb-4">Manage organizational departments and cost centers</p>
+                <div class="text-xs text-gray-500">Click to manage</div>
+            </div>
+        </div>
+
+        <!-- Users & Roles Card -->
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" 
+             @click="navigateTo('users')">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-gradient-to-br from-pink-500 to-rose-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-white text-2xl">groups</span>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">arrow_forward</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Users & Roles</h3>
+                <p class="text-sm text-gray-600 mb-4">Manage team members and access permissions</p>
+                <div class="text-xs text-gray-500">Click to manage</div>
+            </div>
+        </div>
+
+        <!-- Production Card -->
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" 
+             @click="navigateTo('production')">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-gradient-to-br from-orange-500 to-red-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-white text-2xl">precision_manufacturing</span>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">arrow_forward</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Production</h3>
+                <p class="text-sm text-gray-600 mb-4">Work orders, shop floor, and production tracking</p>
+                <div class="text-xs text-gray-500">Click to manage</div>
+            </div>
+        </div>
+
+        <!-- Inventory Card -->
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" 
+             @click="navigateTo('inventory')">
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div class="bg-gradient-to-br from-cyan-500 to-blue-600 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                        <span class="material-symbols-outlined text-white text-2xl">inventory</span>
+                    </div>
+                    <span class="material-symbols-outlined text-gray-400 group-hover:text-primary transition-colors">arrow_forward</span>
+                </div>
+                <h3 class="text-lg font-bold text-gray-900 mb-2">Inventory</h3>
+                <p class="text-sm text-gray-600 mb-4">Stock management, warehouses, and transfers</p>
+                <div class="text-xs text-gray-500">Click to manage</div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+function dashboardData() {
+    return {
+        userName: 'User',
+        profilePercentage: 0,
+        masterPercentage: 0,
+        overallPercentage: 0,
+        showBanner: true,
+        stats: {
+            materials: 0,
+            production: 0,
+            vendors: 0,
+            users: 0
+        },
+
+        async init() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            this.userName = user.first_name || 'User';
+            
+            const dismissed = localStorage.getItem('completion_banner_dismissed');
+            this.showBanner = !dismissed;
+
+            await this.loadProgress();
+        },
+
+        async loadProgress() {
+            try {
+                const token = localStorage.getItem('access_token');
+                
+                // Load profile completion
+                const profileResponse = await fetch('/api/v1/profile-completion/status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
                     }
-                },
-
-                async loadMasterDataStatus() {
-                    try {
-                        const token = localStorage.getItem('access_token');
-                        if (!token) {
-                            console.error('No access token found');
-                            return;
-                        }
-                        
-                        console.log('Loading master data status...');
-                        const response = await fetch('/api/v1/profile-completion/master-data-status', {
-                            headers: {
-                                'Authorization': `Bearer ${token}`,
-                                'Accept': 'application/json'
-                            }
-                        });
-                        
-                        console.log('Master data status response status:', response.status);
-                        const data = await response.json();
-                        console.log('Master data status data:', data);
-                        
-                        if (response.ok && data.success) {
-                            this.masterDataStatus = data.data;
-                        } else {
-                            console.error('Master data status error:', data.message);
-                        }
-                    } catch (error) {
-                        console.error('Failed to load master data status:', error);
-                    }
+                });
+                
+                if (profileResponse.ok) {
+                    const data = await profileResponse.json();
+                    this.profilePercentage = data.data.percentage;
                 }
+
+                // Load master data status
+                const masterResponse = await fetch('/api/v1/profile-completion/master-data-status', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                if (masterResponse.ok) {
+                    const data = await masterResponse.json();
+                    this.masterPercentage = data.data.percentage;
+                }
+
+                this.overallPercentage = Math.round((this.profilePercentage + this.masterPercentage) / 2);
+            } catch (error) {
+                console.error('Failed to load progress:', error);
+            }
+        },
+
+        dismissBanner() {
+            this.showBanner = false;
+            localStorage.setItem('completion_banner_dismissed', 'true');
+        },
+
+        navigateTo(page) {
+            const orgSlug = '{{ $organization->org_slug }}';
+            const tenantType = '{{ $tenantType }}';
+            const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
+            
+            const routes = {
+                'profile-completion': `${baseUrl}/profile-completion`,
+                'master-setup': `${baseUrl}/master-setup`,
+                'departments': `${baseUrl}/departments`,
+                'users': `${baseUrl}/users`,
+                'production': `${baseUrl}/production`,
+                'inventory': `${baseUrl}/inventory`
+            };
+            
+            if (routes[page]) {
+                window.location.href = routes[page];
+            } else {
+                alert(`${page} page coming soon!`);
             }
         }
-    </script>
+    }
+}
+</script>
 @endsection
