@@ -11,28 +11,22 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::connection('tenant')->create('department_master', function (Blueprint $table) {
+        Schema::create('department_master', function (Blueprint $table) {
             $table->id('dept_id');
-            $table->string('dept_code', 50)->unique();
-            $table->string('dept_name', 100);
-            $table->unsignedBigInteger('parent_dept_id')->nullable();
-            
-            // Status
-            $table->boolean('is_active')->default(true);
-            
-            // Audit
+            $table->string('dept_code', 20)->unique()->comment('e.g. PROD, PURCH, QC');
+            $table->string('dept_name', 100)->comment('Full display name');
+            $table->unsignedBigInteger('parent_dept_id')->nullable()->comment('Self-reference for hierarchy');
+            $table->string('cost_center_code', 20)->nullable()->comment('Link to finance cost centre');
+            $table->boolean('is_active')->default(true)->comment('Active flag');
+            $table->timestampTz('created_at')->useCurrent();
             $table->unsignedBigInteger('created_by')->nullable();
-            $table->timestamps();
             
-            // Foreign key for self-referencing hierarchy
-            $table->foreign('parent_dept_id')
-                  ->references('dept_id')
-                  ->on('department_master')
-                  ->onDelete('restrict');
+            // Foreign keys
+            $table->foreign('parent_dept_id')->references('dept_id')->on('department_master')->onDelete('set null');
             
             // Indexes
-            $table->index('parent_dept_id');
             $table->index('dept_code');
+            $table->index('is_active');
         });
     }
 
@@ -41,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::connection('tenant')->dropIfExists('department_master');
+        Schema::dropIfExists('department_master');
     }
 };

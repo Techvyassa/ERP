@@ -11,29 +11,20 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::connection('tenant')->create('role_permissions', function (Blueprint $table) {
-            $table->id('permission_id');
+        Schema::create('role_permissions', function (Blueprint $table) {
+            $table->id('perm_id');
             $table->unsignedBigInteger('role_id');
-            $table->string('module_code', 50);
+            $table->string('module_code', 40)->comment('PR, PO, GRN, QC, INVOICE, PAYMENT...');
+            $table->boolean('can_view')->default(false)->comment('View/read access');
+            $table->boolean('can_create')->default(false)->comment('Create new records');
+            $table->boolean('can_edit')->default(false)->comment('Edit existing records');
+            $table->boolean('can_approve')->default(false)->comment('Approval workflow actions');
+            $table->boolean('can_delete')->default(false)->comment('Delete / deactivate records');
             
-            // Permission Flags
-            $table->boolean('can_view')->default(false);
-            $table->boolean('can_create')->default(false);
-            $table->boolean('can_edit')->default(false);
-            $table->boolean('can_approve')->default(false);
-            $table->boolean('can_delete')->default(false);
+            // Foreign keys
+            $table->foreign('role_id')->references('role_id')->on('role_master')->onDelete('cascade');
             
-            // Audit
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->timestamps();
-            
-            // Foreign key
-            $table->foreign('role_id')
-                  ->references('role_id')
-                  ->on('role_master')
-                  ->onDelete('cascade');
-            
-            // Unique constraint: one permission record per role-module combination
+            // Unique constraint
             $table->unique(['role_id', 'module_code'], 'unique_role_module');
             
             // Indexes
@@ -47,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::connection('tenant')->dropIfExists('role_permissions');
+        Schema::dropIfExists('role_permissions');
     }
 };

@@ -1,0 +1,49 @@
+<?php
+
+use Illuminate\Database\Migrations\Migration;
+use Illuminate\Database\Schema\Blueprint;
+use Illuminate\Support\Facades\Schema;
+
+return new class extends Migration
+{
+    /**
+     * Run the migrations.
+     */
+    public function up(): void
+    {
+        Schema::create('gst_taxes', function (Blueprint $table) {
+            $table->id('gst_id');
+            $table->string('tax_code', 20)->unique()->comment('GST5, GST12, GST18, GST28');
+            $table->string('tax_name', 60)->comment('GST @ 12%');
+            $table->decimal('cgst_rate', 5, 2)->default(0)->comment('Central GST rate (e.g. 6.00)');
+            $table->decimal('sgst_rate', 5, 2)->default(0)->comment('State GST rate (e.g. 6.00)');
+            $table->decimal('igst_rate', 5, 2)->default(0)->comment('Interstate GST rate (e.g. 12.00)');
+            $table->decimal('ugst_rate', 5, 2)->default(0)->comment('Union Territory GST (0 for most)');
+            $table->date('effective_from')->comment('Rate effective from date');
+            $table->date('effective_to')->nullable()->comment('NULL = currently active rate');
+            $table->boolean('is_active')->default(true);
+            
+            // Indexes
+            $table->index('tax_code');
+            $table->index(['effective_from', 'effective_to']);
+            $table->index('is_active');
+        });
+        
+        // Add foreign key to hsn_codes
+        Schema::table('hsn_codes', function (Blueprint $table) {
+            $table->foreign('default_gst_id')->references('gst_id')->on('gst_taxes')->onDelete('set null');
+        });
+    }
+
+    /**
+     * Reverse the migrations.
+     */
+    public function down(): void
+    {
+        Schema::table('hsn_codes', function (Blueprint $table) {
+            $table->dropForeign(['default_gst_id']);
+        });
+        
+        Schema::dropIfExists('gst_taxes');
+    }
+};

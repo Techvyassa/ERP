@@ -11,22 +11,17 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::connection('tenant')->create('role_master', function (Blueprint $table) {
+        Schema::create('role_master', function (Blueprint $table) {
             $table->id('role_id');
-            $table->string('role_code', 50)->unique();
-            $table->string('role_name', 100);
-            $table->text('description')->nullable();
-            
-            // Status
-            $table->boolean('is_active')->default(true);
-            $table->boolean('is_system_role')->default(false)->comment('System roles cannot be deleted');
-            
-            // Audit
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->timestamps();
+            $table->string('role_code', 30)->unique()->comment('e.g. ADMIN, BUYER, QC_INSP');
+            $table->string('role_name', 100)->comment('Human-readable label');
+            $table->text('description')->nullable()->comment('Role description');
+            $table->boolean('is_active')->default(true)->comment('Soft delete flag');
+            $table->timestampTz('created_at')->useCurrent();
             
             // Indexes
             $table->index('role_code');
+            $table->index('is_active');
         });
     }
 
@@ -35,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::connection('tenant')->dropIfExists('role_master');
+        Schema::dropIfExists('role_master');
     }
 };
