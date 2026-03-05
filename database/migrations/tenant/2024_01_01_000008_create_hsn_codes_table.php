@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('hsn_codes', function (Blueprint $table) {
+        Schema::connection('tenant')->create('hsn_codes', function (Blueprint $table) {
             $table->id('hsn_id');
             $table->string('hsn_code', 10)->unique()->comment('0904, 0906, 2103');
             $table->string('description', 300)->comment('Pepper; Cinnamon; Sauces');
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('hsn_codes');
+        Schema::connection('tenant')->dropIfExists('hsn_codes');
     }
 };

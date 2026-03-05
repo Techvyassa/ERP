@@ -91,7 +91,7 @@ class HSNCodeController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'hsn_code' => 'required|string|max:20|unique:hsn_codes,hsn_code',
+            'hsn_code' => 'required|string|max:20|unique:tenant.hsn_codes,hsn_code',
             'hsn_description' => 'required|string|max:255',
             'gst_rate' => 'nullable|numeric|min:0|max:100',
         ]);
@@ -142,7 +142,7 @@ class HSNCodeController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'hsn_code' => 'sometimes|string|max:20|unique:hsn_codes,hsn_code,' . $id,
+            'hsn_code' => "sometimes|string|max:20|unique:tenant.hsn_codes,hsn_code,{$id}",
             'hsn_description' => 'sometimes|string|max:255',
             'gst_rate' => 'nullable|numeric|min:0|max:100',
             'is_active' => 'sometimes|boolean',

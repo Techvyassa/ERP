@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('uom_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('uom_master', function (Blueprint $table) {
             $table->id('uom_id');
             $table->string('uom_code', 10)->unique()->comment('KG, GM, LTR, PCS, BAG');
             $table->string('uom_name', 50)->comment('Kilogram, Gram, Litre...');
@@ -35,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('uom_master');
+        Schema::connection('tenant')->dropIfExists('uom_master');
     }
 };

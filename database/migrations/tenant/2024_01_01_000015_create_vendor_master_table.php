@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vendor_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('vendor_master', function (Blueprint $table) {
             $table->id('vendor_id');
             $table->string('vendor_code', 20)->unique()->comment('VND-001');
             $table->string('vendor_name', 200)->comment('Legal company name');
@@ -51,6 +51,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vendor_master');
+        Schema::connection('tenant')->dropIfExists('vendor_master');
     }
 };

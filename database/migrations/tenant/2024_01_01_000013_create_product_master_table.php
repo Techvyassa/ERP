@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('product_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('product_master', function (Blueprint $table) {
             $table->id('product_id');
             $table->string('product_code', 30)->unique()->comment('FG-0001');
             $table->string('product_name', 200)->comment('Masala Powder 100g');
@@ -41,6 +41,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('product_master');
+        Schema::connection('tenant')->dropIfExists('product_master');
     }
 };

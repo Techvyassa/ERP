@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('department_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('department_master', function (Blueprint $table) {
             $table->id('dept_id');
             $table->string('dept_code', 20)->unique()->comment('e.g. PROD, PURCH, QC');
             $table->string('dept_name', 100)->comment('Full display name');
@@ -35,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('department_master');
+        Schema::connection('tenant')->dropIfExists('department_master');
     }
 };

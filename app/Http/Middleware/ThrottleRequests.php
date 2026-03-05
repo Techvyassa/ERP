@@ -100,7 +100,7 @@ class ThrottleRequests
                     ]
                 ],
                 'message' => 'Rate limit exceeded',
-                'request_id' => request()->id() ?? uniqid('req_'),
+                'request_id' => \Illuminate\Support\Str::uuid()->toString(),
                 'timestamp' => now()->toIso8601String()
             ], 429)->header('Retry-After', $resetTime);
         }

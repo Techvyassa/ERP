@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('approval_matrix_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('approval_matrix_master', function (Blueprint $table) {
             $table->id('matrix_id');
             $table->string('document_type', 20)->comment('PR / PO / PAYMENT / DN');
             $table->smallInteger('level')->comment('1 = first approver, 2 = second...');
@@ -36,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('approval_matrix_master');
+        Schema::connection('tenant')->dropIfExists('approval_matrix_master');
     }
 };

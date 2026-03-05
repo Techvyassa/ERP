@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bom_header', function (Blueprint $table) {
+        Schema::connection('tenant')->create('bom_header', function (Blueprint $table) {
             $table->id('bom_id');
             $table->string('bom_code', 30)->unique()->comment('BOM-FG001-V2 – unique identifier');
             $table->unsignedBigInteger('product_id');
@@ -48,6 +48,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bom_header');
+        Schema::connection('tenant')->dropIfExists('bom_header');
     }
 };

@@ -153,10 +153,14 @@ function taxDashboard() {
         async loadData() {
             try {
                 const token = this.getToken();
+                const orgSlug = this.getOrgSlug();
                 
                 // Load HSN codes count
                 const hsnResponse = await fetch('/api/v1/hsn-codes?is_active=1', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'X-Org-Slug': orgSlug
+                    }
                 });
                 const hsnData = await hsnResponse.json();
                 if (hsnData.success) {
@@ -165,7 +169,10 @@ function taxDashboard() {
                 
                 // Load GST taxes count
                 const gstResponse = await fetch('/api/v1/gst-taxes?is_active=1', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'X-Org-Slug': orgSlug
+                    }
                 });
                 const gstData = await gstResponse.json();
                 if (gstData.success) {
@@ -174,7 +181,10 @@ function taxDashboard() {
                 
                 // Load currencies count and base currency
                 const currencyResponse = await fetch('/api/v1/currencies?is_active=1', {
-                    headers: { 'Authorization': `Bearer ${token}` }
+                    headers: { 
+                        'Authorization': `Bearer ${token}`,
+                        'X-Org-Slug': orgSlug
+                    }
                 });
                 const currencyData = await currencyResponse.json();
                 if (currencyData.success) {
@@ -203,7 +213,11 @@ function taxDashboard() {
         },
         
         getToken() {
-            return document.cookie.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1] || '';
+            return localStorage.getItem('access_token') || '';
+        },
+        
+        getOrgSlug() {
+            return localStorage.getItem('org_slug') || '';
         }
     }
 }

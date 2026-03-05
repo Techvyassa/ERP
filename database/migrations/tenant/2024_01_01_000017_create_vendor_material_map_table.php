@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vendor_material_map', function (Blueprint $table) {
+        Schema::connection('tenant')->create('vendor_material_map', function (Blueprint $table) {
             $table->id('map_id');
             $table->unsignedBigInteger('vendor_id');
             $table->unsignedBigInteger('material_id');
@@ -41,6 +41,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vendor_material_map');
+        Schema::connection('tenant')->dropIfExists('vendor_material_map');
     }
 };

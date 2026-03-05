@@ -60,9 +60,9 @@
                     <!-- Exchange Rate -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Exchange Rate <span class="text-red-500">*</span>
+                            Exchange Rate <span class="text-red-500"></span>
                         </label>
-                        <input type="number" x-model="form.exchange_rate" required min="0" step="0.000001"
+                        <input type="number" x-model="form.exchange_rate" min="0" step="0.000001"
                                placeholder="1.00"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Rate vs base currency (INR). For INR = 1, USD might be 83.50</p>

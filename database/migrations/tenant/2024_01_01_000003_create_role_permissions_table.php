@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('role_permissions', function (Blueprint $table) {
+        Schema::connection('tenant')->create('role_permissions', function (Blueprint $table) {
             $table->id('perm_id');
             $table->unsignedBigInteger('role_id');
             $table->string('module_code', 40)->comment('PR, PO, GRN, QC, INVOICE, PAYMENT...');
@@ -38,6 +38,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('role_permissions');
+        Schema::connection('tenant')->dropIfExists('role_permissions');
     }
 };

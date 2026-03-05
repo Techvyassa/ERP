@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('gst_taxes', function (Blueprint $table) {
+        Schema::connection('tenant')->create('gst_taxes', function (Blueprint $table) {
             $table->id('gst_id');
             $table->string('tax_code', 20)->unique()->comment('GST5, GST12, GST18, GST28');
             $table->string('tax_name', 60)->comment('GST @ 12%');
@@ -30,7 +30,7 @@ return new class extends Migration
         });
         
         // Add foreign key to hsn_codes
-        Schema::table('hsn_codes', function (Blueprint $table) {
+        Schema::connection('tenant')->table('hsn_codes', function (Blueprint $table) {
             $table->foreign('default_gst_id')->references('gst_id')->on('gst_taxes')->onDelete('set null');
         });
     }
@@ -40,10 +40,10 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::table('hsn_codes', function (Blueprint $table) {
+        Schema::connection('tenant')->table('hsn_codes', function (Blueprint $table) {
             $table->dropForeign(['default_gst_id']);
         });
         
-        Schema::dropIfExists('gst_taxes');
+        Schema::connection('tenant')->dropIfExists('gst_taxes');
     }
 };

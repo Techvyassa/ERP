@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('material_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('material_master', function (Blueprint $table) {
             $table->id('material_id');
             $table->string('material_code', 30)->unique()->comment('RM-0001 – system code');
             $table->string('material_name', 200)->comment('Cinnamon Bark, Dhaniya...');
@@ -56,6 +56,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('material_master');
+        Schema::connection('tenant')->dropIfExists('material_master');
     }
 };

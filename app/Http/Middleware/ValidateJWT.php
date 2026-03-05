@@ -71,7 +71,7 @@ class ValidateJWT
                 'details' => []
             ],
             'message' => $message,
-            'request_id' => request()->id() ?? uniqid('req_'),
+            'request_id' => \Illuminate\Support\Str::uuid()->toString(),
             'timestamp' => now()->toIso8601String()
         ], $status);
     }

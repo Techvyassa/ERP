@@ -126,7 +126,10 @@ function hsnData() {
                 if (this.filters.is_active !== '') params.append('is_active', this.filters.is_active);
                 
                 const response = await fetch(`/api/v1/hsn-codes?${params}`, {
-                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                    headers: { 
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
+                    }
                 });
                 const data = await response.json();
                 if (data.success) this.items = data.data.hsn_codes;
@@ -167,7 +170,8 @@ function hsnData() {
                     method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.getToken()}`
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
                     },
                     body: JSON.stringify(this.formData)
                 });
@@ -191,7 +195,10 @@ function hsnData() {
             try {
                 const response = await fetch(`/api/v1/hsn-codes/${item.id}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                    headers: { 
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
+                    }
                 });
                 
                 const data = await response.json();
@@ -207,7 +214,11 @@ function hsnData() {
         },
         
         getToken() {
-            return document.cookie.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1] || '';
+            return localStorage.getItem('access_token') || '';
+        },
+        
+        getOrgSlug() {
+            return localStorage.getItem('org_slug') || '';
         }
     }
 }

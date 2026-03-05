@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('bin_locations', function (Blueprint $table) {
+        Schema::connection('tenant')->create('bin_locations', function (Blueprint $table) {
             $table->id('bin_id');
             $table->unsignedBigInteger('warehouse_id');
             $table->string('bin_code', 30)->unique()->comment('R01-S02-B03 (Rack-Shelf-Bin)');
@@ -36,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('bin_locations');
+        Schema::connection('tenant')->dropIfExists('bin_locations');
     }
 };

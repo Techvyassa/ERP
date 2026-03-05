@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('role_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('role_master', function (Blueprint $table) {
             $table->id('role_id');
             $table->string('role_code', 30)->unique()->comment('e.g. ADMIN, BUYER, QC_INSP');
             $table->string('role_name', 100)->comment('Human-readable label');
@@ -30,6 +30,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('role_master');
+        Schema::connection('tenant')->dropIfExists('role_master');
     }
 };

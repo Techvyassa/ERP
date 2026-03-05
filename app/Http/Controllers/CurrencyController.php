@@ -91,10 +91,10 @@ class CurrencyController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'currency_code' => 'required|string|max:10|unique:currency_master,currency_code',
+            'currency_code' => 'required|string|max:10|unique:tenant.currency_master,currency_code',
             'currency_name' => 'required|string|max:100',
             'currency_symbol' => 'required|string|max:10',
-            'exchange_rate' => 'required|numeric|min:0',
+            'exchange_rate' => 'nullable|numeric|min:0',
             'is_base_currency' => 'sometimes|boolean',
         ]);
 
@@ -113,7 +113,7 @@ class CurrencyController extends Controller
                 'currency_code' => $request->input('currency_code'),
                 'currency_name' => $request->input('currency_name'),
                 'currency_symbol' => $request->input('currency_symbol'),
-                'exchange_rate' => $request->input('exchange_rate'),
+                'exchange_rate' => $request->input('exchange_rate', 1.0),
                 'is_base_currency' => $request->input('is_base_currency', false),
                 'is_active' => true,
                 'created_by' => $request->attributes->get('user_id'),
@@ -146,10 +146,10 @@ class CurrencyController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'currency_code' => 'sometimes|string|max:10|unique:currency_master,currency_code,' . $id,
+            'currency_code' => "sometimes|string|max:10|unique:tenant.currency_master,currency_code,{$id}",
             'currency_name' => 'sometimes|string|max:100',
             'currency_symbol' => 'sometimes|string|max:10',
-            'exchange_rate' => 'sometimes|numeric|min:0',
+            'exchange_rate' => 'nullable|numeric|min:0',
             'is_base_currency' => 'sometimes|boolean',
             'is_active' => 'sometimes|boolean',
         ]);

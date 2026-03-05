@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('warehouse_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('warehouse_master', function (Blueprint $table) {
             $table->id('warehouse_id');
             $table->string('warehouse_code', 20)->unique()->comment('WH-001, WH-002');
             $table->string('warehouse_name', 100)->comment('Masala RM Store');
@@ -35,6 +35,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('warehouse_master');
+        Schema::connection('tenant')->dropIfExists('warehouse_master');
     }
 };

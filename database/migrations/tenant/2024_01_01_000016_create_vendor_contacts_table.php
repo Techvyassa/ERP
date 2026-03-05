@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('vendor_contacts', function (Blueprint $table) {
+        Schema::connection('tenant')->create('vendor_contacts', function (Blueprint $table) {
             $table->id('contact_id');
             $table->unsignedBigInteger('vendor_id');
             $table->string('contact_name', 100)->comment('Full name of contact person');
@@ -36,6 +36,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('vendor_contacts');
+        Schema::connection('tenant')->dropIfExists('vendor_contacts');
     }
 };

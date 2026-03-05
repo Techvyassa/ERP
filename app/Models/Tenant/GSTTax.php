@@ -9,6 +9,7 @@ class GSTTax extends Model
 {
     use SoftDeletes;
 
+    protected $connection = 'tenant';
     protected $table = 'gst_taxes';
 
     protected $fillable = [

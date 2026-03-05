@@ -143,7 +143,10 @@ function currencyData() {
                 if (this.filters.is_active !== '') params.append('is_active', this.filters.is_active);
                 
                 const response = await fetch(`/api/v1/currencies?${params}`, {
-                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                    headers: { 
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
+                    }
                 });
                 const data = await response.json();
                 if (data.success) this.items = data.data.currencies;
@@ -184,7 +187,8 @@ function currencyData() {
                     method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.getToken()}`
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
                     },
                     body: JSON.stringify(this.formData)
                 });
@@ -208,7 +212,10 @@ function currencyData() {
             try {
                 const response = await fetch(`/api/v1/currencies/${item.id}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                    headers: { 
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
+                    }
                 });
                 
                 const data = await response.json();
@@ -224,7 +231,11 @@ function currencyData() {
         },
         
         getToken() {
-            return document.cookie.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1] || '';
+            return localStorage.getItem('access_token') || '';
+        },
+        
+        getOrgSlug() {
+            return localStorage.getItem('org_slug') || '';
         }
     }
 }

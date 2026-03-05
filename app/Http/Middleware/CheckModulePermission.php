@@ -37,18 +37,15 @@ class CheckModulePermission
      * Handle an incoming request.
      *
      * @param  \Closure(\Illuminate\Http\Request): (\Symfony\Component\HttpFoundation\Response)  $next
-     * @param  string|null  $action  The action to check (view, create, edit, approve, delete)
+     * @param  string  $moduleCode  The module code to check permissions for
      */
-    public function handle(Request $request, Closure $next, ?string $action = 'view'): Response
+    public function handle(Request $request, Closure $next, string $moduleCode): Response
     {
         // Get user_id from request (set by ValidateJWT middleware)
         $userId = $request->input('auth_user_id');
         
         // Get tenant context (set by ResolveTenant middleware)
         $tenantDbName = $request->input('tenant_db_name');
-        
-        // Get module_code from route parameter or header
-        $moduleCode = $request->route('module_code') ?? $request->header('X-Module-Code');
         
         if (!$userId || !$tenantDbName) {
             return $this->errorResponse(
@@ -58,13 +55,15 @@ class CheckModulePermission
             );
         }
         
-        if (!$moduleCode) {
-            return $this->errorResponse(
-                'Module code required',
-                'MODULE_CODE_REQUIRED',
-                400
-            );
-        }
+        // Determine action from HTTP method
+        $method = $request->method();
+        $action = match($method) {
+            'GET' => 'view',
+            'POST' => 'create',
+            'PUT', 'PATCH' => 'edit',
+            'DELETE' => 'delete',
+            default => 'view'
+        };
         
         try {
             // Switch to Tenant DB connection
@@ -234,7 +233,7 @@ class CheckModulePermission
                 'details' => []
             ],
             'message' => $message,
-            'request_id' => request()->id() ?? uniqid('req_'),
+            'request_id' => \Illuminate\Support\Str::uuid()->toString(),
             'timestamp' => now()->toIso8601String()
         ], $status);
     }

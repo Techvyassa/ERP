@@ -160,7 +160,10 @@ function gstData() {
                 if (this.filters.is_active !== '') params.append('is_active', this.filters.is_active);
                 
                 const response = await fetch(`/api/v1/gst-taxes?${params}`, {
-                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                    headers: { 
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
+                    }
                 });
                 const data = await response.json();
                 if (data.success) this.items = data.data.gst_taxes;
@@ -201,7 +204,8 @@ function gstData() {
                     method,
                     headers: {
                         'Content-Type': 'application/json',
-                        'Authorization': `Bearer ${this.getToken()}`
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
                     },
                     body: JSON.stringify(this.formData)
                 });
@@ -225,7 +229,10 @@ function gstData() {
             try {
                 const response = await fetch(`/api/v1/gst-taxes/${item.id}`, {
                     method: 'DELETE',
-                    headers: { 'Authorization': `Bearer ${this.getToken()}` }
+                    headers: { 
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
+                    }
                 });
                 
                 const data = await response.json();
@@ -241,7 +248,11 @@ function gstData() {
         },
         
         getToken() {
-            return document.cookie.split('; ').find(row => row.startsWith('auth_token='))?.split('=')[1] || '';
+            return localStorage.getItem('access_token') || '';
+        },
+        
+        getOrgSlug() {
+            return localStorage.getItem('org_slug') || '';
         }
     }
 }

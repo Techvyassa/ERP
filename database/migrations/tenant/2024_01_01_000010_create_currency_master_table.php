@@ -11,7 +11,7 @@ return new class extends Migration
      */
     public function up(): void
     {
-        Schema::create('currency_master', function (Blueprint $table) {
+        Schema::connection('tenant')->create('currency_master', function (Blueprint $table) {
             $table->id('currency_id');
             $table->char('currency_code', 3)->unique()->comment('INR, USD, EUR, AED, SGD');
             $table->string('currency_name', 60)->comment('Indian Rupee, US Dollar...');
@@ -33,6 +33,6 @@ return new class extends Migration
      */
     public function down(): void
     {
-        Schema::dropIfExists('currency_master');
+        Schema::connection('tenant')->dropIfExists('currency_master');
     }
 };

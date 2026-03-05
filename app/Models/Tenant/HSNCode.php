@@ -9,6 +9,7 @@ class HSNCode extends Model
 {
     use SoftDeletes;
 
+    protected $connection = 'tenant';
     protected $table = 'hsn_codes';
 
     protected $fillable = [

@@ -9,6 +9,7 @@ class Currency extends Model
 {
     use SoftDeletes;
 
+    protected $connection = 'tenant';
     protected $table = 'currency_master';
 
     protected $fillable = [
