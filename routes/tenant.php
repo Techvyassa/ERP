@@ -146,6 +146,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.materials.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Products Management
@@ -157,6 +165,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.products.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Warehouses Management
@@ -168,6 +184,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.warehouses.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // UOM Management
@@ -179,6 +203,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.uom.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Vendors Management
@@ -190,6 +222,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.vendors.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Approval Matrix Management
@@ -220,6 +260,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.bin-locations.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // HSN Codes Management
@@ -231,6 +279,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.hsn-codes.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // GST Taxes Management
@@ -242,6 +298,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.gst-taxes.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Currency Management
@@ -253,6 +317,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.currency.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Vendor Contacts Management
@@ -264,6 +336,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.vendor-contacts.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Vendor Material Map Management
@@ -275,6 +355,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.vendor-material-map.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // BOM Header Management
@@ -286,6 +374,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.bom-header.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // BOM Detail Management
@@ -297,6 +393,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.bom-detail.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Profile

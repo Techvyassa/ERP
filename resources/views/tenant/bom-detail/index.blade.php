@@ -11,9 +11,10 @@
                 <h2 class="text-2xl font-bold text-gray-900">BOM Detail Lines</h2>
                 <p class="text-gray-600 mt-1">Manage material components in BOMs</p>
             </div>
-            <button @click="openCreateModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-detail/create' : '/org/' . $organization->org_slug . '/bom-detail/create') }}" 
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
                 <i class="fas fa-plus mr-2"></i>Add Line
-            </button>
+            </a>
         </div>
     </div>
 

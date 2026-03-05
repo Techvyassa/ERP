@@ -12,10 +12,10 @@
                 <h2 class="text-2xl font-bold text-gray-900">Unit of Measurement (UOM)</h2>
                 <p class="text-gray-600 mt-1">Manage measurement units and conversions</p>
             </div>
-            <button @click="openCreateModal" 
-                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/uom/create' : '/org/' . $organization->org_slug . '/uom/create') }}" 
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <i class="fas fa-plus mr-2"></i>Add UOM
-            </button>
+            </a>
         </div>
     </div>
 
