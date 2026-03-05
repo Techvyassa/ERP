@@ -12,11 +12,15 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('hsn_codes', function (Blueprint $table) {
-            $table->id('hsn_id');
-            $table->string('hsn_code', 10)->unique()->comment('0904, 0906, 2103');
-            $table->string('description', 300)->comment('Pepper; Cinnamon; Sauces');
-            $table->unsignedBigInteger('default_gst_id')->nullable();
+            $table->id();
+            $table->string('hsn_code', 20)->unique()->comment('0904, 0906, 2103');
+            $table->string('hsn_description', 255)->comment('Pepper; Cinnamon; Sauces');
+            $table->decimal('gst_rate', 5, 2)->nullable()->comment('Default GST rate percentage');
             $table->boolean('is_active')->default(true);
+            $table->unsignedBigInteger('created_by')->nullable();
+            $table->unsignedBigInteger('updated_by')->nullable();
+            $table->timestamps();
+            $table->softDeletes();
             
             // Indexes
             $table->index('hsn_code');
