@@ -186,8 +186,26 @@
 
         <!-- Main Dashboard Cards -->
         <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+            <!-- Go to Tenant Dashboard Card (Featured) -->
+            <div class="bg-gradient-to-br from-primary to-blue-700 rounded-xl border-2 border-primary shadow-xl cursor-pointer group hover:shadow-2xl transition-all" onclick="navigateTo('dashboard')">
+                <div class="p-6">
+                    <div class="flex items-center justify-between mb-4">
+                        <div class="bg-white/20 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                            <span class="material-symbols-outlined text-white text-2xl">dashboard</span>
+                        </div>
+                        <span class="material-symbols-outlined text-white group-hover:translate-x-1 transition-transform">arrow_forward</span>
+                    </div>
+                    <h3 class="text-lg font-bold text-white mb-2">Go to Dashboard</h3>
+                    <p class="text-sm text-white/90 mb-4">Access your organization dashboard with full navigation</p>
+                    <div class="flex items-center gap-2 text-white/80 text-xs">
+                        <span class="material-symbols-outlined text-sm">info</span>
+                        <span>Main workspace with sidebar navigation</span>
+                    </div>
+                </div>
+            </div>
+            
             <!-- Organization Profile Card -->
-            <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" onclick="navigateTo('profile')">
+            <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-primary hover:shadow-xl transition-all cursor-pointer group" onclick="navigateTo('profile')"></div>
                 <div class="p-6">
                     <div class="flex items-center justify-between mb-4">
                         <div class="bg-gradient-to-br from-blue-500 to-primary p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -292,8 +310,35 @@
         let profileCompletion = null;
         let masterDataStatus = null;
 
+        // Check if user should be redirected
+        function checkUserRedirect() {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const orgData = JSON.parse(localStorage.getItem('org_data') || '{}');
+            const orgSlug = localStorage.getItem('org_slug');
+            
+            // Check if super admin
+            const isSuperAdmin = user.email === 'admin@zaperp.com' || 
+                               orgSlug === 'super-admin' ||
+                               user.is_super_admin === true;
+            
+            if (isSuperAdmin) {
+                // Redirect super admin to control panel
+                window.location.href = '/control/dashboard';
+                return true;
+            }
+            
+            // For regular users, this dashboard is just a navigation hub
+            // They can choose where to go
+            return false;
+        }
+
         // Load user and organization data
         async function loadDashboardData() {
+            // Check if user should be redirected first
+            if (checkUserRedirect()) {
+                return; // Stop loading if redirecting
+            }
+            
             try {
                 const user = JSON.parse(localStorage.getItem('user') || '{}');
                 const orgSlug = localStorage.getItem('org_slug');
@@ -397,7 +442,15 @@
 
         function navigateTo(section) {
             const orgSlug = localStorage.getItem('org_slug');
+            
+            if (!orgSlug) {
+                alert('Organization not found. Please login again.');
+                window.location.href = '/login';
+                return;
+            }
+            
             const routes = {
+                'dashboard': `/org/${orgSlug}/dashboard`,
                 'profile': `/org/${orgSlug}/profile-completion`,
                 'masters': `/org/${orgSlug}/master-setup`,
                 'departments': `/org/${orgSlug}/departments`,
@@ -410,18 +463,6 @@
                 window.location.href = routes[section];
             } else {
                 alert(`${section} page coming soon!`);
-            }
-        }
-                'profile': `/org/${orgSlug}/profile`,
-                'masters': `/org/${orgSlug}/masters`,
-                'departments': `/org/${orgSlug}/departments`,
-                'users': `/org/${orgSlug}/users`,
-                'production': `/org/${orgSlug}/production`,
-                'inventory': `/org/${orgSlug}/inventory`
-            };
-
-            if (routes[section]) {
-                window.location.href = routes[section];
             }
         }
 

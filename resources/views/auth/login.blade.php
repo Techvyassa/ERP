@@ -222,21 +222,24 @@
                         localStorage.setItem('access_token', data.data.access_token);
                         localStorage.setItem('refresh_token', data.data.refresh_token);
                         localStorage.setItem('org_slug', data.data.organization.org_slug);
+                        localStorage.setItem('org_data', JSON.stringify(data.data.organization));
                         localStorage.setItem('firebase_uid', user.uid);
                         
-                        // Cookie is set by server, give it a moment to be available
-                        // Then redirect to tenant dashboard
-                        const orgSlug = data.data.organization.org_slug;
+                        // Cookie is already set by server
                         
-                        // Use path-based URL for reliability (works immediately)
-                        setTimeout(() => {
+                        // Check if user is super admin (by email or special org_slug)
+                        const isSuperAdmin = data.data.user.email === 'admin@zaperp.com' || 
+                                           data.data.organization.org_slug === 'super-admin' ||
+                                           data.data.user.is_super_admin === true;
+                        
+                        if (isSuperAdmin) {
+                            // Super admin goes to control panel
+                            window.location.href = '/control/dashboard';
+                        } else {
+                            // Regular tenant users go directly to their organization dashboard
+                            const orgSlug = data.data.organization.org_slug;
                             window.location.href = `/org/${orgSlug}/dashboard`;
-                        }, 100);
-                        
-                        // Alternative: Use subdomain if XAMPP is configured
-                        // const domain = '{{ config("app.domain") }}';
-                        // const protocol = '{{ config("app.url_protocol") }}';
-                        // window.location.href = `${protocol}://${orgSlug}.${domain}/dashboard`;
+                        }
                     } else {
                         throw new Error(data.message || 'Authentication failed');
                     }
@@ -287,23 +290,28 @@
                     const data = await response.json();
                     
                     if (response.ok && data.success) {
-                        // Store user data, tokens, and org_slug (from response) in localStorage
+                        // Store user data, tokens, and org_slug in localStorage
                         localStorage.setItem('user', JSON.stringify(data.data.user));
                         localStorage.setItem('access_token', data.data.access_token);
                         localStorage.setItem('refresh_token', data.data.refresh_token);
                         localStorage.setItem('org_slug', data.data.organization.org_slug);
+                        localStorage.setItem('org_data', JSON.stringify(data.data.organization));
                         
                         // Cookie is already set by server
-                        // Redirect to tenant dashboard using path-based URL (works without XAMPP config)
-                        const orgSlug = data.data.organization.org_slug;
                         
-                        // Use path-based URL for reliability (works immediately)
-                        window.location.href = `/org/${orgSlug}/dashboard`;
+                        // Check if user is super admin (by email or special org_slug)
+                        const isSuperAdmin = data.data.user.email === 'admin@zaperp.com' || 
+                                           data.data.organization.org_slug === 'super-admin' ||
+                                           data.data.user.is_super_admin === true;
                         
-                        // Alternative: Use subdomain if XAMPP is configured
-                        // const domain = '{{ config("app.domain") }}';
-                        // const protocol = '{{ config("app.url_protocol") }}';
-                        // window.location.href = `${protocol}://${orgSlug}.${domain}/dashboard`;
+                        if (isSuperAdmin) {
+                            // Super admin goes to control panel
+                            window.location.href = '/control/dashboard';
+                        } else {
+                            // Regular tenant users go directly to their organization dashboard
+                            const orgSlug = data.data.organization.org_slug;
+                            window.location.href = `/org/${orgSlug}/dashboard`;
+                        }
                     } else {
                         throw new Error(data.message || 'Authentication failed');
                     }
