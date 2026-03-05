@@ -62,7 +62,13 @@
                             <span x-show="sidebarOpen" class="font-medium">Master Setup</span>
                         </a>
                     </li>
+                    
                     <li class="pt-2 border-t border-gray-200"></li>
+                    
+                    <!-- Organization Section -->
+                    <li x-show="sidebarOpen" class="px-3 py-2">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Organization</span>
+                    </li>
                     <li>
                         <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/users' : '/org/' . $organization->org_slug . '/users') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.users.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
@@ -83,6 +89,136 @@
                             <i class="fas fa-user-shield text-lg w-5"></i>
                             <span x-show="sidebarOpen" class="font-medium">Roles</span>
                         </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/zones' : '/org/' . $organization->org_slug . '/zones') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.zones.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-map-marked-alt text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Zones</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/approval-matrix' : '/org/' . $organization->org_slug . '/approval-matrix') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.approval-matrix.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-sitemap text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Approval Matrix</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Inventory Section -->
+                    <li x-show="sidebarOpen" class="px-3 py-2 pt-4">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Inventory</span>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/materials' : '/org/' . $organization->org_slug . '/materials') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.materials.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-boxes text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Materials</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.products.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-box-open text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Products</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/warehouses' : '/org/' . $organization->org_slug . '/warehouses') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouses.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-warehouse text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Warehouses</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bin-locations' : '/org/' . $organization->org_slug . '/bin-locations') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.bin-locations.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-th text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Bin Locations</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/uom' : '/org/' . $organization->org_slug . '/uom') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.uom.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-balance-scale text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">UOM</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Vendor Section -->
+                    <li x-show="sidebarOpen" class="px-3 py-2 pt-4">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Vendor</span>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendors.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-handshake text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Vendors</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-contacts.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-address-book text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Vendor Contacts</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-material-map.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-link text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Vendor Material Map</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Tax Section -->
+                    <li x-show="sidebarOpen" class="px-3 py-2 pt-4">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Tax & Finance</span>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/hsn-codes' : '/org/' . $organization->org_slug . '/hsn-codes') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.hsn-codes.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-barcode text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">HSN Codes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/gst-taxes' : '/org/' . $organization->org_slug . '/gst-taxes') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.gst-taxes.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-percentage text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">GST Taxes</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/currency' : '/org/' . $organization->org_slug . '/currency') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.currency.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-dollar-sign text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">Currency</span>
+                        </a>
+                    </li>
+                    
+                    <!-- BOM Section -->
+                    <li x-show="sidebarOpen" class="px-3 py-2 pt-4">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">BOM</span>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.bom-header.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-list-alt text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">BOM Header</span>
+                        </a>
+                    </li>
+                    <li>
+                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-detail' : '/org/' . $organization->org_slug . '/bom-detail') }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.bom-detail.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <i class="fas fa-list-ol text-lg w-5"></i>
+                            <span x-show="sidebarOpen" class="font-medium">BOM Detail</span>
+                        </a>
+                    </li>
+                    
+                    <!-- Other Section -->
+                    <li x-show="sidebarOpen" class="px-3 py-2 pt-4">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Other</span>
                     </li>
                     <li>
                         <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/reports' : '/org/' . $organization->org_slug . '/reports') }}" 
