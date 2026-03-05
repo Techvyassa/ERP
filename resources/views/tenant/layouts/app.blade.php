@@ -91,13 +91,6 @@
                         </a>
                     </li>
                     <li>
-                        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/zones' : '/org/' . $organization->org_slug . '/zones') }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.zones.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <i class="fas fa-map-marked-alt text-lg w-5"></i>
-                            <span x-show="sidebarOpen" class="font-medium">Zones</span>
-                        </a>
-                    </li>
-                    <li>
                         <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/approval-matrix' : '/org/' . $organization->org_slug . '/approval-matrix') }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.approval-matrix.*') ? 'bg-blue-50 text-blue-600' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <i class="fas fa-sitemap text-lg w-5"></i>

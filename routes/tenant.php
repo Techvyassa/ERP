@@ -97,6 +97,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.departments.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Roles Management
@@ -108,6 +116,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.roles.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Reports
@@ -176,17 +192,6 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         })->name('index');
     });
     
-    // Zones Management
-    Route::prefix('zones')->name('tenant.zones.')->group(function () {
-        Route::get('/', function () {
-            $org = request()->get('tenant_organization');
-            return view('tenant.zones.index', [
-                'organization' => $org,
-                'tenantType' => request()->get('tenant_type')
-            ]);
-        })->name('index');
-    });
-    
     // Approval Matrix Management
     Route::prefix('approval-matrix')->name('tenant.approval-matrix.')->group(function () {
         Route::get('/', function () {
@@ -196,6 +201,14 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('index');
+        
+        Route::get('/create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.approval-matrix.create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('create');
     });
     
     // Bin Locations Management

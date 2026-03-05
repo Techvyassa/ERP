@@ -10,9 +10,10 @@
                 <h2 class="text-2xl font-bold text-gray-900">Users</h2>
                 <p class="text-gray-600 mt-1">Manage system users and their access</p>
             </div>
-            <button class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/users/create' : '/org/' . $organization->org_slug . '/users/create') }}" 
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
                 <i class="fas fa-plus mr-2"></i>Add User
-            </button>
+            </a>
         </div>
 
         <div class="text-center py-12">
