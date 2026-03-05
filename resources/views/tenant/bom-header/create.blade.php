@@ -1,0 +1,211 @@
+@extends('tenant.layouts.app')
+
+@section('title', 'Create BOM')
+@section('page-title', 'Create New Bill of Materials')
+
+@section('content')
+<div x-data="bomForm()" x-init="loadDropdowns()">
+    <div class="max-w-4xl mx-auto">
+        <!-- Header -->
+        <div class="bg-white rounded-xl shadow p-6 mb-6">
+            <div class="flex items-center justify-between">
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Create New Bill of Materials</h2>
+                    <p class="text-gray-600 mt-1">Define product BOM with version management</p>
+                </div>
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}" 
+                   class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <i class="fas fa-arrow-left mr-2"></i>Back to List
+                </a>
+            </div>
+        </div>
+
+        <!-- Form -->
+        <form @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
+            <!-- BOM Information -->
+            <div class="mb-6">
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">BOM Header Information</h3>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    <!-- BOM Code -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            BOM Code <span class="text-red-500">*</span>
+                        </label>
+                        <input type="text" x-model="form.bom_code" required maxlength="30"
+                               placeholder="BOM-FG001-V2"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Unique identifier</p>
+                    </div>
+
+                    <!-- Product -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Product <span class="text-red-500">*</span>
+                        </label>
+                        <select x-model="form.product_id" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Product</option>
+                            <template x-for="product in products" :key="product.id">
+                                <option :value="product.id" x-text="product.product_code + ' - ' + product.product_name"></option>
+                            </template>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">→ product_master(product_id)</p>
+                    </div>
+
+                    <!-- Version -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Version <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" x-model="form.version" required min="1"
+                               placeholder="1"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Version number 1, 2, 3...</p>
+                    </div>
+
+                    <!-- BOM Status -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            BOM Status <span class="text-red-500">*</span>
+                        </label>
+                        <select x-model="form.bom_status" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Status</option>
+                            <option value="DRAFT">Draft</option>
+                            <option value="ACTIVE">Active</option>
+                            <option value="OBSOLETE">Obsolete</option>
+                        </select>
+                    </div>
+
+                    <!-- Effective From -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Effective From <span class="text-red-500">*</span>
+                        </label>
+                        <input type="date" x-model="form.effective_from" required
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">BOM valid from this date</p>
+                    </div>
+
+                    <!-- Effective To -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Effective To
+                        </label>
+                        <input type="date" x-model="form.effective_to"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">NULL = currently active BOM</p>
+                    </div>
+
+                    <!-- Batch Size -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Batch Size <span class="text-red-500">*</span>
+                        </label>
+                        <input type="number" x-model="form.batch_size" required min="0" step="0.001"
+                               placeholder="1000"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1">Output quantity per batch run</p>
+                    </div>
+
+                    <!-- Output UOM -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Output UOM <span class="text-red-500">*</span>
+                        </label>
+                        <select x-model="form.output_uom_id" required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select UOM</option>
+                            <template x-for="uom in uoms" :key="uom.id">
+                                <option :value="uom.id" x-text="uom.uom_code + ' - ' + uom.uom_name"></option>
+                            </template>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">→ uom_master(uom_id)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Remarks -->
+            <div class="mb-6">
+                <label class="block text-sm font-medium text-gray-700 mb-2">
+                    Remarks
+                </label>
+                <textarea x-model="form.remarks" rows="3"
+                          placeholder="Change notes, reason for version..."
+                          class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                <p class="text-xs text-gray-500 mt-1">Change notes, reason for version</p>
+            </div>
+
+            <!-- Info Box -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                <div class="flex items-start">
+                    <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
+                    <div class="text-sm text-blue-800">
+                        <p class="font-semibold mb-1">About BOM Header</p>
+                        <p>Bill of Materials header with version management. Replaces the flat bom_master table. Supports multiple BOM versions per product with effective date ranges.</p>
+                        <p class="mt-2 text-xs">Used in: Production Work Orders, MRP, Material Planning, Costing</p>
+                        <p class="mt-1 text-xs font-semibold">Unique Constraint: (product_id, version)</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Form Actions -->
+            <div class="flex items-center justify-end space-x-4 pt-6 border-t">
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}" 
+                   class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Cancel
+                </a>
+                <button type="submit" :disabled="loading"
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    <span x-show="!loading">Create BOM</span>
+                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+                </button>
+            </div>
+        </form>
+    </div>
+</div>
+
+<script>
+function bomForm() {
+    return {
+        loading: false,
+        products: [],
+        uoms: [],
+        form: {
+            bom_code: '',
+            product_id: '',
+            version: 1,
+            effective_from: '',
+            effective_to: '',
+            bom_status: 'DRAFT',
+            batch_size: '',
+            output_uom_id: '',
+            remarks: ''
+        },
+        
+        async loadDropdowns() {
+            try {
+                // TODO: Replace with actual API calls
+                this.products = [];
+                this.uoms = [];
+            } catch (error) {
+                console.error('Failed to load dropdowns:', error);
+            }
+        },
+        
+        async submitForm() {
+            this.loading = true;
+            try {
+                // TODO: Replace with actual API call
+                alert('BOM header creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(this.form, null, 2));
+            } catch (error) {
+                console.error('Failed to create BOM:', error);
+                alert('Failed to create BOM. Please try again.');
+            } finally {
+                this.loading = false;
+            }
+        }
+    }
+}
+</script>
+@endsection
