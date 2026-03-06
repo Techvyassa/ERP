@@ -75,14 +75,6 @@ Route::prefix('v1')->group(function () {
             Route::post('/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancel']);
         });
 
-        // User management endpoints (with RBAC middleware for USERS module)
-        Route::middleware(['check.module.permission:USERS'])->prefix('users')->group(function () {
-            Route::get('/', [App\Http\Controllers\UserController::class, 'index']);
-            Route::get('/{id}', [App\Http\Controllers\UserController::class, 'show']);
-            Route::post('/', [App\Http\Controllers\UserController::class, 'store']);
-            Route::put('/{id}', [App\Http\Controllers\UserController::class, 'update']);
-            Route::delete('/{id}', [App\Http\Controllers\UserController::class, 'destroy']);
-        });
 
         // Department management endpoints (with RBAC middleware for SETTINGS module)
         Route::middleware(['check.module.permission:SETTINGS'])->prefix('departments')->group(function () {
@@ -90,8 +82,9 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [App\Http\Controllers\DepartmentController::class, 'show']);
             Route::post('/', [App\Http\Controllers\DepartmentController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\DepartmentController::class, 'update']);
-            Route::delete('/{id}', [App\Http\Controllers\DepartmentController::class, 'destroy']);
+            Route::delete('/{id}', [App\Http\Controllers\DepartmentController::class, 'deactivate']);
         });
+
 
         // Role management endpoints (with RBAC middleware for SETTINGS module)
         Route::middleware(['check.module.permission:SETTINGS'])->prefix('roles')->group(function () {
@@ -105,6 +98,17 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}/permissions', [App\Http\Controllers\RolePermissionController::class, 'show']);
             Route::put('/{id}/permissions', [App\Http\Controllers\RolePermissionController::class, 'update']);
         });
+
+
+        // User management endpoints (with RBAC middleware for USERS module)
+        Route::middleware(['check.module.permission:USERS'])->prefix('users')->group(function () {
+            Route::get('/', [App\Http\Controllers\UserController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\UserController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\UserController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\UserController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\UserController::class, 'destroy']);
+        });
+
 
         // HSN Code management endpoints (with RBAC middleware for SETTINGS module)
         Route::middleware(['check.module.permission:SETTINGS'])->prefix('hsn-codes')->group(function () {

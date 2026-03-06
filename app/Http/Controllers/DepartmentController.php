@@ -17,7 +17,7 @@ class DepartmentController extends Controller
     public function index(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $query = Department::with(['parent', 'children']);
 
@@ -32,9 +32,9 @@ class DepartmentController extends Controller
 
             if ($request->has('search')) {
                 $search = $request->input('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('dept_name', 'like', "%{$search}%")
-                      ->orWhere('dept_code', 'like', "%{$search}%");
+                        ->orWhere('dept_code', 'like', "%{$search}%");
                 });
             }
 
@@ -70,7 +70,7 @@ class DepartmentController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $department = Department::with(['parent', 'children', 'users'])->findOrFail($id);
 
@@ -104,11 +104,11 @@ class DepartmentController extends Controller
     public function store(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
-            'dept_code' => 'required|string|max:50|unique:department_master,dept_code',
+            'dept_code' => 'required|string|max:50|unique:tenant.department_master,dept_code',
             'dept_name' => 'required|string|max:100',
-            'parent_dept_id' => 'nullable|integer|exists:department_master,dept_id',
+            'parent_dept_id' => 'nullable|integer|exists:tenant.department_master,id',
         ]);
 
         if ($validator->fails()) {
@@ -197,11 +197,11 @@ class DepartmentController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
-            'dept_code' => 'sometimes|string|max:50|unique:department_master,dept_code,' . $id . ',dept_id',
+            'dept_code' => 'sometimes|string|max:50|unique:tenant.department_master,dept_code,' . $id . ',id',
             'dept_name' => 'sometimes|string|max:100',
-            'parent_dept_id' => 'nullable|integer|exists:department_master,dept_id',
+            'parent_dept_id' => 'nullable|integer|exists:tenant.department_master,id',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -293,13 +293,13 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Delete department (soft delete by setting is_active to false)
+     * Deactivate department (soft delete by setting is_active to false)
      * DELETE /api/v1/departments/{id}
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function deactivate(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $department = Department::findOrFail($id);
             $department->is_active = false;
