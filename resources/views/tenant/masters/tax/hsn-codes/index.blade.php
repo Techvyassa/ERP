@@ -57,8 +57,8 @@
                     <template x-for="item in items" :key="item.id">
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-medium text-gray-900" x-text="item.hsn_code"></span></td>
-                            <td class="px-6 py-4"><span class="text-sm text-gray-900" x-text="item.hsn_description"></span></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.gst_rate ? item.gst_rate + '%' : '-'"></td>
+                            <td class="px-6 py-4"><span class="text-sm text-gray-900" x-text="item.description"></span></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.default_gst_id || '-'"></td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs rounded-full" :class="item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                             </td>
@@ -87,11 +87,11 @@
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Description *</label>
-                        <textarea x-model="formData.hsn_description" required maxlength="255" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                        <textarea x-model="formData.description" required maxlength="300" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Default GST Rate (%)</label>
-                        <input type="number" x-model="formData.gst_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Default GST Tax ID *</label>
+                        <input type="number" x-model="formData.default_gst_id" required min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter GST Tax ID">
                     </div>
                     <div x-show="editMode">
                         <label class="flex items-center">
@@ -116,7 +116,7 @@ function hsnData() {
     return {
         items: [], loading: false, showModal: false, editMode: false,
         filters: { search: '', is_active: '' },
-        formData: { hsn_code: '', hsn_description: '', gst_rate: null, is_active: true },
+        formData: { hsn_code: '', description: '', default_gst_id: null, is_active: true },
         
         async loadData() {
             this.loading = true;
@@ -147,7 +147,7 @@ function hsnData() {
         
         openCreateModal() {
             this.editMode = false;
-            this.formData = { hsn_code: '', hsn_description: '', gst_rate: null, is_active: true };
+            this.formData = { hsn_code: '', description: '', default_gst_id: null, is_active: true };
             this.showModal = true;
         },
         

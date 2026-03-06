@@ -145,9 +145,9 @@ class CurrencyController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'currency_code' => "sometimes|string|max:10|unique:tenant.currency_master,currency_code,{$id}",
-            'currency_name' => 'sometimes|string|max:100',
-            'currency_symbol' => 'sometimes|string|max:10',
+            'currency_code' => "sometimes|string|max:3|unique:tenant.currency_master,currency_code,{$id}",
+            'currency_name' => 'sometimes|string|max:60',
+            'symbol' => 'sometimes|string|max:5',
             'exchange_rate' => 'nullable|numeric|min:0',
             'is_base_currency' => 'sometimes|boolean',
             'is_active' => 'sometimes|boolean',
@@ -165,7 +165,7 @@ class CurrencyController extends Controller
 
         try {
             $currency = Currency::findOrFail($id);
-            $currency->update($request->only(['currency_code', 'currency_name', 'currency_symbol', 'exchange_rate', 'is_base_currency', 'is_active']));
+            $currency->update($request->only(['currency_code', 'currency_name', 'symbol', 'exchange_rate', 'is_base_currency', 'is_active']));
 
             return response()->json([
                 'success' => true,

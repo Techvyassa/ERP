@@ -13,7 +13,7 @@
                 <p class="text-gray-600 mt-1">Manage currencies and exchange rates</p>
             </div>
             <button @click="openCreateModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-plus mr-2"></i>Add Currency
+                <span class="material-symbols-outlined text-sm inline-block align-middle mr-2">add</span>Add Currency
             </button>
         </div>
     </div>
@@ -29,7 +29,7 @@
                 <option value="0">Inactive</option>
             </select>
             <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <i class="fas fa-redo mr-2"></i>Reset
+                <span class="material-symbols-outlined text-sm inline-block align-middle mr-2">refresh</span>Reset
             </button>
         </div>
     </div>
@@ -51,16 +51,22 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-if="loading">
-                        <tr><td colspan="7" class="px-6 py-12 text-center"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i><p class="text-gray-600 mt-2">Loading currencies...</p></td></tr>
+                        <tr><td colspan="7" class="px-6 py-12 text-center">
+                            <span class="material-symbols-outlined text-6xl text-gray-300 animate-spin">progress_activity</span>
+                            <p class="text-gray-600 mt-2">Loading currencies...</p>
+                        </td></tr>
                     </template>
                     <template x-if="!loading && items.length === 0">
-                        <tr><td colspan="7" class="px-6 py-12 text-center"><i class="fas fa-dollar-sign text-6xl text-gray-300 mb-4"></i><p class="text-gray-600">No currencies found.</p></td></tr>
+                        <tr><td colspan="7" class="px-6 py-12 text-center">
+                            <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">payments</span>
+                            <p class="text-gray-600">No currencies found.</p>
+                        </td></tr>
                     </template>
                     <template x-for="item in items" :key="item.id">
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-medium text-gray-900" x-text="item.currency_code"></span></td>
                             <td class="px-6 py-4"><span class="text-sm text-gray-900" x-text="item.currency_name"></span></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.currency_symbol"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.symbol"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.exchange_rate"></td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs rounded-full" :class="item.is_base_currency ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'" x-text="item.is_base_currency ? 'Base' : 'Foreign'"></span>
@@ -69,8 +75,12 @@
                                 <span class="px-2 py-1 text-xs rounded-full" :class="item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete"><i class="fas fa-trash"></i></button>
+                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
                             </td>
                         </tr>
                     </template>
@@ -89,15 +99,16 @@
                 <div class="p-6 space-y-4">
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Currency Code *</label>
-                        <input type="text" x-model="formData.currency_code" required maxlength="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., USD, EUR, INR">
+                        <input type="text" x-model="formData.currency_code" required maxlength="3" :disabled="editMode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100" placeholder="e.g., USD, EUR, INR">
+                        <p class="text-xs text-gray-500 mt-1">3-letter ISO currency code</p>
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Currency Name *</label>
-                        <input type="text" x-model="formData.currency_name" required maxlength="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., US Dollar">
+                        <input type="text" x-model="formData.currency_name" required maxlength="60" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., US Dollar">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Currency Symbol *</label>
-                        <input type="text" x-model="formData.currency_symbol" required maxlength="10" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., $, €, ₹">
+                        <input type="text" x-model="formData.symbol" required maxlength="5" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., $, €, ₹">
                     </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Exchange Rate *</label>
@@ -133,7 +144,7 @@ function currencyData() {
     return {
         items: [], loading: false, showModal: false, editMode: false,
         filters: { search: '', is_active: '' },
-        formData: { currency_code: '', currency_name: '', currency_symbol: '', exchange_rate: 1, is_base_currency: false, is_active: true },
+        formData: { currency_code: '', currency_name: '', symbol: '', exchange_rate: 1, is_base_currency: false, is_active: true },
         
         async loadData() {
             this.loading = true;
@@ -164,7 +175,7 @@ function currencyData() {
         
         openCreateModal() {
             this.editMode = false;
-            this.formData = { currency_code: '', currency_name: '', currency_symbol: '', exchange_rate: 1, is_base_currency: false, is_active: true };
+            this.formData = { currency_code: '', currency_name: '', symbol: '', exchange_rate: 1, is_base_currency: false, is_active: true };
             this.showModal = true;
         },
         
