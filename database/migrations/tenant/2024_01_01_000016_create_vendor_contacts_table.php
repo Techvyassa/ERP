@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             
             // Foreign keys
-            $table->foreign('vendor_id')->references('vendor_id')->on('vendor_master')->onDelete('cascade');
+            $table->foreign('vendor_id')->references('id')->on('vendor_master')->onDelete('cascade');
             
             // Indexes
             $table->index('vendor_id');

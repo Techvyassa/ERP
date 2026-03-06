@@ -1,0 +1,83 @@
+To run all queued jobs in Laravel, you have several options depending on your queue configuration:
+
+1. For Development (QUEUE_CONNECTION=sync)
+Jobs run immediately when dispatched - no need to run anything manually.
+
+2. For Database Queue (QUEUE_CONNECTION=database)
+Run the queue worker:
+
+php artisan queue:work
+Or run all pending jobs once:
+
+php artisan queue:work --stop-when-empty
+3. Run Specific Failed Jobs
+View failed jobs:
+
+php artisan queue:failed
+Retry all failed jobs:
+
+php artisan queue:retry all
+Retry a specific failed job:
+
+php artisan queue:retry {job-id}
+4. For Your Specific Case (ProvisionTenantJob)
+Since I changed the registration to run synchronously, you don't need to run jobs manually anymore. But if you have pending organizations that were created before the change, you can:
+
+Option A: Create a command to provision pending organizations
+Accepted creation of
+
+ProvisionPendingOrganizations.php
+
+
+Now you can run:
+
+php artisan tenant:provision-pending
+This will provision all organizations that are still in PENDING status.
+
+Option B: Manually dispatch the job for a specific organization
+php artisan tinker
+Then in tinker:
+
+$org = App\Models\Control\Organization::where('org_slug', 'amit-tech-solutions-pvt-ltd')->first();
+App\Jobs\ProvisionTenantJob::dispatch($org->org_id, [
+    'first_name' => 'Amit',
+    'last_name' => 'A',
+    'email' => 'developer.amit25@gmail.com',
+    'password' => 'YourPassword123',
+    'provider' => 'google'
+]);
+5. Queue Worker Commands Summary
+# Start queue worker (keeps running)
+php artisan queue:work
+
+# Process jobs until queue is empty
+php artisan queue:work --stop-when-empty
+
+# Process only 10 jobs then stop
+php artisan queue:work --max-jobs=10
+
+# Process jobs for 60 seconds then stop
+php artisan queue:work --max-time=60
+
+# Listen for new jobs (restarts worker on code changes)
+php artisan queue:listen
+
+# Clear all jobs from queue
+php artisan queue:clear
+
+# View failed jobs
+php artisan queue:failed
+
+# Retry all failed jobs
+php artisan queue:retry all
+
+# Flush all failed jobs
+php artisan queue:flush
+Recommended Solution
+For your case, since you have organizations already created but not provisioned, run:
+
+php artisan tenant:provision-pending
+This will provision all pending organizations and create the admin users for them.
+
+Credits used: 0.63
+Elapsed time: 27s

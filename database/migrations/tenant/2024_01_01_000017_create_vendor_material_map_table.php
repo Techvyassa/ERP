@@ -23,8 +23,8 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             
             // Foreign keys
-            $table->foreign('vendor_id')->references('vendor_id')->on('vendor_master')->onDelete('cascade');
-            $table->foreign('material_id')->references('material_id')->on('material_master')->onDelete('cascade');
+            $table->foreign('vendor_id')->references('id')->on('vendor_master')->onDelete('cascade');
+            $table->foreign('material_id')->references('id')->on('material_master')->onDelete('cascade');
             
             // Unique constraint
             $table->unique(['vendor_id', 'material_id'], 'unique_vendor_material');

@@ -35,7 +35,7 @@ return new class extends Migration
             $table->timestampTz('updated_at')->nullable();
             
             // Foreign keys
-            $table->foreign('currency_id')->references('currency_id')->on('currency_master')->onDelete('restrict');
+            $table->foreign('currency_id')->references('id')->on('currency_master')->onDelete('restrict');
             $table->foreign('approved_by')->references('user_id')->on('users')->onDelete('set null');
             
             // Indexes

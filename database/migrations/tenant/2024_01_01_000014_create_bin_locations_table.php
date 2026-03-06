@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             
             // Foreign keys
-            $table->foreign('warehouse_id')->references('warehouse_id')->on('warehouse_master')->onDelete('cascade');
+            $table->foreign('warehouse_id')->references('id')->on('warehouse_master')->onDelete('cascade');
             
             // Indexes
             $table->index('warehouse_id');

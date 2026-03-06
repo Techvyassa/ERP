@@ -25,10 +25,10 @@ return new class extends Migration
             $table->string('remarks', 200)->nullable()->comment('Component-level note');
             
             // Foreign keys
-            $table->foreign('bom_id')->references('bom_id')->on('bom_header')->onDelete('cascade');
-            $table->foreign('material_id')->references('material_id')->on('material_master')->onDelete('restrict');
-            $table->foreign('uom_id')->references('uom_id')->on('uom_master')->onDelete('restrict');
-            $table->foreign('substitute_material_id')->references('material_id')->on('material_master')->onDelete('set null');
+            $table->foreign('bom_id')->references('id')->on('bom_header')->onDelete('cascade');
+            $table->foreign('material_id')->references('id')->on('material_master')->onDelete('restrict');
+            $table->foreign('uom_id')->references('id')->on('uom_master')->onDelete('restrict');
+            $table->foreign('substitute_material_id')->references('id')->on('material_master')->onDelete('set null');
             
             // Indexes
             $table->index('bom_id');

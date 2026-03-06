@@ -36,10 +36,10 @@ return new class extends Migration
             $table->unsignedBigInteger('updated_by')->nullable();
             
             // Foreign keys
-            $table->foreign('uom_id')->references('uom_id')->on('uom_master')->onDelete('restrict');
-            $table->foreign('purchase_uom_id')->references('uom_id')->on('uom_master')->onDelete('set null');
-            $table->foreign('hsn_code_id')->references('hsn_id')->on('hsn_codes')->onDelete('restrict');
-            $table->foreign('default_warehouse_id')->references('warehouse_id')->on('warehouse_master')->onDelete('set null');
+            $table->foreign('uom_id')->references('id')->on('uom_master')->onDelete('restrict');
+            $table->foreign('purchase_uom_id')->references('id')->on('uom_master')->onDelete('set null');
+            $table->foreign('hsn_code_id')->references('id')->on('hsn_codes')->onDelete('restrict');
+            $table->foreign('default_warehouse_id')->references('id')->on('warehouse_master')->onDelete('set null');
             $table->foreign('created_by')->references('user_id')->on('users')->onDelete('set null');
             $table->foreign('updated_by')->references('user_id')->on('users')->onDelete('set null');
             

@@ -26,8 +26,8 @@ return new class extends Migration
             $table->timestampTz('updated_at')->nullable();
             
             // Foreign keys
-            $table->foreign('pack_uom_id')->references('uom_id')->on('uom_master')->onDelete('restrict');
-            $table->foreign('hsn_code_id')->references('hsn_id')->on('hsn_codes')->onDelete('restrict');
+            $table->foreign('pack_uom_id')->references('id')->on('uom_master')->onDelete('restrict');
+            $table->foreign('hsn_code_id')->references('id')->on('hsn_codes')->onDelete('restrict');
             
             // Indexes
             $table->index('product_code');

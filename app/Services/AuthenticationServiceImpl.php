@@ -144,24 +144,49 @@ class AuthenticationServiceImpl implements AuthenticationService
         // Get all active and pending organizations
         $organizations = Organization::whereIn('registration_status', ['ACTIVE', 'PENDING'])->get();
         
+        \Log::info("Searching for user email across organizations", [
+            'email' => $email,
+            'total_organizations' => $organizations->count()
+        ]);
+        
         foreach ($organizations as $organization) {
             try {
+                \Log::info("Checking organization", [
+                    'org_slug' => $organization->org_slug,
+                    'tenant_db' => $organization->tenant_db_name,
+                    'status' => $organization->registration_status
+                ]);
+                
                 // Switch to this organization's tenant database
                 $this->connectionRouter->switchToTenant($organization->tenant_db_name);
                 
                 // Check if user exists in this tenant database
                 $userExists = User::where('email', $email)->exists();
                 
+                \Log::info("User search result", [
+                    'org_slug' => $organization->org_slug,
+                    'user_exists' => $userExists
+                ]);
+                
                 if ($userExists) {
+                    \Log::info("User found in organization", [
+                        'org_slug' => $organization->org_slug,
+                        'email' => $email
+                    ]);
                     return $organization;
                 }
             } catch (\Exception $e) {
                 // Skip this organization if there's a database connection error
-                \Log::warning("Failed to check user in organization {$organization->org_slug}: {$e->getMessage()}");
+                \Log::warning("Failed to check user in organization", [
+                    'org_slug' => $organization->org_slug,
+                    'error' => $e->getMessage(),
+                    'trace' => $e->getTraceAsString()
+                ]);
                 continue;
             }
         }
         
+        \Log::warning("User not found in any organization", ['email' => $email]);
         return null;
     }
     

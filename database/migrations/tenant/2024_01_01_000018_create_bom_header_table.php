@@ -27,8 +27,8 @@ return new class extends Migration
             $table->timestampTz('created_at')->useCurrent();
             
             // Foreign keys
-            $table->foreign('product_id')->references('product_id')->on('product_master')->onDelete('restrict');
-            $table->foreign('output_uom_id')->references('uom_id')->on('uom_master')->onDelete('restrict');
+            $table->foreign('product_id')->references('id')->on('product_master')->onDelete('restrict');
+            $table->foreign('output_uom_id')->references('id')->on('uom_master')->onDelete('restrict');
             $table->foreign('created_by')->references('user_id')->on('users')->onDelete('set null');
             $table->foreign('approved_by')->references('user_id')->on('users')->onDelete('set null');
             

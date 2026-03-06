@@ -21,7 +21,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             
             // Foreign keys
-            $table->foreign('base_uom_id')->references('uom_id')->on('uom_master')->onDelete('set null');
+            $table->foreign('base_uom_id')->references('id')->on('uom_master')->onDelete('set null');
             
             // Indexes
             $table->index('uom_code');

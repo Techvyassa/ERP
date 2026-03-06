@@ -163,8 +163,9 @@ class OrganizationController extends Controller
 
             DB::connection('control')->commit();
 
-            // Queue tenant provisioning job with user data
-            ProvisionTenantJob::dispatch(
+            // Provision tenant immediately (synchronous) for better error handling
+            $provisioningService = app(\App\Contracts\TenantProvisioningService::class);
+            $result = $provisioningService->provisionTenant(
                 $organization->org_id,
                 [
                     'first_name' => $request->input('first_name'),
@@ -176,6 +177,10 @@ class OrganizationController extends Controller
                     'photo_url' => $request->input('photo_url'),
                 ]
             );
+            
+            if (!$result->success) {
+                throw new \Exception("Provisioning failed: " . $result->errorMessage);
+            }
 
             return response()->json([
                 'success' => true,
@@ -183,12 +188,12 @@ class OrganizationController extends Controller
                     'org_id' => $organization->org_id,
                     'org_slug' => $organization->org_slug,
                     'org_name' => $organization->org_name,
-                    'registration_status' => $organization->registration_status,
+                    'registration_status' => 'ACTIVE', // Now ACTIVE after successful provisioning
                     'tenant_db_name' => $organization->tenant_db_name,
                     'primary_email' => $organization->primary_email,
                     'organization_url' => url('/' . $organization->org_slug),
                 ],
-                'message' => 'Organization registered successfully. Provisioning in progress. You can now login.',
+                'message' => 'Organization registered and provisioned successfully. You can now login.',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 201);
@@ -197,6 +202,11 @@ class OrganizationController extends Controller
             if (DB::connection('control')->transactionLevel() > 0) {
                 DB::connection('control')->rollBack();
             }
+            
+            \Log::error('Organization registration failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
             
             return response()->json([
                 'success' => false,
