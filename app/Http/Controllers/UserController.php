@@ -180,7 +180,7 @@ class UserController extends Controller
                 'dept_id' => $request->input('dept_id'),
                 'role_id' => $request->input('role_id'),
                 'is_active' => true,
-                'created_by' => $request->attributes->get('user_id'),
+                'created_by' => $request->input('auth_user_id'),
             ]);
 
             $user->load(['department', 'role']);
@@ -300,10 +300,10 @@ class UserController extends Controller
     }
 
     /**
-     * Delete user (soft delete by setting is_active to false)
+     * deactivate user (soft delete by setting is_active to false)
      * DELETE /api/v1/users/{id}
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function deactivate(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
 

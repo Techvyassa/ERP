@@ -109,6 +109,7 @@ class DepartmentController extends Controller
             'dept_code' => 'required|string|max:50|unique:tenant.department_master,dept_code',
             'dept_name' => 'required|string|max:100',
             'parent_dept_id' => 'nullable|integer|exists:tenant.department_master,id',
+            'cost_center_code' => 'nullable|string|max:20',
         ]);
 
         if ($validator->fails()) {
@@ -147,8 +148,9 @@ class DepartmentController extends Controller
                 'dept_code' => $request->input('dept_code'),
                 'dept_name' => $request->input('dept_name'),
                 'parent_dept_id' => $request->input('parent_dept_id'),
+                'cost_center_code' => $request->input('cost_center_code'),
                 'is_active' => true,
-                'created_by' => $request->attributes->get('user_id'),
+                'created_by' => $request->input('auth_user_id'),
             ]);
 
             $department->load(['parent']);
@@ -202,6 +204,7 @@ class DepartmentController extends Controller
             'dept_code' => 'sometimes|string|max:50|unique:tenant.department_master,dept_code,' . $id . ',id',
             'dept_name' => 'sometimes|string|max:100',
             'parent_dept_id' => 'nullable|integer|exists:tenant.department_master,id',
+            'cost_center_code' => 'nullable|string|max:20',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -247,6 +250,9 @@ class DepartmentController extends Controller
             }
             if ($request->has('parent_dept_id')) {
                 $department->parent_dept_id = $request->input('parent_dept_id');
+            }
+            if ($request->has('cost_center_code')) {
+                $department->cost_center_code = $request->input('cost_center_code');
             }
             if ($request->has('is_active')) {
                 $department->is_active = $request->input('is_active');

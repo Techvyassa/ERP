@@ -106,7 +106,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [App\Http\Controllers\UserController::class, 'show']);
             Route::post('/', [App\Http\Controllers\UserController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\UserController::class, 'update']);
-            Route::delete('/{id}', [App\Http\Controllers\UserController::class, 'destroy']);
+            Route::delete('/{id}', [App\Http\Controllers\UserController::class, 'deactivate']);
         });
 
 

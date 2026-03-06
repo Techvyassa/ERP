@@ -128,7 +128,7 @@ class RoleController extends Controller
                 'description' => $request->input('description'),
                 'is_active' => true,
                 'is_system_role' => false,
-                'created_by' => $request->attributes->get('user_id'),
+                'created_by' => $request->input('auth_user_id'),
             ]);
 
             return response()->json([
