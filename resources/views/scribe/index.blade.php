@@ -382,7 +382,7 @@ vary: Origin
 <code class="language-json" style="max-height: 300px;">{
     &quot;success&quot;: true,
     &quot;message&quot;: &quot;ERP API is running&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:36+00:00&quot;
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:52+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -1129,7 +1129,7 @@ POST /api/v1/auth/firebase-login</h2>
     \"firebase_token\": \"architecto\",
     \"email\": \"zbailey@example.net\",
     \"org_slug\": \"architecto\",
-    \"provider\": \"email\",
+    \"provider\": \"google\",
     \"display_name\": \"architecto\",
     \"photo_url\": \"http:\\/\\/www.bailey.biz\\/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html\",
     \"firebase_uid\": \"architecto\"
@@ -1151,7 +1151,7 @@ let body = {
     "firebase_token": "architecto",
     "email": "zbailey@example.net",
     "org_slug": "architecto",
-    "provider": "email",
+    "provider": "google",
     "display_name": "architecto",
     "photo_url": "http:\/\/www.bailey.biz\/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html",
     "firebase_uid": "architecto"
@@ -1282,10 +1282,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="provider"                data-endpoint="POSTapi-v1-auth-firebase-login"
-               value="email"
+               value="google"
                data-component="body">
     <br>
-<p>Example: <code>email</code></p>
+<p>Example: <code>google</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>google</code></li> <li><code>email</code></li></ul>
         </div>
@@ -1363,7 +1363,7 @@ POST /api/v1/organizations/register</h2>
     \"max_users\": 60,
     \"firebase_uid\": \"architecto\",
     \"firebase_token\": \"architecto\",
-    \"provider\": \"email\",
+    \"provider\": \"google\",
     \"photo_url\": \"http:\\/\\/www.bailey.biz\\/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html\",
     \"selected_plan\": \"architecto\"
 }"
@@ -1399,7 +1399,7 @@ let body = {
     "max_users": 60,
     "firebase_uid": "architecto",
     "firebase_token": "architecto",
-    "provider": "email",
+    "provider": "google",
     "photo_url": "http:\/\/www.bailey.biz\/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html",
     "selected_plan": "architecto"
 };
@@ -1709,10 +1709,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="provider"                data-endpoint="POSTapi-v1-organizations-register"
-               value="email"
+               value="google"
                data-component="body">
     <br>
-<p>Example: <code>email</code></p>
+<p>Example: <code>google</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>google</code></li> <li><code>email</code></li></ul>
         </div>
@@ -1799,8 +1799,8 @@ vary: Origin
         &quot;slug&quot;: &quot;architecto&quot;,
         &quot;message&quot;: &quot;This slug is available&quot;
     },
-    &quot;request_id&quot;: &quot;e41e9ae9-533d-4d54-8879-4744cfc5851d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;a20a796d-8fc1-44c4-92f3-b10325e7e364&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:52+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -2188,8 +2188,8 @@ vary: Origin
         ]
     },
     &quot;message&quot;: &quot;Subscription plans retrieved successfully&quot;,
-    &quot;request_id&quot;: &quot;8eb37d4a-c842-43e9-bd82-ac9c231eee67&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;e8114dc5-2dbc-48d0-bd1b-a57cf5157a6b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -2323,8 +2323,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Subscription plan not found&quot;,
-    &quot;request_id&quot;: &quot;ec63e5e8-33bf-48ff-bcff-516400862e3b&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;fdc7592e-93bb-43c6-a0ff-c23f7453d144&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -2471,8 +2471,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;88a35a2c-d58b-4093-a174-836cb1791b54&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;95cf5666-bda0-47d6-bd2e-dc2357c1a64e&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -2606,8 +2606,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;a0f77412-92df-452f-9fc8-e19a310e5926&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;7bdb965a-6134-49c8-af23-320df8b6b912&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3000,8 +3000,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;ba9d8e4d-ee7e-4f07-83b1-508948b341d4&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;a8aca858-04ab-4a10-ad5d-d663e71e8844&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3135,8 +3135,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;15afd638-ba9d-4ab8-90de-6ea372b4c42d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;413f32a6-854b-44db-98c6-ba9ce636412e&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3270,8 +3270,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;962abe26-0711-412c-9053-7e6522e8ce00&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;303501b2-2662-49eb-86ab-c7f090c2e8b2&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3671,8 +3671,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;57686053-6704-4965-b349-9ee7b3ee95eb&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;53904dda-e796-40dd-a826-1f763e6f5a2f&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3806,8 +3806,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;d554114f-5dd0-46cb-b741-9189257cfc5b&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;8b0a15cf-4b42-4b75-af2e-a1ec9f51d00a&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -4152,7 +4152,7 @@ PUT /api/v1/users/{id}</h2>
     \"phone\": \"ljnikhwaykcmyuwp\",
     \"dept_id\": 16,
     \"role_id\": 16,
-    \"is_active\": false
+    \"is_active\": true
 }"
 </code></pre></div>
 
@@ -4174,7 +4174,7 @@ let body = {
     "phone": "ljnikhwaykcmyuwp",
     "dept_id": 16,
     "role_id": 16,
-    "is_active": false
+    "is_active": true
 };
 
 fetch(url, {
@@ -4388,7 +4388,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -4574,8 +4574,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;c1564a12-7304-4b83-ba56-485a32a33ee7&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;2e0b3e94-791b-4eab-8c3b-f422c3f23020&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -4709,8 +4709,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;e432e96c-edc8-47e5-a9cb-45cd60e6f4fb&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;0e2ebcee-8775-45c0-b24f-8b633b2bbf4b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -5339,8 +5339,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;74498b6c-72db-4912-ae65-eae16d98af5b&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;3f9e5dad-41ce-4049-80e4-33fb82f1ebf5&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -5474,8 +5474,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;51452716-8597-4ebc-bb57-a1398a2fde77&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:37+00:00&quot;
+    &quot;request_id&quot;: &quot;f01931bd-f537-4697-b5da-7a4f7264243b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -6104,8 +6104,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;ff235dbd-534b-4099-aa88-67a3457eb702&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;dd400b83-612b-4246-9df9-dc8193cf8c44&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -6216,9 +6216,9 @@ PUT /api/v1/roles/{id}/permissions</h2>
     \"permissions\": [
         {
             \"module_code\": \"b\",
-            \"can_view\": false,
-            \"can_create\": true,
-            \"can_edit\": false,
+            \"can_view\": true,
+            \"can_create\": false,
+            \"can_edit\": true,
             \"can_approve\": true,
             \"can_delete\": false
         }
@@ -6241,9 +6241,9 @@ let body = {
     "permissions": [
         {
             "module_code": "b",
-            "can_view": false,
-            "can_create": true,
-            "can_edit": false,
+            "can_view": true,
+            "can_create": false,
+            "can_edit": true,
             "can_approve": true,
             "can_delete": false
         }
@@ -6387,7 +6387,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>can_create</code></b>&nbsp;&nbsp;
@@ -6409,7 +6409,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>can_edit</code></b>&nbsp;&nbsp;
@@ -6431,7 +6431,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>can_approve</code></b>&nbsp;&nbsp;
@@ -6538,8 +6538,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;fe97c1c0-7c03-4ddb-b9ef-f0d27686677d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;c39fb87c-d51f-4b09-8202-68772ae3a3b3&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -6673,8 +6673,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;fb49ed99-a6a6-405f-ac47-45637ba9240f&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;95046e7b-dd65-423f-82be-6f2872996b00&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -7303,8 +7303,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;38910a7b-4cef-4d28-9a45-de487fe7d39d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;76b87e96-86e6-47e4-95cb-4c4969a04d33&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -7438,8 +7438,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;1bc57006-e1ac-4847-90f4-1db7e14c0381&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;51d4f4c5-d0db-46fa-9a37-1b80c214be8c&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -7553,7 +7553,7 @@ POST /api/v1/gst-taxes</h2>
     \"sgst_rate\": 18,
     \"igst_rate\": 8,
     \"ugst_rate\": 24,
-    \"effective_from\": \"2026-03-06T09:26:38\",
+    \"effective_from\": \"2026-03-06T09:45:53\",
     \"effective_to\": \"2052-03-29\"
 }"
 </code></pre></div>
@@ -7576,7 +7576,7 @@ let body = {
     "sgst_rate": 18,
     "igst_rate": 8,
     "ugst_rate": 24,
-    "effective_from": "2026-03-06T09:26:38",
+    "effective_from": "2026-03-06T09:45:53",
     "effective_to": "2052-03-29"
 };
 
@@ -7741,10 +7741,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="POSTapi-v1-gst-taxes"
-               value="2026-03-06T09:26:38"
+               value="2026-03-06T09:45:53"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-06T09:26:38</code></p>
+<p>Must be a valid date. Example: <code>2026-03-06T09:45:53</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;
@@ -7783,7 +7783,7 @@ PUT /api/v1/gst-taxes/{id}</h2>
     \"sgst_rate\": 7,
     \"igst_rate\": 16,
     \"ugst_rate\": 17,
-    \"effective_from\": \"2026-03-06T09:26:38\",
+    \"effective_from\": \"2026-03-06T09:45:53\",
     \"effective_to\": \"2052-03-29\",
     \"is_active\": true
 }"
@@ -7806,7 +7806,7 @@ let body = {
     "sgst_rate": 7,
     "igst_rate": 16,
     "ugst_rate": 17,
-    "effective_from": "2026-03-06T09:26:38",
+    "effective_from": "2026-03-06T09:45:53",
     "effective_to": "2052-03-29",
     "is_active": true
 };
@@ -7985,10 +7985,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="PUTapi-v1-gst-taxes--id-"
-               value="2026-03-06T09:26:38"
+               value="2026-03-06T09:45:53"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-06T09:26:38</code></p>
+<p>Must be a valid date. Example: <code>2026-03-06T09:45:53</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;
@@ -8208,8 +8208,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;e55ae1e0-40d6-428b-be5c-9dfc5c85153e&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;2f176c30-441d-4bab-a338-80c5019bf409&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -8343,8 +8343,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;dadf6cd7-4554-45e3-9ad4-afcd4fc7ff7a&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;3c2ced72-17fd-4e41-acef-0eb965a11ceb&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -8456,7 +8456,7 @@ POST /api/v1/currencies</h2>
     \"currency_name\": \"n\",
     \"symbol\": \"g\",
     \"exchange_rate\": 12,
-    \"is_base_currency\": false
+    \"is_base_currency\": true
 }"
 </code></pre></div>
 
@@ -8476,7 +8476,7 @@ let body = {
     "currency_name": "n",
     "symbol": "g",
     "exchange_rate": 12,
-    "is_base_currency": false
+    "is_base_currency": true
 };
 
 fetch(url, {
@@ -8629,7 +8629,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -8654,7 +8654,7 @@ PUT /api/v1/currencies/{id}</h2>
     \"currency_name\": \"b\",
     \"symbol\": \"n\",
     \"exchange_rate\": 84,
-    \"is_base_currency\": false,
+    \"is_base_currency\": true,
     \"is_active\": true
 }"
 </code></pre></div>
@@ -8674,7 +8674,7 @@ let body = {
     "currency_name": "b",
     "symbol": "n",
     "exchange_rate": 84,
-    "is_base_currency": false,
+    "is_base_currency": true,
     "is_active": true
 };
 
@@ -8841,7 +8841,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
@@ -9057,8 +9057,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;757854ec-ec3f-43ae-9329-1f0dc89c77f7&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;59cc1d2d-ff0b-47f5-aeb2-ba5983534d2d&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -9205,8 +9205,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;452d061e-564e-4a56-9447-57be8646ea33&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-06T09:26:38+00:00&quot;
+    &quot;request_id&quot;: &quot;d77faa23-6b4b-4280-a27c-c21bf1b75869&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-06T09:45:53+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -9316,9 +9316,9 @@ POST /api/v1/admin/feature-controls</h2>
     --data "{
     \"org_id\": 16,
     \"feature_key\": \"n\",
-    \"feature_type\": \"JSON\",
+    \"feature_type\": \"NUMERIC\",
     \"feature_value\": \"architecto\",
-    \"effective_from\": \"2026-03-06T09:26:38\",
+    \"effective_from\": \"2026-03-06T09:45:53\",
     \"effective_to\": \"2052-03-29\",
     \"notes\": \"architecto\"
 }"
@@ -9338,9 +9338,9 @@ const headers = {
 let body = {
     "org_id": 16,
     "feature_key": "n",
-    "feature_type": "JSON",
+    "feature_type": "NUMERIC",
     "feature_value": "architecto",
-    "effective_from": "2026-03-06T09:26:38",
+    "effective_from": "2026-03-06T09:45:53",
     "effective_to": "2052-03-29",
     "notes": "architecto"
 };
@@ -9458,10 +9458,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="feature_type"                data-endpoint="POSTapi-v1-admin-feature-controls"
-               value="JSON"
+               value="NUMERIC"
                data-component="body">
     <br>
-<p>Example: <code>JSON</code></p>
+<p>Example: <code>NUMERIC</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>BOOLEAN</code></li> <li><code>NUMERIC</code></li> <li><code>TEXT</code></li> <li><code>JSON</code></li></ul>
         </div>
@@ -9484,10 +9484,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="POSTapi-v1-admin-feature-controls"
-               value="2026-03-06T09:26:38"
+               value="2026-03-06T09:45:53"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-06T09:26:38</code></p>
+<p>Must be a valid date. Example: <code>2026-03-06T09:45:53</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;
@@ -9534,7 +9534,7 @@ PUT /api/v1/admin/feature-controls/{id}</h2>
     --header "Accept: application/json" \
     --data "{
     \"feature_value\": \"architecto\",
-    \"effective_from\": \"2026-03-06T09:26:38\",
+    \"effective_from\": \"2026-03-06T09:45:53\",
     \"effective_to\": \"2052-03-29\",
     \"notes\": \"architecto\"
 }"
@@ -9553,7 +9553,7 @@ const headers = {
 
 let body = {
     "feature_value": "architecto",
-    "effective_from": "2026-03-06T09:26:38",
+    "effective_from": "2026-03-06T09:45:53",
     "effective_to": "2052-03-29",
     "notes": "architecto"
 };
@@ -9672,10 +9672,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="PUTapi-v1-admin-feature-controls--id-"
-               value="2026-03-06T09:26:38"
+               value="2026-03-06T09:45:53"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-06T09:26:38</code></p>
+<p>Must be a valid date. Example: <code>2026-03-06T09:45:53</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;

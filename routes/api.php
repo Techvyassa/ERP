@@ -36,7 +36,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/login', [App\Http\Controllers\AuthController::class, 'login']);
         Route::post('/refresh', [App\Http\Controllers\AuthController::class, 'refresh']);
         Route::post('/logout', [App\Http\Controllers\AuthController::class, 'logout']);
-        
+
         // Firebase authentication
         Route::post('/firebase-login', [App\Http\Controllers\FirebaseAuthController::class, 'firebaseLogin']);
     });
@@ -56,7 +56,7 @@ Route::prefix('v1')->group(function () {
 
     // Protected routes (require authentication, tenant resolution, subscription validation, and RBAC)
     Route::middleware(['validate.jwt', 'resolve.tenant', 'validate.subscription'])->group(function () {
-        
+
         // Rate limit status endpoint (excluded from rate limiting)
         Route::get('/rate-limit/status', [App\Http\Controllers\RateLimitController::class, 'status']);
 
@@ -100,7 +100,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [App\Http\Controllers\RoleController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\RoleController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\RoleController::class, 'destroy']);
-            
+
             // Role permissions endpoints
             Route::get('/{id}/permissions', [App\Http\Controllers\RolePermissionController::class, 'show']);
             Route::put('/{id}/permissions', [App\Http\Controllers\RolePermissionController::class, 'update']);
