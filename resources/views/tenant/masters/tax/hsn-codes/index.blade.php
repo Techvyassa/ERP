@@ -4,7 +4,7 @@
 @section('page-title', 'HSN Code Master')
 
 @section('content')
-<div x-data="hsnData()" x-init="loadData()">
+<div x-data="hsnData()" x-init="init()">
     <!-- Header -->
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between">
@@ -13,7 +13,7 @@
                 <p class="text-gray-600 mt-1">Manage Harmonized System of Nomenclature codes</p>
             </div>
             <button @click="openCreateModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-plus mr-2"></i>Add HSN Code
+                <span class="material-symbols-outlined text-lg align-middle mr-1">add</span>Add HSN Code
             </button>
         </div>
     </div>
@@ -29,7 +29,7 @@
                 <option value="0">Inactive</option>
             </select>
             <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <i class="fas fa-redo mr-2"></i>Reset
+                <span class="material-symbols-outlined text-lg align-middle mr-1">refresh</span>Reset
             </button>
         </div>
     </div>
@@ -42,29 +42,45 @@
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HSN Code</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GST Rate (%)</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Default GST Tax</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-if="loading">
-                        <tr><td colspan="5" class="px-6 py-12 text-center"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i><p class="text-gray-600 mt-2">Loading HSN codes...</p></td></tr>
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <span class="material-symbols-outlined text-4xl text-gray-400 animate-spin">progress_activity</span>
+                                <p class="text-gray-600 mt-2">Loading HSN codes...</p>
+                            </td>
+                        </tr>
                     </template>
                     <template x-if="!loading && items.length === 0">
-                        <tr><td colspan="5" class="px-6 py-12 text-center"><i class="fas fa-barcode text-6xl text-gray-300 mb-4"></i><p class="text-gray-600">No HSN codes found.</p></td></tr>
+                        <tr>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">barcode</span>
+                                <p class="text-gray-600">No HSN codes found.</p>
+                            </td>
+                        </tr>
                     </template>
                     <template x-for="item in items" :key="item.id">
                         <tr class="hover:bg-gray-50">
                             <td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-medium text-gray-900" x-text="item.hsn_code"></span></td>
                             <td class="px-6 py-4"><span class="text-sm text-gray-900" x-text="item.description"></span></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.default_gst_id || '-'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm text-gray-900" x-text="item.default_gst ? `${item.default_gst.tax_code} - ${item.default_gst.tax_name}` : '-'"></span>
+                            </td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs rounded-full" :class="item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete"><i class="fas fa-trash"></i></button>
+                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
                             </td>
                         </tr>
                     </template>
@@ -90,8 +106,13 @@
                         <textarea x-model="formData.description" required maxlength="300" rows="3" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Default GST Tax ID *</label>
-                        <input type="number" x-model="formData.default_gst_id" required min="1" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="Enter GST Tax ID">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Default GST Tax *</label>
+                        <select x-model="formData.default_gst_id" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select GST Tax</option>
+                            <template x-for="gst in gstTaxes" :key="gst.id">
+                                <option :value="gst.id" x-text="`${gst.tax_code} - ${gst.tax_name}`"></option>
+                            </template>
+                        </select>
                     </div>
                     <div x-show="editMode">
                         <label class="flex items-center">
@@ -114,9 +135,35 @@
 <script>
 function hsnData() {
     return {
-        items: [], loading: false, showModal: false, editMode: false,
+        items: [], 
+        gstTaxes: [],
+        loading: false, 
+        showModal: false, 
+        editMode: false,
         filters: { search: '', is_active: '' },
         formData: { hsn_code: '', description: '', default_gst_id: null, is_active: true },
+        
+        async init() {
+            await this.loadGstTaxes();
+            await this.loadData();
+        },
+        
+        async loadGstTaxes() {
+            try {
+                const response = await fetch('/api/v1/gst-taxes?is_active=1', {
+                    headers: { 
+                        'Authorization': `Bearer ${this.getToken()}`,
+                        'X-Org-Slug': this.getOrgSlug()
+                    }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.gstTaxes = data.data.gst_taxes;
+                }
+            } catch (e) {
+                console.error('Failed to load GST taxes:', e);
+            }
+        },
         
         async loadData() {
             this.loading = true;
