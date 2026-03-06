@@ -3,25 +3,29 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Material extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'material_master';
 
     protected $fillable = [
         'material_code',
         'material_name',
-        'material_description',
         'material_type',
         'uom_id',
+        'purchase_uom_id',
         'hsn_code_id',
+        'default_warehouse_id',
         'reorder_level',
-        'reorder_quantity',
+        'safety_stock',
         'lead_time_days',
+        'shelf_life_days',
+        'qc_required',
+        'inspection_type',
+        'is_batch_tracked',
         'standard_cost',
+        'valuation_method',
         'is_active',
         'created_by',
         'updated_by'
@@ -29,10 +33,13 @@ class Material extends Model
 
     protected $casts = [
         'is_active' => 'boolean',
-        'reorder_level' => 'decimal:2',
-        'reorder_quantity' => 'decimal:2',
-        'standard_cost' => 'decimal:2',
-        'lead_time_days' => 'integer'
+        'qc_required' => 'boolean',
+        'is_batch_tracked' => 'boolean',
+        'reorder_level' => 'decimal:3',
+        'safety_stock' => 'decimal:3',
+        'standard_cost' => 'decimal:4',
+        'lead_time_days' => 'integer',
+        'shelf_life_days' => 'integer'
     ];
 
     // Relationships
@@ -41,9 +48,19 @@ class Material extends Model
         return $this->belongsTo(UOM::class, 'uom_id');
     }
 
+    public function purchaseUom()
+    {
+        return $this->belongsTo(UOM::class, 'purchase_uom_id');
+    }
+
     public function hsnCode()
     {
         return $this->belongsTo(HSNCode::class, 'hsn_code_id');
+    }
+
+    public function defaultWarehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'default_warehouse_id');
     }
 
     public function vendorMaps()

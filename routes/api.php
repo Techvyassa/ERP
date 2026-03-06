@@ -137,6 +137,54 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\CurrencyController::class, 'destroy']);
         });
 
+        // INVENTORY Management Endpoints
+        Route::middleware(['check.module.permission:INVENTORY'])->group(function () {
+            // UOM Master
+            Route::prefix('uoms')->group(function () {
+                Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\UOMController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\UOMController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\UOMController::class, 'destroy']);
+            });
+
+            // Warehouse Master
+            Route::prefix('warehouses')->group(function () {
+                Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\WarehouseController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\WarehouseController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\WarehouseController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\WarehouseController::class, 'destroy']);
+            });
+
+            // Bin Locations
+            Route::prefix('bin-locations')->group(function () {
+                Route::get('/', [App\Http\Controllers\BinLocationController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\BinLocationController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\BinLocationController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\BinLocationController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\BinLocationController::class, 'destroy']);
+            });
+
+            // Material Master
+            Route::prefix('materials')->group(function () {
+                Route::get('/', [App\Http\Controllers\MaterialController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\MaterialController::class, 'destroy']); // Deactivate
+            });
+
+            // Product Master
+            Route::prefix('products')->group(function () {
+                Route::get('/', [App\Http\Controllers\ProductController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\ProductController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\ProductController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\ProductController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\ProductController::class, 'destroy']); // Deactivate
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {
