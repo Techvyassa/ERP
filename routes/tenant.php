@@ -72,7 +72,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.users.create', [
+            return view('tenant.masters.organization.users.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -100,7 +100,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.departments.create', [
+            return view('tenant.masters.organization.departments.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -119,7 +119,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.roles.create', [
+            return view('tenant.masters.organization.roles.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -149,7 +149,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.materials.create', [
+            return view('tenant.masters.inventory.materials.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -168,7 +168,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.products.create', [
+            return view('tenant.masters.inventory.products.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -187,7 +187,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.warehouses.create', [
+            return view('tenant.masters.inventory.warehouses.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -206,7 +206,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.uom.create', [
+            return view('tenant.masters.inventory.uom.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -225,7 +225,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.vendors.create', [
+            return view('tenant.masters.vendor.vendors.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -244,7 +244,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.approval-matrix.create', [
+            return view('tenant.masters.organization.approval-matrix.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -263,7 +263,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.bin-locations.create', [
+            return view('tenant.masters.inventory.bin-locations.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -282,7 +282,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.hsn-codes.create', [
+            return view('tenant.masters.tax.hsn-codes.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -301,7 +301,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.gst-taxes.create', [
+            return view('tenant.masters.tax.gst-taxes.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -320,7 +320,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.currency.create', [
+            return view('tenant.masters.tax.currency.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -339,7 +339,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.vendor-contacts.create', [
+            return view('tenant.masters.vendor.vendor-contacts.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -358,7 +358,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.vendor-material-map.create', [
+            return view('tenant.masters.vendor.vendor-material-map.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -377,7 +377,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.bom-header.create', [
+            return view('tenant.masters.bom.bom-header.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -396,7 +396,7 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
         
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.bom-detail.create', [
+            return view('tenant.masters.bom.bom-detail.create', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
