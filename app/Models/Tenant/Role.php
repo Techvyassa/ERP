@@ -8,6 +8,7 @@ class Role extends Model
 {
     protected $connection = 'tenant';
     protected $table = 'role_master';
+    public $timestamps = false;
     
     protected $fillable = [
         'role_code',

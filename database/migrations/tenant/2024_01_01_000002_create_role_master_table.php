@@ -17,6 +17,8 @@ return new class extends Migration
             $table->string('role_name', 100)->comment('Human-readable label');
             $table->text('description')->nullable()->comment('Role description');
             $table->boolean('is_active')->default(true)->comment('Soft delete flag');
+            $table->boolean('is_system_role')->default(false)->comment('System role cannot be deleted');
+            $table->unsignedBigInteger('created_by')->nullable();
             $table->timestampTz('created_at')->useCurrent();
             
             // Indexes

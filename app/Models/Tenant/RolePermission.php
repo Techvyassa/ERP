@@ -8,6 +8,7 @@ class RolePermission extends Model
 {
     protected $connection = 'tenant';
     protected $table = 'role_permissions';
+    public $timestamps = false;
     
     protected $fillable = [
         'role_id',

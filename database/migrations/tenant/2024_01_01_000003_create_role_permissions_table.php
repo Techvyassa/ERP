@@ -20,6 +20,7 @@ return new class extends Migration
             $table->boolean('can_edit')->default(false)->comment('Edit existing records');
             $table->boolean('can_approve')->default(false)->comment('Approval workflow actions');
             $table->boolean('can_delete')->default(false)->comment('Delete / deactivate records');
+            $table->unsignedBigInteger('created_by')->nullable();
             
             // Foreign keys
             $table->foreign('role_id')->references('id')->on('role_master')->onDelete('cascade');

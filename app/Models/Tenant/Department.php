@@ -8,11 +8,13 @@ class Department extends Model
 {
     protected $connection = 'tenant';
     protected $table = 'department_master';
+    public $timestamps = false;
     
     protected $fillable = [
         'dept_code',
         'dept_name',
         'parent_dept_id',
+        'cost_center_code',
         'is_active',
         'created_by'
     ];

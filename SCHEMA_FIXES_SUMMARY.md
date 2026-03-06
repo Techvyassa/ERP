@@ -130,8 +130,8 @@ The migrations run in this order to respect foreign key dependencies:
 4. `users` (depends on department_master, role_master)
 5. `approval_matrix_master` (depends on role_master)
 6. `uom_master` (self-referencing, fixed)
-7. `gst_taxes` (independent)
-8. `hsn_codes` (depends on gst_taxes)
+7. **`gst_taxes` (independent) - MOVED TO 8**
+8. **`hsn_codes` (depends on gst_taxes) - MOVED TO 9**
 9. `currency_master` (independent)
 10. `warehouse_master` (depends on users)
 11. `material_master` (depends on uom_master, hsn_codes, warehouse_master, users)
@@ -142,6 +142,8 @@ The migrations run in this order to respect foreign key dependencies:
 16. `vendor_material_map` (depends on vendor_master, material_master)
 17. `bom_header` (depends on product_master, uom_master, users)
 18. `bom_detail` (depends on bom_header, material_master, uom_master)
+
+**CRITICAL FIX**: Swapped migration order of `gst_taxes` and `hsn_codes` because `hsn_codes` has a foreign key to `gst_taxes.id`.
 
 ## Testing Checklist
 
@@ -219,6 +221,7 @@ The migrations run in this order to respect foreign key dependencies:
 5. ✅ Controller responses using wrong field names
 6. ✅ Schema mismatches with specification
 7. ✅ Missing foreign key relationships (HSN → GST)
+8. ✅ **Migration order issue: gst_taxes must be created before hsn_codes**
 
 ## Conclusion
 
