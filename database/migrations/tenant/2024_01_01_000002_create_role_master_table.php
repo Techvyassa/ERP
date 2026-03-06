@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('role_master', function (Blueprint $table) {
-            $table->id('role_id');
+            $table->id();
             $table->string('role_code', 30)->unique()->comment('e.g. ADMIN, BUYER, QC_INSP');
             $table->string('role_name', 100)->comment('Human-readable label');
             $table->text('description')->nullable()->comment('Role description');

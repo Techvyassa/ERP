@@ -153,7 +153,7 @@ class FirebaseAuthController extends Controller
                     'expires_in' => $tokens['expires_in'],
                     'token_type' => $tokens['token_type'],
                     'user' => [
-                        'user_id' => $user->user_id,
+                        'user_id' => $user->id,
                         'email' => $user->email,
                         'employee_code' => $user->employee_code,
                         'first_name' => $user->first_name,

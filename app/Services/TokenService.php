@@ -36,7 +36,7 @@ class TokenService
     private function generateAccessToken(User $user, Organization $organization): string
     {
         $customClaims = [
-            'sub' => $user->user_id,
+            'sub' => $user->id,
             'org_id' => $organization->org_id,
             'org_slug' => $organization->org_slug,
             'type' => 'access'
@@ -58,7 +58,7 @@ class TokenService
         
         RefreshToken::create([
             'org_id' => $organization->org_id,
-            'user_id' => $user->user_id,
+            'user_id' => $user->id,
             'token' => $token,
             'expires_at' => now()->addMinutes(self::REFRESH_TOKEN_TTL),
             'user_agent' => $userAgent,

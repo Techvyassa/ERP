@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('warehouse_master', function (Blueprint $table) {
-            $table->id('warehouse_id');
+            $table->id();
             $table->string('warehouse_code', 20)->unique()->comment('WH-001, WH-002');
             $table->string('warehouse_name', 100)->comment('Masala RM Store');
             $table->string('warehouse_type', 20)->comment('RM / FG / PKG / REJECTION / WIP');
@@ -21,7 +21,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             
             // Foreign keys
-            $table->foreign('incharge_user_id')->references('user_id')->on('users')->onDelete('set null');
+            $table->foreign('incharge_user_id')->references('id')->on('users')->onDelete('set null');
             
             // Indexes
             $table->index('warehouse_code');

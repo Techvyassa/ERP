@@ -8,7 +8,6 @@ class Role extends Model
 {
     protected $connection = 'tenant';
     protected $table = 'role_master';
-    protected $primaryKey = 'role_id';
     
     protected $fillable = [
         'role_code',
@@ -29,7 +28,7 @@ class Role extends Model
      */
     public function permissions()
     {
-        return $this->hasMany(RolePermission::class, 'role_id', 'role_id');
+        return $this->hasMany(RolePermission::class, 'role_id');
     }
     
     /**
@@ -37,7 +36,7 @@ class Role extends Model
      */
     public function users()
     {
-        return $this->hasMany(User::class, 'role_id', 'role_id');
+        return $this->hasMany(User::class, 'role_id');
     }
     
     /**

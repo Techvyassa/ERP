@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('vendor_contacts', function (Blueprint $table) {
-            $table->id('contact_id');
+            $table->id();
             $table->unsignedBigInteger('vendor_id');
             $table->string('contact_name', 100)->comment('Full name of contact person');
             $table->string('contact_type', 20)->default('SALES')->comment('SALES / FINANCE / LOGISTICS / GM');

@@ -25,16 +25,15 @@ class GSTTaxController extends Controller
                 $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
             }
 
-            if ($request->has('tax_type')) {
-                $query->where('tax_type', $request->input('tax_type'));
-            }
-
             if ($request->has('search')) {
                 $search = $request->input('search');
-                $query->where('tax_name', 'like', "%{$search}%");
+                $query->where(function($q) use ($search) {
+                    $q->where('tax_code', 'like', "%{$search}%")
+                      ->orWhere('tax_name', 'like', "%{$search}%");
+                });
             }
 
-            $gstTaxes = $query->orderBy('tax_name')->get();
+            $gstTaxes = $query->orderBy('tax_code')->get();
 
             return response()->json([
                 'success' => true,
@@ -92,12 +91,14 @@ class GSTTaxController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'tax_name' => 'required|string|max:100',
-            'tax_type' => 'required|in:CGST_SGST,IGST,CESS',
+            'tax_code' => 'required|string|max:20|unique:tenant.gst_taxes,tax_code',
+            'tax_name' => 'required|string|max:60',
             'cgst_rate' => 'nullable|numeric|min:0|max:100',
             'sgst_rate' => 'nullable|numeric|min:0|max:100',
             'igst_rate' => 'nullable|numeric|min:0|max:100',
-            'cess_rate' => 'nullable|numeric|min:0|max:100',
+            'ugst_rate' => 'nullable|numeric|min:0|max:100',
+            'effective_from' => 'required|date',
+            'effective_to' => 'nullable|date|after:effective_from',
         ]);
 
         if ($validator->fails()) {
@@ -112,14 +113,15 @@ class GSTTaxController extends Controller
 
         try {
             $gstTax = GSTTax::create([
+                'tax_code' => $request->input('tax_code'),
                 'tax_name' => $request->input('tax_name'),
-                'tax_type' => $request->input('tax_type'),
                 'cgst_rate' => $request->input('cgst_rate', 0),
                 'sgst_rate' => $request->input('sgst_rate', 0),
                 'igst_rate' => $request->input('igst_rate', 0),
-                'cess_rate' => $request->input('cess_rate', 0),
+                'ugst_rate' => $request->input('ugst_rate', 0),
+                'effective_from' => $request->input('effective_from'),
+                'effective_to' => $request->input('effective_to'),
                 'is_active' => true,
-                'created_by' => $request->attributes->get('user_id'),
             ]);
 
             return response()->json([
@@ -149,12 +151,14 @@ class GSTTaxController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'tax_name' => 'sometimes|string|max:100',
-            'tax_type' => 'sometimes|in:CGST_SGST,IGST,CESS',
+            'tax_code' => "sometimes|string|max:20|unique:tenant.gst_taxes,tax_code,{$id}",
+            'tax_name' => 'sometimes|string|max:60',
             'cgst_rate' => 'nullable|numeric|min:0|max:100',
             'sgst_rate' => 'nullable|numeric|min:0|max:100',
             'igst_rate' => 'nullable|numeric|min:0|max:100',
-            'cess_rate' => 'nullable|numeric|min:0|max:100',
+            'ugst_rate' => 'nullable|numeric|min:0|max:100',
+            'effective_from' => 'sometimes|date',
+            'effective_to' => 'nullable|date|after:effective_from',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -170,7 +174,7 @@ class GSTTaxController extends Controller
 
         try {
             $gstTax = GSTTax::findOrFail($id);
-            $gstTax->update($request->only(['tax_name', 'tax_type', 'cgst_rate', 'sgst_rate', 'igst_rate', 'cess_rate', 'is_active']));
+            $gstTax->update($request->only(['tax_code', 'tax_name', 'cgst_rate', 'sgst_rate', 'igst_rate', 'ugst_rate', 'effective_from', 'effective_to', 'is_active']));
 
             return response()->json([
                 'success' => true,

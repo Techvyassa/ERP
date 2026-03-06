@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('product_master', function (Blueprint $table) {
-            $table->id('product_id');
+            $table->id();
             $table->string('product_code', 30)->unique()->comment('FG-0001');
             $table->string('product_name', 200)->comment('Masala Powder 100g');
             $table->string('product_category', 60)->nullable()->comment('Spice / Blend / Condiment');

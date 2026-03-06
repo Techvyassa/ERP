@@ -51,7 +51,7 @@ class AuthController extends Controller
             );
 
             \Log::info('Login successful', [
-                'user_id' => $result->user->user_id,
+                'user_id' => $result->user->id,
                 'org_slug' => $result->organization->org_slug,
                 'token_length' => strlen($result->accessToken),
             ]);
@@ -64,7 +64,7 @@ class AuthController extends Controller
                     'expires_in' => $result->expiresIn,
                     'token_type' => 'Bearer',
                     'user' => [
-                        'user_id' => $result->user->user_id,
+                        'user_id' => $result->user->id,
                         'email' => $result->user->email,
                         'employee_code' => $result->user->employee_code,
                         'first_name' => $result->user->first_name,

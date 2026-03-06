@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('bin_locations', function (Blueprint $table) {
-            $table->id('bin_id');
+            $table->id();
             $table->unsignedBigInteger('warehouse_id');
             $table->string('bin_code', 30)->unique()->comment('R01-S02-B03 (Rack-Shelf-Bin)');
             $table->string('aisle', 10)->nullable()->comment('Aisle identifier');

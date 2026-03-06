@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('department_master', function (Blueprint $table) {
-            $table->id('dept_id');
+            $table->id();
             $table->string('dept_code', 20)->unique()->comment('e.g. PROD, PURCH, QC');
             $table->string('dept_name', 100)->comment('Full display name');
             $table->unsignedBigInteger('parent_dept_id')->nullable()->comment('Self-reference for hierarchy');
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->unsignedBigInteger('created_by')->nullable();
             
             // Foreign keys
-            $table->foreign('parent_dept_id')->references('dept_id')->on('department_master')->onDelete('set null');
+            $table->foreign('parent_dept_id')->references('id')->on('department_master')->onDelete('set null');
             
             // Indexes
             $table->index('dept_code');

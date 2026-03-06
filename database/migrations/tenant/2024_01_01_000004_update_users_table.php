@@ -31,7 +31,7 @@ return new class extends Migration
             // Add dept_id foreign key if it doesn't exist
             if (!in_array('users_dept_id_foreign', $foreignKeys)) {
                 $table->foreign('dept_id', 'users_dept_id_foreign')
-                    ->references('dept_id')
+                    ->references('id')
                     ->on('department_master')
                     ->onDelete('set null');
             }
@@ -39,7 +39,7 @@ return new class extends Migration
             // Add role_id foreign key if it doesn't exist
             if (!in_array('users_role_id_foreign', $foreignKeys)) {
                 $table->foreign('role_id', 'users_role_id_foreign')
-                    ->references('role_id')
+                    ->references('id')
                     ->on('role_master')
                     ->onDelete('restrict');
             }

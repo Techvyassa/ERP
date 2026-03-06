@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('material_master', function (Blueprint $table) {
-            $table->id('material_id');
+            $table->id();
             $table->string('material_code', 30)->unique()->comment('RM-0001 – system code');
             $table->string('material_name', 200)->comment('Cinnamon Bark, Dhaniya...');
             $table->string('material_type', 20)->comment('RAW / PACKAGING / CONSUMABLE / SEMI');
@@ -40,8 +40,8 @@ return new class extends Migration
             $table->foreign('purchase_uom_id')->references('id')->on('uom_master')->onDelete('set null');
             $table->foreign('hsn_code_id')->references('id')->on('hsn_codes')->onDelete('restrict');
             $table->foreign('default_warehouse_id')->references('id')->on('warehouse_master')->onDelete('set null');
-            $table->foreign('created_by')->references('user_id')->on('users')->onDelete('set null');
-            $table->foreign('updated_by')->references('user_id')->on('users')->onDelete('set null');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('updated_by')->references('id')->on('users')->onDelete('set null');
             
             // Indexes
             $table->index('material_code');

@@ -7,26 +7,24 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Currency extends Model
 {
-    use SoftDeletes;
-
     protected $connection = 'tenant';
     protected $table = 'currency_master';
+    public $timestamps = false;
 
     protected $fillable = [
         'currency_code',
         'currency_name',
-        'currency_symbol',
+        'symbol',
         'exchange_rate',
         'is_base_currency',
         'is_active',
-        'created_by',
-        'updated_by'
+        'updated_at'
     ];
 
     protected $casts = [
         'is_base_currency' => 'boolean',
         'is_active' => 'boolean',
-        'exchange_rate' => 'decimal:4'
+        'exchange_rate' => 'decimal:6'
     ];
 
     // Relationships

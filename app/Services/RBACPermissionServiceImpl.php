@@ -254,7 +254,7 @@ class RBACPermissionServiceImpl implements RBACPermissionService
         $users = User::where('role_id', $roleId)->get();
         
         foreach ($users as $user) {
-            $this->invalidateCache($user->user_id);
+            $this->invalidateCache($user->id);
         }
         
         Log::debug('Permission cache invalidated for role', [

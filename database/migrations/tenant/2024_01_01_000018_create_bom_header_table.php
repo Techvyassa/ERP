@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('bom_header', function (Blueprint $table) {
-            $table->id('bom_id');
+            $table->id();
             $table->string('bom_code', 30)->unique()->comment('BOM-FG001-V2 – unique identifier');
             $table->unsignedBigInteger('product_id');
             $table->smallInteger('version')->default(1)->comment('Version number 1, 2, 3...');
@@ -29,8 +29,8 @@ return new class extends Migration
             // Foreign keys
             $table->foreign('product_id')->references('id')->on('product_master')->onDelete('restrict');
             $table->foreign('output_uom_id')->references('id')->on('uom_master')->onDelete('restrict');
-            $table->foreign('created_by')->references('user_id')->on('users')->onDelete('set null');
-            $table->foreign('approved_by')->references('user_id')->on('users')->onDelete('set null');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
+            $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
             
             // Unique constraint
             $table->unique(['product_id', 'version'], 'unique_product_version');

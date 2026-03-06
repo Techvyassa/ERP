@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('users', function (Blueprint $table) {
-            $table->id('user_id');
+            $table->id();
             $table->string('employee_code', 50)->unique();
             $table->string('email', 255)->unique();
             $table->string('password_hash', 255);
@@ -39,12 +39,12 @@ return new class extends Migration
             
             // Foreign keys
             $table->foreign('dept_id')
-                  ->references('dept_id')
+                  ->references('id')
                   ->on('department_master')
                   ->onDelete('restrict');
             
             $table->foreign('role_id')
-                  ->references('role_id')
+                  ->references('id')
                   ->on('role_master')
                   ->onDelete('restrict');
             

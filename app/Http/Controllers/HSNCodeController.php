@@ -29,7 +29,7 @@ class HSNCodeController extends Controller
                 $search = $request->input('search');
                 $query->where(function($q) use ($search) {
                     $q->where('hsn_code', 'like', "%{$search}%")
-                      ->orWhere('hsn_description', 'like', "%{$search}%");
+                      ->orWhere('description', 'like', "%{$search}%");
                 });
             }
 
@@ -91,9 +91,9 @@ class HSNCodeController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'hsn_code' => 'required|string|max:20|unique:tenant.hsn_codes,hsn_code',
-            'hsn_description' => 'required|string|max:255',
-            'gst_rate' => 'nullable|numeric|min:0|max:100',
+            'hsn_code' => 'required|string|max:10|unique:tenant.hsn_codes,hsn_code',
+            'description' => 'required|string|max:300',
+            'default_gst_id' => 'required|integer|exists:tenant.gst_taxes,id',
         ]);
 
         if ($validator->fails()) {
@@ -109,10 +109,9 @@ class HSNCodeController extends Controller
         try {
             $hsnCode = HSNCode::create([
                 'hsn_code' => $request->input('hsn_code'),
-                'hsn_description' => $request->input('hsn_description'),
-                'gst_rate' => $request->input('gst_rate'),
+                'description' => $request->input('description'),
+                'default_gst_id' => $request->input('default_gst_id'),
                 'is_active' => true,
-                'created_by' => $request->attributes->get('user_id'),
             ]);
 
             return response()->json([
@@ -142,9 +141,9 @@ class HSNCodeController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'hsn_code' => "sometimes|string|max:20|unique:tenant.hsn_codes,hsn_code,{$id}",
-            'hsn_description' => 'sometimes|string|max:255',
-            'gst_rate' => 'nullable|numeric|min:0|max:100',
+            'hsn_code' => "sometimes|string|max:10|unique:tenant.hsn_codes,hsn_code,{$id}",
+            'description' => 'sometimes|string|max:300',
+            'default_gst_id' => 'sometimes|integer|exists:tenant.gst_taxes,id',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -160,7 +159,7 @@ class HSNCodeController extends Controller
 
         try {
             $hsnCode = HSNCode::findOrFail($id);
-            $hsnCode->update($request->only(['hsn_code', 'hsn_description', 'gst_rate', 'is_active']));
+            $hsnCode->update($request->only(['hsn_code', 'description', 'default_gst_id', 'is_active']));
 
             return response()->json([
                 'success' => true,

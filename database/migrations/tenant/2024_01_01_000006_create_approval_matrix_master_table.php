@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('approval_matrix_master', function (Blueprint $table) {
-            $table->id('matrix_id');
+            $table->id();
             $table->string('document_type', 20)->comment('PR / PO / PAYMENT / DN');
             $table->smallInteger('level')->comment('1 = first approver, 2 = second...');
             $table->decimal('min_amount', 15, 2)->default(0)->comment('Threshold lower bound (INR)');
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('is_active')->default(true);
             
             // Foreign keys
-            $table->foreign('approver_role_id')->references('role_id')->on('role_master')->onDelete('restrict');
+            $table->foreign('approver_role_id')->references('id')->on('role_master')->onDelete('restrict');
             
             // Indexes
             $table->index(['document_type', 'level']);

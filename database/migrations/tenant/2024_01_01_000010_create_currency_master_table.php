@@ -13,16 +13,13 @@ return new class extends Migration
     {
         Schema::connection('tenant')->create('currency_master', function (Blueprint $table) {
             $table->id();
-            $table->string('currency_code', 10)->unique()->comment('INR, USD, EUR, AED, SGD');
-            $table->string('currency_name', 100)->comment('Indian Rupee, US Dollar...');
-            $table->string('currency_symbol', 10)->comment('₹, $, €');
-            $table->decimal('exchange_rate', 12, 4)->default(1)->comment('Rate vs base currency');
-            $table->boolean('is_base_currency')->default(false)->comment('Only one record = true');
-            $table->boolean('is_active')->default(true);
-            $table->unsignedBigInteger('created_by')->nullable();
-            $table->unsignedBigInteger('updated_by')->nullable();
-            $table->timestamps();
-            $table->softDeletes();
+            $table->char('currency_code', 3)->unique()->comment('INR, USD, EUR, AED, SGD');
+            $table->string('currency_name', 60)->comment('Indian Rupee, US Dollar...');
+            $table->string('symbol', 5)->comment('₹, $, €');
+            $table->decimal('exchange_rate', 12, 6)->default(1)->comment('Rate vs base currency (INR)');
+            $table->boolean('is_base_currency')->default(false)->comment('Only one record = true (INR)');
+            $table->boolean('is_active')->default(true)->comment('Active flag');
+            $table->timestampTz('updated_at')->nullable()->comment('Rate last updated timestamp');
             
             // Indexes
             $table->index('currency_code');

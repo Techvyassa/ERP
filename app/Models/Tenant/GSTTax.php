@@ -7,21 +7,20 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class GSTTax extends Model
 {
-    use SoftDeletes;
-
     protected $connection = 'tenant';
     protected $table = 'gst_taxes';
+    public $timestamps = false;
 
     protected $fillable = [
+        'tax_code',
         'tax_name',
-        'tax_type',
         'cgst_rate',
         'sgst_rate',
         'igst_rate',
-        'cess_rate',
-        'is_active',
-        'created_by',
-        'updated_by'
+        'ugst_rate',
+        'effective_from',
+        'effective_to',
+        'is_active'
     ];
 
     protected $casts = [
@@ -29,8 +28,16 @@ class GSTTax extends Model
         'cgst_rate' => 'decimal:2',
         'sgst_rate' => 'decimal:2',
         'igst_rate' => 'decimal:2',
-        'cess_rate' => 'decimal:2'
+        'ugst_rate' => 'decimal:2',
+        'effective_from' => 'date',
+        'effective_to' => 'date'
     ];
+
+    // Relationships
+    public function hsnCodes()
+    {
+        return $this->hasMany(HSNCode::class, 'default_gst_id');
+    }
 
     // Scopes
     public function scopeActive($query)
@@ -38,14 +45,19 @@ class GSTTax extends Model
         return $query->where('is_active', true);
     }
 
-    public function scopeByType($query, $type)
+    public function scopeCurrent($query)
     {
-        return $query->where('tax_type', $type);
+        $today = now()->toDateString();
+        return $query->where('effective_from', '<=', $today)
+                     ->where(function($q) use ($today) {
+                         $q->whereNull('effective_to')
+                           ->orWhere('effective_to', '>=', $today);
+                     });
     }
 
     // Helper method to get total tax rate
     public function getTotalTaxRate()
     {
-        return $this->cgst_rate + $this->sgst_rate + $this->igst_rate + $this->cess_rate;
+        return $this->cgst_rate + $this->sgst_rate + $this->igst_rate + $this->ugst_rate;
     }
 }

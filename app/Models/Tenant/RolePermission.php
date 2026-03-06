@@ -8,7 +8,6 @@ class RolePermission extends Model
 {
     protected $connection = 'tenant';
     protected $table = 'role_permissions';
-    protected $primaryKey = 'permission_id';
     
     protected $fillable = [
         'role_id',
@@ -34,7 +33,7 @@ class RolePermission extends Model
      */
     public function role()
     {
-        return $this->belongsTo(Role::class, 'role_id', 'role_id');
+        return $this->belongsTo(Role::class, 'role_id');
     }
     
     /**

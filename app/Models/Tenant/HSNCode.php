@@ -7,26 +7,27 @@ use Illuminate\Database\Eloquent\SoftDeletes;
 
 class HSNCode extends Model
 {
-    use SoftDeletes;
-
     protected $connection = 'tenant';
     protected $table = 'hsn_codes';
+    public $timestamps = false;
 
     protected $fillable = [
         'hsn_code',
-        'hsn_description',
-        'gst_rate',
-        'is_active',
-        'created_by',
-        'updated_by'
+        'description',
+        'default_gst_id',
+        'is_active'
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'gst_rate' => 'decimal:2'
+        'is_active' => 'boolean'
     ];
 
     // Relationships
+    public function defaultGst()
+    {
+        return $this->belongsTo(GSTTax::class, 'default_gst_id');
+    }
+
     public function materials()
     {
         return $this->hasMany(Material::class, 'hsn_code_id');

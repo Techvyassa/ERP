@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('vendor_master', function (Blueprint $table) {
-            $table->id('vendor_id');
+            $table->id();
             $table->string('vendor_code', 20)->unique()->comment('VND-001');
             $table->string('vendor_name', 200)->comment('Legal company name');
             $table->string('vendor_type', 20)->default('SUPPLIER')->comment('SUPPLIER / SERVICE / TRADER');
@@ -36,7 +36,7 @@ return new class extends Migration
             
             // Foreign keys
             $table->foreign('currency_id')->references('id')->on('currency_master')->onDelete('restrict');
-            $table->foreign('approved_by')->references('user_id')->on('users')->onDelete('set null');
+            $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
             
             // Indexes
             $table->index('vendor_code');

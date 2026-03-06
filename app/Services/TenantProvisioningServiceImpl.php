@@ -320,7 +320,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                     $permissions = $this->getPermissionsForRole($roleCode);
                     
                     RolePermission::create([
-                        'role_id' => $role->role_id,
+                        'role_id' => $role->id,
                         'module_code' => $moduleCode,
                         'can_view' => $permissions['can_view'],
                         'can_create' => $permissions['can_create'],
@@ -440,8 +440,8 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 'first_name' => $firstName,
                 'last_name' => $lastName,
                 'phone' => null,
-                'dept_id' => $rootDepartment->dept_id,
-                'role_id' => $adminRole->role_id,
+                'dept_id' => $rootDepartment->id,
+                'role_id' => $adminRole->id,
                 'is_active' => true,
                 'created_by' => null
             ]);

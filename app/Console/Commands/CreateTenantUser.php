@@ -93,8 +93,8 @@ class CreateTenantUser extends Command
             'first_name' => $this->option('first-name') ?? 'Admin',
             'last_name' => $this->option('last-name') ?? 'User',
             'phone' => null,
-            'dept_id' => $department->dept_id,
-            'role_id' => $role->role_id,
+            'dept_id' => $department->id,
+            'role_id' => $role->id,
             'is_active' => true,
             'created_by' => null
         ]);
@@ -103,7 +103,7 @@ class CreateTenantUser extends Command
         $this->table(
             ['Field', 'Value'],
             [
-                ['User ID', $user->user_id],
+                ['User ID', $user->id],
                 ['Email', $user->email],
                 ['Employee Code', $user->employee_code],
                 ['Name', $user->first_name . ' ' . $user->last_name],

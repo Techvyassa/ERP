@@ -10,7 +10,6 @@ class User extends Authenticatable implements JWTSubject
 {
     protected $connection = 'tenant';
     protected $table = 'users';
-    protected $primaryKey = 'user_id';
     
     protected $fillable = [
         'employee_code',
@@ -40,7 +39,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function department()
     {
-        return $this->belongsTo(Department::class, 'dept_id', 'dept_id');
+        return $this->belongsTo(Department::class, 'dept_id');
     }
     
     /**
@@ -48,7 +47,7 @@ class User extends Authenticatable implements JWTSubject
      */
     public function role()
     {
-        return $this->belongsTo(Role::class, 'role_id', 'role_id');
+        return $this->belongsTo(Role::class, 'role_id');
     }
     
     /**

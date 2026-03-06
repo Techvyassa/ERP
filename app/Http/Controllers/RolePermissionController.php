@@ -57,7 +57,7 @@ class RolePermissionController extends Controller
             foreach ($request->input('permissions') as $permissionData) {
                 RolePermission::updateOrCreate(
                     [
-                        'role_id' => $role->role_id,
+                        'role_id' => $role->id,
                         'module_code' => $permissionData['module_code'],
                     ],
                     [
@@ -74,7 +74,7 @@ class RolePermissionController extends Controller
             // Invalidate permission cache for all users with this role
             $users = $role->users;
             foreach ($users as $user) {
-                $this->rbacService->invalidateCache($user->user_id);
+                $this->rbacService->invalidateCache($user->id);
             }
 
             DB::commit();
@@ -120,7 +120,7 @@ class RolePermissionController extends Controller
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'role_id' => $role->role_id,
+                    'role_id' => $role->id,
                     'role_code' => $role->role_code,
                     'role_name' => $role->role_name,
                     'permissions' => $role->permissions

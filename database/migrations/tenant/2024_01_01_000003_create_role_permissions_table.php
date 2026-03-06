@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('role_permissions', function (Blueprint $table) {
-            $table->id('perm_id');
+            $table->id();
             $table->unsignedBigInteger('role_id');
             $table->string('module_code', 40)->comment('PR, PO, GRN, QC, INVOICE, PAYMENT...');
             $table->boolean('can_view')->default(false)->comment('View/read access');
@@ -22,7 +22,7 @@ return new class extends Migration
             $table->boolean('can_delete')->default(false)->comment('Delete / deactivate records');
             
             // Foreign keys
-            $table->foreign('role_id')->references('role_id')->on('role_master')->onDelete('cascade');
+            $table->foreign('role_id')->references('id')->on('role_master')->onDelete('cascade');
             
             // Unique constraint
             $table->unique(['role_id', 'module_code'], 'unique_role_module');

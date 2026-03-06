@@ -104,13 +104,13 @@ class AuthenticationServiceImpl implements AuthenticationService
         
         // Check if user is active
         if (!$user->is_active) {
-            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'User account is inactive', null, $user->user_id);
+            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'User account is inactive', null, $user->id);
             throw new AuthenticationException('User account is inactive', 403);
         }
         
         // Step 5: Verify password
         if (!$user->verifyPassword($password)) {
-            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'Invalid credentials', null, $user->user_id);
+            AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'Invalid credentials', null, $user->id);
             throw new AuthenticationException('Invalid credentials', 401);
         }
         
@@ -121,7 +121,7 @@ class AuthenticationServiceImpl implements AuthenticationService
         $tokens = $this->tokenService->generateTokens($user, $organization);
         
         // Log successful authentication
-        AuditLogger::logAuthAttempt($email, $organization->org_slug, true, null, null, $user->user_id);
+        AuditLogger::logAuthAttempt($email, $organization->org_slug, true, null, null, $user->id);
         
         // Step 9: Return tokens to client
         return new AuthResult(

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('bom_detail', function (Blueprint $table) {
-            $table->id('bom_detail_id');
+            $table->id();
             $table->unsignedBigInteger('bom_id');
             $table->unsignedBigInteger('material_id');
             $table->decimal('qty_required', 12, 4)->comment('Required qty per batch_size');

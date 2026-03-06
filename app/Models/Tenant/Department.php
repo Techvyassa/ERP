@@ -8,7 +8,6 @@ class Department extends Model
 {
     protected $connection = 'tenant';
     protected $table = 'department_master';
-    protected $primaryKey = 'dept_id';
     
     protected $fillable = [
         'dept_code',
@@ -27,7 +26,7 @@ class Department extends Model
      */
     public function parent()
     {
-        return $this->belongsTo(Department::class, 'parent_dept_id', 'dept_id');
+        return $this->belongsTo(Department::class, 'parent_dept_id');
     }
     
     /**
@@ -35,7 +34,7 @@ class Department extends Model
      */
     public function children()
     {
-        return $this->hasMany(Department::class, 'parent_dept_id', 'dept_id');
+        return $this->hasMany(Department::class, 'parent_dept_id');
     }
     
     /**
@@ -43,7 +42,7 @@ class Department extends Model
      */
     public function users()
     {
-        return $this->hasMany(User::class, 'dept_id', 'dept_id');
+        return $this->hasMany(User::class, 'dept_id');
     }
     
     /**
@@ -73,7 +72,7 @@ class Department extends Model
     protected function wouldCreateCycle($parentId, $visited = []): bool
     {
         // If parent is self, that's a cycle
-        if ($parentId == $this->dept_id) {
+        if ($parentId == $this->id) {
             return true;
         }
         

@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->create('vendor_material_map', function (Blueprint $table) {
-            $table->id('map_id');
+            $table->id();
             $table->unsignedBigInteger('vendor_id');
             $table->unsignedBigInteger('material_id');
             $table->string('vendor_material_code', 50)->nullable()->comment("Vendor's own SKU/part number");
