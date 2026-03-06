@@ -185,6 +185,36 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // PROCUREMENT (Vendor & Procurement) Endpoints
+        Route::middleware(['check.module.permission:PROCUREMENT'])->group(function () {
+            // Vendor Master
+            Route::prefix('vendors')->group(function () {
+                Route::get('/', [App\Http\Controllers\VendorController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\VendorController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\VendorController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\VendorController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\VendorController::class, 'destroy']); // Blacklist vendor
+            });
+
+            // Vendor Contacts
+            Route::prefix('vendor-contacts')->group(function () {
+                Route::get('/', [App\Http\Controllers\VendorContactController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\VendorContactController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\VendorContactController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\VendorContactController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\VendorContactController::class, 'destroy']);
+            });
+
+            // Approved Vendor List (AVL) — Vendor Material Map
+            Route::prefix('vendor-material-map')->group(function () {
+                Route::get('/', [App\Http\Controllers\VendorMaterialMapController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\VendorMaterialMapController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\VendorMaterialMapController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\VendorMaterialMapController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\VendorMaterialMapController::class, 'destroy']);
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {

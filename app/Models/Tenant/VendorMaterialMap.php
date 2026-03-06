@@ -3,35 +3,30 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class VendorMaterialMap extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'vendor_material_map';
+    public $timestamps = false;
 
     protected $fillable = [
         'vendor_id',
         'material_id',
         'vendor_material_code',
-        'vendor_material_name',
+        'last_purchase_price',
         'lead_time_days',
-        'moq',
-        'unit_price',
-        'currency_id',
+        'min_order_qty',
         'is_preferred',
         'is_active',
-        'created_by',
-        'updated_by'
     ];
 
     protected $casts = [
         'is_preferred' => 'boolean',
         'is_active' => 'boolean',
         'lead_time_days' => 'integer',
-        'moq' => 'decimal:2',
-        'unit_price' => 'decimal:2'
+        'min_order_qty' => 'decimal:3',
+        'last_purchase_price' => 'decimal:4',
     ];
 
     // Relationships
@@ -43,11 +38,6 @@ class VendorMaterialMap extends Model
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_id');
-    }
-
-    public function currency()
-    {
-        return $this->belongsTo(Currency::class, 'currency_id');
     }
 
     // Scopes
