@@ -203,20 +203,250 @@
                 </div>
                 
                 <div class="flex items-center space-x-4">
-                    <button class="text-gray-600 hover:text-gray-900 relative">
-                        <span class="material-symbols-outlined text-xl">notifications</span>
-                        <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">3</span>
-                    </button>
+                    <!-- Global Search -->
+                    <div class="relative" x-data="{ 
+                        searchOpen: false, 
+                        searchQuery: '',
+                        searchResults: [],
+                        allPages: [
+                            { name: 'Dashboard', url: '{{ url($tenantType === 'subdomain' ? '/dashboard' : "/org/{$organization->org_slug}/dashboard") }}', icon: 'home', category: 'Main' },
+                            { name: 'Profile Setup', url: '{{ url($tenantType === 'subdomain' ? '/profile-completion' : "/org/{$organization->org_slug}/profile-completion") }}', icon: 'task', category: 'Main' },
+                            { name: 'Master Setup', url: '{{ url($tenantType === 'subdomain' ? '/master-setup' : "/org/{$organization->org_slug}/master-setup") }}', icon: 'database', category: 'Main' },
+                            { name: 'Users', url: '{{ url($tenantType === 'subdomain' ? '/users' : "/org/{$organization->org_slug}/users") }}', icon: 'group', category: 'Organization', keywords: ['user', 'employee', 'staff'] },
+                            { name: 'Departments', url: '{{ url($tenantType === 'subdomain' ? '/departments' : "/org/{$organization->org_slug}/departments") }}', icon: 'corporate_fare', category: 'Organization', keywords: ['dept', 'department', 'division'] },
+                            { name: 'Roles', url: '{{ url($tenantType === 'subdomain' ? '/roles' : "/org/{$organization->org_slug}/roles") }}', icon: 'badge', category: 'Organization', keywords: ['role', 'permission', 'access'] },
+                            { name: 'Approval Matrix', url: '{{ url($tenantType === 'subdomain' ? '/approval-matrix' : "/org/{$organization->org_slug}/approval-matrix") }}', icon: 'approval', category: 'Organization', keywords: ['approval', 'workflow', 'authorization'] },
+                            { name: 'Materials', url: '{{ url($tenantType === 'subdomain' ? '/materials' : "/org/{$organization->org_slug}/materials") }}', icon: 'inventory_2', category: 'Inventory', keywords: ['material', 'raw material', 'rm', 'item'] },
+                            { name: 'Products', url: '{{ url($tenantType === 'subdomain' ? '/products' : "/org/{$organization->org_slug}/products") }}', icon: 'shopping_bag', category: 'Inventory', keywords: ['product', 'finished goods', 'fg', 'item'] },
+                            { name: 'Warehouses', url: '{{ url($tenantType === 'subdomain' ? '/warehouses' : "/org/{$organization->org_slug}/warehouses") }}', icon: 'warehouse', category: 'Inventory', keywords: ['warehouse', 'storage', 'location'] },
+                            { name: 'UOM', url: '{{ url($tenantType === 'subdomain' ? '/uom' : "/org/{$organization->org_slug}/uom") }}', icon: 'straighten', category: 'Inventory', keywords: ['uom', 'unit', 'measurement'] },
+                            { name: 'Bin Locations', url: '{{ url($tenantType === 'subdomain' ? '/bin-locations' : "/org/{$organization->org_slug}/bin-locations") }}', icon: 'shelves', category: 'Inventory', keywords: ['bin', 'rack', 'location', 'shelf'] },
+                            { name: 'Vendors', url: '{{ url($tenantType === 'subdomain' ? '/vendors' : "/org/{$organization->org_slug}/vendors") }}', icon: 'store', category: 'Vendor', keywords: ['vendor', 'supplier', 'partner'] },
+                            { name: 'Vendor Contacts', url: '{{ url($tenantType === 'subdomain' ? '/vendor-contacts' : "/org/{$organization->org_slug}/vendor-contacts") }}', icon: 'contacts', category: 'Vendor', keywords: ['contact', 'vendor contact'] },
+                            { name: 'Vendor Material Map', url: '{{ url($tenantType === 'subdomain' ? '/vendor-material-map' : "/org/{$organization->org_slug}/vendor-material-map") }}', icon: 'link', category: 'Vendor', keywords: ['mapping', 'vendor material', 'avl'] },
+                            { name: 'HSN Codes', url: '{{ url($tenantType === 'subdomain' ? '/hsn-codes' : "/org/{$organization->org_slug}/hsn-codes") }}', icon: 'qr_code', category: 'Tax', keywords: ['hsn', 'code', 'tax code'] },
+                            { name: 'GST Taxes', url: '{{ url($tenantType === 'subdomain' ? '/gst-taxes' : "/org/{$organization->org_slug}/gst-taxes") }}', icon: 'receipt', category: 'Tax', keywords: ['gst', 'tax', 'cgst', 'sgst', 'igst'] },
+                            { name: 'Currency', url: '{{ url($tenantType === 'subdomain' ? '/currency' : "/org/{$organization->org_slug}/currency") }}', icon: 'currency_exchange', category: 'Tax', keywords: ['currency', 'exchange', 'forex'] },
+                            { name: 'BOM Header', url: '{{ url($tenantType === 'subdomain' ? '/bom-header' : "/org/{$organization->org_slug}/bom-header") }}', icon: 'description', category: 'BOM', keywords: ['bom', 'bill of materials', 'recipe'] },
+                            { name: 'BOM Detail', url: '{{ url($tenantType === 'subdomain' ? '/bom-detail' : "/org/{$organization->org_slug}/bom-detail") }}', icon: 'list_alt', category: 'BOM', keywords: ['bom detail', 'component', 'material list'] },
+                            { name: 'Reports', url: '{{ url($tenantType === 'subdomain' ? '/reports' : "/org/{$organization->org_slug}/reports") }}', icon: 'bar_chart', category: 'Other', keywords: ['report', 'analytics', 'dashboard'] },
+                            { name: 'Settings', url: '{{ url($tenantType === 'subdomain' ? '/settings' : "/org/{$organization->org_slug}/settings") }}', icon: 'settings', category: 'Other', keywords: ['setting', 'configuration', 'preferences'] }
+                        ],
+                        search() {
+                            if (this.searchQuery.length < 2) {
+                                this.searchResults = [];
+                                return;
+                            }
+                            const query = this.searchQuery.toLowerCase();
+                            this.searchResults = this.allPages.filter(page => {
+                                const nameMatch = page.name.toLowerCase().includes(query);
+                                const categoryMatch = page.category.toLowerCase().includes(query);
+                                const keywordMatch = page.keywords && page.keywords.some(k => k.includes(query));
+                                return nameMatch || categoryMatch || keywordMatch;
+                            }).slice(0, 8);
+                        },
+                        navigate(url) {
+                            window.location.href = url;
+                        },
+                        handleKeydown(event) {
+                            if (event.key === 'Escape') {
+                                this.searchOpen = false;
+                                this.searchQuery = '';
+                                this.searchResults = [];
+                            }
+                        }
+                    }">
+                        <button @click="searchOpen = true" class="flex items-center space-x-2 px-3 py-2 text-gray-600 hover:text-gray-900 hover:bg-gray-100 rounded-lg transition-colors">
+                            <span class="material-symbols-outlined text-xl">search</span>
+                            <span class="text-sm text-gray-500">Search...</span>
+                            <kbd class="hidden sm:inline-block px-2 py-1 text-xs font-semibold text-gray-500 bg-gray-100 border border-gray-200 rounded">Ctrl-K</kbd>
+                        </button>
+                        
+                        <!-- Search Modal -->
+                        <div x-show="searchOpen" 
+                             @click.away="searchOpen = false"
+                             @keydown.window="handleKeydown"
+                             x-cloak
+                             class="fixed inset-0 z-50 overflow-y-auto"
+                             style="display: none;">
+                            <div class="flex items-start justify-center min-h-screen pt-20 px-4">
+                                <!-- Backdrop -->
+                                <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity"></div>
+                                
+                                <!-- Modal Content -->
+                                <div class="relative bg-white rounded-lg shadow-xl w-full max-w-2xl">
+                                    <!-- Search Input -->
+                                    <div class="flex items-center px-4 py-3 border-b border-gray-200">
+                                        <span class="material-symbols-outlined text-gray-400 mr-3">search</span>
+                                        <input 
+                                            type="text" 
+                                            x-model="searchQuery"
+                                            @input="search()"
+                                            placeholder="Search for pages, features, or modules..."
+                                            class="flex-1 outline-none text-gray-900 placeholder-gray-400"
+                                            autofocus>
+                                        <button @click="searchOpen = false; searchQuery = ''; searchResults = [];" class="ml-2 text-gray-400 hover:text-gray-600">
+                                            <span class="material-symbols-outlined text-sm">close</span>
+                                        </button>
+                                    </div>
+                                    
+                                    <!-- Search Results -->
+                                    <div class="max-h-96 overflow-y-auto">
+                                        <template x-if="searchQuery.length >= 2 && searchResults.length > 0">
+                                            <div class="py-2">
+                                                <template x-for="(result, index) in searchResults" :key="index">
+                                                    <button @click="navigate(result.url)" 
+                                                            class="w-full flex items-center space-x-3 px-4 py-3 hover:bg-gray-50 transition-colors text-left">
+                                                        <div class="w-10 h-10 bg-blue-50 rounded-lg flex items-center justify-center flex-shrink-0">
+                                                            <span class="material-symbols-outlined text-blue-600 text-lg" x-text="result.icon"></span>
+                                                        </div>
+                                                        <div class="flex-1 min-w-0">
+                                                            <p class="text-sm font-medium text-gray-900" x-text="result.name"></p>
+                                                            <p class="text-xs text-gray-500" x-text="result.category"></p>
+                                                        </div>
+                                                        <span class="material-symbols-outlined text-gray-400 text-sm">arrow_forward</span>
+                                                    </button>
+                                                </template>
+                                            </div>
+                                        </template>
+                                        
+                                        <template x-if="searchQuery.length >= 2 && searchResults.length === 0">
+                                            <div class="py-12 text-center">
+                                                <span class="material-symbols-outlined text-gray-300 text-5xl">search_off</span>
+                                                <p class="text-sm text-gray-500 mt-2">No results found</p>
+                                                <p class="text-xs text-gray-400 mt-1">Try searching for materials, vendors, or other modules</p>
+                                            </div>
+                                        </template>
+                                        
+                                        <template x-if="searchQuery.length < 2">
+                                            <div class="py-8">
+                                                <p class="text-xs text-gray-400 text-center mb-4">Quick Access</p>
+                                                <div class="grid grid-cols-2 gap-2 px-4">
+                                                    <button @click="navigate('{{ url($tenantType === 'subdomain' ? '/materials' : "/org/{$organization->org_slug}/materials") }}')" 
+                                                            class="flex items-center space-x-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                                                        <span class="material-symbols-outlined text-blue-600 text-sm">inventory_2</span>
+                                                        <span class="text-sm text-gray-700">Materials</span>
+                                                    </button>
+                                                    <button @click="navigate('{{ url($tenantType === 'subdomain' ? '/products' : "/org/{$organization->org_slug}/products") }}')" 
+                                                            class="flex items-center space-x-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                                                        <span class="material-symbols-outlined text-green-600 text-sm">shopping_bag</span>
+                                                        <span class="text-sm text-gray-700">Products</span>
+                                                    </button>
+                                                    <button @click="navigate('{{ url($tenantType === 'subdomain' ? '/vendors' : "/org/{$organization->org_slug}/vendors") }}')" 
+                                                            class="flex items-center space-x-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                                                        <span class="material-symbols-outlined text-purple-600 text-sm">store</span>
+                                                        <span class="text-sm text-gray-700">Vendors</span>
+                                                    </button>
+                                                    <button @click="navigate('{{ url($tenantType === 'subdomain' ? '/users' : "/org/{$organization->org_slug}/users") }}')" 
+                                                            class="flex items-center space-x-2 px-3 py-2 hover:bg-gray-50 rounded-lg transition-colors text-left">
+                                                        <span class="material-symbols-outlined text-orange-600 text-sm">group</span>
+                                                        <span class="text-sm text-gray-700">Users</span>
+                                                    </button>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                    
+                                    <!-- Footer -->
+                                    <div class="px-4 py-3 border-t border-gray-200 bg-gray-50 rounded-b-lg">
+                                        <div class="flex items-center justify-between text-xs text-gray-500">
+                                            <span>Type to search across all modules</span>
+                                            <div class="flex items-center space-x-2">
+                                                <kbd class="px-2 py-1 bg-white border border-gray-200 rounded">ESC</kbd>
+                                                <span>to close</span>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
                     
-                    @if($tenantType === 'subdomain')
-                        <span class="text-xs text-gray-500 px-3 py-1 bg-gray-100 rounded-full">
-                            <span class="material-symbols-outlined text-sm mr-1 align-middle">language</span>Subdomain
-                        </span>
-                    @else
-                        <span class="text-xs text-gray-500 px-3 py-1 bg-gray-100 rounded-full">
-                            <span class="material-symbols-outlined text-sm mr-1 align-middle">link</span>Path-based
-                        </span>
-                    @endif
+                    <!-- Notifications -->
+                    <div class="relative" x-data="{ notificationOpen: false }">
+                        <button @click="notificationOpen = !notificationOpen" class="text-gray-600 hover:text-gray-900 relative">
+                            <span class="material-symbols-outlined text-xl">notifications</span>
+                            <span class="absolute -top-1 -right-1 w-4 h-4 bg-red-500 rounded-full text-xs text-white flex items-center justify-center">3</span>
+                        </button>
+                        
+                        <!-- Notification Dropdown -->
+                        <div x-show="notificationOpen" 
+                             @click.away="notificationOpen = false"
+                             x-cloak
+                             x-transition:enter="transition ease-out duration-200"
+                             x-transition:enter-start="opacity-0 scale-95"
+                             x-transition:enter-end="opacity-100 scale-100"
+                             x-transition:leave="transition ease-in duration-150"
+                             x-transition:leave-start="opacity-100 scale-100"
+                             x-transition:leave-end="opacity-0 scale-95"
+                             class="absolute right-0 mt-2 w-80 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
+                            
+                            <!-- Header -->
+                            <div class="flex items-center justify-between px-4 py-3 border-b border-gray-200">
+                                <h3 class="text-sm font-semibold text-gray-900">Notifications</h3>
+                                <button class="text-xs text-blue-600 hover:text-blue-700">Mark all as read</button>
+                            </div>
+                            
+                            <!-- Notification List -->
+                            <div class="max-h-96 overflow-y-auto">
+                                <!-- Notification Item 1 -->
+                                <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="material-symbols-outlined text-blue-600 text-sm">task_alt</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm text-gray-900 font-medium">Profile setup completed</p>
+                                            <p class="text-xs text-gray-500 mt-1">Your organization profile has been successfully set up</p>
+                                            <p class="text-xs text-gray-400 mt-1">2 hours ago</p>
+                                        </div>
+                                        <div class="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Notification Item 2 -->
+                                <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="material-symbols-outlined text-green-600 text-sm">person_add</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm text-gray-900 font-medium">New user added</p>
+                                            <p class="text-xs text-gray-500 mt-1">John Doe has been added to your organization</p>
+                                            <p class="text-xs text-gray-400 mt-1">5 hours ago</p>
+                                        </div>
+                                        <div class="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Notification Item 3 -->
+                                <div class="px-4 py-3 hover:bg-gray-50 border-b border-gray-100 cursor-pointer">
+                                    <div class="flex items-start space-x-3">
+                                        <div class="w-8 h-8 bg-yellow-100 rounded-full flex items-center justify-center flex-shrink-0">
+                                            <span class="material-symbols-outlined text-yellow-600 text-sm">inventory</span>
+                                        </div>
+                                        <div class="flex-1 min-w-0">
+                                            <p class="text-sm text-gray-900 font-medium">Low stock alert</p>
+                                            <p class="text-xs text-gray-500 mt-1">Material RM-001 is running low on stock</p>
+                                            <p class="text-xs text-gray-400 mt-1">1 day ago</p>
+                                        </div>
+                                        <div class="w-2 h-2 bg-blue-600 rounded-full flex-shrink-0 mt-2"></div>
+                                    </div>
+                                </div>
+                                
+                                <!-- Empty State (hidden when there are notifications) -->
+                                <div class="hidden px-4 py-12 text-center">
+                                    <span class="material-symbols-outlined text-gray-300 text-5xl">notifications_off</span>
+                                    <p class="text-sm text-gray-500 mt-2">No notifications</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Footer -->
+                            <div class="px-4 py-3 border-t border-gray-200 text-center">
+                                <a href="#" class="text-xs text-blue-600 hover:text-blue-700 font-medium">View all notifications</a>
+                            </div>
+                        </div>
+                    </div>
                 </div>
             </div>
         </header>

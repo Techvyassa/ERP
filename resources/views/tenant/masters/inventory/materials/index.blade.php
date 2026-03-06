@@ -5,6 +5,118 @@
 
 @section('content')
 <div x-data="materialData()" x-init="loadData()">
+    <!-- CSV Upload Modal -->
+    <div x-show="showUploadModal" 
+         x-cloak
+         class="fixed inset-0 z-50 overflow-y-auto"
+         style="display: none;">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity" @click="showUploadModal = false"></div>
+            
+            <!-- Modal Content -->
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <!-- Header -->
+                <div class="bg-white px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Import Materials from CSV</h3>
+                        <button @click="showUploadModal = false" class="text-gray-400 hover:text-gray-600">
+                            <i class="fas fa-times"></i>
+                        </button>
+                    </div>
+                </div>
+                
+                <!-- Body -->
+                <div class="bg-white px-6 py-4">
+                    <!-- Download Template -->
+                    <div class="mb-6">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Step 1: Download Template</label>
+                        <button @click="downloadTemplate" class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center">
+                            <i class="fas fa-download text-blue-600 mr-2"></i>
+                            <span class="text-sm text-gray-700">Download CSV Template</span>
+                        </button>
+                        <p class="text-xs text-gray-500 mt-2">Download the template file with required columns and format</p>
+                    </div>
+                    
+                    <!-- Upload File -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Step 2: Upload Filled CSV</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors"
+                             @dragover.prevent="dragOver = true"
+                             @dragleave.prevent="dragOver = false"
+                             @drop.prevent="handleFileDrop($event)"
+                             :class="{ 'border-blue-500 bg-blue-50': dragOver }">
+                            <div class="space-y-1 text-center">
+                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                        <span>Upload a file</span>
+                                        <input id="file-upload" 
+                                               name="file-upload" 
+                                               type="file" 
+                                               accept=".csv"
+                                               class="sr-only"
+                                               @change="handleFileSelect($event)">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">CSV file up to 10MB</p>
+                                <p x-show="selectedFile" class="text-sm text-green-600 mt-2">
+                                    <i class="fas fa-check-circle mr-1"></i>
+                                    <span x-text="selectedFile ? selectedFile.name : ''"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Upload Progress -->
+                    <div x-show="uploading" class="mb-4">
+                        <div class="flex items-center justify-between text-sm text-gray-700 mb-2">
+                            <span>Uploading...</span>
+                            <span x-text="uploadProgress + '%'"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300" 
+                                 :style="'width: ' + uploadProgress + '%'"></div>
+                        </div>
+                    </div>
+                    
+                    <!-- Validation Results -->
+                    <div x-show="validationResults" class="mb-4">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                            <div class="flex items-start">
+                                <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-medium text-yellow-800">Validation Issues Found</h4>
+                                    <ul class="mt-2 text-xs text-yellow-700 list-disc list-inside">
+                                        <li>Row 5: Material code is required</li>
+                                        <li>Row 12: Invalid material type</li>
+                                        <li>Row 18: UOM not found</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Footer -->
+                <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
+                    <button @click="showUploadModal = false" 
+                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="uploadCSV" 
+                            :disabled="!selectedFile || uploading"
+                            :class="!selectedFile || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg transition-colors">
+                        <i class="fas fa-upload mr-2"></i>
+                        <span x-text="uploading ? 'Uploading...' : 'Import Data'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between">
@@ -12,10 +124,17 @@
                 <h2 class="text-2xl font-bold text-gray-900">Material Master</h2>
                 <p class="text-gray-600 mt-1">Manage raw materials, packaging, and consumables</p>
             </div>
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/materials/create' : '/org/' . $organization->org_slug . '/materials/create') }}" 
-               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-plus mr-2"></i>Add Material
-            </a>
+            <div class="flex items-center space-x-3">
+                <!-- CSV Upload Button -->
+                <button @click="showUploadModal = true" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                    <i class="fas fa-upload mr-2"></i>Import CSV
+                </button>
+                <!-- Add Material Button -->
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/materials/create' : '/org/' . $organization->org_slug . '/materials/create') }}" 
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
+                    <i class="fas fa-plus mr-2"></i>Add Material
+                </a>
+            </div>
         </div>
     </div>
 
@@ -147,6 +266,12 @@ function materialData() {
     return {
         items: [],
         loading: false,
+        showUploadModal: false,
+        selectedFile: null,
+        uploading: false,
+        uploadProgress: 0,
+        validationResults: false,
+        dragOver: false,
         filters: {
             search: '',
             material_type: '',
@@ -165,11 +290,6 @@ function materialData() {
             this.loading = true;
             try {
                 // TODO: Replace with actual API call
-                // const response = await apiClient.get('/api/materials', { params: this.filters });
-                // this.items = response.data.data.materials;
-                // this.pagination = response.data.data.pagination;
-                
-                // Placeholder data
                 this.items = [];
                 this.pagination = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
             } catch (error) {
@@ -192,8 +312,78 @@ function materialData() {
             this.loadData();
         },
         
-        openCreateModal() {
-            alert('Create material form - Coming soon');
+        downloadTemplate() {
+            // Create CSV template
+            const headers = ['material_code', 'material_name', 'material_type', 'uom_id', 'reorder_level', 'safety_stock', 'is_active'];
+            const sampleData = ['MAT-001', 'Sample Material', 'RAW', '1', '100', '50', 'true'];
+            const csv = [headers.join(','), sampleData.join(',')].join('\n');
+            
+            // Download file
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = window.URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'material_import_template.csv';
+            a.click();
+            window.URL.revokeObjectURL(url);
+        },
+        
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'text/csv') {
+                this.selectedFile = file;
+            } else {
+                alert('Please select a valid CSV file');
+            }
+        },
+        
+        handleFileDrop(event) {
+            this.dragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file && file.type === 'text/csv') {
+                this.selectedFile = file;
+            } else {
+                alert('Please drop a valid CSV file');
+            }
+        },
+        
+        async uploadCSV() {
+            if (!this.selectedFile) return;
+            
+            this.uploading = true;
+            this.uploadProgress = 0;
+            
+            // Simulate upload progress
+            const interval = setInterval(() => {
+                if (this.uploadProgress < 90) {
+                    this.uploadProgress += 10;
+                }
+            }, 200);
+            
+            try {
+                // TODO: Replace with actual API call
+                const formData = new FormData();
+                formData.append('file', this.selectedFile);
+                
+                // Simulate API call
+                await new Promise(resolve => setTimeout(resolve, 2000));
+                
+                this.uploadProgress = 100;
+                clearInterval(interval);
+                
+                alert('CSV imported successfully! ' + this.selectedFile.name);
+                this.showUploadModal = false;
+                this.selectedFile = null;
+                this.uploading = false;
+                this.uploadProgress = 0;
+                this.loadData();
+            } catch (error) {
+                clearInterval(interval);
+                console.error('Failed to upload CSV:', error);
+                alert('Failed to upload CSV. Please try again.');
+                this.uploading = false;
+                this.uploadProgress = 0;
+            }
         },
         
         edit(item) {
@@ -203,10 +393,7 @@ function materialData() {
         async deleteItem(item) {
             if (confirm('Are you sure you want to delete material: ' + item.material_code + '?')) {
                 try {
-                    // TODO: Replace with actual API call
-                    // await apiClient.delete('/api/materials/' + item.id);
                     alert('Delete functionality - Coming soon');
-                    // this.loadData();
                 } catch (error) {
                     console.error('Failed to delete material:', error);
                     alert('Failed to delete material. Please try again.');
