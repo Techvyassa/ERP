@@ -3,31 +3,33 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class UOM extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'uom_master';
+    public $timestamps = false;
 
     protected $fillable = [
         'uom_code',
         'uom_name',
-        'uom_description',
-        'base_unit',
+        'uom_type',
+        'base_uom_id',
         'conversion_factor',
-        'is_active',
-        'created_by',
-        'updated_by'
+        'is_active'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'conversion_factor' => 'decimal:4'
+        'conversion_factor' => 'decimal:6'
     ];
 
     // Relationships
+    public function baseUom()
+    {
+        return $this->belongsTo(UOM::class, 'base_uom_id');
+    }
+
     public function materials()
     {
         return $this->hasMany(Material::class, 'uom_id');
@@ -35,7 +37,7 @@ class UOM extends Model
 
     public function products()
     {
-        return $this->hasMany(Product::class, 'uom_id');
+        return $this->hasMany(Product::class, 'pack_uom_id');
     }
 
     // Scopes

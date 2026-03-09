@@ -19,7 +19,7 @@ class HSNCodeController extends Controller
         $requestId = Str::uuid()->toString();
         
         try {
-            $query = HSNCode::query();
+            $query = HSNCode::with('defaultGst');
 
             if ($request->has('is_active')) {
                 $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
@@ -62,7 +62,7 @@ class HSNCodeController extends Controller
         $requestId = Str::uuid()->toString();
         
         try {
-            $hsnCode = HSNCode::findOrFail($id);
+            $hsnCode = HSNCode::with('defaultGst')->findOrFail($id);
 
             return response()->json([
                 'success' => true,

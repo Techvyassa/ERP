@@ -3,31 +3,26 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class VendorContact extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'vendor_contacts';
+    public $timestamps = false;
 
     protected $fillable = [
         'vendor_id',
-        'contact_person',
-        'designation',
-        'department',
+        'contact_name',
+        'contact_type',
         'phone',
-        'mobile',
         'email',
         'is_primary',
         'is_active',
-        'created_by',
-        'updated_by'
     ];
 
     protected $casts = [
         'is_primary' => 'boolean',
-        'is_active' => 'boolean'
+        'is_active' => 'boolean',
     ];
 
     // Relationships

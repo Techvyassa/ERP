@@ -3,31 +3,26 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BinLocation extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'bin_locations';
+    public $timestamps = false;
 
     protected $fillable = [
         'warehouse_id',
         'bin_code',
-        'bin_name',
         'aisle',
         'rack',
         'shelf',
-        'bin_type',
-        'capacity',
-        'is_active',
-        'created_by',
-        'updated_by'
+        'max_weight_kg',
+        'is_active'
     ];
 
     protected $casts = [
         'is_active' => 'boolean',
-        'capacity' => 'decimal:2'
+        'max_weight_kg' => 'decimal:2'
     ];
 
     // Relationships

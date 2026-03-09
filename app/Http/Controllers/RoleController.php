@@ -17,7 +17,7 @@ class RoleController extends Controller
     public function index(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $query = Role::with(['permissions']);
 
@@ -28,9 +28,9 @@ class RoleController extends Controller
 
             if ($request->has('search')) {
                 $search = $request->input('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('role_name', 'like', "%{$search}%")
-                      ->orWhere('role_code', 'like', "%{$search}%");
+                        ->orWhere('role_code', 'like', "%{$search}%");
                 });
             }
 
@@ -66,7 +66,7 @@ class RoleController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $role = Role::with(['permissions'])->findOrFail($id);
 
@@ -100,9 +100,9 @@ class RoleController extends Controller
     public function store(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
-            'role_code' => 'required|string|max:50|unique:role_master,role_code',
+            'role_code' => 'required|string|max:50|unique:tenant.role_master,role_code',
             'role_name' => 'required|string|max:100',
             'description' => 'nullable|string',
         ]);
@@ -128,7 +128,7 @@ class RoleController extends Controller
                 'description' => $request->input('description'),
                 'is_active' => true,
                 'is_system_role' => false,
-                'created_by' => $request->attributes->get('user_id'),
+                'created_by' => $request->input('auth_user_id'),
             ]);
 
             return response()->json([
@@ -161,9 +161,9 @@ class RoleController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
-            'role_code' => 'sometimes|string|max:50|unique:role_master,role_code,' . $id . ',role_id',
+            'role_code' => 'sometimes|string|max:50|unique:tenant.role_master,role_code,' . $id . ',id',
             'role_name' => 'sometimes|string|max:100',
             'description' => 'nullable|string',
             'is_active' => 'sometimes|boolean',
@@ -231,10 +231,10 @@ class RoleController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $role = Role::findOrFail($id);
-            
+
             // Prevent deletion of system roles
             if ($role->is_system_role) {
                 return response()->json([

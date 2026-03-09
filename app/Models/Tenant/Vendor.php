@@ -3,12 +3,10 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Vendor extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'vendor_master';
 
     protected $fillable = [
@@ -16,28 +14,28 @@ class Vendor extends Model
         'vendor_name',
         'vendor_type',
         'gstin',
-        'pan',
-        'address_line1',
-        'address_line2',
-        'city',
-        'state',
-        'pincode',
-        'country',
-        'primary_contact_person',
-        'primary_phone',
-        'primary_email',
+        'pan_number',
+        'msme_category',
         'payment_terms',
-        'credit_limit',
         'credit_days',
-        'is_active',
-        'created_by',
-        'updated_by'
+        'currency_id',
+        'delivery_terms',
+        'bank_name',
+        'bank_account_no',
+        'ifsc_code',
+        'is_approved',
+        'approved_date',
+        'approved_by',
+        'rating_score',
+        'blacklisted',
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'credit_limit' => 'decimal:2',
-        'credit_days' => 'integer'
+        'is_approved' => 'boolean',
+        'blacklisted' => 'boolean',
+        'credit_days' => 'integer',
+        'rating_score' => 'decimal:2',
+        'approved_date' => 'date',
     ];
 
     // Relationships
@@ -51,10 +49,25 @@ class Vendor extends Model
         return $this->hasMany(VendorMaterialMap::class, 'vendor_id');
     }
 
+    public function currency()
+    {
+        return $this->belongsTo(Currency::class, 'currency_id');
+    }
+
+    public function approvedBy()
+    {
+        return $this->belongsTo(User::class, 'approved_by');
+    }
+
     // Scopes
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('blacklisted', false);
+    }
+
+    public function scopeApproved($query)
+    {
+        return $query->where('is_approved', true);
     }
 
     public function scopeByType($query, $type)

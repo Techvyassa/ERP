@@ -13,29 +13,23 @@
                 <p class="text-gray-600 mt-1">Manage GST tax rates and configurations</p>
             </div>
             <button @click="openCreateModal" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-plus mr-2"></i>Add GST Tax
+                <span class="material-symbols-outlined text-sm inline-block align-middle mr-2">add</span>Add GST Tax
             </button>
         </div>
     </div>
 
     <!-- Filters -->
     <div class="bg-white rounded-xl shadow p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input type="text" x-model="filters.search" @input="loadData" placeholder="Search by tax name..." 
+        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <input type="text" x-model="filters.search" @input="loadData" placeholder="Search by tax code or name..." 
                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <select x-model="filters.tax_type" @change="loadData" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option value="">All Types</option>
-                <option value="CGST_SGST">CGST/SGST</option>
-                <option value="IGST">IGST</option>
-                <option value="CESS">CESS</option>
-            </select>
             <select x-model="filters.is_active" @change="loadData" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                 <option value="">All Status</option>
                 <option value="1">Active</option>
                 <option value="0">Inactive</option>
             </select>
             <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <i class="fas fa-redo mr-2"></i>Reset
+                <span class="material-symbols-outlined text-sm inline-block align-middle mr-2">refresh</span>Reset
             </button>
         </div>
     </div>
@@ -46,37 +40,49 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax Code</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tax Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CGST %</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SGST %</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IGST %</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CESS %</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UGST %</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective From</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-if="loading">
-                        <tr><td colspan="8" class="px-6 py-12 text-center"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i><p class="text-gray-600 mt-2">Loading GST taxes...</p></td></tr>
+                        <tr><td colspan="9" class="px-6 py-12 text-center">
+                            <span class="material-symbols-outlined text-6xl text-gray-300 animate-spin">progress_activity</span>
+                            <p class="text-gray-600 mt-2">Loading GST taxes...</p>
+                        </td></tr>
                     </template>
                     <template x-if="!loading && items.length === 0">
-                        <tr><td colspan="8" class="px-6 py-12 text-center"><i class="fas fa-percentage text-6xl text-gray-300 mb-4"></i><p class="text-gray-600">No GST taxes found.</p></td></tr>
+                        <tr><td colspan="9" class="px-6 py-12 text-center">
+                            <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">percent</span>
+                            <p class="text-gray-600">No GST taxes found.</p>
+                        </td></tr>
                     </template>
                     <template x-for="item in items" :key="item.id">
                         <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-medium text-gray-900" x-text="item.tax_name"></span></td>
-                            <td class="px-6 py-4 whitespace-nowrap"><span class="text-xs px-2 py-1 rounded-full bg-blue-100 text-blue-800" x-text="item.tax_type"></span></td>
+                            <td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-medium text-gray-900" x-text="item.tax_code"></span></td>
+                            <td class="px-6 py-4"><span class="text-sm text-gray-900" x-text="item.tax_name"></span></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.cgst_rate + '%'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.sgst_rate + '%'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.igst_rate + '%'"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.cess_rate + '%'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.ugst_rate + '%'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.effective_from"></td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs rounded-full" :class="item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete"><i class="fas fa-trash"></i></button>
+                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
                             </td>
                         </tr>
                     </template>
@@ -94,17 +100,13 @@
             <form @submit.prevent="saveItem">
                 <div class="p-6 space-y-4">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tax Name *</label>
-                        <input type="text" x-model="formData.tax_name" required maxlength="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tax Code *</label>
+                        <input type="text" x-model="formData.tax_code" required maxlength="20" :disabled="editMode" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100" placeholder="e.g., GST5, GST12, GST18">
+                        <p class="text-xs text-gray-500 mt-1">Unique tax code identifier</p>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Tax Type *</label>
-                        <select x-model="formData.tax_type" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Type</option>
-                            <option value="CGST_SGST">CGST/SGST</option>
-                            <option value="IGST">IGST</option>
-                            <option value="CESS">CESS</option>
-                        </select>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Tax Name *</label>
+                        <input type="text" x-model="formData.tax_name" required maxlength="60" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., GST @ 18%">
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
@@ -122,8 +124,19 @@
                             <input type="number" x-model="formData.igst_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                         <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">CESS Rate (%)</label>
-                            <input type="number" x-model="formData.cess_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">UGST Rate (%)</label>
+                            <input type="number" x-model="formData.ugst_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                    </div>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Effective From *</label>
+                            <input type="date" x-model="formData.effective_from" required class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Effective To</label>
+                            <input type="date" x-model="formData.effective_to" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">Leave empty for current rate</p>
                         </div>
                     </div>
                     <div x-show="editMode">
@@ -148,15 +161,14 @@
 function gstData() {
     return {
         items: [], loading: false, showModal: false, editMode: false,
-        filters: { search: '', tax_type: '', is_active: '' },
-        formData: { tax_name: '', tax_type: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, cess_rate: 0, is_active: true },
+        filters: { search: '', is_active: '' },
+        formData: { tax_code: '', tax_name: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, ugst_rate: 0, effective_from: '', effective_to: '', is_active: true },
         
         async loadData() {
             this.loading = true;
             try {
                 const params = new URLSearchParams();
                 if (this.filters.search) params.append('search', this.filters.search);
-                if (this.filters.tax_type) params.append('tax_type', this.filters.tax_type);
                 if (this.filters.is_active !== '') params.append('is_active', this.filters.is_active);
                 
                 const response = await fetch(`/api/v1/gst-taxes?${params}`, {
@@ -175,13 +187,15 @@ function gstData() {
         },
         
         resetFilters() {
-            this.filters = { search: '', tax_type: '', is_active: '' };
+            this.filters = { search: '', is_active: '' };
             this.loadData();
         },
         
         openCreateModal() {
             this.editMode = false;
-            this.formData = { tax_name: '', tax_type: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, cess_rate: 0, is_active: true };
+            // Set default effective_from to today
+            const today = new Date().toISOString().split('T')[0];
+            this.formData = { tax_code: '', tax_name: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, ugst_rate: 0, effective_from: today, effective_to: '', is_active: true };
             this.showModal = true;
         },
         

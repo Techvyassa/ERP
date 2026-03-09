@@ -19,7 +19,7 @@ class UserController extends Controller
     public function index(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $query = User::with(['department', 'role']);
 
@@ -38,11 +38,11 @@ class UserController extends Controller
 
             if ($request->has('search')) {
                 $search = $request->input('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('first_name', 'like', "%{$search}%")
-                      ->orWhere('last_name', 'like', "%{$search}%")
-                      ->orWhere('email', 'like', "%{$search}%")
-                      ->orWhere('employee_code', 'like', "%{$search}%");
+                        ->orWhere('last_name', 'like', "%{$search}%")
+                        ->orWhere('email', 'like', "%{$search}%")
+                        ->orWhere('employee_code', 'like', "%{$search}%");
                 });
             }
 
@@ -84,7 +84,7 @@ class UserController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $user = User::with(['department', 'role'])->findOrFail($id);
 
@@ -118,16 +118,16 @@ class UserController extends Controller
     public function store(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
-            'employee_code' => 'required|string|max:50|unique:users,employee_code',
-            'email' => 'required|email|max:255|unique:users,email',
+            'employee_code' => 'required|string|max:50|unique:tenant.users,employee_code',
+            'email' => 'required|email|max:255|unique:tenant.users,email',
             'password' => 'required|string|min:8',
             'first_name' => 'required|string|max:100',
             'last_name' => 'required|string|max:100',
             'phone' => 'nullable|string|max:20',
-            'dept_id' => 'required|integer|exists:department_master,dept_id',
-            'role_id' => 'required|integer|exists:role_master,role_id',
+            'dept_id' => 'nullable|integer|exists:tenant.department_master,id',
+            'role_id' => 'nullable|integer|exists:tenant.role_master,id',
         ]);
 
         if ($validator->fails()) {
@@ -147,7 +147,7 @@ class UserController extends Controller
             // Check user capacity limit
             $orgId = $request->attributes->get('org_id');
             $activeSub = ActiveSubscription::find($orgId);
-            
+
             if ($activeSub) {
                 $activeUserCount = User::where('is_active', true)->count();
                 $maxUsers = $activeSub->max_users;
@@ -180,7 +180,7 @@ class UserController extends Controller
                 'dept_id' => $request->input('dept_id'),
                 'role_id' => $request->input('role_id'),
                 'is_active' => true,
-                'created_by' => $request->attributes->get('user_id'),
+                'created_by' => $request->input('auth_user_id'),
             ]);
 
             $user->load(['department', 'role']);
@@ -215,16 +215,16 @@ class UserController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
-            'employee_code' => 'sometimes|string|max:50|unique:users,employee_code,' . $id . ',user_id',
-            'email' => 'sometimes|email|max:255|unique:users,email,' . $id . ',user_id',
+            'employee_code' => 'sometimes|string|max:50|unique:tenant.users,employee_code,' . $id . ',id',
+            'email' => 'sometimes|email|max:255|unique:tenant.users,email,' . $id . ',id',
             'password' => 'sometimes|string|min:8',
             'first_name' => 'sometimes|string|max:100',
             'last_name' => 'sometimes|string|max:100',
             'phone' => 'nullable|string|max:20',
-            'dept_id' => 'sometimes|integer|exists:department_master,dept_id',
-            'role_id' => 'sometimes|integer|exists:role_master,role_id',
+            'dept_id' => 'sometimes|nullable|integer|exists:tenant.department_master,id',
+            'role_id' => 'sometimes|nullable|integer|exists:tenant.role_master,id',
             'is_active' => 'sometimes|boolean',
         ]);
 
@@ -300,13 +300,13 @@ class UserController extends Controller
     }
 
     /**
-     * Delete user (soft delete by setting is_active to false)
+     * deactivate user (soft delete by setting is_active to false)
      * DELETE /api/v1/users/{id}
      */
-    public function destroy(Request $request, int $id): JsonResponse
+    public function deactivate(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $user = User::findOrFail($id);
             $user->is_active = false;

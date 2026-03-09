@@ -3,30 +3,20 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class Warehouse extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'warehouse_master';
+    public $timestamps = false;
 
     protected $fillable = [
         'warehouse_code',
         'warehouse_name',
         'warehouse_type',
-        'address_line1',
-        'address_line2',
-        'city',
-        'state',
-        'pincode',
-        'country',
-        'contact_person',
-        'contact_phone',
-        'contact_email',
-        'is_active',
-        'created_by',
-        'updated_by'
+        'address',
+        'incharge_user_id',
+        'is_active'
     ];
 
     protected $casts = [
@@ -34,9 +24,19 @@ class Warehouse extends Model
     ];
 
     // Relationships
+    public function inchargeUser()
+    {
+        return $this->belongsTo(User::class, 'incharge_user_id');
+    }
+
     public function binLocations()
     {
         return $this->hasMany(BinLocation::class, 'warehouse_id');
+    }
+
+    public function materials()
+    {
+        return $this->hasMany(Material::class, 'default_warehouse_id');
     }
 
     // Scopes
