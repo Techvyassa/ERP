@@ -142,6 +142,7 @@ Route::prefix('v1')->group(function () {
             // UOM Master
             Route::prefix('uoms')->group(function () {
                 Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
+                Route::get('/barcode', [App\Http\Controllers\UOMController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\UOMController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\UOMController::class, 'update']);
@@ -151,6 +152,7 @@ Route::prefix('v1')->group(function () {
             // Warehouse Master
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
+                Route::get('/barcode', [App\Http\Controllers\WarehouseController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\WarehouseController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\WarehouseController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\WarehouseController::class, 'update']);
@@ -160,6 +162,7 @@ Route::prefix('v1')->group(function () {
             // Bin Locations
             Route::prefix('bin-locations')->group(function () {
                 Route::get('/', [App\Http\Controllers\BinLocationController::class, 'index']);
+                Route::get('/barcode', [App\Http\Controllers\BinLocationController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\BinLocationController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\BinLocationController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\BinLocationController::class, 'update']);
@@ -169,6 +172,7 @@ Route::prefix('v1')->group(function () {
             // Material Master
             Route::prefix('materials')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialController::class, 'index']);
+                Route::get('/barcode', [App\Http\Controllers\MaterialController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
@@ -178,6 +182,7 @@ Route::prefix('v1')->group(function () {
             // Product Master
             Route::prefix('products')->group(function () {
                 Route::get('/', [App\Http\Controllers\ProductController::class, 'index']);
+                Route::get('/barcode', [App\Http\Controllers\ProductController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\ProductController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\ProductController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\ProductController::class, 'update']);

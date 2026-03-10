@@ -5,10 +5,78 @@
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+ .barcode-container {
+     text-align: center;
+     padding: 20px;
+     border: 1px solid #ccc;
+     display: inline-block;
+ }
+ div.b128 {
+     border-left: 1px solid black;
+     height: 30px;
+     margin-left: 1px;
+     width: 2px;
+     display: inline-block;
+ }
+ .uom-name {
+     font-size: 16px;
+     font-weight: bold;
+     margin-bottom: 10px;
+ }
+ .uom-code {
+     font-size: 14px;
+     margin-top: 8px;
+     color: #666;
+ }
+ @media print {
+     body { margin: 0; }
+     .barcode-container { border: none; }
+ }
+</style>
 @endpush
 
 @section('content')
 <div x-data="uomData()" x-init="loadData()">
+    <!-- Barcode Modal -->
+    <div x-show="barcodeModal.show"
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+         @click.self="closeBarcodeModal()">
+        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" @click.stop>
+            <div class="p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">UOM Barcode</h3>
+                    <button @click="closeBarcodeModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+
+                <div id="barcode-content" class="barcode-container">
+                    <template x-if="barcodeModal.uom">
+                        <div>
+                            <div class="uom-name" x-text="barcodeModal.uom.uom_name"></div>
+                            <div x-show="barcodeModal.loading" class="text-sm text-gray-500">Generating barcode...</div>
+                            <div x-show="!barcodeModal.loading && barcodeModal.error" class="text-sm text-red-600" x-text="barcodeModal.error"></div>
+                            <div class="mt-3" x-show="!barcodeModal.loading && !barcodeModal.error" x-html="barcodeModal.barcodeHtml"></div>
+                            <div class="uom-code" x-show="!barcodeModal.loading && !barcodeModal.error" x-text="barcodeModal.uom.uom_code"></div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="flex justify-end space-x-3 mt-6">
+                    <button @click="closeBarcodeModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="printBarcode()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                        <i class="fas fa-print mr-2"></i>
+                        Print Barcode
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Header -->
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between">
@@ -115,6 +183,10 @@
                                     <i class="fas fa-trash mr-1"></i>
                                     Delete
                                 </button>
+                                <button @click="showBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded transition-colors ml-2" title="Barcode">
+                                    <i class="fas fa-barcode mr-1"></i>
+                                    Barcode
+                                </button>
                             </td>
                         </tr>
                     </template>
@@ -155,6 +227,13 @@ function uomData() {
         loading: false,
         filters: { search: '', uom_type: '', is_active: '' },
         pagination: { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 },
+        barcodeModal: {
+            show: false,
+            uom: null,
+            barcodeHtml: '',
+            loading: false,
+            error: ''
+        },
         
         async loadData() {
             this.loading = true;
@@ -206,6 +285,73 @@ function uomData() {
         edit(item) {
             const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/uom' : '/org/' . $organization->org_slug . '/uom') }}';
             window.location.href = `${baseUrl}/${item.id}/edit`;
+        },
+
+        async showBarcodeModal(item) {
+            this.barcodeModal.uom = item;
+            this.barcodeModal.barcodeHtml = '';
+            this.barcodeModal.error = '';
+            this.barcodeModal.loading = true;
+            this.barcodeModal.show = true;
+
+            try {
+                const response = await fetch(`/api/v1/uoms/barcode?code=${encodeURIComponent(item.uom_code)}`, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data || data.success !== true) {
+                    this.barcodeModal.error = (data && data.message) ? data.message : 'Failed to generate barcode';
+                    return;
+                }
+
+                const html = (data && data.data && data.data.html) ? data.data.html : '';
+                this.barcodeModal.barcodeHtml = html;
+                if (!html) {
+                    this.barcodeModal.error = 'Barcode HTML not returned';
+                }
+            } catch (e) {
+                console.error('Barcode generation failed:', e);
+                this.barcodeModal.error = 'Network error while generating barcode';
+            } finally {
+                this.barcodeModal.loading = false;
+            }
+        },
+
+        closeBarcodeModal() {
+            this.barcodeModal.show = false;
+            this.barcodeModal.uom = null;
+            this.barcodeModal.barcodeHtml = '';
+            this.barcodeModal.loading = false;
+            this.barcodeModal.error = '';
+        },
+
+        printBarcode() {
+            const printContent = document.getElementById('barcode-content').innerHTML;
+            const printWindow = window.open('', '_blank');
+            printWindow.document.write(`
+                <html>
+                    <head>
+                        <title>UOM Barcode</title>
+                        <style>
+                            body { font-family: Arial, sans-serif; margin: 20px; }
+                            .barcode-container { text-align: center; padding: 20px; border: 1px solid #ccc; display: inline-block; }
+                            div.b128 { border-left: 1px solid black; height: 30px; margin-left: 1px; width: 2px; display: inline-block; }
+                            .uom-name { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
+                            .uom-code { font-size: 14px; margin-top: 8px; color: #666; }
+                            @media print { body { margin: 0; } .barcode-container { border: none; } }
+                        </style>
+                    </head>
+                    <body>
+                        ${printContent}
+                    </body>
+                </html>
+            `);
+            printWindow.document.close();
+            printWindow.print();
         },
         
         async deleteItem(item) {
