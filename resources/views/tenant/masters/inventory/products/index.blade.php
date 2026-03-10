@@ -3,6 +3,10 @@
 @section('title', 'Products')
 @section('page-title', 'Product Master')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="productData()" x-init="loadData()">
     <!-- Header -->
@@ -25,7 +29,7 @@
             <input type="text" x-model="filters.search" @input="loadData"
                    placeholder="Search by code or name..." 
                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <input type="text" x-model="filters.category" @input="loadData"
+            <input type="text" x-model="filters.product_category" @input="loadData"
                    placeholder="Filter by category..." 
                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
             <select x-model="filters.is_active" @change="loadData"
@@ -82,7 +86,12 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.product_category || '-'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                <span x-text="item.pack_size"></span> <span x-text="item.pack_uom_name"></span>
+                                <template x-if="item.packUom">
+                                    <span x-text="item.pack_size"></span> <span x-text="item.packUom.uom_name"></span>
+                                </template>
+                                <template x-if="!item.packUom">
+                                    <span x-text="item.pack_size"></span>
+                                </template>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                                 ₹<span x-text="item.mrp ? parseFloat(item.mrp).toFixed(2) : '-'"></span>
@@ -93,11 +102,13 @@
                                       x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                                <button @click="edit(item)" class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" title="Edit">
+                                    <i class="fas fa-edit mr-1"></i>
+                                    Edit
                                 </button>
-                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete">
-                                    <i class="fas fa-trash"></i>
+                                <button @click="deleteItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Delete">
+                                    <i class="fas fa-trash mr-1"></i>
+                                    Delete
                                 </button>
                             </td>
                         </tr>
@@ -139,7 +150,7 @@ function productData() {
         loading: false,
         filters: {
             search: '',
-            category: '',
+            product_category: '',
             is_active: ''
         },
         pagination: {
@@ -154,12 +165,20 @@ function productData() {
         async loadData() {
             this.loading = true;
             try {
-                // TODO: Replace with actual API call
-                this.items = [];
-                this.pagination = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
+                const params = new URLSearchParams();
+                if (this.filters.search) params.append('search', this.filters.search);
+                if (this.filters.product_category) params.append('product_category', this.filters.product_category);
+                if (this.filters.is_active) params.append('is_active', this.filters.is_active);
+                
+                const response = await fetch(`/api/v1/products?${params}`);
+                if (!response.ok) throw new Error('Failed to load products');
+                
+                const data = await response.json();
+                this.items = data.data?.products || [];
+                this.pagination = data.data?.pagination || { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
             } catch (error) {
                 console.error('Failed to load products:', error);
-                alert('Failed to load products. Please try again.');
+                this.showNotification('Failed to load products', 'error');
             } finally {
                 this.loading = false;
             }
@@ -173,7 +192,7 @@ function productData() {
         },
         
         resetFilters() {
-            this.filters = { search: '', category: '', is_active: '' };
+            this.filters = { search: '', product_category: '', is_active: '' };
             this.loadData();
         },
         
@@ -182,13 +201,56 @@ function productData() {
         },
         
         edit(item) {
-            alert('Edit product: ' + item.product_code + ' - Coming soon');
+            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}';
+            window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
         async deleteItem(item) {
             if (confirm('Are you sure you want to delete product: ' + item.product_code + '?')) {
-                alert('Delete functionality - Coming soon');
+                try {
+                    const response = await fetch(`/api/v1/products/${item.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to delete product', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('Product deleted successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to delete product:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
             }
+        },
+        
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
     }
 }

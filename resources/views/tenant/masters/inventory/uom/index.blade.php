@@ -3,6 +3,10 @@
 @section('title', 'UOM')
 @section('page-title', 'Unit of Measurement Master')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="uomData()" x-init="loadData()">
     <!-- Header -->
@@ -95,7 +99,7 @@
                                       }"
                                       x-text="item.uom_type"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.base_uom_name || '-'"></td>
+                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.base_uom?.uom_name || '-'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.conversion_factor || '1'"></td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs rounded-full" 
@@ -103,11 +107,13 @@
                                       x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
-                                    <i class="fas fa-edit"></i>
+                                <button @click="edit(item)" class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" title="Edit">
+                                    <i class="fas fa-edit mr-1"></i>
+                                    Edit
                                 </button>
-                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete">
-                                    <i class="fas fa-trash"></i>
+                                <button @click="deleteItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Delete">
+                                    <i class="fas fa-trash mr-1"></i>
+                                    Delete
                                 </button>
                             </td>
                         </tr>
@@ -153,11 +159,29 @@ function uomData() {
         async loadData() {
             this.loading = true;
             try {
-                this.items = [];
-                this.pagination = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
+                const params = new URLSearchParams();
+                if (this.filters.search) params.append('search', this.filters.search);
+                if (this.filters.uom_type) params.append('uom_type', this.filters.uom_type);
+                if (this.filters.is_active) params.append('is_active', this.filters.is_active);
+                
+                const response = await fetch(`/api/v1/uoms?${params}`);
+                if (!response.ok) throw new Error('Failed to load UOMs');
+                
+                const data = await response.json();
+                this.items = data.data?.uoms || [];
+                
+                // Update pagination (simplified since API doesn't return pagination)
+                this.pagination = {
+                    current_page: 1,
+                    last_page: 1,
+                    per_page: this.items.length,
+                    total: this.items.length,
+                    from: this.items.length > 0 ? 1 : 0,
+                    to: this.items.length
+                };
             } catch (error) {
                 console.error('Failed to load UOMs:', error);
-                alert('Failed to load UOMs. Please try again.');
+                this.showNotification('Failed to load UOMs', 'error');
             } finally {
                 this.loading = false;
             }
@@ -180,13 +204,56 @@ function uomData() {
         },
         
         edit(item) {
-            alert('Edit UOM: ' + item.uom_code + ' - Coming soon');
+            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/uom' : '/org/' . $organization->org_slug . '/uom') }}';
+            window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
         async deleteItem(item) {
             if (confirm('Are you sure you want to delete UOM: ' + item.uom_code + '?')) {
-                alert('Delete functionality - Coming soon');
+                try {
+                    const response = await fetch(`/api/v1/uoms/${item.id}`, {
+                        method: 'DELETE',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to delete UOM', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('UOM deleted successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to delete UOM:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
             }
+        },
+        
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
     }
 }

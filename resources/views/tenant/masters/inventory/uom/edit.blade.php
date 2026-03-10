@@ -1,23 +1,23 @@
 @extends('tenant.layouts.inventory')
 
-@section('title', 'Create UOM')
-@section('page-title', 'Create New UOM')
+@section('title', 'Edit UOM')
+@section('page-title', 'Edit UOM')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @endpush
 
 @section('content')
-<div x-data="uomForm()" x-init="loadBaseUoms()">
+<div x-data="uomForm()" x-init="loadUomData()">
     <!-- Loading Overlay -->
     <div x-show="loading" x-transition class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
         <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
             <i class="fas fa-spinner fa-spin text-blue-600 text-xl"></i>
-            <span class="text-gray-700">Processing...</span>
+            <span class="text-gray-700">Loading...</span>
         </div>
     </div>
 
-    <!-- Notification Container (for non-toast notifications) -->
+    <!-- Notification Container -->
     <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
     
     <div class="max-w-3xl mx-auto">
@@ -25,8 +25,8 @@
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create New UOM</h2>
-                    <p class="text-gray-600 mt-1">Units of Measurement with base UOM conversion factors</p>
+                    <h2 class="text-2xl font-bold text-gray-900">Edit UOM</h2>
+                    <p class="text-gray-600 mt-1">Update unit of measurement details</p>
                 </div>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/uom' : '/org/' . $organization->org_slug . '/uom') }}" 
                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -44,87 +44,15 @@
                     <!-- UOM Code -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            UOM Code <span class="text-red-500" x-show="!form.auto_generate_code">*</span>
+                            UOM Code <span class="text-red-500">*</span>
                         </label>
-                        <div class="space-y-3">
-                            <!-- Auto-generate option -->
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" 
-                                       x-model="form.auto_generate_code"
-                                       @change="handleAutoGenerateChange()"
-                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <label class="text-sm text-gray-700 cursor-pointer">Auto-generate code</label>
-                            </div>
-                            
-                            <!-- Manual code generation -->
-                            <div x-show="!form.auto_generate_code" x-transition>
-                                <div class="flex items-center space-x-2">
-                                    <!-- Manual Prefix -->
-                                    <div class="w-32">
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Prefix</label>
-                                        <input type="text" 
-                                               x-model="form.manual_prefix"
-                                               @input="updateManualCode()"
-                                               maxlength="10"
-                                               placeholder="UOM"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                    </div>
-                                    
-                                    <!-- Separator -->
-                                    <div class="flex items-center pb-6">
-                                        <span class="text-gray-500 font-medium">-</span>
-                                    </div>
-                                    
-                                    <!-- Sequential Number -->
-                                    <div class="flex-1">
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Number</label>
-                                        <input type="text" 
-                                               x-model="form.manual_number"
-                                               @input="updateManualCode()"
-                                               maxlength="10"
-                                               placeholder="0001"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                    </div>
-                                </div>
-                                
-                                <!-- Generated Code Display -->
-                                <div class="mt-2">
-                                    <input type="text" 
-                                           x-model="form.uom_code"
-                                           :required="!form.auto_generate_code"
-                                           maxlength="10"
-                                           placeholder="UOM-0001"
-                                           :class="{
-                                               'border-red-500 focus:ring-red-500': errors.uom_code, 
-                                               'border-gray-300 focus:ring-blue-500': !errors.uom_code
-                                           }"
-                                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent">
-                                    <p class="text-xs text-gray-500 mt-1">Generated UOM code (auto-updates from prefix and number)</p>
-                                    <template x-if="errors.uom_code">
-                                        <p class="mt-1 text-sm text-red-600" x-text="Array.isArray(errors.uom_code) ? errors.uom_code[0] : errors.uom_code"></p>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- Auto-generate info -->
-                            <div x-show="form.auto_generate_code" x-transition>
-                                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-magic text-green-600 mr-2"></i>
-                                        <div class="text-sm text-green-800">
-                                            <p class="font-medium">Auto-generation enabled</p>
-                                            <p class="text-xs mt-1">Code will be generated based on UOM type:
-                                                <span x-show="form.uom_type === 'weight'">KG-XXXX</span>
-                                                <span x-show="form.uom_type === 'volume'">LIT-XXXX</span>
-                                                <span x-show="form.uom_type === 'qty'">PCS-XXXX</span>
-                                                <span x-show="form.uom_type === 'length'">MTR-XXXX</span>
-                                                <span x-show="!form.uom_type">UOM-XXXX (default)</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <input type="text" x-model="form.uom_code" required maxlength="10"
+                               placeholder="KG, GM, LTR, PCS, BAG"
+                               :class="{'border-red-500 focus:ring-red-500': errors.uom_code, 'border-gray-300 focus:ring-blue-500': !errors.uom_code}"
+                               class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent">
+                        <template x-if="errors.uom_code">
+                            <p class="mt-1 text-sm text-red-600" x-text="Array.isArray(errors.uom_code) ? errors.uom_code[0] : errors.uom_code"></p>
+                        </template>
                     </div>
 
                     <!-- UOM Name -->
@@ -146,9 +74,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             UOM Type <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.uom_type" 
-                                @change="handleUOMTypeChange()"
-                                required
+                        <select x-model="form.uom_type" required
                                 :class="{'border-red-500 focus:ring-red-500': errors.uom_type, 'border-gray-300 focus:ring-blue-500': !errors.uom_type}"
                                 class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent">
                             <option value="">Select Type</option>
@@ -157,7 +83,6 @@
                             <option value="qty">qty - Quantity</option>
                             <option value="length">length - Length</option>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">Type determines auto-generated code prefix</p>
                         <template x-if="errors.uom_type">
                             <p class="mt-1 text-sm text-red-600" x-text="Array.isArray(errors.uom_type) ? errors.uom_type[0] : errors.uom_type"></p>
                         </template>
@@ -224,8 +149,8 @@
                 </a>
                 <button type="submit" :disabled="loading"
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading">Create UOM</span>
-                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+                    <span x-show="!loading">Update UOM</span>
+                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
                 </button>
             </div>
         </form>
@@ -238,77 +163,82 @@ function uomForm() {
         loading: false,
         baseUoms: [],
         errors: {},
+        uomId: null,
         form: {
             uom_code: '',
             uom_name: '',
             uom_type: '',
             base_uom_id: '',
             conversion_factor: 1,
-            is_active: true,
-            auto_generate_code: false,
-            manual_prefix: '',
-            manual_number: ''
+            is_active: true
         },
         
-        handleUOMTypeChange() {
-            if (this.form.auto_generate_code) {
-                this.showAutoGeneratedCode();
-            } else {
-                // Update manual prefix when UOM type changes
-                this.form.manual_prefix = this.getDefaultPrefix(this.form.uom_type);
-                this.updateManualCode();
+        async loadUomData() {
+            // Get UOM ID from URL - handle /uom/{id}/edit pattern
+            const urlPath = window.location.pathname;
+            console.log('URL Path:', urlPath);
+            
+            // Extract ID using regex for /uom/{id}/edit pattern
+            const idMatch = urlPath.match(/\/uom\/(\d+)\/edit$/);
+            
+            this.uomId = idMatch ? idMatch[1] : null;
+            
+            console.log('Extracted UOM ID:', this.uomId);
+            console.log('ID Match:', idMatch);
+            
+            if (!this.uomId || isNaN(this.uomId)) {
+                console.error('Invalid UOM ID:', this.uomId);
+                this.showNotification('Invalid UOM ID extracted from URL', 'error');
+                setTimeout(() => {
+                    window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/uom' : '/org/' . $organization->org_slug . '/uom') }}';
+                }, 2000);
+                return;
             }
-        },
-        
-        handleAutoGenerateChange() {
-            if (this.form.auto_generate_code) {
-                this.form.uom_code = ''; // Clear field when auto-generate is checked
-                this.form.manual_prefix = ''; // Clear manual fields
-                this.form.manual_number = '';
-                this.errors.uom_code = null; // Clear any validation errors
-            } else {
-                // Set default manual values when switching to manual
-                this.form.manual_prefix = this.getDefaultPrefix(this.form.uom_type);
-                this.form.manual_number = '0001';
-                this.updateManualCode();
-            }
-        },
-        
-        getDefaultPrefix(uomType) {
-            const prefixes = {
-                'weight': 'KG',
-                'volume': 'LIT',
-                'qty': 'PCS',
-                'length': 'MTR'
-            };
-            return prefixes[uomType] || 'UOM';
-        },
-        
-        updateManualCode() {
-            if (this.form.manual_prefix && this.form.manual_number) {
-                this.form.uom_code = `${this.form.manual_prefix}-${this.form.manual_number}`;
-            } else {
-                this.form.uom_code = '';
-            }
-        },
-        
-        showAutoGeneratedCode() {
-            if (this.form.auto_generate_code && this.form.uom_type) {
-                const prefix = this.getDefaultPrefix(this.form.uom_type);
-                // Show a preview of what code will be
-                console.log(`Auto-generated UOM code will be: ${prefix}-XXXX (sequential)`);
-            }
-        },
-        
-        async loadBaseUoms() {
+            
+            this.loading = true;
             try {
-                const response = await fetch('/api/v1/uoms');
-                if (!response.ok) throw new Error('Failed to load UOMs');
-                const data = await response.json();
-                this.baseUoms = data.data?.uoms || [];
+                console.log('Fetching UOM data for ID:', this.uomId);
+                
+                // Load UOM data
+                const [uomResponse, baseUomsResponse] = await Promise.all([
+                    fetch(`/api/v1/uoms/${this.uomId}`),
+                    fetch('/api/v1/uoms')
+                ]);
+                
+                console.log('UOM Response status:', uomResponse.status);
+                console.log('Base UOMs Response status:', baseUomsResponse.status);
+                
+                if (!uomResponse.ok) {
+                    const errorData = await uomResponse.json();
+                    console.error('UOM API Error:', errorData);
+                    throw new Error(errorData.message || 'Failed to load UOM data');
+                }
+                if (!baseUomsResponse.ok) throw new Error('Failed to load base UOMs');
+                
+                const uomData = await uomResponse.json();
+                const baseUomsData = await baseUomsResponse.json();
+                
+                console.log('UOM Data:', uomData);
+                console.log('Base UOMs Data:', baseUomsData);
+                
+                this.form = {
+                    uom_code: uomData.data?.uom?.uom_code || '',
+                    uom_name: uomData.data?.uom?.uom_name || '',
+                    uom_type: uomData.data?.uom?.uom_type || '',
+                    base_uom_id: uomData.data?.uom?.base_uom_id || '',
+                    conversion_factor: uomData.data?.uom?.conversion_factor || 1,
+                    is_active: uomData.data?.uom?.is_active !== undefined ? uomData.data.uom.is_active : true
+                };
+                
+                this.baseUoms = baseUomsData.data?.uoms || [];
+                
+                console.log('Form data loaded:', this.form);
+                
             } catch (error) {
-                console.error('Failed to load base UOMs:', error);
-                this.showNotification('Failed to load base UOMs', 'error');
+                console.error('Failed to load UOM data:', error);
+                this.showNotification('Failed to load UOM data: ' + error.message, 'error');
+            } finally {
+                this.loading = false;
             }
         },
         
@@ -316,8 +246,8 @@ function uomForm() {
             this.loading = true;
             this.errors = {};
             try {
-                const response = await fetch('/api/v1/uoms', {
-                    method: 'POST',
+                const response = await fetch(`/api/v1/uoms/${this.uomId}`, {
+                    method: 'PUT',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
@@ -331,20 +261,20 @@ function uomForm() {
                 if (!response.ok) {
                     if (data.error && data.error.details) {
                         this.errors = data.error.details;
-                        this.showNotification('Please fix the validation errors', 'error');
+                        this.showNotification('Please fix validation errors', 'error');
                     } else {
-                        this.showNotification(data.message || 'Failed to create UOM', 'error');
+                        this.showNotification(data.message || 'Failed to update UOM', 'error');
                     }
                     return;
                 }
                 
-                this.showNotification('UOM created successfully!', 'success');
+                this.showNotification('UOM updated successfully!', 'success');
                 setTimeout(() => {
                     window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/uom' : '/org/' . $organization->org_slug . '/uom') }}';
                 }, 1500);
                 
             } catch (error) {
-                console.error('Failed to create UOM:', error);
+                console.error('Failed to update UOM:', error);
                 this.showNotification('Network error. Please try again.', 'error');
             } finally {
                 this.loading = false;

@@ -99,8 +99,30 @@ class MaterialController extends Controller
     {
         $requestId = Str::uuid()->toString();
 
+        // Auto-generate material code if not provided or auto_generate_code is checked
+        $materialCode = $request->input('material_code');
+        $autoGenerate = $request->input('auto_generate_code');
+        $materialType = $request->input('material_type');
+        
+        \Log::info('Material creation debug:', [
+            'material_code_input' => $materialCode,
+            'auto_generate_code' => $autoGenerate,
+            'material_type' => $materialType,
+            'all_request_data' => $request->all()
+        ]);
+        
+        if (empty($materialCode) || $autoGenerate) {
+            $materialCode = $this->generateMaterialCode($materialType);
+            \Log::info('Generated material code: ' . $materialCode);
+            
+            // Override the request data with generated code
+            $request->merge(['material_code' => $materialCode]);
+        }
+        
+        \Log::info('Final request data before validation:', $request->all());
+
         $validator = Validator::make($request->all(), [
-            'material_code' => 'required|string|max:30|unique:tenant.material_master,material_code',
+            'material_code' => 'sometimes|string|max:30|unique:tenant.material_master,material_code',
             'material_name' => 'required|string|max:200',
             'material_type' => 'required|string|max:20',
             'uom_id' => 'required|integer|exists:tenant.uom_master,id',
@@ -111,14 +133,19 @@ class MaterialController extends Controller
             'safety_stock' => 'nullable|numeric|min:0',
             'lead_time_days' => 'nullable|integer|min:0',
             'shelf_life_days' => 'nullable|integer|min:0',
-            'qc_required' => 'boolean',
+            'qc_required' => 'sometimes|boolean',
             'inspection_type' => 'nullable|string|max:10',
-            'is_batch_tracked' => 'boolean',
+            'is_batch_tracked' => 'sometimes|boolean',
             'standard_cost' => 'nullable|numeric|min:0',
             'valuation_method' => 'nullable|string|max:10',
+            'is_active' => 'sometimes|boolean',
+            'auto_generate_code' => 'sometimes|boolean',
+            'manual_prefix' => 'nullable|string|max:10',
+            'manual_number' => 'nullable|string|max:10',
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -135,6 +162,7 @@ class MaterialController extends Controller
             $material = Material::create(array_merge(
                 $request->all(),
                 [
+                    'material_code' => $materialCode,
                     'created_by' => $request->input('auth_user_id'),
                     'is_active' => true
                 ]
@@ -161,6 +189,39 @@ class MaterialController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 500);
         }
+    }
+
+    private function generateMaterialCode(string $materialType): string
+    {
+        $prefix = match($materialType) {
+            'RAW' => 'RM',
+            'PACKAGING' => 'PKG',
+            'CONSUMABLE' => 'CON',
+            'SEMI' => 'SF',
+            default => 'MAT'
+        };
+
+        \Log::info('Generating material code for type: ' . $materialType . ' with prefix: ' . $prefix);
+
+        // Get the last material code for this type
+        $lastCode = Material::where('material_code', 'like', $prefix . '-%')
+            ->orderBy('material_code', 'desc')
+            ->value('material_code');
+
+        \Log::info('Last material code found: ' . ($lastCode ?? 'none'));
+
+        $nextNumber = 1;
+        if ($lastCode) {
+            $parts = explode('-', $lastCode);
+            if (isset($parts[1]) && is_numeric($parts[1])) {
+                $nextNumber = (int)$parts[1] + 1;
+            }
+        }
+
+        $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        \Log::info('Final generated code: ' . $generatedCode);
+
+        return $generatedCode;
     }
 
     public function update(Request $request, int $id): JsonResponse
@@ -236,13 +297,12 @@ class MaterialController extends Controller
 
         try {
             $material = Material::findOrFail($id);
-            $material->is_active = false;
-            $material->save();
+            $material->delete();
 
             return response()->json([
                 'success' => true,
                 'data' => [],
-                'message' => 'Material deactivated successfully',
+                'message' => 'Material deleted successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 200);
@@ -253,7 +313,7 @@ class MaterialController extends Controller
                     'code' => 'MATERIAL_DELETE_FAILED',
                     'details' => []
                 ],
-                'message' => 'Failed to deactivate material: ' . $e->getMessage(),
+                'message' => 'Failed to delete material: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 500);

@@ -92,15 +92,41 @@ class WarehouseController extends Controller
     {
         $requestId = Str::uuid()->toString();
 
+        // Auto-generate warehouse code if not provided or auto_generate_code is checked
+        $warehouseCode = $request->input('warehouse_code');
+        $autoGenerate = $request->input('auto_generate_code');
+        $warehouseType = $request->input('warehouse_type');
+        
+        \Log::info('Warehouse creation debug:', [
+            'warehouse_code_input' => $warehouseCode,
+            'auto_generate_code' => $autoGenerate,
+            'warehouse_type' => $warehouseType,
+            'all_request_data' => $request->all()
+        ]);
+        
+        if (empty($warehouseCode) || $autoGenerate) {
+            $warehouseCode = $this->generateWarehouseCode($warehouseType);
+            \Log::info('Generated warehouse code: ' . $warehouseCode);
+            
+            // Override the request data with generated code
+            $request->merge(['warehouse_code' => $warehouseCode]);
+        }
+        
+        \Log::info('Final request data before validation:', $request->all());
+
         $validator = Validator::make($request->all(), [
-            'warehouse_code' => 'required|string|max:20|unique:tenant.warehouse_master,warehouse_code',
+            'warehouse_code' => 'sometimes|string|max:20|unique:tenant.warehouse_master,warehouse_code',
             'warehouse_name' => 'required|string|max:100',
             'warehouse_type' => 'required|string|max:20',
             'address' => 'nullable|string',
             'incharge_user_id' => 'nullable|integer|exists:tenant.users,id',
+            'auto_generate_code' => 'sometimes|boolean',
+            'manual_prefix' => 'nullable|string|max:10',
+            'manual_number' => 'nullable|string|max:10',
         ]);
 
         if ($validator->fails()) {
+            \Log::error('Warehouse validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -246,5 +272,39 @@ class WarehouseController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 500);
         }
+    }
+
+    private function generateWarehouseCode(string $warehouseType): string
+    {
+        $prefix = match($warehouseType) {
+            'RM' => 'RM',
+            'FG' => 'FG',
+            'PKG' => 'PKG',
+            'REJECTION' => 'REJ',
+            'WIP' => 'WIP',
+            default => 'WH'
+        };
+
+        \Log::info('Generating warehouse code for type: ' . $warehouseType . ' with prefix: ' . $prefix);
+
+        // Get the last warehouse code for this type
+        $lastCode = Warehouse::where('warehouse_code', 'like', $prefix . '-%')
+            ->orderBy('warehouse_code', 'desc')
+            ->value('warehouse_code');
+
+        \Log::info('Last warehouse code found: ' . ($lastCode ?? 'none'));
+
+        $nextNumber = 1;
+        if ($lastCode) {
+            $parts = explode('-', $lastCode);
+            if (isset($parts[1]) && is_numeric($parts[1])) {
+                $nextNumber = (int)$parts[1] + 1;
+            }
+        }
+
+        $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        \Log::info('Final generated warehouse code: ' . $generatedCode);
+
+        return $generatedCode;
     }
 }

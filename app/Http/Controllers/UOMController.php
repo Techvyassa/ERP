@@ -88,15 +88,41 @@ class UOMController extends Controller
     {
         $requestId = Str::uuid()->toString();
 
+        // Auto-generate UOM code if not provided or auto_generate_code is checked
+        $uomCode = $request->input('uom_code');
+        $autoGenerate = $request->input('auto_generate_code');
+        $uomType = $request->input('uom_type');
+        
+        \Log::info('UOM creation debug:', [
+            'uom_code_input' => $uomCode,
+            'auto_generate_code' => $autoGenerate,
+            'uom_type' => $uomType,
+            'all_request_data' => $request->all()
+        ]);
+        
+        if (empty($uomCode) || $autoGenerate) {
+            $uomCode = $this->generateUOMCode($uomType);
+            \Log::info('Generated UOM code: ' . $uomCode);
+            
+            // Override the request data with generated code
+            $request->merge(['uom_code' => $uomCode]);
+        }
+        
+        \Log::info('Final request data before validation:', $request->all());
+
         $validator = Validator::make($request->all(), [
-            'uom_code' => 'required|string|max:10|unique:tenant.uom_master,uom_code',
+            'uom_code' => 'sometimes|string|max:10|unique:tenant.uom_master,uom_code',
             'uom_name' => 'required|string|max:50',
             'uom_type' => 'required|string|max:20',
             'base_uom_id' => 'nullable|integer|exists:tenant.uom_master,id',
             'conversion_factor' => 'nullable|numeric|min:0',
+            'auto_generate_code' => 'sometimes|boolean',
+            'manual_prefix' => 'nullable|string|max:10',
+            'manual_number' => 'nullable|string|max:10',
         ]);
 
         if ($validator->fails()) {
+            \Log::error('UOM validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -242,5 +268,38 @@ class UOMController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 500);
         }
+    }
+
+    private function generateUOMCode(string $uomType): string
+    {
+        $prefix = match($uomType) {
+            'weight' => 'KG',
+            'volume' => 'LIT',
+            'qty' => 'PCS',
+            'length' => 'MTR',
+            default => 'UOM'
+        };
+
+        \Log::info('Generating UOM code for type: ' . $uomType . ' with prefix: ' . $prefix);
+
+        // Get the last UOM code for this type
+        $lastCode = UOM::where('uom_code', 'like', $prefix . '-%')
+            ->orderBy('uom_code', 'desc')
+            ->value('uom_code');
+
+        \Log::info('Last UOM code found: ' . ($lastCode ?? 'none'));
+
+        $nextNumber = 1;
+        if ($lastCode) {
+            $parts = explode('-', $lastCode);
+            if (isset($parts[1]) && is_numeric($parts[1])) {
+                $nextNumber = (int)$parts[1] + 1;
+            }
+        }
+
+        $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+        \Log::info('Final generated UOM code: ' . $generatedCode);
+
+        return $generatedCode;
     }
 }

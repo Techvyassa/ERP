@@ -154,6 +154,15 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.inventory.materials.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'materialId' => $id
+            ]);
+        })->name('edit');
     });
     
     // Products Management
@@ -173,6 +182,15 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.inventory.products.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'productId' => $id
+            ]);
+        })->name('edit');
     });
     
     // Warehouses Management
@@ -192,6 +210,15 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.inventory.warehouses.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'warehouseId' => $id
+            ]);
+        })->name('edit');
     });
     
     // UOM Management
@@ -211,6 +238,15 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.inventory.uom.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'uomId' => $id
+            ]);
+        })->name('edit');
     });
     
     // Vendors Management
@@ -268,6 +304,15 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.inventory.bin-locations.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'binLocationId' => $id
+            ]);
+        })->name('edit');
     });
     
     // HSN Codes Management
