@@ -14,6 +14,7 @@ class User extends Authenticatable implements JWTSubject
     protected $fillable = [
         'employee_code',
         'email',
+        'password',
         'password_hash',
         'first_name',
         'last_name',
@@ -61,6 +62,19 @@ class User extends Authenticatable implements JWTSubject
         $this->attributes['password_hash'] = Hash::make($value, ['rounds' => 12]);
         $this->attributes['password_changed_at'] = now();
     }
+    /**
+     * Intercept password attribute and convert to password_hash
+     * This allows using 'password' in fillable array while storing in 'password_hash'
+     */
+    public function setAttribute($key, $value)
+    {
+        if ($key === 'password') {
+            $this->password_hash = $value;
+        } else {
+            parent::setAttribute($key, $value);
+        }
+    }
+
     
     /**
      * Verify a password against the stored hash

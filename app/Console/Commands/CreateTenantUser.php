@@ -85,11 +85,11 @@ class CreateTenantUser extends Command
             ]);
         }
         
-        // Create user
+        // Create user - use 'password' to trigger the setPasswordHashAttribute mutator
         $user = User::create([
             'employee_code' => $this->option('employee-code') ?? 'EMP001',
             'email' => $email,
-            'password_hash' => Hash::make($password, ['rounds' => 12]),
+            'password' => $password,
             'first_name' => $this->option('first-name') ?? 'Admin',
             'last_name' => $this->option('last-name') ?? 'User',
             'phone' => null,

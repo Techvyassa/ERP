@@ -192,11 +192,11 @@ class UserController extends Controller
                 }
             }
 
-            // Create user
+            // Create user - use 'password' to trigger the setPasswordHashAttribute mutator
             $user = User::create([
                 'employee_code' => $request->input('employee_code'),
                 'email' => $request->input('email'),
-                'password_hash' => Hash::make($request->input('password')),
+                'password' => $request->input('password'),
                 'first_name' => $request->input('first_name'),
                 'last_name' => $request->input('last_name'),
                 'phone' => $request->input('phone'),
@@ -297,7 +297,7 @@ class UserController extends Controller
                 $user->email = $request->input('email');
             }
             if ($request->has('password')) {
-                $user->password_hash = Hash::make($request->input('password'));
+                $user->password = $request->input('password');
             }
             if ($request->has('first_name')) {
                 $user->first_name = $request->input('first_name');

@@ -193,7 +193,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // PROCUREMENT (Vendor & Procurement) Endpoints
-        Route::middleware(['check.module.permission:PROCUREMENT'])->group(function () {
+        Route::middleware(['check.module.permission:PO'])->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
                 Route::get('/', [App\Http\Controllers\VendorController::class, 'index']);
@@ -219,6 +219,18 @@ Route::prefix('v1')->group(function () {
                 Route::post('/', [App\Http\Controllers\VendorMaterialMapController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\VendorMaterialMapController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\VendorMaterialMapController::class, 'destroy']);
+            });
+        });
+
+        // PO Management Endpoints
+        Route::middleware(['check.module.permission:PO'])->group(function () {
+            Route::prefix('purchase-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\PurchaseOrderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PurchaseOrderController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'update']);
+                Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseOrderController::class, 'approve']);
+                Route::patch('/{id}/cancel', [App\Http\Controllers\PurchaseOrderController::class, 'cancel']);
             });
         });
 
