@@ -146,7 +146,7 @@ class OrganizationController extends Controller
             $organization = Organization::create([
                 'org_slug' => $request->input('org_slug'),
                 'org_name' => $request->input('org_name'),
-                'tenant_db_name' => 'erp_' . $request->input('org_slug'),
+                'tenant_db_name' => 'erp_' . str_replace('-', '_', $request->input('org_slug')),
                 'registration_status' => 'PENDING',
                 'primary_email' => $request->input('primary_email'),
                 'primary_phone' => $request->input('primary_phone'),

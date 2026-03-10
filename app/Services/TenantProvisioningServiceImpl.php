@@ -68,8 +68,8 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 $steps
             );
             
-            // Step 2: Generate tenant database name
-            $tenantDbName = "erp_{$organization->org_slug}";
+            // Step 2: Generate tenant database name (replace hyphens with underscores)
+            $tenantDbName = "erp_" . str_replace('-', '_', $organization->org_slug);
             Log::info("Generated tenant database name: {$tenantDbName}");
             $steps[] = "Generated database name: {$tenantDbName}";
             
