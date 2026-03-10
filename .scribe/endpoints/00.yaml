@@ -30,7 +30,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"success":true,"message":"ERP API is running","timestamp":"2026-03-06T09:45:52+00:00"}'
+        content: '{"success":true,"message":"ERP API is running","timestamp":"2026-03-09T07:42:24+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -325,7 +325,7 @@ endpoints:
         name: provider
         description: ''
         required: true
-        example: google
+        example: email
         type: string
         enumValues:
           - google
@@ -370,7 +370,7 @@ endpoints:
       firebase_token: architecto
       email: zbailey@example.net
       org_slug: architecto
-      provider: google
+      provider: email
       display_name: architecto
       photo_url: 'http://www.bailey.biz/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html'
       firebase_uid: architecto
@@ -711,7 +711,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"success":true,"data":{"available":true,"slug":"architecto","message":"This slug is available"},"request_id":"a20a796d-8fc1-44c4-92f3-b10325e7e364","timestamp":"2026-03-06T09:45:52+00:00"}'
+        content: '{"success":true,"data":{"available":true,"slug":"architecto","message":"This slug is available"},"request_id":"93e520b5-5df8-4f92-aeb0-ce1ffdb3e42b","timestamp":"2026-03-09T07:42:29+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -798,7 +798,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"success":true,"data":{"plans":[{"plan_id":1,"plan_code":"TRIAL","plan_name":"Trial Plan","description":"14-day free trial with full access","billing_cycle":"MONTHLY","price_amount":"0.00","currency_code":"INR","max_users":5,"max_warehouses":1,"max_materials":100,"storage_gb":5,"api_rate_limit_day":1000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":2,"plan_code":"BASIC","plan_name":"Basic Plan","description":"Basic features for small teams","billing_cycle":"MONTHLY","price_amount":"999.00","currency_code":"INR","max_users":10,"max_warehouses":2,"max_materials":500,"storage_gb":10,"api_rate_limit_day":5000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":3,"plan_code":"PROFESSIONAL","plan_name":"Professional Plan","description":"Advanced features for growing businesses","billing_cycle":"MONTHLY","price_amount":"2999.00","currency_code":"INR","max_users":50,"max_warehouses":5,"max_materials":2000,"storage_gb":50,"api_rate_limit_day":20000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30},{"plan_id":4,"plan_code":"ENTERPRISE","plan_name":"Enterprise Plan","description":"Full features for large organizations","billing_cycle":"MONTHLY","price_amount":"9999.00","currency_code":"INR","max_users":999,"max_warehouses":999,"max_materials":999999,"storage_gb":500,"api_rate_limit_day":100000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30}]},"message":"Subscription plans retrieved successfully","request_id":"e8114dc5-2dbc-48d0-bd1b-a57cf5157a6b","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":true,"data":{"plans":[{"plan_id":1,"plan_code":"TRIAL","plan_name":"Trial Plan","description":"14-day free trial with full access","billing_cycle":"MONTHLY","price_amount":"0.00","currency_code":"INR","max_users":5,"max_warehouses":1,"max_materials":100,"storage_gb":5,"api_rate_limit_day":1000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":2,"plan_code":"BASIC","plan_name":"Basic Plan","description":"Basic features for small teams","billing_cycle":"MONTHLY","price_amount":"999.00","currency_code":"INR","max_users":10,"max_warehouses":2,"max_materials":500,"storage_gb":10,"api_rate_limit_day":5000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":3,"plan_code":"PROFESSIONAL","plan_name":"Professional Plan","description":"Advanced features for growing businesses","billing_cycle":"MONTHLY","price_amount":"2999.00","currency_code":"INR","max_users":50,"max_warehouses":5,"max_materials":2000,"storage_gb":50,"api_rate_limit_day":20000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30},{"plan_id":4,"plan_code":"ENTERPRISE","plan_name":"Enterprise Plan","description":"Full features for large organizations","billing_cycle":"MONTHLY","price_amount":"9999.00","currency_code":"INR","max_users":999,"max_warehouses":999,"max_materials":999999,"storage_gb":500,"api_rate_limit_day":100000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30}]},"message":"Subscription plans retrieved successfully","request_id":"53eaaeea-6f87-4166-9aa2-b21a867bb592","timestamp":"2026-03-09T07:42:30+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -852,7 +852,7 @@ endpoints:
       -
         custom: []
         status: 404
-        content: '{"success":false,"error":{"code":"PLAN_NOT_FOUND","details":[]},"message":"Subscription plan not found","request_id":"fdc7592e-93bb-43c6-a0ff-c23f7453d144","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"PLAN_NOT_FOUND","details":[]},"message":"Subscription plan not found","request_id":"2eb0132d-ff33-4150-97bb-b3b41f18432c","timestamp":"2026-03-09T07:42:30+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -894,7 +894,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"95cf5666-bda0-47d6-bd2e-dc2357c1a64e","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5821cc64-5cf7-4b20-9c87-3f6b7be34b2d","timestamp":"2026-03-09T07:42:30+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -936,7 +936,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"7bdb965a-6134-49c8-af23-320df8b6b912","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"86773b88-8c15-43db-95ec-0c12ecb669ef","timestamp":"2026-03-09T07:42:30+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1131,7 +1131,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a8aca858-04ab-4a10-ad5d-d663e71e8844","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1736dcd1-b13c-4eaf-934a-803b508f86c0","timestamp":"2026-03-09T07:42:30+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1173,7 +1173,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"413f32a6-854b-44db-98c6-ba9ce636412e","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c90d5b67-6aa6-45d0-bb16-cb399ff30d0e","timestamp":"2026-03-09T07:42:31+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1215,7 +1215,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"303501b2-2662-49eb-86ab-c7f090c2e8b2","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a62f81ef-3c31-4c14-95a2-595d758d354d","timestamp":"2026-03-09T07:42:31+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1320,427 +1320,6 @@ endpoints:
     custom: []
     httpMethods:
       - GET
-    uri: api/v1/users
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        List users
-        GET /api/v1/users
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"53904dda-e796-40dd-a826-1f763e6f5a2f","timestamp":"2026-03-06T09:45:53+00:00"}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
-    uri: 'api/v1/users/{id}'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Get single user
-        GET /api/v1/users/{id}
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses:
-      -
-        custom: []
-        status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8b0a15cf-4b42-4b75-af2e-a1ec9f51d00a","timestamp":"2026-03-06T09:45:53+00:00"}'
-        headers:
-          cache-control: 'no-cache, private'
-          content-type: application/json
-          vary: Origin
-        description: null
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - POST
-    uri: api/v1/users
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Create user
-        POST /api/v1/users
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters: []
-    cleanUrlParameters: []
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      employee_code:
-        custom: []
-        name: employee_code
-        description: 'Must not be greater than 50 characters.'
-        required: true
-        example: b
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      email:
-        custom: []
-        name: email
-        description: 'Must be a valid email address. Must not be greater than 255 characters.'
-        required: true
-        example: zbailey@example.net
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      password:
-        custom: []
-        name: password
-        description: 'Must be at least 8 characters.'
-        required: true
-        example: '-0pBNvYgxw'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      first_name:
-        custom: []
-        name: first_name
-        description: 'Must not be greater than 100 characters.'
-        required: true
-        example: a
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      last_name:
-        custom: []
-        name: last_name
-        description: 'Must not be greater than 100 characters.'
-        required: true
-        example: 'y'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      phone:
-        custom: []
-        name: phone
-        description: 'Must not be greater than 20 characters.'
-        required: false
-        example: kcmyuwpwlvqwrsit
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      dept_id:
-        custom: []
-        name: dept_id
-        description: 'The <code>dept_id</code> of an existing record in the department_master table.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      role_id:
-        custom: []
-        name: role_id
-        description: 'The <code>role_id</code> of an existing record in the role_master table.'
-        required: true
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      employee_code: b
-      email: zbailey@example.net
-      password: '-0pBNvYgxw'
-      first_name: a
-      last_name: 'y'
-      phone: kcmyuwpwlvqwrsit
-      dept_id: 16
-      role_id: 16
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - PUT
-    uri: 'api/v1/users/{id}'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Update user
-        PUT /api/v1/users/{id}
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters:
-      employee_code:
-        custom: []
-        name: employee_code
-        description: ''
-        required: false
-        example: null
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      email:
-        custom: []
-        name: email
-        description: ''
-        required: false
-        example: null
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      password:
-        custom: []
-        name: password
-        description: 'Must be at least 8 characters.'
-        required: false
-        example: '|]|{+-'
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      first_name:
-        custom: []
-        name: first_name
-        description: 'Must not be greater than 100 characters.'
-        required: false
-        example: v
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      last_name:
-        custom: []
-        name: last_name
-        description: 'Must not be greater than 100 characters.'
-        required: false
-        example: d
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      phone:
-        custom: []
-        name: phone
-        description: 'Must not be greater than 20 characters.'
-        required: false
-        example: ljnikhwaykcmyuwp
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: true
-        deprecated: false
-      dept_id:
-        custom: []
-        name: dept_id
-        description: 'The <code>dept_id</code> of an existing record in the department_master table.'
-        required: false
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      role_id:
-        custom: []
-        name: role_id
-        description: 'The <code>role_id</code> of an existing record in the role_master table.'
-        required: false
-        example: 16
-        type: integer
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-      is_active:
-        custom: []
-        name: is_active
-        description: ''
-        required: false
-        example: true
-        type: boolean
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanBodyParameters:
-      password: '|]|{+-'
-      first_name: v
-      last_name: d
-      phone: ljnikhwaykcmyuwp
-      dept_id: 16
-      role_id: 16
-      is_active: true
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - DELETE
-    uri: 'api/v1/users/{id}'
-    metadata:
-      custom: []
-      groupName: Endpoints
-      groupDescription: ''
-      subgroup: ''
-      subgroupDescription: ''
-      title: |-
-        Delete user (soft delete by setting is_active to false)
-        DELETE /api/v1/users/{id}
-      description: ''
-      authenticated: false
-      deprecated: false
-    headers:
-      Content-Type: application/json
-      Accept: application/json
-    urlParameters:
-      id:
-        custom: []
-        name: id
-        description: 'The ID of the user.'
-        required: true
-        example: architecto
-        type: string
-        enumValues: []
-        exampleWasSpecified: false
-        nullable: false
-        deprecated: false
-    cleanUrlParameters:
-      id: architecto
-    queryParameters: []
-    cleanQueryParameters: []
-    bodyParameters: []
-    cleanBodyParameters: []
-    fileParameters: []
-    responses: []
-    responseFields: []
-    auth: []
-    controller: null
-    method: null
-    route: null
-  -
-    custom: []
-    httpMethods:
-      - GET
     uri: api/v1/departments
     metadata:
       custom: []
@@ -1768,7 +1347,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2e0b3e94-791b-4eab-8c3b-f422c3f23020","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"92c4721f-1070-42f4-90e8-ba07b47a854d","timestamp":"2026-03-09T07:42:31+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1822,7 +1401,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"0e2ebcee-8775-45c0-b24f-8b633b2bbf4b","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"55c7b799-3fd3-497f-a5f1-23da27f75046","timestamp":"2026-03-09T07:42:31+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1883,10 +1462,21 @@ endpoints:
       parent_dept_id:
         custom: []
         name: parent_dept_id
-        description: 'The <code>dept_id</code> of an existing record in the department_master table.'
+        description: 'The <code>id</code> of an existing record in the tenant.department_master table.'
         required: false
         example: 16
         type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      cost_center_code:
+        custom: []
+        name: cost_center_code
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
@@ -1895,6 +1485,7 @@ endpoints:
       dept_code: b
       dept_name: 'n'
       parent_dept_id: 16
+      cost_center_code: ngzmiyvdljnikhwa
     fileParameters: []
     responses: []
     responseFields: []
@@ -1964,10 +1555,21 @@ endpoints:
       parent_dept_id:
         custom: []
         name: parent_dept_id
-        description: 'The <code>dept_id</code> of an existing record in the department_master table.'
+        description: 'The <code>id</code> of an existing record in the tenant.department_master table.'
         required: false
         example: 16
         type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      cost_center_code:
+        custom: []
+        name: cost_center_code
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
         enumValues: []
         exampleWasSpecified: false
         nullable: true
@@ -1986,6 +1588,7 @@ endpoints:
     cleanBodyParameters:
       dept_name: b
       parent_dept_id: 16
+      cost_center_code: ngzmiyvdljnikhwa
       is_active: false
     fileParameters: []
     responses: []
@@ -2006,7 +1609,7 @@ endpoints:
       subgroup: ''
       subgroupDescription: ''
       title: |-
-        Delete department (soft delete by setting is_active to false)
+        Deactivate department (soft delete by setting is_active to false)
         DELETE /api/v1/departments/{id}
       description: ''
       authenticated: false
@@ -2070,7 +1673,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3f9e5dad-41ce-4049-80e4-33fb82f1ebf5","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"17e52f1d-1cf6-4054-b502-4158b254c696","timestamp":"2026-03-09T07:42:31+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2124,7 +1727,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f01931bd-f537-4697-b5da-7a4f7264243b","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1e8b9c50-e404-44f5-a95f-91437550dcec","timestamp":"2026-03-09T07:42:31+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2279,7 +1882,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -2288,7 +1891,7 @@ endpoints:
     cleanBodyParameters:
       role_name: b
       description: 'Eius et animi quos velit et.'
-      is_active: false
+      is_active: true
     fileParameters: []
     responses: []
     responseFields: []
@@ -2384,7 +1987,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"dd400b83-612b-4246-9df9-dc8193cf8c44","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"4f8ed56a-2e38-40f2-a52f-c684a7b10888","timestamp":"2026-03-09T07:42:31+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2460,7 +2063,7 @@ endpoints:
         name: 'permissions[].can_view'
         description: ''
         required: true
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -2482,7 +2085,7 @@ endpoints:
         name: 'permissions[].can_edit'
         description: ''
         required: true
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -2493,7 +2096,7 @@ endpoints:
         name: 'permissions[].can_approve'
         description: ''
         required: true
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -2514,11 +2117,432 @@ endpoints:
       permissions:
         -
           module_code: b
-          can_view: true
+          can_view: false
           can_create: false
-          can_edit: true
-          can_approve: true
+          can_edit: false
+          can_approve: false
           can_delete: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/users
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        List users
+        GET /api/v1/users
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c7bc4af4-c676-4b0a-bfc4-df914b3d361b","timestamp":"2026-03-09T07:42:31+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/users/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Get single user
+        GET /api/v1/users/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the user.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c46f88d1-7e7d-418d-8cac-bd7edcc48c37","timestamp":"2026-03-09T07:42:31+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/users
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Create user
+        POST /api/v1/users
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      employee_code:
+        custom: []
+        name: employee_code
+        description: 'Must not be greater than 50 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address. Must not be greater than 255 characters.'
+        required: true
+        example: zbailey@example.net
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'Must be at least 8 characters.'
+        required: true
+        example: '-0pBNvYgxw'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      first_name:
+        custom: []
+        name: first_name
+        description: 'Must not be greater than 100 characters.'
+        required: true
+        example: a
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      last_name:
+        custom: []
+        name: last_name
+        description: 'Must not be greater than 100 characters.'
+        required: true
+        example: 'y'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: kcmyuwpwlvqwrsit
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      dept_id:
+        custom: []
+        name: dept_id
+        description: 'The <code>id</code> of an existing record in the tenant.department_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      role_id:
+        custom: []
+        name: role_id
+        description: 'The <code>id</code> of an existing record in the tenant.role_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      employee_code: b
+      email: zbailey@example.net
+      password: '-0pBNvYgxw'
+      first_name: a
+      last_name: 'y'
+      phone: kcmyuwpwlvqwrsit
+      dept_id: 16
+      role_id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/users/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Update user
+        PUT /api/v1/users/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the user.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      employee_code:
+        custom: []
+        name: employee_code
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      password:
+        custom: []
+        name: password
+        description: 'Must be at least 8 characters.'
+        required: false
+        example: '|]|{+-'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      first_name:
+        custom: []
+        name: first_name
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example: v
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      last_name:
+        custom: []
+        name: last_name
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example: d
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ljnikhwaykcmyuwp
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      dept_id:
+        custom: []
+        name: dept_id
+        description: 'The <code>id</code> of an existing record in the tenant.department_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      role_id:
+        custom: []
+        name: role_id
+        description: 'The <code>id</code> of an existing record in the tenant.role_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      password: '|]|{+-'
+      first_name: v
+      last_name: d
+      phone: ljnikhwaykcmyuwp
+      dept_id: 16
+      role_id: 16
+      is_active: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/users/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        deactivate user (soft delete by setting is_active to false)
+        DELETE /api/v1/users/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the user.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []
@@ -2557,7 +2581,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c39fb87c-d51f-4b09-8202-68772ae3a3b3","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"dfad017a-6d2c-4908-9bdd-b44445333254","timestamp":"2026-03-09T07:42:32+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2611,7 +2635,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"95046e7b-dd65-423f-82be-6f2872996b00","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1e667893-846c-4774-856a-4e18bcf464e5","timestamp":"2026-03-09T07:42:32+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2766,7 +2790,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -2775,7 +2799,7 @@ endpoints:
     cleanBodyParameters:
       description: 'Eius et animi quos velit et.'
       default_gst_id: 16
-      is_active: true
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -2859,7 +2883,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"76b87e96-86e6-47e4-95cb-4c4969a04d33","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a9c43299-fa38-4de1-b523-a602c359e6d3","timestamp":"2026-03-09T07:42:32+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2913,7 +2937,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"51d4f4c5-d0db-46fa-9a37-1b80c214be8c","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"197cfaad-ed53-4c0e-836e-6c9d309a1a38","timestamp":"2026-03-09T07:42:32+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3020,7 +3044,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: true
-        example: '2026-03-06T09:45:53'
+        example: '2026-03-09T07:42:32'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3031,7 +3055,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-03-29'
+        example: '2052-04-01'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3044,8 +3068,8 @@ endpoints:
       sgst_rate: 18
       igst_rate: 8
       ugst_rate: 24
-      effective_from: '2026-03-06T09:45:53'
-      effective_to: '2052-03-29'
+      effective_from: '2026-03-09T07:42:32'
+      effective_to: '2052-04-01'
     fileParameters: []
     responses: []
     responseFields: []
@@ -3161,7 +3185,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-06T09:45:53'
+        example: '2026-03-09T07:42:32'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3172,7 +3196,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-03-29'
+        example: '2052-04-01'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3195,8 +3219,8 @@ endpoints:
       sgst_rate: 7
       igst_rate: 16
       ugst_rate: 17
-      effective_from: '2026-03-06T09:45:53'
-      effective_to: '2052-03-29'
+      effective_from: '2026-03-09T07:42:32'
+      effective_to: '2052-04-01'
       is_active: true
     fileParameters: []
     responses: []
@@ -3281,7 +3305,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2f176c30-441d-4bab-a338-80c5019bf409","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"05bfe4c1-609a-446f-b191-ff67526322b0","timestamp":"2026-03-09T07:42:32+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3335,7 +3359,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3c2ced72-17fd-4e41-acef-0eb965a11ceb","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3a5b0043-a768-46da-9505-e2ce9bdda61e","timestamp":"2026-03-09T07:42:32+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3536,7 +3560,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -3547,7 +3571,7 @@ endpoints:
       symbol: 'n'
       exchange_rate: 84
       is_base_currency: true
-      is_active: true
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -3580,6 +3604,3457 @@ endpoints:
         custom: []
         name: id
         description: 'The ID of the currency.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/uoms
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"d4e7718d-a17e-4219-a66f-67e26a07a8c8","timestamp":"2026-03-09T07:42:32+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/uoms/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the uom.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5cdd8f27-209e-47a5-a57f-81c6b43d8655","timestamp":"2026-03-09T07:42:32+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/uoms
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      uom_code:
+        custom: []
+        name: uom_code
+        description: 'Must not be greater than 10 characters.'
+        required: true
+        example: bngzmi
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      uom_name:
+        custom: []
+        name: uom_name
+        description: 'Must not be greater than 50 characters.'
+        required: true
+        example: 'y'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      uom_type:
+        custom: []
+        name: uom_type
+        description: 'Must not be greater than 20 characters.'
+        required: true
+        example: vdljnikhwaykcmyu
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      base_uom_id:
+        custom: []
+        name: base_uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      conversion_factor:
+        custom: []
+        name: conversion_factor
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      uom_code: bngzmi
+      uom_name: 'y'
+      uom_type: vdljnikhwaykcmyu
+      base_uom_id: 16
+      conversion_factor: 39
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/uoms/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the uom.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      uom_code:
+        custom: []
+        name: uom_code
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      uom_name:
+        custom: []
+        name: uom_name
+        description: 'Must not be greater than 50 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      uom_type:
+        custom: []
+        name: uom_type
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      base_uom_id:
+        custom: []
+        name: base_uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      conversion_factor:
+        custom: []
+        name: conversion_factor
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      uom_name: b
+      uom_type: ngzmiyvdljnikhwa
+      base_uom_id: 16
+      conversion_factor: 39
+      is_active: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/uoms/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the uom.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/warehouses
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"abac4a4c-87d1-4689-a91e-6eec823350a2","timestamp":"2026-03-09T07:42:32+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/warehouses/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the warehouse.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ee284f63-173a-4cd5-9da9-570d27b0020d","timestamp":"2026-03-09T07:42:32+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/warehouses
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      warehouse_code:
+        custom: []
+        name: warehouse_code
+        description: 'Must not be greater than 20 characters.'
+        required: true
+        example: bngzmiyvdljnikhw
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      warehouse_name:
+        custom: []
+        name: warehouse_name
+        description: 'Must not be greater than 100 characters.'
+        required: true
+        example: a
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      warehouse_type:
+        custom: []
+        name: warehouse_type
+        description: 'Must not be greater than 20 characters.'
+        required: true
+        example: ykcmyuwpwlvqwrsi
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      address:
+        custom: []
+        name: address
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      incharge_user_id:
+        custom: []
+        name: incharge_user_id
+        description: 'The <code>id</code> of an existing record in the tenant.users table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      warehouse_code: bngzmiyvdljnikhw
+      warehouse_name: a
+      warehouse_type: ykcmyuwpwlvqwrsi
+      address: architecto
+      incharge_user_id: 16
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/warehouses/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the warehouse.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      warehouse_code:
+        custom: []
+        name: warehouse_code
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      warehouse_name:
+        custom: []
+        name: warehouse_name
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      warehouse_type:
+        custom: []
+        name: warehouse_type
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      address:
+        custom: []
+        name: address
+        description: ''
+        required: false
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      incharge_user_id:
+        custom: []
+        name: incharge_user_id
+        description: 'The <code>id</code> of an existing record in the tenant.users table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      warehouse_name: b
+      warehouse_type: ngzmiyvdljnikhwa
+      address: architecto
+      incharge_user_id: 16
+      is_active: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/warehouses/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the warehouse.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/bin-locations
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1e572a4e-dc54-4d19-98b7-9fa52230296d","timestamp":"2026-03-09T07:42:33+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/bin-locations/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the bin location.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9c66fee6-e4df-4251-b6f8-c2472f17ff72","timestamp":"2026-03-09T07:42:33+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/bin-locations
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      warehouse_id:
+        custom: []
+        name: warehouse_id
+        description: 'The <code>id</code> of an existing record in the tenant.warehouse_master table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      bin_code:
+        custom: []
+        name: bin_code
+        description: 'Must not be greater than 30 characters.'
+        required: true
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      aisle:
+        custom: []
+        name: aisle
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: gzmiyv
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      rack:
+        custom: []
+        name: rack
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: dljnik
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      shelf:
+        custom: []
+        name: shelf
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: hwaykc
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      max_weight_kg:
+        custom: []
+        name: max_weight_kg
+        description: 'Must be at least 0.'
+        required: false
+        example: 38
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      warehouse_id: 16
+      bin_code: 'n'
+      aisle: gzmiyv
+      rack: dljnik
+      shelf: hwaykc
+      max_weight_kg: 38
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/bin-locations/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the bin location.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      warehouse_id:
+        custom: []
+        name: warehouse_id
+        description: 'The <code>id</code> of an existing record in the tenant.warehouse_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      bin_code:
+        custom: []
+        name: bin_code
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      aisle:
+        custom: []
+        name: aisle
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: ngzmiy
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      rack:
+        custom: []
+        name: rack
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: vdljni
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      shelf:
+        custom: []
+        name: shelf
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: khwayk
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      max_weight_kg:
+        custom: []
+        name: max_weight_kg
+        description: 'Must be at least 0.'
+        required: false
+        example: 54
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      warehouse_id: 16
+      aisle: ngzmiy
+      rack: vdljni
+      shelf: khwayk
+      max_weight_kg: 54
+      is_active: true
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/bin-locations/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the bin location.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/materials
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"6b3ac7bc-116d-4f0a-be31-ab9f204d377f","timestamp":"2026-03-09T07:42:33+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/materials/next-code
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      prefix:
+        custom: []
+        name: prefix
+        description: 'Must match the regex /^[A-Z]*$/. Must not be greater than 5 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      prefix: b
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"af9ace1c-4d2b-4fad-bd4e-00051b2edd42","timestamp":"2026-03-09T07:42:33+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/materials/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the material.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"07fec33a-7322-4487-9018-7ae87902cef7","timestamp":"2026-03-09T07:42:33+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/materials
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      prefix_code:
+        custom: []
+        name: prefix_code
+        description: 'Must match the regex /^[A-Z]*$/. Must not be greater than 5 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      material_code:
+        custom: []
+        name: material_code
+        description: 'Must not be greater than 30 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      material_name:
+        custom: []
+        name: material_name
+        description: 'Must not be greater than 200 characters.'
+        required: true
+        example: g
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      material_type:
+        custom: []
+        name: material_type
+        description: 'Must not be greater than 20 characters.'
+        required: true
+        example: zmiyvdljnikhwayk
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      uom_id:
+        custom: []
+        name: uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      purchase_uom_id:
+        custom: []
+        name: purchase_uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      hsn_code_id:
+        custom: []
+        name: hsn_code_id
+        description: 'The <code>id</code> of an existing record in the tenant.hsn_codes table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      default_warehouse_id:
+        custom: []
+        name: default_warehouse_id
+        description: 'The <code>id</code> of an existing record in the tenant.warehouse_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      reorder_level:
+        custom: []
+        name: reorder_level
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      safety_stock:
+        custom: []
+        name: safety_stock
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      lead_time_days:
+        custom: []
+        name: lead_time_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 12
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      shelf_life_days:
+        custom: []
+        name: shelf_life_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 77
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      qc_required:
+        custom: []
+        name: qc_required
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      inspection_type:
+        custom: []
+        name: inspection_type
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: iyvdlj
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_batch_tracked:
+        custom: []
+        name: is_batch_tracked
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      standard_cost:
+        custom: []
+        name: standard_cost
+        description: 'Must be at least 0.'
+        required: false
+        example: 52
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      valuation_method:
+        custom: []
+        name: valuation_method
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: ikhway
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      prefix_code: b
+      material_code: 'n'
+      material_name: g
+      material_type: zmiyvdljnikhwayk
+      uom_id: 16
+      purchase_uom_id: 16
+      hsn_code_id: 16
+      default_warehouse_id: 16
+      reorder_level: 39
+      safety_stock: 84
+      lead_time_days: 12
+      shelf_life_days: 77
+      qc_required: true
+      inspection_type: iyvdlj
+      is_batch_tracked: true
+      standard_cost: 52
+      valuation_method: ikhway
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/materials/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the material.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      material_code:
+        custom: []
+        name: material_code
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      material_name:
+        custom: []
+        name: material_name
+        description: 'Must not be greater than 200 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      material_type:
+        custom: []
+        name: material_type
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      uom_id:
+        custom: []
+        name: uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      purchase_uom_id:
+        custom: []
+        name: purchase_uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      hsn_code_id:
+        custom: []
+        name: hsn_code_id
+        description: 'The <code>id</code> of an existing record in the tenant.hsn_codes table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      default_warehouse_id:
+        custom: []
+        name: default_warehouse_id
+        description: 'The <code>id</code> of an existing record in the tenant.warehouse_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      reorder_level:
+        custom: []
+        name: reorder_level
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      safety_stock:
+        custom: []
+        name: safety_stock
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      lead_time_days:
+        custom: []
+        name: lead_time_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 12
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      shelf_life_days:
+        custom: []
+        name: shelf_life_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 77
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      qc_required:
+        custom: []
+        name: qc_required
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      inspection_type:
+        custom: []
+        name: inspection_type
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: iyvdlj
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_batch_tracked:
+        custom: []
+        name: is_batch_tracked
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      standard_cost:
+        custom: []
+        name: standard_cost
+        description: 'Must be at least 0.'
+        required: false
+        example: 52
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      valuation_method:
+        custom: []
+        name: valuation_method
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: ikhway
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      material_name: b
+      material_type: ngzmiyvdljnikhwa
+      uom_id: 16
+      purchase_uom_id: 16
+      hsn_code_id: 16
+      default_warehouse_id: 16
+      reorder_level: 39
+      safety_stock: 84
+      lead_time_days: 12
+      shelf_life_days: 77
+      qc_required: true
+      inspection_type: iyvdlj
+      is_batch_tracked: false
+      standard_cost: 52
+      valuation_method: ikhway
+      is_active: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/materials/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the material.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/products
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"abf38fd1-62bd-46cb-aa2a-b7d6403b1a8a","timestamp":"2026-03-09T07:42:33+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/products/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the product.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5a55f8ab-53af-4f5f-9a6a-8b148ed4ace9","timestamp":"2026-03-09T07:42:34+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/products
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      product_code:
+        custom: []
+        name: product_code
+        description: 'Must not be greater than 30 characters.'
+        required: true
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      product_name:
+        custom: []
+        name: product_name
+        description: 'Must not be greater than 200 characters.'
+        required: true
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      product_category:
+        custom: []
+        name: product_category
+        description: 'Must not be greater than 60 characters.'
+        required: false
+        example: g
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      pack_size:
+        custom: []
+        name: pack_size
+        description: 'Must be at least 0.'
+        required: true
+        example: 12
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      pack_uom_id:
+        custom: []
+        name: pack_uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      hsn_code_id:
+        custom: []
+        name: hsn_code_id
+        description: 'The <code>id</code> of an existing record in the tenant.hsn_codes table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      standard_cost:
+        custom: []
+        name: standard_cost
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      mrp:
+        custom: []
+        name: mrp
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      product_code: b
+      product_name: 'n'
+      product_category: g
+      pack_size: 12
+      pack_uom_id: 16
+      hsn_code_id: 16
+      standard_cost: 39
+      mrp: 84
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/products/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the product.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      product_code:
+        custom: []
+        name: product_code
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      product_name:
+        custom: []
+        name: product_name
+        description: 'Must not be greater than 200 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      product_category:
+        custom: []
+        name: product_category
+        description: 'Must not be greater than 60 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      pack_size:
+        custom: []
+        name: pack_size
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      pack_uom_id:
+        custom: []
+        name: pack_uom_id
+        description: 'The <code>id</code> of an existing record in the tenant.uom_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      hsn_code_id:
+        custom: []
+        name: hsn_code_id
+        description: 'The <code>id</code> of an existing record in the tenant.hsn_codes table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      standard_cost:
+        custom: []
+        name: standard_cost
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      mrp:
+        custom: []
+        name: mrp
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      product_name: b
+      product_category: 'n'
+      pack_size: 84
+      pack_uom_id: 16
+      hsn_code_id: 16
+      standard_cost: 39
+      mrp: 84
+      is_active: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/products/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the product.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/vendors
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        List vendors
+        GET /api/v1/vendors
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"7cc48b37-f4f4-48e5-b1e9-633cea3fc69d","timestamp":"2026-03-09T07:42:34+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/vendors/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Get single vendor
+        GET /api/v1/vendors/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b9fd27db-257f-420f-852e-95541ffbbc5e","timestamp":"2026-03-09T07:42:34+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/vendors
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Create vendor
+        POST /api/v1/vendors
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      vendor_code:
+        custom: []
+        name: vendor_code
+        description: 'Must not be greater than 20 characters.'
+        required: true
+        example: bngzmiyvdljnikhw
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      vendor_name:
+        custom: []
+        name: vendor_name
+        description: 'Must not be greater than 200 characters.'
+        required: true
+        example: a
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      vendor_type:
+        custom: []
+        name: vendor_type
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ykcmyuwpwlvqwrsi
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      gstin:
+        custom: []
+        name: gstin
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: tcpscqldzsnrwtuj
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      pan_number:
+        custom: []
+        name: pan_number
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: wvlxjk
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      msme_category:
+        custom: []
+        name: msme_category
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: lqppwq
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      payment_terms:
+        custom: []
+        name: payment_terms
+        description: 'Must not be greater than 30 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      credit_days:
+        custom: []
+        name: credit_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 4
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      currency_id:
+        custom: []
+        name: currency_id
+        description: 'The <code>id</code> of an existing record in the tenant.currency_master table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      delivery_terms:
+        custom: []
+        name: delivery_terms
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      bank_name:
+        custom: []
+        name: bank_name
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example: 'y'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      bank_account_no:
+        custom: []
+        name: bank_account_no
+        description: 'Must not be greater than 30 characters.'
+        required: false
+        example: k
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      ifsc_code:
+        custom: []
+        name: ifsc_code
+        description: 'Must not be greater than 11 characters.'
+        required: false
+        example: cmyuwp
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      rating_score:
+        custom: []
+        name: rating_score
+        description: 'Must be at least 0. Must not be greater than 100.'
+        required: false
+        example: 8
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+    cleanBodyParameters:
+      vendor_code: bngzmiyvdljnikhw
+      vendor_name: a
+      vendor_type: ykcmyuwpwlvqwrsi
+      gstin: tcpscqldzsnrwtuj
+      pan_number: wvlxjk
+      msme_category: lqppwq
+      payment_terms: b
+      credit_days: 4
+      currency_id: 16
+      delivery_terms: ngzmiyvdljnikhwa
+      bank_name: 'y'
+      bank_account_no: k
+      ifsc_code: cmyuwp
+      rating_score: 8
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/vendors/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Update vendor
+        PUT /api/v1/vendors/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      vendor_code:
+        custom: []
+        name: vendor_code
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      vendor_name:
+        custom: []
+        name: vendor_name
+        description: 'Must not be greater than 200 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      vendor_type:
+        custom: []
+        name: vendor_type
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      gstin:
+        custom: []
+        name: gstin
+        description: ''
+        required: false
+        example: null
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      pan_number:
+        custom: []
+        name: pan_number
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: ykcmyu
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      msme_category:
+        custom: []
+        name: msme_category
+        description: 'Must not be greater than 10 characters.'
+        required: false
+        example: wpwlvq
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      payment_terms:
+        custom: []
+        name: payment_terms
+        description: 'Must not be greater than 30 characters.'
+        required: false
+        example: w
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      credit_days:
+        custom: []
+        name: credit_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 4
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      currency_id:
+        custom: []
+        name: currency_id
+        description: 'The <code>id</code> of an existing record in the tenant.currency_master table.'
+        required: false
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      delivery_terms:
+        custom: []
+        name: delivery_terms
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      bank_name:
+        custom: []
+        name: bank_name
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example: 'y'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      bank_account_no:
+        custom: []
+        name: bank_account_no
+        description: 'Must not be greater than 30 characters.'
+        required: false
+        example: k
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      ifsc_code:
+        custom: []
+        name: ifsc_code
+        description: 'Must not be greater than 11 characters.'
+        required: false
+        example: cmyuwp
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_approved:
+        custom: []
+        name: is_approved
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      approved_date:
+        custom: []
+        name: approved_date
+        description: 'Must be a valid date.'
+        required: false
+        example: '2026-03-09T07:42:34'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      rating_score:
+        custom: []
+        name: rating_score
+        description: 'Must be at least 0. Must not be greater than 100.'
+        required: false
+        example: 8
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      blacklisted:
+        custom: []
+        name: blacklisted
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      vendor_name: b
+      vendor_type: ngzmiyvdljnikhwa
+      pan_number: ykcmyu
+      msme_category: wpwlvq
+      payment_terms: w
+      credit_days: 4
+      currency_id: 16
+      delivery_terms: ngzmiyvdljnikhwa
+      bank_name: 'y'
+      bank_account_no: k
+      ifsc_code: cmyuwp
+      is_approved: true
+      approved_date: '2026-03-09T07:42:34'
+      rating_score: 8
+      blacklisted: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/vendors/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Deactivate vendor (blacklist)
+        DELETE /api/v1/vendors/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/vendor-contacts
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        List contacts (optionally filter by vendor_id)
+        GET /api/v1/vendor-contacts
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b3b1d7a9-53a7-41b4-a2b7-858082496007","timestamp":"2026-03-09T07:42:34+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/vendor-contacts/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Get single contact
+        GET /api/v1/vendor-contacts/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor contact.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"d071835d-b6c0-46b5-b4dd-e4c3e94ec41c","timestamp":"2026-03-09T07:42:34+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/vendor-contacts
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Create vendor contact
+        POST /api/v1/vendor-contacts
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      vendor_id:
+        custom: []
+        name: vendor_id
+        description: 'The <code>id</code> of an existing record in the tenant.vendor_master table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      contact_name:
+        custom: []
+        name: contact_name
+        description: 'Must not be greater than 100 characters.'
+        required: true
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      contact_type:
+        custom: []
+        name: contact_type
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: gzmiyvdljnikhway
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: kcmyuwpwlvqwrsit
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address. Must not be greater than 150 characters.'
+        required: false
+        example: okeefe.isidro@example.org
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_primary:
+        custom: []
+        name: is_primary
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      vendor_id: 16
+      contact_name: 'n'
+      contact_type: gzmiyvdljnikhway
+      phone: kcmyuwpwlvqwrsit
+      email: okeefe.isidro@example.org
+      is_primary: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/vendor-contacts/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Update vendor contact
+        PUT /api/v1/vendor-contacts/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor contact.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      contact_name:
+        custom: []
+        name: contact_name
+        description: 'Must not be greater than 100 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      contact_type:
+        custom: []
+        name: contact_type
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ngzmiyvdljnikhwa
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      phone:
+        custom: []
+        name: phone
+        description: 'Must not be greater than 20 characters.'
+        required: false
+        example: ykcmyuwpwlvqwrsi
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      email:
+        custom: []
+        name: email
+        description: 'Must be a valid email address. Must not be greater than 150 characters.'
+        required: false
+        example: pfritsch@example.com
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_primary:
+        custom: []
+        name: is_primary
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      contact_name: b
+      contact_type: ngzmiyvdljnikhwa
+      phone: ykcmyuwpwlvqwrsi
+      email: pfritsch@example.com
+      is_primary: false
+      is_active: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/vendor-contacts/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Delete vendor contact
+        DELETE /api/v1/vendor-contacts/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor contact.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/vendor-material-map
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        List AVL entries
+        GET /api/v1/vendor-material-map
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ffa132f0-d6f0-407a-87e9-c337d8e8bee3","timestamp":"2026-03-09T07:42:34+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: 'api/v1/vendor-material-map/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Get single mapping
+        GET /api/v1/vendor-material-map/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor material map.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2345a5f6-f32d-4f29-b861-fff66796c388","timestamp":"2026-03-09T07:42:34+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - POST
+    uri: api/v1/vendor-material-map
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Create AVL entry
+        POST /api/v1/vendor-material-map
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      vendor_id:
+        custom: []
+        name: vendor_id
+        description: 'The <code>id</code> of an existing record in the tenant.vendor_master table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      material_id:
+        custom: []
+        name: material_id
+        description: 'The <code>id</code> of an existing record in the tenant.material_master table.'
+        required: true
+        example: 16
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      vendor_material_code:
+        custom: []
+        name: vendor_material_code
+        description: 'Must not be greater than 50 characters.'
+        required: false
+        example: 'n'
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      last_purchase_price:
+        custom: []
+        name: last_purchase_price
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      lead_time_days:
+        custom: []
+        name: lead_time_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 12
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      min_order_qty:
+        custom: []
+        name: min_order_qty
+        description: 'Must be at least 0.'
+        required: false
+        example: 77
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_preferred:
+        custom: []
+        name: is_preferred
+        description: ''
+        required: false
+        example: false
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      vendor_id: 16
+      material_id: 16
+      vendor_material_code: 'n'
+      last_purchase_price: 84
+      lead_time_days: 12
+      min_order_qty: 77
+      is_preferred: false
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PUT
+    uri: 'api/v1/vendor-material-map/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Update AVL entry
+        PUT /api/v1/vendor-material-map/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor material map.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters:
+      vendor_material_code:
+        custom: []
+        name: vendor_material_code
+        description: 'Must not be greater than 50 characters.'
+        required: false
+        example: b
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      last_purchase_price:
+        custom: []
+        name: last_purchase_price
+        description: 'Must be at least 0.'
+        required: false
+        example: 39
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      lead_time_days:
+        custom: []
+        name: lead_time_days
+        description: 'Must be at least 0.'
+        required: false
+        example: 84
+        type: integer
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      min_order_qty:
+        custom: []
+        name: min_order_qty
+        description: 'Must be at least 0.'
+        required: false
+        example: 12
+        type: number
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: true
+        deprecated: false
+      is_preferred:
+        custom: []
+        name: is_preferred
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+      is_active:
+        custom: []
+        name: is_active
+        description: ''
+        required: false
+        example: true
+        type: boolean
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanBodyParameters:
+      vendor_material_code: b
+      last_purchase_price: 39
+      lead_time_days: 84
+      min_order_qty: 12
+      is_preferred: true
+      is_active: true
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - DELETE
+    uri: 'api/v1/vendor-material-map/{id}'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: |-
+        Remove AVL entry (deactivate)
+        DELETE /api/v1/vendor-material-map/{id}
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the vendor material map.'
         required: true
         example: architecto
         type: string
@@ -3643,7 +7118,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"59cc1d2d-ff0b-47f5-aeb2-ba5983534d2d","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b813cf7f-a7f5-4f9f-b741-00f4187635f7","timestamp":"2026-03-09T07:42:34+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3697,7 +7172,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"d77faa23-6b4b-4280-a27c-c21bf1b75869","timestamp":"2026-03-06T09:45:53+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9089ea9f-7569-4782-978b-5a26d9e0d53c","timestamp":"2026-03-09T07:42:34+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3760,7 +7235,7 @@ endpoints:
         name: feature_type
         description: ''
         required: true
-        example: NUMERIC
+        example: JSON
         type: string
         enumValues:
           - BOOLEAN
@@ -3786,7 +7261,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-06T09:45:53'
+        example: '2026-03-09T07:42:34'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3797,7 +7272,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-03-29'
+        example: '2052-04-01'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3817,10 +7292,10 @@ endpoints:
     cleanBodyParameters:
       org_id: 16
       feature_key: 'n'
-      feature_type: NUMERIC
+      feature_type: JSON
       feature_value: architecto
-      effective_from: '2026-03-06T09:45:53'
-      effective_to: '2052-03-29'
+      effective_from: '2026-03-09T07:42:34'
+      effective_to: '2052-04-01'
       notes: architecto
     fileParameters: []
     responses: []
@@ -3882,7 +7357,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-06T09:45:53'
+        example: '2026-03-09T07:42:34'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3893,7 +7368,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-03-29'
+        example: '2052-04-01'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3912,8 +7387,8 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       feature_value: architecto
-      effective_from: '2026-03-06T09:45:53'
-      effective_to: '2052-03-29'
+      effective_from: '2026-03-09T07:42:34'
+      effective_to: '2052-04-01'
       notes: architecto
     fileParameters: []
     responses: []
