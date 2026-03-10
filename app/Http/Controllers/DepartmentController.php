@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant\Department;
+use App\Models\Tenant\DeptRoleMap;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -106,10 +107,13 @@ class DepartmentController extends Controller
         $requestId = Str::uuid()->toString();
 
         $validator = Validator::make($request->all(), [
-            'dept_code' => 'required|string|max:50|unique:tenant.department_master,dept_code',
+            'dept_code' => 'required|string|max:50', // Allow existing departments for upsert 
             'dept_name' => 'required|string|max:100',
             'parent_dept_id' => 'nullable|integer|exists:tenant.department_master,id',
             'cost_center_code' => 'nullable|string|max:20',
+            'role_code' => 'nullable|string|max:30', // Optional role mapping details
+            'role_name' => 'nullable|string|max:100',
+            'description' => 'nullable|string',
         ]);
 
         if ($validator->fails()) {
@@ -143,15 +147,42 @@ class DepartmentController extends Controller
                 }
             }
 
-            // Create department
-            $department = Department::create([
-                'dept_code' => $request->input('dept_code'),
-                'dept_name' => $request->input('dept_name'),
-                'parent_dept_id' => $request->input('parent_dept_id'),
-                'cost_center_code' => $request->input('cost_center_code'),
-                'is_active' => true,
-                'created_by' => $request->input('auth_user_id'),
-            ]);
+            // Create or fetch department (Upsert mode to allow adding roles to existing)
+            $department = Department::firstOrCreate(
+                ['dept_code' => $request->input('dept_code')],
+                [
+                    'dept_name' => $request->input('dept_name'),
+                    'parent_dept_id' => $request->input('parent_dept_id'),
+                    'cost_center_code' => $request->input('cost_center_code'),
+                    'is_active' => true,
+                    'created_by' => $request->input('auth_user_id'),
+                ]
+            );
+
+            // If role_code is provided, automatically create/fetch the role and map it to this department
+            if ($request->has('role_code') && $request->input('role_code')) {
+                $roleName = $request->input('role_name', $request->input('role_code')); // default to code
+                $role = \App\Models\Tenant\Role::firstOrCreate(
+                    ['role_code' => $request->input('role_code')],
+                    [
+                        'role_name' => $roleName,
+                        'description' => $request->input('description'),
+                        'is_active' => true,
+                        'is_system_role' => false,
+                        'created_by' => $request->input('auth_user_id'),
+                    ]
+                );
+
+                \App\Models\Tenant\DeptRoleMap::firstOrCreate(
+                    [
+                        'dept_id' => $department->id,
+                        'role_id' => $role->id,
+                    ],
+                    [
+                        'created_by' => $request->input('auth_user_id')
+                    ]
+                );
+            }
 
             $department->load(['parent']);
 
@@ -329,6 +360,63 @@ class DepartmentController extends Controller
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 500);
+        }
+    }
+
+    /**
+     * Get roles valid for a department (via dept_role_map).
+     * Used by admin user-creation form to populate the Role dropdown.
+     * GET /api/v1/departments/{id}/roles
+     */
+    public function roles(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        try {
+            $department = Department::findOrFail($id);
+
+            // Load roles mapped to this department through dept_role_map
+            $roles = DeptRoleMap::with('role')
+                ->where('dept_id', $id)
+                ->get()
+                ->map(function ($mapping) {
+                    return [
+                        'role_id'   => $mapping->role->id,
+                        'role_code' => $mapping->role->role_code,
+                        'role_name' => $mapping->role->role_name,
+                        'description' => $mapping->role->description,
+                        'is_active' => $mapping->role->is_active,
+                    ];
+                })
+                ->filter(fn($r) => $r['is_active']) // only active roles
+                ->values();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'department' => [
+                        'dept_id'   => $department->id,
+                        'dept_code' => $department->dept_code,
+                        'dept_name' => $department->dept_name,
+                    ],
+                    'roles' => $roles,
+                ],
+                'message' => 'Roles retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code'    => 'FETCH_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to retrieve roles for department: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 404);
         }
     }
 }

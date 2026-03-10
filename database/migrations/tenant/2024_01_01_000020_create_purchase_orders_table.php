@@ -56,19 +56,27 @@ return new class extends Migration
 
             // --- Notes ---
             $table->text('terms_conditions')->nullable()->comment('Legal T&C for this PO');
+
             $table->text('remarks')->nullable()->comment('Internal notes');
 
             // --- Audit ---
             $table->unsignedBigInteger('created_by')->nullable()->comment('FK → users (Procurement Exec)');
+
             $table->unsignedBigInteger('approved_by')->nullable()->comment('FK → users (Procurement Manager)');
+            
             $table->timestamp('approved_at')->nullable();
+
             $table->softDeletes();
+
             $table->timestampsTz();
 
             // Foreign Keys
             $table->foreign('vendor_id')->references('id')->on('vendor_master')->onDelete('restrict');
+
             $table->foreign('currency_id')->references('id')->on('currency_master')->onDelete('restrict');
+
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
+
             $table->foreign('approved_by')->references('id')->on('users')->onDelete('set null');
 
             // Indexes

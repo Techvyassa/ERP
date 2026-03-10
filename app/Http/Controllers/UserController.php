@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant\User;
+use App\Models\Tenant\DeptRoleMap;
 use App\Models\Control\ActiveSubscription;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -169,6 +170,28 @@ class UserController extends Controller
                 }
             }
 
+            // Validate role belongs to the selected department (via dept_role_map)
+            $deptId = $request->input('dept_id');
+            $roleId = $request->input('role_id');
+            if ($deptId && $roleId) {
+                if (!DeptRoleMap::isValidForDepartment((int) $deptId, (int) $roleId)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code'    => 'ROLE_DEPT_MISMATCH',
+                            'details' => [
+                                'dept_id' => $deptId,
+                                'role_id' => $roleId,
+                                'hint'    => 'Use GET /api/v1/departments/{id}/roles to see valid roles for this department.',
+                            ]
+                        ],
+                        'message' => 'The selected role is not valid for the chosen department.',
+                        'request_id' => $requestId,
+                        'timestamp'  => now()->toIso8601String()
+                    ], 422);
+                }
+            }
+
             // Create user
             $user = User::create([
                 'employee_code' => $request->input('employee_code'),
@@ -243,6 +266,28 @@ class UserController extends Controller
 
         try {
             $user = User::findOrFail($id);
+
+            // Validate role belongs to the (new or existing) department via dept_role_map
+            $deptId = $request->has('dept_id') ? $request->input('dept_id') : $user->dept_id;
+            $roleId = $request->has('role_id') ? $request->input('role_id') : $user->role_id;
+            if ($deptId && $roleId && ($request->has('dept_id') || $request->has('role_id'))) {
+                if (!DeptRoleMap::isValidForDepartment((int) $deptId, (int) $roleId)) {
+                    return response()->json([
+                        'success' => false,
+                        'error' => [
+                            'code'    => 'ROLE_DEPT_MISMATCH',
+                            'details' => [
+                                'dept_id' => $deptId,
+                                'role_id' => $roleId,
+                                'hint'    => 'Use GET /api/v1/departments/{id}/roles to see valid roles for this department.',
+                            ]
+                        ],
+                        'message' => 'The selected role is not valid for the chosen department.',
+                        'request_id' => $requestId,
+                        'timestamp'  => now()->toIso8601String()
+                    ], 422);
+                }
+            }
 
             // Update fields
             if ($request->has('employee_code')) {

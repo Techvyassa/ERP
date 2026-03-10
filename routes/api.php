@@ -41,6 +41,11 @@ Route::prefix('v1')->group(function () {
         Route::post('/firebase-login', [App\Http\Controllers\FirebaseAuthController::class, 'firebaseLogin']);
     });
 
+    // Authenticated user profile + permissions
+    // Returns dept/role context and full permission map for dashboard routing
+    Route::middleware(['validate.jwt', 'resolve.tenant'])
+        ->get('/auth/me', [App\Http\Controllers\AuthController::class, 'me']);
+
     // Organization registration and utilities (public)
     Route::prefix('organizations')->group(function () {
         Route::post('/register', [App\Http\Controllers\OrganizationController::class, 'register']);
@@ -83,6 +88,8 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [App\Http\Controllers\DepartmentController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\DepartmentController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\DepartmentController::class, 'deactivate']);
+            // Returns only valid roles for this department (used by admin user-creation UI)
+            Route::get('/{id}/roles', [App\Http\Controllers\DepartmentController::class, 'roles']);
         });
 
 
