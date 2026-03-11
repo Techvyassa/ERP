@@ -53,6 +53,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/suggest-slug', [App\Http\Controllers\OrganizationController::class, 'suggestSlug']);
     });
 
+    // Rate limit status endpoint (excluded from rate limiting and subscription validation)
+    Route::get('/rate-limit/status', [App\Http\Controllers\RateLimitController::class, 'status']);
+
     // Subscription plans (public)
     Route::prefix('subscription-plans')->group(function () {
         Route::get('/', [App\Http\Controllers\SubscriptionPlanController::class, 'index']);
@@ -61,9 +64,6 @@ Route::prefix('v1')->group(function () {
 
     // Protected routes (require authentication, tenant resolution, subscription validation, and RBAC)
     Route::middleware(['validate.jwt', 'resolve.tenant', 'validate.subscription'])->group(function () {
-
-        // Rate limit status endpoint (excluded from rate limiting)
-        Route::get('/rate-limit/status', [App\Http\Controllers\RateLimitController::class, 'status']);
 
         // Profile completion endpoints
         Route::prefix('profile-completion')->group(function () {
@@ -193,6 +193,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // PROCUREMENT (Vendor & Procurement) Endpoints
+        // Roles: PROC_EXE (create/edit vendors), PROC_MGR (approve vendors), ADMIN (all)
         Route::middleware(['check.module.permission:PO'])->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
@@ -223,14 +224,47 @@ Route::prefix('v1')->group(function () {
         });
 
         // PO Management Endpoints
+        // Roles: PROC_EXE (create/edit), PROC_MGR (approve), ADMIN (all)
+        // Status Flow: DRAFT → PENDING_APPROVAL → APPROVED → OPEN → PARTIAL → CLOSED/CANCELLED
         Route::middleware(['check.module.permission:PO'])->group(function () {
             Route::prefix('purchase-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\PurchaseOrderController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\PurchaseOrderController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'update']);
-                Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseOrderController::class, 'approve']);
-                Route::patch('/{id}/cancel', [App\Http\Controllers\PurchaseOrderController::class, 'cancel']);
+                
+                // Status Transitions
+                Route::patch('/{id}/submit', [App\Http\Controllers\PurchaseOrderController::class, 'submit']); // DRAFT → PENDING_APPROVAL
+                Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseOrderController::class, 'approve']); // PENDING_APPROVAL → APPROVED
+                Route::patch('/{id}/reject', [App\Http\Controllers\PurchaseOrderController::class, 'reject']); // PENDING_APPROVAL → DRAFT
+                Route::patch('/{id}/release', [App\Http\Controllers\PurchaseOrderController::class, 'release']); // APPROVED → OPEN
+                Route::patch('/{id}/close', [App\Http\Controllers\PurchaseOrderController::class, 'close']); // OPEN/PARTIAL → CLOSED
+                Route::patch('/{id}/cancel', [App\Http\Controllers\PurchaseOrderController::class, 'cancel']); // Any → CANCELLED
+            });
+        });
+
+        // ASN (Advance Shipping Notice) Endpoints
+        // Roles: PROC_EXE/PROC_MGR (create/edit), STOREKEEPER/STORE_MGR (view/receive), ADMIN (all)
+        // Status Flow: DRAFT → SENT → IN_TRANSIT → ARRIVED → RECEIVED/CANCELLED
+        Route::middleware(['check.module.permission:ASN'])->group(function () {
+            Route::prefix('asn')->group(function () {
+                // Lookup endpoints (before resource routes to avoid conflicts)
+                Route::get('/arriving-today', [App\Http\Controllers\ASNController::class, 'arrivingToday']);
+                Route::get('/overdue', [App\Http\Controllers\ASNController::class, 'overdue']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\ASNController::class, 'getByPO']);
+                Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\ASNController::class, 'getByVendor']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\ASNController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\ASNController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\ASNController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\ASNController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\ASNController::class, 'destroy']);
+                
+                // Status transitions
+                Route::patch('/{id}/send', [App\Http\Controllers\ASNController::class, 'send']); // DRAFT → SENT
+                Route::patch('/{id}/in-transit', [App\Http\Controllers\ASNController::class, 'markInTransit']); // SENT → IN_TRANSIT
+                Route::patch('/{id}/arrived', [App\Http\Controllers\ASNController::class, 'markArrived']); // IN_TRANSIT → ARRIVED
             });
         });
 
