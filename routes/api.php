@@ -268,6 +268,27 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // Gate Entry Management Endpoints
+        // Roles: STOREKEEPER/STORE_MGR (create/verify), ADMIN (all)
+        // Status Flow: PENDING_VERIFICATION → VERIFIED → MOVED_TO_DOCK / REJECTED
+        Route::middleware(['check.module.permission:GATE'])->group(function () {
+            Route::prefix('gate-entries')->group(function () {
+                // Lookup endpoints
+                Route::get('/pending-verifications', [App\Http\Controllers\GateEntryController::class, 'pendingVerifications']);
+                Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GateEntryController::class, 'byVendor']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\GateEntryController::class, 'byPO']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\GateEntryController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\GateEntryController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\GateEntryController::class, 'store']);
+                
+                // Status transitions
+                Route::post('/{id}/verify', [App\Http\Controllers\GateEntryController::class, 'verify']); // PENDING_VERIFICATION → VERIFIED/REJECTED
+                Route::patch('/{id}/move-to-dock', [App\Http\Controllers\GateEntryController::class, 'moveToDock']); // VERIFIED → MOVED_TO_DOCK
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {
