@@ -271,7 +271,7 @@ Route::prefix('v1')->group(function () {
         // Gate Entry Management Endpoints
         // Roles: STOREKEEPER/STORE_MGR (create/verify), ADMIN (all)
         // Status Flow: PENDING_VERIFICATION → VERIFIED → MOVED_TO_DOCK / REJECTED
-        Route::middleware(['check.module.permission:GATE'])->group(function () {
+        Route::middleware(['check.module.permission:GATE_ENTRY'])->group(function () {
             Route::prefix('gate-entries')->group(function () {
                 // Lookup endpoints
                 Route::get('/pending-verifications', [App\Http\Controllers\GateEntryController::class, 'pendingVerifications']);

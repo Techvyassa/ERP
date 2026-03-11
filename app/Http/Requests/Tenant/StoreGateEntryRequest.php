@@ -14,9 +14,9 @@ class StoreGateEntryRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'po_id' => 'required|integer|exists:purchase_orders,id',
-            'asn_id' => 'nullable|integer|exists:asn_headers,id',
-            'vendor_id' => 'required|integer|exists:vendors,id',
+            'po_id' => 'required|integer|exists:tenant.purchase_orders,id',
+            'asn_id' => 'nullable|integer|exists:tenant.asn_headers,id',
+            'vendor_id' => 'required|integer|exists:tenant.vendor_master,id',
             'vehicle_number' => 'required|string|max:20',
             'transporter_name' => 'nullable|string|max:100',
             'driver_name' => 'nullable|string|max:100',

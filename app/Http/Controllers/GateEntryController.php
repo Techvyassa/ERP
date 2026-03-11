@@ -78,7 +78,7 @@ class GateEntryController extends Controller
     public function store(StoreGateEntryRequest $request): JsonResponse
     {
         try {
-            $userId = auth()->id();
+            $userId = $request->input('auth_user_id');
             $entry = $this->service->createGateEntry($request->validated(), $userId);
             
             return response()->json([
@@ -121,7 +121,7 @@ class GateEntryController extends Controller
     public function verify(int $id, StoreGateVerificationRequest $request): JsonResponse
     {
         try {
-            $userId = auth()->id();
+            $userId = $request->input('auth_user_id');
             $verification = $this->service->createVerification($id, $request->validated(), $userId);
             
             return response()->json([
@@ -144,10 +144,10 @@ class GateEntryController extends Controller
     /**
      * Move gate entry to dock
      */
-    public function moveToDock(int $id): JsonResponse
+    public function moveToDock(int $id, Request $request): JsonResponse
     {
         try {
-            $userId = auth()->id();
+            $userId = $request->input('auth_user_id');
             $entry = $this->service->moveToDock($id, $userId);
             
             return response()->json([
