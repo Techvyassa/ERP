@@ -419,4 +419,112 @@ class DepartmentController extends Controller
             ], 404);
         }
     }
+
+    /**
+     * Generate barcode for department
+     * GET /api/v1/departments/{id}/barcode
+     */
+    public function barcode(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        try {
+            $department = Department::findOrFail($id);
+
+            $barcodeHtml = $this->bar128($department->dept_code);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'department' => [
+                        'id' => $department->id,
+                        'dept_code' => $department->dept_code,
+                        'dept_name' => $department->dept_name,
+                        'description' => $department->description,
+                        'is_active' => $department->is_active,
+                    ],
+                    'barcode' => $barcodeHtml
+                ],
+                'message' => 'Barcode generated successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'BARCODE_GENERATION_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to generate barcode: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
+    /**
+     * Generate Code128 barcode HTML
+     */
+    private function bar128($code)
+    {
+        $code = str_replace(' ', '', $code);
+        $enc = '';
+        $sum = 104;
+        
+        for ($i = 0; $i < strlen($code); $i++) {
+            $c = ord($code[$i]);
+            if ($c >= 32 && $c <= 126) {
+                $enc .= chr($c);
+                $sum += $c * ($i + 2);
+            }
+        }
+        
+        $check = ($sum % 103) + 32;
+        if ($check == 32) $check = 92;
+        $enc .= chr($check);
+        $enc .= chr(211);
+        
+        $html = '<div style="font-family: monospace; padding: 10px; text-align: center; background: white;">';
+        $html .= '<div style="margin-bottom: 5px; font-size: 12px;">' . htmlspecialchars($code) . '</div>';
+        $html .= '<div style="letter-spacing: -1px; line-height: 1;">';
+        
+        for ($i = 0; $i < strlen($enc); $i++) {
+            $c = ord($enc[$i]);
+            if ($c == 211) {
+                $html .= '<span style="display: inline-block; width: 2px; height: 40px; background: black;"></span>';
+            } else {
+                $bar = '';
+                for ($j = 0; $j < 11; $j++) {
+                    if (($c >> (10 - $j)) & 1) {
+                        $bar .= '1';
+                    } else {
+                        $bar .= '0';
+                    }
+                }
+                $width = 0;
+                for ($j = 0; $j < strlen($bar); $j++) {
+                    if ($bar[$j] == '1') {
+                        $width++;
+                    } else {
+                        if ($width > 0) {
+                            $html .= '<span style="display: inline-block; width: ' . $width . 'px; height: 40px; background: black;"></span>';
+                            $width = 0;
+                        }
+                        $html .= '<span style="display: inline-block; width: 1px; height: 40px;"></span>';
+                    }
+                }
+                if ($width > 0) {
+                    $html .= '<span style="display: inline-block; width: ' . $width . 'px; height: 40px; background: black;"></span>';
+                }
+            }
+        }
+        
+        $html .= '</div>';
+        $html .= '<div style="margin-top: 5px; font-size: 10px;">' . htmlspecialchars($code) . '</div>';
+        $html .= '</div>';
+        
+        return $html;
+    }
 }

@@ -88,6 +88,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [App\Http\Controllers\DepartmentController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\DepartmentController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\DepartmentController::class, 'deactivate']);
+            Route::get('/{id}/barcode', [App\Http\Controllers\DepartmentController::class, 'barcode']);
             // Returns only valid roles for this department (used by admin user-creation UI)
             Route::get('/{id}/roles', [App\Http\Controllers\DepartmentController::class, 'roles']);
         });
@@ -100,6 +101,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [App\Http\Controllers\RoleController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\RoleController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\RoleController::class, 'destroy']);
+            Route::get('/{id}/barcode', [App\Http\Controllers\RoleController::class, 'barcode']);
 
             // Role permissions endpoints
             Route::get('/{id}/permissions', [App\Http\Controllers\RolePermissionController::class, 'show']);
