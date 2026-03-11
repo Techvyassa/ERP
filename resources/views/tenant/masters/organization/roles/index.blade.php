@@ -83,11 +83,6 @@
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                 <div class="flex items-center justify-end gap-2">
-                                    <button @click="openBarcodeModal(role)" 
-                                            class="text-green-600 hover:text-green-900 p-1" 
-                                            title="Barcode">
-                                        <span class="material-symbols-outlined text-sm">qr_code_2</span>
-                                    </button>
                                     <button @click="openPermissionsModal(role)" 
                                             class="text-purple-600 hover:text-purple-900 p-1" 
                                             title="Manage Permissions">
@@ -272,71 +267,6 @@
             </div>
         </div>
     </div>
-
-    <!-- Barcode Modal -->
-    <div x-show="showBarcodeModal" 
-         x-cloak
-         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
-         @click.self="closeBarcodeModal()">
-        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 class="text-xl font-bold text-gray-900">Role Barcode</h3>
-                <button @click="closeBarcodeModal()" class="text-gray-400 hover:text-gray-600">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            
-            <div class="p-6">
-                <div x-show="loadingBarcode" class="text-center py-8">
-                    <div class="inline-block animate-spin rounded-full h-8 w-8 border-b-2 border-green-600"></div>
-                    <p class="text-gray-600 mt-4">Generating barcode...</p>
-                </div>
-
-                <div x-show="!loadingBarcode && barcodeData" class="space-y-4">
-                    <div class="text-center">
-                        <div x-html="barcodeData.barcode" class="inline-block"></div>
-                    </div>
-                    
-                    <div class="bg-gray-50 rounded-lg p-4 space-y-2">
-                        <div class="flex justify-between">
-                            <span class="text-sm font-medium text-gray-600">Role Code:</span>
-                            <span class="text-sm text-gray-900" x-text="barcodeData.role.role_code"></span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-sm font-medium text-gray-600">Role Name:</span>
-                            <span class="text-sm text-gray-900" x-text="barcodeData.role.role_name"></span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-sm font-medium text-gray-600">Status:</span>
-                            <span :class="barcodeData.role.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
-                                  class="px-2 py-1 text-xs font-semibold rounded-full" 
-                                  x-text="barcodeData.role.is_active ? 'Active' : 'Inactive'"></span>
-                        </div>
-                        <div class="flex justify-between">
-                            <span class="text-sm font-medium text-gray-600">Type:</span>
-                            <span :class="barcodeData.role.is_system_role ? 'bg-blue-100 text-blue-800' : 'bg-gray-100 text-gray-800'" 
-                                  class="px-2 py-1 text-xs font-semibold rounded-full" 
-                                  x-text="barcodeData.role.is_system_role ? 'System' : 'Custom'"></span>
-                        </div>
-                    </div>
-                </div>
-            </div>
-
-            <div class="flex gap-3 p-6 border-t border-gray-200">
-                <button type="button" 
-                        @click="closeBarcodeModal()"
-                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
-                    Close
-                </button>
-                <button type="button" 
-                        @click="printBarcode()"
-                        :disabled="loadingBarcode || !barcodeData"
-                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
-                    Print Barcode
-                </button>
-            </div>
-        </div>
-    </div>
 </div>
 
 <script>
@@ -349,11 +279,8 @@ function roleManager() {
         filterActive: '',
         showModal: false,
         showPermissionsModal: false,
-        showBarcodeModal: false,
         editingRole: null,
         selectedRole: null,
-        barcodeData: null,
-        loadingBarcode: false,
         formData: {
             role_code: '',
             role_name: '',
@@ -520,78 +447,6 @@ function roleManager() {
             this.showPermissionsModal = false;
             this.selectedRole = null;
             this.permissions = [];
-        },
-
-        async openBarcodeModal(role) {
-            this.selectedRole = role;
-            this.showBarcodeModal = true;
-            this.loadingBarcode = true;
-            this.barcodeData = null;
-
-            try {
-                const response = await fetch(`/api/v1/roles/${role.id}/barcode`, {
-                    headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-                        'Accept': 'application/json'
-                    }
-                });
-
-                const data = await response.json();
-                if (data.success) {
-                    this.barcodeData = data.data;
-                } else {
-                    this.showError(data.message);
-                }
-            } catch (error) {
-                this.showError('Failed to generate barcode');
-            } finally {
-                this.loadingBarcode = false;
-            }
-        },
-
-        closeBarcodeModal() {
-            this.showBarcodeModal = false;
-            this.selectedRole = null;
-            this.barcodeData = null;
-        },
-
-        printBarcode() {
-            if (!this.barcodeData) return;
-            
-            const printWindow = window.open('', '_blank');
-            const barcodeHtml = `
-                <html>
-                    <head>
-                        <title>Role Barcode - ${this.barcodeData.role.role_code}</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
-                            .header { margin-bottom: 20px; }
-                            .barcode-container { margin: 20px 0; }
-                            .details { margin-top: 20px; text-align: left; display: inline-block; }
-                            .detail-row { margin: 5px 0; }
-                            .label { font-weight: bold; display: inline-block; width: 100px; }
-                        </style>
-                    </head>
-                    <body>
-                        <div class="header">
-                            <h2>Role Barcode</h2>
-                        </div>
-                        <div class="barcode-container">
-                            ${this.barcodeData.barcode}
-                        </div>
-                        <div class="details">
-                            <div class="detail-row"><span class="label">Role Code:</span> ${this.barcodeData.role.role_code}</div>
-                            <div class="detail-row"><span class="label">Role Name:</span> ${this.barcodeData.role.role_name}</div>
-                            <div class="detail-row"><span class="label">Status:</span> ${this.barcodeData.role.is_active ? 'Active' : 'Inactive'}</div>
-                            <div class="detail-row"><span class="label">Type:</span> ${this.barcodeData.role.is_system_role ? 'System' : 'Custom'}</div>
-                        </div>
-                    </body>
-                </html>
-            `;
-            
-            printWindow.document.write(barcodeHtml);
-            printWindow.document.close();
-            printWindow.print();
         },
 
         getPermission(moduleCode, permissionType) {
