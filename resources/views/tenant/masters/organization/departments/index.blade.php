@@ -279,7 +279,7 @@
     <div x-show="barcodeModal.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
             <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity" @click="closeBarcodeModal()"></div>
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full" @click.stop>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full" @click.stop>
                 <div class="bg-white px-6 py-4 border-b border-gray-200">
                     <div class="flex items-center justify-between">
                         <h3 class="text-lg font-semibold text-gray-900">Department Barcode</h3>
@@ -289,43 +289,48 @@
                 
                 <div class="bg-white px-6 py-4">
                     <div x-show="barcodeModal.loading" class="text-center py-8">
-                        <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
-                        <p class="text-gray-600 mt-4">Generating barcode...</p>
+                        <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+                        <p class="text-gray-600 mt-2">Generating barcode...</p>
                     </div>
 
-                    <div x-show="!barcodeModal.loading && barcodeModal.data" class="space-y-4">
-                        <div class="text-center">
-                            <div x-html="barcodeModal.data.barcode" class="inline-block"></div>
+                    <div x-show="!barcodeModal.loading && barcodeModal.error" class="text-sm text-red-600" x-text="barcodeModal.error"></div>
+
+                    <template x-if="!barcodeModal.loading && !barcodeModal.error && barcodeModal.data">
+                        <div class="space-y-4">
+                            <div class="text-center" id="barcode-content">
+                                <div x-html="barcodeModal.data.barcode" class="inline-block"></div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Department Code:</span>
+                                    <span class="text-sm text-gray-900" x-text="barcodeModal.data.department.dept_code"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Name:</span>
+                                    <span class="text-sm text-gray-900" x-text="barcodeModal.data.department.dept_name"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Cost Center:</span>
+                                    <span class="text-sm text-gray-900" x-text="barcodeModal.data.department.cost_center_code || '-'"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Status:</span>
+                                    <span :class="barcodeModal.data.department.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
+                                          class="px-2 py-1 text-xs font-semibold rounded-full" 
+                                          x-text="barcodeModal.data.department.is_active ? 'Active' : 'Inactive'"></span>
+                                </div>
+                            </div>
                         </div>
-                        
-                        <div class="bg-gray-50 rounded-lg p-4 space-y-2">
-                            <div class="flex justify-between">
-                                <span class="text-sm font-medium text-gray-600">Department Code:</span>
-                                <span class="text-sm text-gray-900" x-text="barcodeModal.data.department.dept_code"></span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm font-medium text-gray-600">Department Name:</span>
-                                <span class="text-sm text-gray-900" x-text="barcodeModal.data.department.dept_name"></span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm font-medium text-gray-600">Cost Center:</span>
-                                <span class="text-sm text-gray-900" x-text="barcodeModal.data.department.cost_center_code || '-'"></span>
-                            </div>
-                            <div class="flex justify-between">
-                                <span class="text-sm font-medium text-gray-600">Status:</span>
-                                <span :class="barcodeModal.data.department.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
-                                      class="px-2 py-1 text-xs font-semibold rounded-full" 
-                                      x-text="barcodeModal.data.department.is_active ? 'Active' : 'Inactive'"></span>
-                            </div>
-                        </div>
-                    </div>
+                    </template>
                 </div>
 
                 <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
-                    <button @click="closeBarcodeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
-                        Close
-                    </button>
-                    <button @click="printBarcode()" :disabled="barcodeModal.loading || !barcodeModal.data" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50">
+                    <button @click="closeBarcodeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">Close</button>
+                    <button @click="printBarcode()" 
+                            :disabled="barcodeModal.loading || !barcodeModal.data"
+                            :class="barcodeModal.loading || !barcodeModal.data ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg transition-colors">
                         <i class="fas fa-print mr-2"></i>Print Barcode
                     </button>
                 </div>
@@ -384,7 +389,7 @@
          },
 
          edit(item) {
-             const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/departments' : '/org/' . $organization->org_slug . '/departments') }}';
+             const baseUrl = '{{ url(request()->get("tenant_type") === "subdomain" ? "/departments" : "/org/" . $organization->org_slug . "/departments") }}';
              window.location.href = `${baseUrl}/${item.id}/edit`;
          },
 
@@ -459,81 +464,6 @@
              this.rolesModal.roles = [];
          },
 
-         async openBarcodeModal(item) {
-             this.barcodeModal.show = true;
-             this.barcodeModal.loading = true;
-             this.barcodeModal.error = '';
-             this.barcodeModal.data = null;
-
-             try {
-                 const response = await fetch(`/api/v1/departments/${item.id}/barcode`, {
-                     credentials: 'same-origin',
-                     headers: { 'Accept': 'application/json' }
-                 });
-                 const data = await response.json();
-
-                 if (!response.ok || !data || data.success !== true) {
-                     throw new Error((data && data.message) ? data.message : 'Failed to generate barcode');
-                 }
-
-                 this.barcodeModal.data = (data && data.data) ? data.data : null;
-                 if (!this.barcodeModal.data) {
-                     this.barcodeModal.error = 'Barcode data not found';
-                 }
-             } catch (e) {
-                 console.error('Failed to generate barcode:', e);
-                 this.barcodeModal.error = e.message || 'Failed to generate barcode';
-             } finally {
-                 this.barcodeModal.loading = false;
-             }
-         },
-
-         closeBarcodeModal() {
-             this.barcodeModal.show = false;
-             this.barcodeModal.loading = false;
-             this.barcodeModal.error = '';
-             this.barcodeModal.data = null;
-         },
-
-         printBarcode() {
-             if (!this.barcodeModal.data) return;
-             
-             const printWindow = window.open('', '_blank');
-             const barcodeHtml = `
-                 <html>
-                     <head>
-                         <title>Department Barcode - ${this.barcodeModal.data.department.dept_code}</title>
-                         <style>
-                             body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
-                             .header { margin-bottom: 20px; }
-                             .barcode-container { margin: 20px 0; }
-                             .details { margin-top: 20px; text-align: left; display: inline-block; }
-                             .detail-row { margin: 5px 0; }
-                             .label { font-weight: bold; display: inline-block; width: 120px; }
-                         </style>
-                     </head>
-                     <body>
-                         <div class="header">
-                             <h2>Department Barcode</h2>
-                         </div>
-                         <div class="barcode-container">
-                             ${this.barcodeModal.data.barcode}
-                         </div>
-                         <div class="details">
-                             <div class="detail-row"><span class="label">Department Code:</span> ${this.barcodeModal.data.department.dept_code}</div>
-                             <div class="detail-row"><span class="label">Department Name:</span> ${this.barcodeModal.data.department.dept_name}</div>
-                             <div class="detail-row"><span class="label">Cost Center:</span> ${this.barcodeModal.data.department.cost_center_code || '-'}</div>
-                             <div class="detail-row"><span class="label">Status:</span> ${this.barcodeModal.data.department.is_active ? 'Active' : 'Inactive'}</div>
-                         </div>
-                     </body>
-                 </html>
-             `;
-             
-             printWindow.document.write(barcodeHtml);
-             printWindow.document.close();
-             printWindow.print();
-         },
-
          async deactivateDepartment(item) {
              if (!confirm('Are you sure you want to deactivate department: ' + (item.dept_name || item.dept_code) + '?')) return;
 
@@ -559,6 +489,52 @@
                  console.error('Failed to deactivate department:', e);
                  this.showNotification(e.message || 'Failed to deactivate department', 'error');
              }
+         },
+
+         async openBarcodeModal(item) {
+             this.barcodeModal.show = true;
+             this.barcodeModal.loading = true;
+             this.barcodeModal.error = '';
+             this.barcodeModal.data = null;
+
+             try {
+                 const response = await fetch(`/api/v1/departments/${item.id}/barcode`, {
+                     credentials: 'same-origin',
+                     headers: { 'Accept': 'application/json' }
+                 });
+                 const data = await response.json();
+
+                 if (!response.ok || !data || data.success !== true) {
+                     throw new Error((data && data.message) ? data.message : 'Failed to generate barcode');
+                 }
+
+                 this.barcodeModal.data = (data && data.data) ? data.data : null;
+                 if (!this.barcodeModal.data) {
+                     this.barcodeModal.error = 'Barcode data not found';
+                 }
+             } catch (e) {
+                 console.error('Failed to load barcode:', e);
+                 this.barcodeModal.error = e.message || 'Failed to load barcode';
+             } finally {
+                 this.barcodeModal.loading = false;
+             }
+         },
+
+         closeBarcodeModal() {
+             this.barcodeModal.show = false;
+             this.barcodeModal.loading = false;
+             this.barcodeModal.error = '';
+             this.barcodeModal.data = null;
+         },
+
+         printBarcode() {
+             if (!this.barcodeModal.data) return;
+             
+             const printContent = document.getElementById('barcode-content').innerHTML;
+             const printWindow = window.open('', '_blank');
+             const deptCode = this.barcodeModal.data.department.dept_code;
+             printWindow.document.write('<!DOCTYPE html><html><head><title>Print Barcode - ' + deptCode + '</title><style>body { font-family: Arial, sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; padding: 20px; } @media print { body { padding: 0; } }</style></head><body>' + printContent + '<script>window.onload = function() { window.print(); window.onafterprint = function() { window.close(); }; };<\/script></body></html>');
+             printWindow.document.close();
          },
 
          showNotification(message, type = 'info') {

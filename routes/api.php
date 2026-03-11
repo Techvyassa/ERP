@@ -88,9 +88,9 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [App\Http\Controllers\DepartmentController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\DepartmentController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\DepartmentController::class, 'deactivate']);
-            Route::get('/{id}/barcode', [App\Http\Controllers\DepartmentController::class, 'barcode']);
             // Returns only valid roles for this department (used by admin user-creation UI)
             Route::get('/{id}/roles', [App\Http\Controllers\DepartmentController::class, 'roles']);
+            Route::get('/{id}/barcode', [App\Http\Controllers\DepartmentController::class, 'barcode']);
         });
 
 
@@ -116,6 +116,7 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [App\Http\Controllers\UserController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\UserController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\UserController::class, 'deactivate']);
+            Route::get('/{id}/barcode', [App\Http\Controllers\UserController::class, 'barcode']);
         });
 
 

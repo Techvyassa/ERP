@@ -440,7 +440,7 @@ class DepartmentController extends Controller
                         'id' => $department->id,
                         'dept_code' => $department->dept_code,
                         'dept_name' => $department->dept_name,
-                        'description' => $department->description,
+                        'cost_center_code' => $department->cost_center_code,
                         'is_active' => $department->is_active,
                     ],
                     'barcode' => $barcodeHtml
@@ -465,7 +465,7 @@ class DepartmentController extends Controller
     }
 
     /**
-     * Generate Code128 barcode HTML
+     * Generate Code 128 barcode HTML
      */
     private function bar128($code)
     {

@@ -209,7 +209,11 @@
                                           x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                    <button @click="openViewModal(item)" class="inline-flex items-center px-3 py-1.5 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors" title="View">
+                                    <button @click="openBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors" title="Barcode">
+                                        <i class="fas fa-qrcode mr-1"></i>
+                                        Barcode
+                                    </button>
+                                    <button @click="openViewModal(item)" class="inline-flex items-center px-3 py-1.5 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors ml-2" title="View">
                                         <i class="fas fa-eye mr-1"></i>
                                         View
                                     </button>
@@ -251,6 +255,69 @@
             </div>
         </div>
     </div>
+
+    <!-- Barcode Modal -->
+    <div x-show="barcodeModal.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity" @click="closeBarcodeModal()"></div>
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-md sm:w-full" @click.stop>
+                <div class="bg-white px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">User Barcode</h3>
+                        <button @click="closeBarcodeModal()" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
+                    </div>
+                </div>
+                
+                <div class="bg-white px-6 py-4">
+                    <div x-show="barcodeModal.loading" class="text-center py-8">
+                        <i class="fas fa-spinner fa-spin text-2xl text-gray-400"></i>
+                        <p class="text-gray-600 mt-2">Generating barcode...</p>
+                    </div>
+
+                    <div x-show="!barcodeModal.loading && barcodeModal.error" class="text-sm text-red-600" x-text="barcodeModal.error"></div>
+
+                    <template x-if="!barcodeModal.loading && !barcodeModal.error && barcodeModal.data">
+                        <div class="space-y-4">
+                            <div class="text-center">
+                                <div x-html="barcodeModal.data.barcode" class="inline-block"></div>
+                            </div>
+                            
+                            <div class="bg-gray-50 rounded-lg p-4 space-y-2">
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Employee Code:</span>
+                                    <span class="text-sm text-gray-900" x-text="barcodeModal.data.user.employee_code"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Name:</span>
+                                    <span class="text-sm text-gray-900" x-text="(barcodeModal.data.user.first_name || '') + ' ' + (barcodeModal.data.user.last_name || '')"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Email:</span>
+                                    <span class="text-sm text-gray-900" x-text="barcodeModal.data.user.email"></span>
+                                </div>
+                                <div class="flex justify-between">
+                                    <span class="text-sm font-medium text-gray-600">Status:</span>
+                                    <span :class="barcodeModal.data.user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" 
+                                          class="px-2 py-1 text-xs font-semibold rounded-full" 
+                                          x-text="barcodeModal.data.user.is_active ? 'Active' : 'Inactive'"></span>
+                                </div>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+
+                <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
+                    <button @click="closeBarcodeModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">Close</button>
+                    <button @click="printBarcode()" 
+                            :disabled="barcodeModal.loading || !barcodeModal.data"
+                            :class="barcodeModal.loading || !barcodeModal.data ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'"
+                            class="px-4 py-2 bg-green-600 text-white rounded-lg transition-colors">
+                        <i class="fas fa-print mr-2"></i>Print Barcode
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -268,6 +335,7 @@
          pagination: { current_page: 1, last_page: 1, total: 0, per_page: 15 },
 
          viewModal: { show: false, loading: false, error: '', user: null },
+         barcodeModal: { show: false, loading: false, error: '', data: null },
 
          async loadData(page = 1) {
              this.loading = true;
@@ -361,6 +429,81 @@
              this.viewModal.loading = false;
              this.viewModal.error = '';
              this.viewModal.user = null;
+         },
+
+         async openBarcodeModal(item) {
+             this.barcodeModal.show = true;
+             this.barcodeModal.loading = true;
+             this.barcodeModal.error = '';
+             this.barcodeModal.data = null;
+
+             try {
+                 const response = await fetch(`/api/v1/users/${item.id}/barcode`, {
+                     credentials: 'same-origin',
+                     headers: { 'Accept': 'application/json' }
+                 });
+                 const data = await response.json();
+
+                 if (!response.ok || !data || data.success !== true) {
+                     throw new Error((data && data.message) ? data.message : 'Failed to generate barcode');
+                 }
+
+                 this.barcodeModal.data = (data && data.data) ? data.data : null;
+                 if (!this.barcodeModal.data) {
+                     this.barcodeModal.error = 'Barcode data not found';
+                 }
+             } catch (e) {
+                 console.error('Failed to load barcode:', e);
+                 this.barcodeModal.error = e.message || 'Failed to load barcode';
+             } finally {
+                 this.barcodeModal.loading = false;
+             }
+         },
+
+         closeBarcodeModal() {
+             this.barcodeModal.show = false;
+             this.barcodeModal.loading = false;
+             this.barcodeModal.error = '';
+             this.barcodeModal.data = null;
+         },
+
+         printBarcode() {
+             if (!this.barcodeModal.data) return;
+             
+             const printWindow = window.open('', '_blank');
+             const barcodeHtml = `
+                 <html>
+                     <head>
+                         <title>User Barcode - ${this.barcodeModal.data.user.employee_code}</title>
+                         <style>
+                             body { font-family: Arial, sans-serif; margin: 20px; text-align: center; }
+                             .header { margin-bottom: 20px; }
+                             .barcode-container { margin: 20px 0; }
+                             .details { margin-top: 20px; text-align: left; display: inline-block; }
+                             .detail-row { margin: 5px 0; }
+                             .label { font-weight: bold; display: inline-block; width: 120px; }
+                         </style>
+                     </head>
+                     <body>
+                         <div class="header">
+                             <h2>User Barcode</h2>
+                         </div>
+                         <div class="barcode-container">
+                             ${this.barcodeModal.data.barcode}
+                         </div>
+                         <div class="details">
+                             <div class="detail-row"><span class="label">Employee Code:</span> ${this.barcodeModal.data.user.employee_code}</div>
+                             <div class="detail-row"><span class="label">Name:</span> ${(this.barcodeModal.data.user.first_name || '') + ' ' + (this.barcodeModal.data.user.last_name || '')}</div>
+                             <div class="detail-row"><span class="label">Email:</span> ${this.barcodeModal.data.user.email}</div>
+                             <div class="detail-row"><span class="label">Status:</span> ${this.barcodeModal.data.user.is_active ? 'Active' : 'Inactive'}</div>
+                         </div>
+                     </body>
+                 </html>
+             `;
+             
+             printWindow.document.write(barcodeHtml);
+             printWindow.document.close();
+             printWindow.print();
          },
 
          async deactivateUser(item) {
