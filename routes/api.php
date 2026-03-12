@@ -309,6 +309,27 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/start-unloading', [App\Http\Controllers\MaterialReceiptController::class, 'startUnloading']); // Start unloading timer
                 Route::patch('/{id}/complete', [App\Http\Controllers\MaterialReceiptController::class, 'completeUnloading']); // IN_PROGRESS → COMPLETED
             });
+
+            // GRN (Goods Receipt Note) Endpoints
+            // Status Flow: PROVISIONAL → QC_PENDING → ACCEPTED/REJECTED/PARTIALLY_ACCEPTED
+            Route::prefix('grn')->group(function () {
+                // Lookup endpoints
+                Route::get('/by-mr/{mrId}', [App\Http\Controllers\GRNController::class, 'byMaterialReceipt']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\GRNController::class, 'byPO']);
+                Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GRNController::class, 'byVendor']);
+                Route::get('/provisional', [App\Http\Controllers\GRNController::class, 'provisional']);
+                Route::get('/qc-pending', [App\Http\Controllers\GRNController::class, 'qcPending']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\GRNController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\GRNController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\GRNController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\GRNController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/approve', [App\Http\Controllers\GRNController::class, 'approve']); // PROVISIONAL → QC_PENDING
+                Route::patch('/{id}/cancel', [App\Http\Controllers\GRNController::class, 'cancel']); // Any → CANCELLED
+            });
         });
 
         // Admin-only feature control endpoints (require admin authentication)

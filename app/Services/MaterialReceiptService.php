@@ -187,19 +187,27 @@ class MaterialReceiptService
         $poLineId = $item['po_line_id'] ?? $lineItem->po_line_id;
         $poLineItem = PoLineItem::findOrFail($poLineId);
         
-        // Calculate variances
-        $variances = $this->calculateVariances($item, $poLineItem);
+        // Get received_qty from input or existing line item
+        $receivedQty = $item['received_qty'] ?? $lineItem->received_qty;
         
-        // Check tolerances
-        $tolerances = $this->checkTolerances($poLineItem, $variances['shortage'], $variances['excess']);
+        // Only recalculate variances if received_qty changed
+        if (isset($item['received_qty'])) {
+            $itemForCalculation = ['received_qty' => $receivedQty];
+            $variances = $this->calculateVariances($itemForCalculation, $poLineItem);
+            $tolerances = $this->checkTolerances($poLineItem, $variances['shortage'], $variances['excess']);
+            
+            $lineItem->update([
+                'received_qty' => $receivedQty,
+                'shortage_qty' => $variances['shortage'],
+                'excess_qty' => $variances['excess'],
+                'shortage_flag' => $tolerances['shortage_flag'],
+                'excess_flag' => $tolerances['excess_flag'],
+            ]);
+        }
         
+        // Update other fields
         $lineItem->update([
-            'received_qty' => $item['received_qty'] ?? $lineItem->received_qty,
-            'shortage_qty' => $variances['shortage'],
-            'excess_qty' => $variances['excess'],
             'rejected_on_arrival' => $item['rejected_on_arrival'] ?? $lineItem->rejected_on_arrival,
-            'shortage_flag' => $tolerances['shortage_flag'],
-            'excess_flag' => $tolerances['excess_flag'],
             'batch_number' => $item['batch_number'] ?? $lineItem->batch_number,
             'manufacturing_date' => $item['manufacturing_date'] ?? $lineItem->manufacturing_date,
             'expiry_date' => $item['expiry_date'] ?? $lineItem->expiry_date,
