@@ -7,6 +7,7 @@ use App\Http\Requests\Tenant\UpdateInspectionLotRequest;
 use App\Http\Requests\Tenant\RecordTestResultRequest;
 use App\Http\Requests\Tenant\MakeUsageDecisionRequest;
 use App\Models\Tenant\InspectionLot;
+use App\Models\Tenant\QCParameter;
 use App\Services\QCService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
