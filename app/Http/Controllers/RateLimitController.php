@@ -18,13 +18,16 @@ class RateLimitController extends Controller
     public function status(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $orgId = $request->attributes->get('org_id');
-            
+
             // Get subscription rate limit
-            $activeSub = ActiveSubscription::find($orgId);
-            
+            $activeSub = ActiveSubscription::where('org_id', $orgId)
+                ->whereIn('subscription_status', ['ACTIVE', 'TRIAL'])
+                ->where('period_end_date', '>=', now())
+                ->first();
+
             if (!$activeSub) {
                 return response()->json([
                     'success' => false,
@@ -48,7 +51,7 @@ class RateLimitController extends Controller
                 ->first();
 
             if ($featureControl && $featureControl->isEffective()) {
-                $rateLimit = $featureControl->getTypedValue();
+                $rateLimit = (int) $featureControl->getTypedValue();
             }
 
             // Get current usage from Redis

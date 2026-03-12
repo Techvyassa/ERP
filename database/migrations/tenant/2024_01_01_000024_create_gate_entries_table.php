@@ -60,7 +60,7 @@ return new class extends Migration
             // Foreign Keys
             $table->foreign('po_id')->references('id')->on('purchase_orders')->onDelete('restrict');
             $table->foreign('asn_id')->references('id')->on('asn_headers')->onDelete('set null');
-            $table->foreign('vendor_id')->references('id')->on('vendor_master')->onDelete('restrict');
+            $table->foreign('vendor_id')->references('id')->on('vendors')->onDelete('restrict');
             $table->foreign('created_by')->references('id')->on('users')->onDelete('set null');
 
             // Indexes

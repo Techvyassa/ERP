@@ -53,6 +53,9 @@ Route::prefix('v1')->group(function () {
         Route::post('/suggest-slug', [App\Http\Controllers\OrganizationController::class, 'suggestSlug']);
     });
 
+    // Rate limit status endpoint (excluded from rate limiting and subscription validation)
+    Route::get('/rate-limit/status', [App\Http\Controllers\RateLimitController::class, 'status']);
+
     // Subscription plans (public)
     Route::prefix('subscription-plans')->group(function () {
         Route::get('/', [App\Http\Controllers\SubscriptionPlanController::class, 'index']);
@@ -61,9 +64,6 @@ Route::prefix('v1')->group(function () {
 
     // Protected routes (require authentication, tenant resolution, subscription validation, and RBAC)
     Route::middleware(['validate.jwt', 'resolve.tenant', 'validate.subscription'])->group(function () {
-
-        // Rate limit status endpoint (excluded from rate limiting)
-        Route::get('/rate-limit/status', [App\Http\Controllers\RateLimitController::class, 'status']);
 
         // Profile completion endpoints
         Route::prefix('profile-completion')->group(function () {
@@ -198,6 +198,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // PROCUREMENT (Vendor & Procurement) Endpoints
+        // Roles: PROC_EXE (create/edit vendors), PROC_MGR (approve vendors), ADMIN (all)
         Route::middleware(['check.module.permission:PO'])->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
@@ -228,14 +229,164 @@ Route::prefix('v1')->group(function () {
         });
 
         // PO Management Endpoints
+        // Roles: PROC_EXE (create/edit), PROC_MGR (approve), ADMIN (all)
+        // Status Flow: DRAFT → PENDING_APPROVAL → APPROVED → OPEN → PARTIAL → CLOSED/CANCELLED
         Route::middleware(['check.module.permission:PO'])->group(function () {
             Route::prefix('purchase-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\PurchaseOrderController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\PurchaseOrderController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'update']);
-                Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseOrderController::class, 'approve']);
-                Route::patch('/{id}/cancel', [App\Http\Controllers\PurchaseOrderController::class, 'cancel']);
+                
+                // Status Transitions
+                Route::patch('/{id}/submit', [App\Http\Controllers\PurchaseOrderController::class, 'submit']); // DRAFT → PENDING_APPROVAL
+                Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseOrderController::class, 'approve']); // PENDING_APPROVAL → APPROVED
+                Route::patch('/{id}/reject', [App\Http\Controllers\PurchaseOrderController::class, 'reject']); // PENDING_APPROVAL → DRAFT
+                Route::patch('/{id}/release', [App\Http\Controllers\PurchaseOrderController::class, 'release']); // APPROVED → OPEN
+                Route::patch('/{id}/close', [App\Http\Controllers\PurchaseOrderController::class, 'close']); // OPEN/PARTIAL → CLOSED
+                Route::patch('/{id}/cancel', [App\Http\Controllers\PurchaseOrderController::class, 'cancel']); // Any → CANCELLED
+            });
+        });
+
+        // ASN (Advance Shipping Notice) Endpoints
+        // Roles: PROC_EXE/PROC_MGR (create/edit), STOREKEEPER/STORE_MGR (view/receive), ADMIN (all)
+        // Status Flow: DRAFT → SENT → IN_TRANSIT → ARRIVED → RECEIVED/CANCELLED
+        Route::middleware(['check.module.permission:ASN'])->group(function () {
+            Route::prefix('asn')->group(function () {
+                // Lookup endpoints (before resource routes to avoid conflicts)
+                Route::get('/arriving-today', [App\Http\Controllers\ASNController::class, 'arrivingToday']);
+                Route::get('/overdue', [App\Http\Controllers\ASNController::class, 'overdue']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\ASNController::class, 'getByPO']);
+                Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\ASNController::class, 'getByVendor']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\ASNController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\ASNController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\ASNController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\ASNController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\ASNController::class, 'destroy']);
+                
+                // Status transitions
+                Route::patch('/{id}/send', [App\Http\Controllers\ASNController::class, 'send']); // DRAFT → SENT
+                Route::patch('/{id}/in-transit', [App\Http\Controllers\ASNController::class, 'markInTransit']); // SENT → IN_TRANSIT
+                Route::patch('/{id}/arrived', [App\Http\Controllers\ASNController::class, 'markArrived']); // IN_TRANSIT → ARRIVED
+            });
+        });
+
+        // Gate Entry Management Endpoints
+        // Roles: STOREKEEPER/STORE_MGR (create/verify), ADMIN (all)
+        // Status Flow: PENDING_VERIFICATION → VERIFIED → MOVED_TO_DOCK / REJECTED
+        Route::middleware(['check.module.permission:GATE_ENTRY'])->group(function () {
+            Route::prefix('gate-entries')->group(function () {
+                // Lookup endpoints
+                Route::get('/pending-verifications', [App\Http\Controllers\GateEntryController::class, 'pendingVerifications']);
+                Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GateEntryController::class, 'byVendor']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\GateEntryController::class, 'byPO']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\GateEntryController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\GateEntryController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\GateEntryController::class, 'store']);
+                
+                // Status transitions
+                Route::post('/{id}/verify', [App\Http\Controllers\GateEntryController::class, 'verify']); // PENDING_VERIFICATION → VERIFIED/REJECTED
+                Route::patch('/{id}/move-to-dock', [App\Http\Controllers\GateEntryController::class, 'moveToDock']); // VERIFIED → MOVED_TO_DOCK
+            });
+        });
+
+        // Material Receipt (MR) & GRN Endpoints
+        // Roles: STOREKEEPER (create/edit), STORE_MGR (approve), ADMIN (all)
+        // Status Flow: IN_PROGRESS → COMPLETED → PENDING_GRN → GRN_POSTED
+        Route::middleware(['check.module.permission:MR_GRN'])->group(function () {
+            Route::prefix('material-receipts')->group(function () {
+                // Lookup endpoints
+                Route::get('/by-ge/{geId}', [App\Http\Controllers\MaterialReceiptController::class, 'byGateEntry']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\MaterialReceiptController::class, 'byPO']);
+                Route::get('/pending-grn', [App\Http\Controllers\MaterialReceiptController::class, 'pendingGRN']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\MaterialReceiptController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\MaterialReceiptController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\MaterialReceiptController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\MaterialReceiptController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/start-unloading', [App\Http\Controllers\MaterialReceiptController::class, 'startUnloading']); // Start unloading timer
+                Route::patch('/{id}/complete', [App\Http\Controllers\MaterialReceiptController::class, 'completeUnloading']); // IN_PROGRESS → COMPLETED
+            });
+
+            // GRN (Goods Receipt Note) Endpoints
+            // Status Flow: PROVISIONAL → QC_PENDING → ACCEPTED/REJECTED/PARTIALLY_ACCEPTED
+            Route::prefix('grn')->group(function () {
+                // Lookup endpoints
+                Route::get('/by-mr/{mrId}', [App\Http\Controllers\GRNController::class, 'byMaterialReceipt']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\GRNController::class, 'byPO']);
+                Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GRNController::class, 'byVendor']);
+                Route::get('/provisional', [App\Http\Controllers\GRNController::class, 'provisional']);
+                Route::get('/qc-pending', [App\Http\Controllers\GRNController::class, 'qcPending']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\GRNController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\GRNController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\GRNController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\GRNController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/approve', [App\Http\Controllers\GRNController::class, 'approve']); // PROVISIONAL → QC_PENDING
+                Route::patch('/{id}/cancel', [App\Http\Controllers\GRNController::class, 'cancel']); // Any → CANCELLED
+            });
+        });
+
+        // Quality Control (QC) Endpoints
+        // Roles: QC_TECH (record tests), QC_MGR (make decisions), ADMIN (all)
+        // Status Flow: PENDING → IN_PROGRESS → COMPLETED → DECISION_MADE
+        Route::middleware(['check.module.permission:QC'])->group(function () {
+            Route::prefix('qc')->group(function () {
+                // Lookup endpoints
+                Route::get('/pending', [App\Http\Controllers\QCController::class, 'pending']);
+                Route::get('/in-progress', [App\Http\Controllers\QCController::class, 'inProgress']);
+                Route::get('/completed', [App\Http\Controllers\QCController::class, 'completed']);
+                Route::get('/by-grn/{grnId}', [App\Http\Controllers\QCController::class, 'byGRN']);
+                Route::get('/parameters/{materialId}', [App\Http\Controllers\QCController::class, 'getParameters']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\QCController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\QCController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\QCController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\QCController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/start', [App\Http\Controllers\QCController::class, 'startInspection']); // PENDING → IN_PROGRESS
+                Route::patch('/{id}/complete', [App\Http\Controllers\QCController::class, 'completeInspection']); // IN_PROGRESS → COMPLETED
+                
+                // Test results
+                Route::post('/{lotId}/test-results', [App\Http\Controllers\QCController::class, 'recordTestResult']);
+                
+                // Usage decision
+                Route::post('/{id}/decision', [App\Http\Controllers\QCController::class, 'makeDecision']);
+            });
+        });
+
+        // Putaway & Store Posting Endpoints
+        // Roles: STOREKEEPER (create/execute), STORE_MGR (approve), ADMIN (all)
+        // Status Flow: PENDING → IN_PROGRESS → COMPLETED
+        Route::middleware(['check.module.permission:STOCK'])->group(function () {
+            Route::prefix('putaway')->group(function () {
+                // Lookup endpoints
+                Route::get('/pending', [App\Http\Controllers\PutawayController::class, 'pending']);
+                Route::get('/in-progress', [App\Http\Controllers\PutawayController::class, 'inProgress']);
+                Route::get('/completed', [App\Http\Controllers\PutawayController::class, 'completed']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\PutawayController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PutawayController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PutawayController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\PutawayController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/start', [App\Http\Controllers\PutawayController::class, 'start']); // PENDING → IN_PROGRESS
+                Route::patch('/{id}/complete', [App\Http\Controllers\PutawayController::class, 'complete']); // IN_PROGRESS → COMPLETED
+                Route::patch('/{id}/cancel', [App\Http\Controllers\PutawayController::class, 'cancel']); // Any → CANCELLED
             });
         });
 

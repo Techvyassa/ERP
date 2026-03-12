@@ -1,0 +1,94 @@
+I have reviewed the current implementation of the Purchase Order API. All the requested endpoints are already implemented in
+
+PurchaseOrderController
+and registered in
+
+routes/api.php
+under the PO module RBAC middleware.
+
+API Endpoints Summary
+Method Endpoint Description
+GET /api/v1/purchase-orders List POs (with pagination & status/vendor filters)
+GET /api/v1/purchase-orders/{id} View PO with full line items and relationships
+POST /api/v1/purchase-orders Create a new PO (Starts as DRAFT)
+PUT /api/v1/purchase-orders/{id} Update a DRAFT PO (recalculates totals)
+PATCH /api/v1/purchase-orders/{id}/approve Approve a DRAFT PO to OPEN status
+PATCH /api/v1/purchase-orders/{id}/cancel Cancel an OPEN or DRAFT PO
+Curl Commands for Testing
+Replace {TOKEN} with your valid JWT and {ID} with the actual PO ID. Ensure the IDs used in the JSON body (like vendor_id, material_id, etc.) exist in your database.
+
+1. List Purchase Orders
+   bash
+   curl --location --request GET 'http://localhost/api/v1/purchase-orders?status=DRAFT&per_page=10' \
+   --header 'Authorization: Bearer {TOKEN}' \
+   --header 'Accept: application/json'
+2. View Single Purchase Order
+   bash
+   curl --location --request GET 'http://localhost/api/v1/purchase-orders/{ID}' \
+   --header 'Authorization: Bearer {TOKEN}' \
+   --header 'Accept: application/json'
+3. Create New Purchase Order (POST)
+   bash
+   curl --location --request POST 'http://localhost/api/v1/purchase-orders' \
+   --header 'Authorization: Bearer {TOKEN}' \
+   --header 'Content-Type: application/json' \
+   --header 'Accept: application/json' \
+   --data-raw '{
+   "vendor_id": 1,
+   "currency_id": 1,
+   "po_date": "2024-03-11",
+   "delivery_terms": "EXW",
+   "payment_terms": "NET30",
+   "credit_days": 30,
+   "billing_address": "TechVyassa Office, Bangalore",
+   "ship_to_address": "Main Warehouse, Mumbai",
+   "line_items": [
+   {
+   "material_id": 1,
+   "uom_id": 1,
+   "ordered_qty": 100,
+   "unit_price": 50.50,
+   "discount_pct": 5,
+   "gst_tax_id": 1,
+   "material_description": "Raw Steel Rods"
+   }
+   ]
+   }'
+4. Update Draft Purchase Order (PUT)
+   bash
+   curl --location --request PUT 'http://localhost/api/v1/purchase-orders/{ID}' \
+   --header 'Authorization: Bearer {TOKEN}' \
+   --header 'Content-Type: application/json' \
+   --header 'Accept: application/json' \
+   --data-raw '{
+   "remarks": "Updated quantity and added a note",
+   "line_items": [
+   {
+   "material_id": 1,
+   "uom_id": 1,
+   "ordered_qty": 150,
+   "unit_price": 50.50,
+   "discount_pct": 10,
+   "gst_tax_id": 1
+   }
+   ]
+   }'
+5. Approve Purchase Order (PATCH)
+   bash
+   curl --location --request PATCH 'http://localhost/api/v1/purchase-orders/{ID}/approve' \
+   --header 'Authorization: Bearer {TOKEN}' \
+   --header 'Accept: application/json'
+6. Cancel Purchase Order (PATCH)
+   bash
+   curl --location --request PATCH 'http://localhost/api/v1/purchase-orders/{ID}/cancel' \
+   --header 'Authorization: Bearer {TOKEN}' \
+   --header 'Accept: application/json'
+   Implementation Details
+   Automatic Totals: The
+
+Implementation Details
+Automatic Totals: The store and update methods automatically calculate subtotal, tax_amount, and grand_total based on line items and GST tax IDs.
+
+Status Guards: The update method ensures only DRAFT status orders can be edited. The approve method converts DRAFT to OPEN.
+
+RBAC: All endpoints are protected by check.module.permission:PO.
