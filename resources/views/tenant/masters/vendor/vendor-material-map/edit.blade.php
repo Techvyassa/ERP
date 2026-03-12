@@ -1,21 +1,21 @@
 @extends('tenant.layouts.vendor')
 
-@section('title', 'Create Vendor Material Map')
-@section('page-title', 'Create New Vendor Material Mapping')
+@section('title', 'Edit Vendor Material Map')
+@section('page-title', 'Edit Vendor Material Mapping')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @endpush
 
 @section('content')
-<div x-data="mapForm()" x-init="loadDropdowns()">
+<div x-data="mapEditForm()" x-init="loadData()">
     <div class="max-w-3xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create Vendor Material Mapping</h2>
-                    <p class="text-gray-600 mt-1">Define vendor-specific pricing and lead times</p>
+                    <h2 class="text-2xl font-bold text-gray-900">Edit Vendor Material Mapping</h2>
+                    <p class="text-gray-600 mt-1">Update vendor-specific pricing and lead times</p>
                 </div>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}" 
                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -24,40 +24,38 @@
             </div>
         </div>
 
+        <!-- Loading State -->
+        <template x-if="initialLoading">
+            <div class="bg-white rounded-xl shadow p-12 text-center">
+                <i class="fas fa-spinner fa-spin text-4xl text-gray-400 mb-4"></i>
+                <p class="text-gray-600">Loading mapping data...</p>
+            </div>
+        </template>
+
         <!-- Form -->
-        <form @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
+        <form @submit.prevent="submitForm" x-show="!initialLoading" class="bg-white rounded-xl shadow p-6">
             <!-- Mapping Information -->
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Mapping Information</h3>
                 <div class="space-y-6">
-                    <!-- Vendor -->
+                    <!-- Vendor (Read-only) -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Vendor <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.vendor_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Vendor</option>
-                            <template x-for="vendor in vendors" :key="vendor.id">
-                                <option :value="vendor.id" x-text="vendor.vendor_name"></option>
-                            </template>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">→ vendor_master(vendor_id)</p>
+                        <input type="text" :value="vendorName" readonly
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed">
+                        <p class="text-xs text-gray-500 mt-1">Vendor cannot be changed after creation</p>
                     </div>
 
-                    <!-- Material -->
+                    <!-- Material (Read-only) -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Material <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.material_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Material</option>
-                            <template x-for="material in materials" :key="material.id">
-                                <option :value="material.id" x-text="material.material_code + ' - ' + material.material_name"></option>
-                            </template>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">→ material_master(material_id)</p>
+                        <input type="text" :value="materialName" readonly
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 cursor-not-allowed">
+                        <p class="text-xs text-gray-500 mt-1">Material cannot be changed after creation</p>
                     </div>
 
                     <!-- Vendor Material Code -->
@@ -131,7 +129,6 @@
                         <p class="font-semibold mb-1">About Vendor Material Map</p>
                         <p>Approved Vendor List (AVL) — defines which vendor can supply which material, with vendor-specific pricing, MOQ, and lead time.</p>
                         <p class="mt-2 text-xs">Used in: RFQ auto-shortlist, PO vendor selection, Comparative analysis</p>
-                        <p class="mt-1 text-xs font-semibold">Unique Constraint: (vendor_id, material_id)</p>
                     </div>
                 </div>
             </div>
@@ -144,8 +141,8 @@
                 </a>
                 <button type="submit" :disabled="loading"
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading">Create Mapping</span>
-                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+                    <span x-show="!loading">Update Mapping</span>
+                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
                 </button>
             </div>
         </form>
@@ -153,14 +150,14 @@
 </div>
 
 <script>
-function mapForm() {
+function mapEditForm() {
     return {
+        initialLoading: true,
         loading: false,
-        vendors: [],
-        materials: [],
+        mappingId: {{ $id }},
+        vendorName: '',
+        materialName: '',
         form: {
-            vendor_id: '',
-            material_id: '',
             vendor_material_code: '',
             last_purchase_price: '',
             lead_time_days: '',
@@ -169,44 +166,47 @@ function mapForm() {
             is_active: true
         },
         
-        async loadDropdowns() {
+        async loadData() {
+            this.initialLoading = true;
             try {
-                // Load vendors
-                const vendorResponse = await fetch('/api/v1/vendors?per_page=1000&blacklisted=0', {
+                const response = await fetch(`/api/v1/vendor-material-map/${this.mappingId}`, {
                     credentials: 'same-origin',
                     headers: { 'Accept': 'application/json' }
                 });
-                const vendorData = await vendorResponse.json();
+                const data = await response.json();
 
-                if (!vendorResponse.ok || !vendorData || vendorData.success !== true) {
-                    throw new Error((vendorData && vendorData.message) ? vendorData.message : 'Failed to load vendors');
+                if (!response.ok || !data || data.success !== true) {
+                    throw new Error((data && data.message) ? data.message : 'Failed to load mapping');
                 }
 
-                this.vendors = (vendorData && vendorData.data && vendorData.data.vendors) ? vendorData.data.vendors : [];
-
-                // Load materials
-                const materialResponse = await fetch('/api/v1/materials?per_page=1000&is_active=1', {
-                    credentials: 'same-origin',
-                    headers: { 'Accept': 'application/json' }
-                });
-                const materialData = await materialResponse.json();
-
-                if (!materialResponse.ok || !materialData || materialData.success !== true) {
-                    throw new Error((materialData && materialData.message) ? materialData.message : 'Failed to load materials');
-                }
-
-                this.materials = (materialData && materialData.data && materialData.data.materials) ? materialData.data.materials : [];
+                const mapping = data.data.mapping;
+                
+                // Set display names
+                this.vendorName = mapping.vendor ? mapping.vendor.vendor_name : 'N/A';
+                this.materialName = mapping.material ? (mapping.material.material_code + ' - ' + mapping.material.material_name) : 'N/A';
+                
+                // Populate form
+                this.form.vendor_material_code = mapping.vendor_material_code || '';
+                this.form.last_purchase_price = mapping.last_purchase_price || '';
+                this.form.lead_time_days = mapping.lead_time_days || '';
+                this.form.min_order_qty = mapping.min_order_qty || '';
+                this.form.is_preferred = mapping.is_preferred || false;
+                this.form.is_active = mapping.is_active !== undefined ? mapping.is_active : true;
             } catch (error) {
-                console.error('Failed to load dropdowns:', error);
-                alert('Failed to load vendors or materials. Please refresh the page.');
+                console.error('Failed to load mapping:', error);
+                alert(error.message || 'Failed to load mapping. Redirecting to list...');
+                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}';
+                window.location.href = baseUrl;
+            } finally {
+                this.initialLoading = false;
             }
         },
         
         async submitForm() {
             this.loading = true;
             try {
-                const response = await fetch('/api/v1/vendor-material-map', {
-                    method: 'POST',
+                const response = await fetch(`/api/v1/vendor-material-map/${this.mappingId}`, {
+                    method: 'PUT',
                     credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
@@ -218,15 +218,15 @@ function mapForm() {
                 const data = await response.json();
 
                 if (!response.ok || !data || data.success !== true) {
-                    throw new Error((data && data.message) ? data.message : 'Failed to create mapping');
+                    throw new Error((data && data.message) ? data.message : 'Failed to update mapping');
                 }
 
-                alert('Vendor-material mapping created successfully!');
+                alert('Vendor-material mapping updated successfully!');
                 const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}';
                 window.location.href = baseUrl;
             } catch (error) {
-                console.error('Failed to create mapping:', error);
-                alert(error.message || 'Failed to create mapping. Please try again.');
+                console.error('Failed to update mapping:', error);
+                alert(error.message || 'Failed to update mapping. Please try again.');
             } finally {
                 this.loading = false;
             }

@@ -3,6 +3,10 @@
 @section('title', 'Create Vendor')
 @section('page-title', 'Create New Vendor')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="vendorForm()" x-init="loadDropdowns()">
     <div class="max-w-4xl mx-auto">
@@ -27,13 +31,73 @@
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Basic Information</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                     <!-- Vendor Code -->
-                    <div>
+                    <div class="md:col-span-2">
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Vendor Code <span class="text-red-500">*</span>
+                            Vendor Code <span class="text-red-500" x-show="!form.auto_generate_code">*</span>
                         </label>
-                        <input type="text" x-model="form.vendor_code" required maxlength="20"
-                               placeholder="VND-001"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="space-y-3">
+                            <!-- Auto-generate option -->
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" 
+                                       x-model="form.auto_generate_code"
+                                       @change="handleAutoGenerateChange()"
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label class="text-sm text-gray-700 cursor-pointer">Auto-generate vendor code</label>
+                            </div>
+                            
+                            <!-- Manual code generation -->
+                            <div x-show="!form.auto_generate_code" x-transition>
+                                <div class="flex items-center space-x-2">
+                                    <!-- Manual Prefix -->
+                                    <div class="w-32">
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Prefix</label>
+                                        <input type="text" 
+                                               x-model="form.manual_prefix"
+                                               @input="updateManualCode()"
+                                               maxlength="10"
+                                               placeholder="VND"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                    </div>
+                                    
+                                    <!-- Separator -->
+                                    <div class="flex items-center pb-6">
+                                        <span class="text-gray-500 font-medium">-</span>
+                                    </div>
+                                    
+                                    <!-- Sequential Number -->
+                                    <div class="flex-1">
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Number</label>
+                                        <input type="text" 
+                                               x-model="form.manual_number"
+                                               @input="updateManualCode()"
+                                               maxlength="10"
+                                               placeholder="001"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                    </div>
+                                </div>
+                                
+                                <!-- Generated Code Display -->
+                                <div class="mt-2">
+                                    <input type="text" 
+                                           x-model="form.vendor_code"
+                                           :required="!form.auto_generate_code"
+                                           maxlength="20"
+                                           placeholder="VND-001"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    <p class="text-xs text-gray-500 mt-1">Final vendor code (editable)</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Auto-generate info -->
+                            <div x-show="form.auto_generate_code" x-transition>
+                                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3">
+                                    <p class="text-sm text-blue-800">
+                                        <i class="fas fa-info-circle mr-1"></i>
+                                        Vendor code will be auto-generated by the system upon creation
+                                    </p>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Vendor Name -->
@@ -281,26 +345,89 @@ function vendorForm() {
             is_approved: false,
             rating_score: '',
             blacklisted: false,
-            is_active: true
+            is_active: true,
+            auto_generate_code: false,
+            manual_prefix: 'VND',
+            manual_number: '001'
+        },
+        
+        handleAutoGenerateChange() {
+            if (this.form.auto_generate_code) {
+                // Clear vendor code when auto-generate is enabled
+                this.form.vendor_code = '';
+            } else {
+                // Generate initial code when switching to manual
+                this.updateManualCode();
+            }
+        },
+        
+        updateManualCode() {
+            const prefix = this.form.manual_prefix || 'VND';
+            const number = this.form.manual_number || '001';
+            this.form.vendor_code = `${prefix}-${number}`;
         },
         
         async loadDropdowns() {
             try {
-                // TODO: Replace with actual API calls
-                this.currencies = [];
+                // Load currencies
+                const currencyResponse = await fetch('/api/v1/currencies', {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
+                
+                if (currencyResponse.ok) {
+                    const currencyData = await currencyResponse.json();
+                    if (currencyData && currencyData.success && currencyData.data) {
+                        this.currencies = currencyData.data.currencies || [];
+                    }
+                }
             } catch (error) {
-                console.error('Failed to load dropdowns:', error);
+                console.error('Failed to load currencies:', error);
+                // Set default currency if API fails
+                this.currencies = [
+                    { id: 1, currency_code: 'INR', currency_name: 'Indian Rupee' },
+                    { id: 2, currency_code: 'USD', currency_name: 'US Dollar' },
+                    { id: 3, currency_code: 'EUR', currency_name: 'Euro' }
+                ];
             }
         },
         
         async submitForm() {
             this.loading = true;
             try {
-                // TODO: Replace with actual API call
-                alert('Vendor creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(this.form, null, 2));
+                // Prepare form data - remove helper fields
+                const submitData = { ...this.form };
+                delete submitData.manual_prefix;
+                delete submitData.manual_number;
+                
+                // If auto-generate is enabled, don't send vendor_code
+                if (this.form.auto_generate_code) {
+                    delete submitData.vendor_code;
+                }
+                delete submitData.auto_generate_code;
+                
+                const response = await fetch('/api/v1/vendors', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(submitData)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok || !data || data.success !== true) {
+                    throw new Error((data && data.message) ? data.message : 'Failed to create vendor');
+                }
+                
+                alert('Vendor created successfully!');
+                window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}';
             } catch (error) {
                 console.error('Failed to create vendor:', error);
-                alert('Failed to create vendor. Please try again.');
+                alert(error.message || 'Failed to create vendor. Please try again.');
             } finally {
                 this.loading = false;
             }

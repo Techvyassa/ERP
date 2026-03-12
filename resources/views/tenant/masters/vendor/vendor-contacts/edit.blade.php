@@ -1,21 +1,21 @@
 @extends('tenant.layouts.vendor')
 
-@section('title', 'Create Vendor Contact')
-@section('page-title', 'Create New Vendor Contact')
+@section('title', 'Edit Vendor Contact')
+@section('page-title', 'Edit Vendor Contact')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @endpush
 
 @section('content')
-<div x-data="contactForm()" x-init="loadVendors()">
+<div x-data="contactEditForm()" x-init="loadContact()">
     <div class="max-w-3xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create New Vendor Contact</h2>
-                    <p class="text-gray-600 mt-1">Add contact person for vendor communication</p>
+                    <h2 class="text-2xl font-bold text-gray-900">Edit Vendor Contact</h2>
+                    <p class="text-gray-600 mt-1">Update contact person information</p>
                 </div>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}" 
                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -24,25 +24,28 @@
             </div>
         </div>
 
+        <!-- Loading State -->
+        <div x-show="loading" class="bg-white rounded-xl shadow p-12 text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-gray-400"></i>
+            <p class="text-gray-600 mt-4">Loading contact details...</p>
+        </div>
+
         <!-- Form -->
-        <form @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
+        <form x-show="!loading" @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
             <!-- Contact Information -->
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Contact Information</h3>
                 <div class="space-y-6">
-                    <!-- Vendor -->
+                    <!-- Vendor (Read-only) -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Vendor <span class="text-red-500">*</span>
+                            Vendor
                         </label>
-                        <select x-model="form.vendor_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Vendor</option>
-                            <template x-for="vendor in vendors" :key="vendor.id">
-                                <option :value="vendor.id" x-text="vendor.vendor_name"></option>
-                            </template>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">→ vendor_master(vendor_id)</p>
+                        <div class="px-4 py-2 bg-gray-100 border border-gray-300 rounded-lg text-gray-700">
+                            <span x-text="form.vendor_name"></span>
+                            <span class="text-gray-500 text-sm ml-2" x-text="'(' + form.vendor_code + ')'"></span>
+                        </div>
+                        <p class="text-xs text-gray-500 mt-1">Vendor cannot be changed after creation</p>
                     </div>
 
                     <!-- Contact Name -->
@@ -67,6 +70,7 @@
                             <option value="FINANCE">Finance</option>
                             <option value="LOGISTICS">Logistics</option>
                             <option value="GM">General Manager</option>
+                            <option value="TECHNICAL">Technical</option>
                         </select>
                     </div>
 
@@ -109,28 +113,16 @@
                 </div>
             </div>
 
-            <!-- Info Box -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div class="flex items-start">
-                    <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
-                    <div class="text-sm text-blue-800">
-                        <p class="font-semibold mb-1">About Vendor Contacts</p>
-                        <p>Stores multiple contacts per vendor across different roles (Sales, Finance, Logistics). Replaces single contact fields in vendor_master.</p>
-                        <p class="mt-2 text-xs">Used in: RFQ dispatch, PO email, Payment coordination, Delivery follow-up</p>
-                    </div>
-                </div>
-            </div>
-
             <!-- Form Actions -->
             <div class="flex items-center justify-end space-x-4 pt-6 border-t">
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}" 
                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     Cancel
                 </a>
-                <button type="submit" :disabled="loading"
+                <button type="submit" :disabled="saving"
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading">Create Contact</span>
-                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+                    <span x-show="!saving">Update Contact</span>
+                    <span x-show="saving"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
                 </button>
             </div>
         </form>
@@ -138,66 +130,94 @@
 </div>
 
 <script>
-function contactForm() {
+function contactEditForm() {
     return {
-        loading: false,
-        vendors: [],
+        loading: true,
+        saving: false,
+        contactId: null,
         form: {
-            vendor_id: '',
             contact_name: '',
-            contact_type: 'SALES',
+            contact_type: '',
             phone: '',
             email: '',
             is_primary: false,
-            is_active: true
+            is_active: true,
+            vendor_name: '',
+            vendor_code: ''
         },
         
-        async loadVendors() {
+        async loadContact() {
+            this.loading = true;
             try {
-                const response = await fetch('/api/v1/vendors?per_page=1000&blacklisted=0', {
+                // Get contact ID from URL
+                const pathParts = window.location.pathname.split('/');
+                this.contactId = pathParts[pathParts.length - 2];
+
+                const response = await fetch(`/api/v1/vendor-contacts/${this.contactId}`, {
                     credentials: 'same-origin',
                     headers: { 'Accept': 'application/json' }
                 });
                 const data = await response.json();
 
                 if (!response.ok || !data || data.success !== true) {
-                    throw new Error((data && data.message) ? data.message : 'Failed to load vendors');
+                    throw new Error((data && data.message) ? data.message : 'Failed to load contact');
                 }
 
-                this.vendors = (data && data.data && data.data.vendors) ? data.data.vendors : [];
+                const contact = data.data.contact;
+                this.form = {
+                    contact_name: contact.contact_name || '',
+                    contact_type: contact.contact_type || '',
+                    phone: contact.phone || '',
+                    email: contact.email || '',
+                    is_primary: contact.is_primary || false,
+                    is_active: contact.is_active !== undefined ? contact.is_active : true,
+                    vendor_name: contact.vendor ? contact.vendor.vendor_name : '',
+                    vendor_code: contact.vendor ? contact.vendor.vendor_code : ''
+                };
             } catch (error) {
-                console.error('Failed to load vendors:', error);
-                alert('Failed to load vendors. Please refresh the page.');
+                console.error('Failed to load contact:', error);
+                alert(error.message || 'Failed to load contact. Please try again.');
+                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}';
+                window.location.href = baseUrl;
+            } finally {
+                this.loading = false;
             }
         },
         
         async submitForm() {
-            this.loading = true;
+            this.saving = true;
             try {
-                const response = await fetch('/api/v1/vendor-contacts', {
-                    method: 'POST',
+                const response = await fetch(`/api/v1/vendor-contacts/${this.contactId}`, {
+                    method: 'PUT',
                     credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify(this.form)
+                    body: JSON.stringify({
+                        contact_name: this.form.contact_name,
+                        contact_type: this.form.contact_type,
+                        phone: this.form.phone,
+                        email: this.form.email,
+                        is_primary: this.form.is_primary,
+                        is_active: this.form.is_active
+                    })
                 });
                 const data = await response.json();
 
                 if (!response.ok || !data || data.success !== true) {
-                    throw new Error((data && data.message) ? data.message : 'Failed to create contact');
+                    throw new Error((data && data.message) ? data.message : 'Failed to update contact');
                 }
 
-                alert('Vendor contact created successfully!');
+                alert('Vendor contact updated successfully!');
                 const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}';
                 window.location.href = baseUrl;
             } catch (error) {
-                console.error('Failed to create contact:', error);
-                alert(error.message || 'Failed to create contact. Please try again.');
+                console.error('Failed to update contact:', error);
+                alert(error.message || 'Failed to update contact. Please try again.');
             } finally {
-                this.loading = false;
+                this.saving = false;
             }
         }
     }

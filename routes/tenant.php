@@ -266,6 +266,15 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.vendor.vendors.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'vendorId' => $id
+            ]);
+        })->name('edit');
     });
     
     // Approval Matrix Management
@@ -389,13 +398,22 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.vendor.vendor-contacts.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'contactId' => $id
+            ]);
+        })->name('edit');
     });
     
     // Vendor Material Map Management
     Route::prefix('vendor-material-map')->name('tenant.vendor-material-map.')->group(function () {
         Route::get('/', function () {
             $org = request()->get('tenant_organization');
-            return view('tenant.vendor-material-map.index', [
+            return view('tenant.masters.vendor.vendor-material-map.index', [
                 'organization' => $org,
                 'tenantType' => request()->get('tenant_type')
             ]);
@@ -408,6 +426,15 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+        
+        Route::get('/{id}/edit', function ($id) {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.vendor.vendor-material-map.edit', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type'),
+                'id' => $id
+            ]);
+        })->name('edit');
     });
     
     // BOM Header Management

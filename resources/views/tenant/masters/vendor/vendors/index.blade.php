@@ -3,6 +3,10 @@
 @section('title', 'Vendors')
 @section('page-title', 'Vendor Master')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="vendorData()" x-init="loadData()">
     <!-- Header -->
@@ -101,12 +105,20 @@
                                       x-text="item.is_approved ? 'Approved' : 'Pending'"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit">
-                                    <i class="fas fa-edit"></i>
-                                </button>
-                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete">
-                                    <i class="fas fa-trash"></i>
-                                </button>
+                                <div class="flex items-center justify-end gap-2">
+                                    <button @click="edit(item)" 
+                                            class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" 
+                                            title="Edit">
+                                        <i class="fas fa-edit mr-1"></i>
+                                        Edit
+                                    </button>
+                                    <button @click="deleteItem(item)" 
+                                            class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
+                                            title="Blacklist">
+                                        <i class="fas fa-ban mr-1"></i>
+                                        Delete
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </template>
@@ -151,11 +163,42 @@ function vendorData() {
         async loadData() {
             this.loading = true;
             try {
-                this.items = [];
-                this.pagination = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
+                const params = new URLSearchParams();
+                params.append('blacklisted', '0'); // Exclude blacklisted vendors by default
+                if (this.filters.search) params.append('search', this.filters.search);
+                if (this.filters.vendor_type) params.append('vendor_type', this.filters.vendor_type);
+                if (this.filters.is_approved !== '' && this.filters.is_approved !== null) params.append('is_approved', this.filters.is_approved);
+                params.append('page', this.pagination.current_page);
+                params.append('per_page', this.pagination.per_page);
+
+                const response = await fetch(`/api/v1/vendors?${params.toString()}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data || data.success !== true) {
+                    throw new Error((data && data.message) ? data.message : 'Failed to load vendors');
+                }
+
+                this.items = (data && data.data && data.data.vendors) ? data.data.vendors : [];
+                
+                // Update pagination
+                if (data && data.data && data.data.pagination) {
+                    this.pagination = {
+                        current_page: data.data.pagination.current_page,
+                        last_page: data.data.pagination.last_page,
+                        per_page: data.data.pagination.per_page,
+                        total: data.data.pagination.total,
+                        from: data.data.pagination.total > 0 ? ((data.data.pagination.current_page - 1) * data.data.pagination.per_page) + 1 : 0,
+                        to: Math.min(data.data.pagination.current_page * data.data.pagination.per_page, data.data.pagination.total)
+                    };
+                }
             } catch (error) {
                 console.error('Failed to load vendors:', error);
-                alert('Failed to load vendors. Please try again.');
+                alert(error.message || 'Failed to load vendors. Please try again.');
+                this.items = [];
+                this.pagination = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
             } finally {
                 this.loading = false;
             }
@@ -178,12 +221,34 @@ function vendorData() {
         },
         
         edit(item) {
-            alert('Edit vendor: ' + item.vendor_code + ' - Coming soon');
+            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}';
+            window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
         async deleteItem(item) {
-            if (confirm('Are you sure you want to delete vendor: ' + item.vendor_code + '?')) {
-                alert('Delete functionality - Coming soon');
+            if (confirm('Are you sure you want to blacklist vendor: ' + item.vendor_code + '? This will prevent them from being used in RFQs and POs.')) {
+                try {
+                    const response = await fetch(`/api/v1/vendors/${item.id}`, {
+                        method: 'DELETE',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || !data || data.success !== true) {
+                        throw new Error((data && data.message) ? data.message : 'Failed to blacklist vendor');
+                    }
+
+                    alert('Vendor blacklisted successfully');
+                    this.loadData();
+                } catch (error) {
+                    console.error('Failed to blacklist vendor:', error);
+                    alert(error.message || 'Failed to blacklist vendor. Please try again.');
+                }
             }
         }
     }

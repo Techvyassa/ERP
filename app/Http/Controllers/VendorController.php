@@ -106,7 +106,7 @@ class VendorController extends Controller
         $requestId = Str::uuid()->toString();
 
         $validator = Validator::make($request->all(), [
-            'vendor_code'      => 'required|string|max:20|unique:tenant.vendor_master,vendor_code',
+            'vendor_code'      => 'nullable|string|max:20|unique:tenant.vendor_master,vendor_code',
             'vendor_name'      => 'required|string|max:200',
             'vendor_type'      => 'nullable|string|max:20',
             'gstin'            => 'nullable|string|max:20|unique:tenant.vendor_master,gstin',
@@ -133,9 +133,14 @@ class VendorController extends Controller
         }
 
         try {
+            // Auto-generate vendor code if not provided
+            $vendorCode = $request->input('vendor_code');
+            if (empty($vendorCode)) {
+                $vendorCode = $this->generateVendorCode($request->input('vendor_type', 'SUPPLIER'));
+            }
+
             $vendor = Vendor::create(array_merge(
                 $request->only([
-                    'vendor_code',
                     'vendor_name',
                     'vendor_type',
                     'gstin',
@@ -150,7 +155,11 @@ class VendorController extends Controller
                     'ifsc_code',
                     'rating_score',
                 ]),
-                ['is_approved' => false, 'blacklisted' => false]
+                [
+                    'vendor_code' => $vendorCode,
+                    'is_approved' => $request->input('is_approved', false),
+                    'blacklisted' => $request->input('blacklisted', false)
+                ]
             ));
 
             return response()->json([
@@ -296,4 +305,37 @@ class VendorController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Generate unique vendor code
+     */
+    private function generateVendorCode(string $vendorType): string
+    {
+        // Determine prefix based on vendor type
+        $prefix = match($vendorType) {
+            'SUPPLIER' => 'SUP',
+            'SERVICE' => 'SRV',
+            'TRADER' => 'TRD',
+            default => 'VND'
+        };
+
+        // Get the last vendor with this prefix
+        $lastVendor = Vendor::where('vendor_code', 'like', $prefix . '-%')
+            ->orderBy('vendor_code', 'desc')
+            ->first();
+
+        if ($lastVendor) {
+            // Extract number from last code (e.g., SUP-0123 -> 123)
+            $lastCode = $lastVendor->vendor_code;
+            $parts = explode('-', $lastCode);
+            $lastNumber = isset($parts[1]) ? intval($parts[1]) : 0;
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        // Format with leading zeros (e.g., 0001)
+        return sprintf('%s-%04d', $prefix, $newNumber);
+    }
+
 }

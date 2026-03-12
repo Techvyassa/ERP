@@ -281,6 +281,23 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('vendors.index');
         
+        Route::get('/vendors/create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.vendor.vendors.create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('vendors.create');
+        
+        Route::get('/vendors/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.vendor.vendors.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'vendorId' => $id
+            ]);
+        })->name('vendors.edit');
+        
         Route::get('/vendor-contacts', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendor-contacts.index', [
@@ -289,6 +306,15 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('vendor-contacts.index');
         
+        Route::get('/vendor-contacts/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.vendor.vendor-contacts.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'contactId' => $id
+            ]);
+        })->name('vendor-contacts.edit');
+        
         Route::get('/vendor-material-map', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendor-material-map.index', [
@@ -296,6 +322,23 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('vendor-material-map.index');
+        
+        Route::get('/vendor-material-map/create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.vendor.vendor-material-map.create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('vendor-material-map.create');
+        
+        Route::get('/vendor-material-map/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.vendor.vendor-material-map.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'id' => $id
+            ]);
+        })->name('vendor-material-map.edit');
         
         // ====================================================================
         // TAX MASTERS
