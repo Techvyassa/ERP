@@ -29,12 +29,74 @@
                     <!-- Department Code -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Department Code <span class="text-red-500">*</span>
+                            Department Code <span class="text-red-500" x-show="!form.auto_generate_code">*</span>
                         </label>
-                        <input type="text" x-model="form.dept_code" required maxlength="20"
-                               placeholder="PROD, PURCH, QC"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">e.g. PROD, PURCH, QC (max 20 chars)</p>
+                        <div class="space-y-3">
+                            <!-- Auto-generate option -->
+                            <div class="flex items-center space-x-3">
+                                <input type="checkbox" 
+                                       x-model="form.auto_generate_code"
+                                       @change="handleAutoGenerateChange()"
+                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
+                                <label class="text-sm text-gray-700 cursor-pointer">Auto-generate code</label>
+                            </div>
+                            
+                            <!-- Manual code generation -->
+                            <div x-show="!form.auto_generate_code" x-transition>
+                                <div class="flex items-center space-x-2">
+                                    <!-- Manual Prefix -->
+                                    <div class="w-32">
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Prefix</label>
+                                        <input type="text" 
+                                               x-model="form.manual_prefix"
+                                               @input="updateManualCode()"
+                                               maxlength="10"
+                                               placeholder="DEPT"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                    </div>
+                                    
+                                    <!-- Separator -->
+                                    <div class="flex items-center pb-6">
+                                        <span class="text-gray-500 font-medium">-</span>
+                                    </div>
+                                    
+                                    <!-- Sequential Number -->
+                                    <div class="flex-1">
+                                        <label class="block text-xs font-medium text-gray-600 mb-1">Number</label>
+                                        <input type="text" 
+                                               x-model="form.manual_number"
+                                               @input="updateManualCode()"
+                                               maxlength="10"
+                                               placeholder="0001"
+                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                    </div>
+                                </div>
+                                
+                                <!-- Generated Code Display -->
+                                <div class="mt-2">
+                                    <input type="text" 
+                                           x-model="form.dept_code"
+                                           :required="!form.auto_generate_code"
+                                           maxlength="20"
+                                           placeholder="DEPT-0001"
+                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                                    <p class="text-xs text-gray-500 mt-1">Generated department code (auto-updates from prefix and number)</p>
+                                </div>
+                            </div>
+                            
+                            <!-- Auto-generate info -->
+                            <div x-show="form.auto_generate_code" x-transition>
+                                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
+                                    <div class="flex items-center">
+                                        <i class="fas fa-magic text-green-600 mr-2"></i>
+                                        <div class="text-sm text-green-800">
+                                            <p class="font-medium">Auto-generation enabled</p>
+                                            <p class="text-xs mt-1">Code will be generated based on department type: DEPT-XXXX (sequential)</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Department Name -->
@@ -111,7 +173,10 @@ function departmentForm() {
             dept_name: '',
             parent_dept_id: '',
             cost_center_code: '',
-            is_active: true
+            is_active: true,
+            auto_generate_code: false,
+            manual_prefix: 'DEPT',
+            manual_number: '0001'
         },
         
         async loadParentDepartments() {
@@ -123,11 +188,48 @@ function departmentForm() {
             }
         },
         
+        handleAutoGenerateChange() {
+            if (this.form.auto_generate_code) {
+                this.form.dept_code = ''; // Clear field when auto-generate is checked
+                this.form.manual_prefix = ''; // Clear manual fields
+                this.form.manual_number = '';
+            } else {
+                // Set default manual values when switching to manual
+                this.form.manual_prefix = 'DEPT';
+                this.form.manual_number = '0001';
+                this.updateManualCode();
+            }
+        },
+        
+        updateManualCode() {
+            if (this.form.manual_prefix && this.form.manual_number) {
+                this.form.dept_code = `${this.form.manual_prefix}-${this.form.manual_number}`;
+            } else {
+                this.form.dept_code = '';
+            }
+        },
+        
         async submitForm() {
+            // Validate department code if not auto-generated
+            if (!this.form.auto_generate_code && !this.form.dept_code) {
+                alert('Department Code is required when auto-generation is disabled!');
+                return;
+            }
+            
             this.loading = true;
             try {
+                // Prepare form data
+                const formData = { ...this.form };
+                
+                // Remove auto-generate fields if not needed
+                if (formData.auto_generate_code) {
+                    delete formData.manual_prefix;
+                    delete formData.manual_number;
+                    delete formData.dept_code; // Will be generated on backend
+                }
+                
                 // TODO: Replace with actual API call
-                alert('Department creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(this.form, null, 2));
+                alert('Department creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(formData, null, 2));
                 // window.location.href = '/departments';
             } catch (error) {
                 console.error('Failed to create department:', error);
