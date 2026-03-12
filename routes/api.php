@@ -362,6 +362,29 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // Putaway & Store Posting Endpoints
+        // Roles: STOREKEEPER (create/execute), STORE_MGR (approve), ADMIN (all)
+        // Status Flow: PENDING → IN_PROGRESS → COMPLETED
+        Route::middleware(['check.module.permission:STOCK'])->group(function () {
+            Route::prefix('putaway')->group(function () {
+                // Lookup endpoints
+                Route::get('/pending', [App\Http\Controllers\PutawayController::class, 'pending']);
+                Route::get('/in-progress', [App\Http\Controllers\PutawayController::class, 'inProgress']);
+                Route::get('/completed', [App\Http\Controllers\PutawayController::class, 'completed']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\PutawayController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PutawayController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PutawayController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\PutawayController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/start', [App\Http\Controllers\PutawayController::class, 'start']); // PENDING → IN_PROGRESS
+                Route::patch('/{id}/complete', [App\Http\Controllers\PutawayController::class, 'complete']); // IN_PROGRESS → COMPLETED
+                Route::patch('/{id}/cancel', [App\Http\Controllers\PutawayController::class, 'cancel']); // Any → CANCELLED
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {
