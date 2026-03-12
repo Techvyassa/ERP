@@ -332,6 +332,36 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // Quality Control (QC) Endpoints
+        // Roles: QC_TECH (record tests), QC_MGR (make decisions), ADMIN (all)
+        // Status Flow: PENDING → IN_PROGRESS → COMPLETED → DECISION_MADE
+        Route::middleware(['check.module.permission:QC'])->group(function () {
+            Route::prefix('qc')->group(function () {
+                // Lookup endpoints
+                Route::get('/pending', [App\Http\Controllers\QCController::class, 'pending']);
+                Route::get('/in-progress', [App\Http\Controllers\QCController::class, 'inProgress']);
+                Route::get('/completed', [App\Http\Controllers\QCController::class, 'completed']);
+                Route::get('/by-grn/{grnId}', [App\Http\Controllers\QCController::class, 'byGRN']);
+                Route::get('/parameters/{materialId}', [App\Http\Controllers\QCController::class, 'getParameters']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\QCController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\QCController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\QCController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\QCController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/start', [App\Http\Controllers\QCController::class, 'startInspection']); // PENDING → IN_PROGRESS
+                Route::patch('/{id}/complete', [App\Http\Controllers\QCController::class, 'completeInspection']); // IN_PROGRESS → COMPLETED
+                
+                // Test results
+                Route::post('/{lotId}/test-results', [App\Http\Controllers\QCController::class, 'recordTestResult']);
+                
+                // Usage decision
+                Route::post('/{id}/decision', [App\Http\Controllers\QCController::class, 'makeDecision']);
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {
