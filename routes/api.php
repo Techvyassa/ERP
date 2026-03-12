@@ -289,6 +289,28 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // Material Receipt (MR) & GRN Endpoints
+        // Roles: STOREKEEPER (create/edit), STORE_MGR (approve), ADMIN (all)
+        // Status Flow: IN_PROGRESS → COMPLETED → PENDING_GRN → GRN_POSTED
+        Route::middleware(['check.module.permission:MR_GRN'])->group(function () {
+            Route::prefix('material-receipts')->group(function () {
+                // Lookup endpoints
+                Route::get('/by-ge/{geId}', [App\Http\Controllers\MaterialReceiptController::class, 'byGateEntry']);
+                Route::get('/by-po/{poId}', [App\Http\Controllers\MaterialReceiptController::class, 'byPO']);
+                Route::get('/pending-grn', [App\Http\Controllers\MaterialReceiptController::class, 'pendingGRN']);
+                
+                // Resource routes
+                Route::get('/', [App\Http\Controllers\MaterialReceiptController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\MaterialReceiptController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\MaterialReceiptController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\MaterialReceiptController::class, 'update']);
+                
+                // Status transitions
+                Route::patch('/{id}/start-unloading', [App\Http\Controllers\MaterialReceiptController::class, 'startUnloading']); // Start unloading timer
+                Route::patch('/{id}/complete', [App\Http\Controllers\MaterialReceiptController::class, 'completeUnloading']); // IN_PROGRESS → COMPLETED
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {
