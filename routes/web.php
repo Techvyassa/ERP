@@ -25,12 +25,6 @@ Route::get('/pricing', [PublicController::class, 'pricing'])->name('pricing');
 Route::get('/register', [PublicController::class, 'register'])->name('register');
 Route::get('/login', [PublicController::class, 'login'])->name('login');
 
-// Specialized Department Logins
-Route::get('/procurement/login', [PublicController::class, 'loginProcurement'])->name('login.procurement');
-Route::get('/warehouse/login', [PublicController::class, 'loginWarehouse'])->name('login.warehouse');
-Route::get('/quality/login', [PublicController::class, 'loginQuality'])->name('login.quality');
-Route::get('/admin/login', [PublicController::class, 'loginAdmin'])->name('login.admin');
-
 // Google OAuth
 Route::get('/auth/google', function () {
     return redirect()->away('https://accounts.google.com/o/oauth2/auth?' . http_build_query([
@@ -395,6 +389,94 @@ Route::middleware(['web.jwt'])->group(function () {
         })->name('bom-detail.index');
         
         // ====================================================================
+        // DEPARTMENTAL PORTALS (Organization-specific)
+        // ====================================================================
+        
+        // Specialized Department Logins
+        Route::get('/procurement/login', [PublicController::class, 'loginProcurement'])->name('procurement.login');
+        Route::get('/warehouse/login', [PublicController::class, 'loginWarehouse'])->name('warehouse.login');
+        Route::get('/quality/login', [PublicController::class, 'loginQuality'])->name('quality.login');
+        Route::get('/admin/login', [PublicController::class, 'loginAdmin'])->name('admin.login');
+        
+        // Procurement Portal
+        Route::prefix('procurement')->name('procurement.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('dashboard.procurement', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('dashboard');
+            
+            Route::get('/purchase-orders', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "PO List Page WIP";
+            })->name('purchase-orders');
+            
+            Route::get('/vendors', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "Vendor Master Page WIP";
+            })->name('vendors');
+            
+            Route::get('/asn', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "ASN Tracking Page WIP";
+            })->name('asn');
+        });
+        
+        // Warehouse Portal
+        Route::prefix('warehouse')->name('warehouse.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('dashboard.warehouse', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('dashboard');
+            
+            Route::get('/gate-entry', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "Gate Entry Page WIP";
+            })->name('gate-entry');
+            
+            Route::get('/receipts', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "Material Receipts Page WIP";
+            })->name('receipts');
+            
+            Route::get('/putaway', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "Putaway Page WIP";
+            })->name('putaway');
+        });
+        
+        // Quality Portal
+        Route::prefix('quality')->name('quality.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('dashboard.quality', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('dashboard');
+            
+            Route::get('/inspections', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "Inspections Page WIP";
+            })->name('inspections');
+            
+            Route::get('/decisions', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "Usage Decisions Page WIP";
+            })->name('decisions');
+            
+            Route::get('/reports', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return "Quality Reports Page WIP";
+            })->name('reports');
+        });
+        
+        // ====================================================================
         // OTHER PAGES
         // ====================================================================
         
@@ -421,36 +503,6 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('profile');
-    });
-
-    // ------------------------------------------------------------------------
-    // DEPARTMENTAL PORTALS (Specialized Dashboards)
-    // ------------------------------------------------------------------------
-    Route::group(['prefix' => 'procurement', 'as' => 'procurement.'], function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard.procurement');
-        })->name('dashboard');
-        Route::get('/purchase-orders', function () { return "PO List Page WIP"; })->name('purchase-orders');
-        Route::get('/vendors', function () { return "Vendor Master Page WIP"; })->name('vendors');
-        Route::get('/asn', function () { return "ASN Tracking Page WIP"; })->name('asn');
-    });
-
-    Route::group(['prefix' => 'warehouse', 'as' => 'warehouse.'], function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard.warehouse');
-        })->name('dashboard');
-        Route::get('/gate-entry', function () { return "Gate Entry Page WIP"; })->name('gate-entry');
-        Route::get('/receipts', function () { return "Material Receipts Page WIP"; })->name('receipts');
-        Route::get('/putaway', function () { return "Putaway Page WIP"; })->name('putaway');
-    });
-
-    Route::group(['prefix' => 'quality', 'as' => 'quality.'], function () {
-        Route::get('/dashboard', function () {
-            return view('dashboard.quality');
-        })->name('dashboard');
-        Route::get('/inspections', function () { return "Inspections Page WIP"; })->name('inspections');
-        Route::get('/decisions', function () { return "Usage Decisions Page WIP"; })->name('decisions');
-        Route::get('/reports', function () { return "Quality Reports Page WIP"; })->name('reports');
     });
 
     // ------------------------------------------------------------------------
