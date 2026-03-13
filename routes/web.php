@@ -201,6 +201,15 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('departments.index');
         
+        Route::get('/departments/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.departments.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'departmentId' => $id
+            ]);
+        })->name('departments.edit');
+        
         Route::get('/roles', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.roles.index', [
@@ -216,6 +225,15 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('users.index');
+        
+        Route::get('/users/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.users.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'userId' => $id
+            ]);
+        })->name('users.edit');
         
         Route::get('/approval-matrix', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));

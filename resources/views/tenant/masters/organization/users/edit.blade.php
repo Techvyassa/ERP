@@ -1,17 +1,17 @@
 @extends('tenant.layouts.organization')
 
-@section('title', 'Create User')
-@section('page-title', 'Create New User')
+@section('title', 'Edit User')
+@section('page-title', 'Edit User')
 
 @section('content')
-<div x-data="userForm()" x-init="loadDepartments(); loadRoles();">
+<div x-data="userEditForm()" x-init="loadUser(); loadDepartments(); loadRoles();">
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create New User</h2>
-                    <p class="text-gray-600 mt-1">Add a new system user with department and role assignment</p>
+                    <h2 class="text-2xl font-bold text-gray-900">Edit User</h2>
+                    <p class="text-gray-600 mt-1">Update user information and permissions</p>
                 </div>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/users' : '/org/' . $organization->org_slug . '/users') }}" 
                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -20,8 +20,14 @@
             </div>
         </div>
 
+        <!-- Loading State -->
+        <div x-show="initialLoading" class="bg-white rounded-xl shadow p-12 text-center">
+            <i class="fas fa-spinner fa-spin text-4xl text-blue-600 mb-4"></i>
+            <p class="text-gray-600">Loading user data...</p>
+        </div>
+
         <!-- Form -->
-        <form @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
+        <form x-show="!initialLoading" @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
             <!-- Basic Information -->
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Basic Information</h3>
@@ -29,74 +35,13 @@
                     <!-- Employee Code -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Employee Code <span class="text-red-500" x-show="!form.auto_generate_code">*</span>
+                            Employee Code <span class="text-red-500">*</span>
                         </label>
-                        <div class="space-y-3">
-                            <!-- Auto-generate option -->
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" 
-                                       x-model="form.auto_generate_code"
-                                       @change="handleAutoGenerateChange()"
-                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <label class="text-sm text-gray-700 cursor-pointer">Auto-generate code</label>
-                            </div>
-                            
-                            <!-- Manual code generation -->
-                            <div x-show="!form.auto_generate_code" x-transition>
-                                <div class="flex items-center space-x-2">
-                                    <!-- Manual Prefix -->
-                                    <div class="w-32">
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Prefix</label>
-                                        <input type="text" 
-                                               x-model="form.manual_prefix"
-                                               @input="updateManualCode()"
-                                               maxlength="10"
-                                               placeholder="EMP"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                    </div>
-                                    
-                                    <!-- Separator -->
-                                    <div class="flex items-center pb-6">
-                                        <span class="text-gray-500 font-medium">-</span>
-                                    </div>
-                                    
-                                    <!-- Sequential Number -->
-                                    <div class="flex-1">
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Number</label>
-                                        <input type="text" 
-                                               x-model="form.manual_number"
-                                               @input="updateManualCode()"
-                                               maxlength="10"
-                                               placeholder="0001"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                    </div>
-                                </div>
-                                
-                                <!-- Generated Code Display -->
-                                <div class="mt-2">
-                                    <input type="text" 
-                                           x-model="form.employee_code"
-                                           :required="!form.auto_generate_code"
-                                           maxlength="20"
-                                           placeholder="EMP-0001"
-                                           class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
-                                    <p class="text-xs text-gray-500 mt-1">Generated employee code (auto-updates from prefix and number)</p>
-                                </div>
-                            </div>
-                            
-                            <!-- Auto-generate info -->
-                            <div x-show="form.auto_generate_code" x-transition>
-                                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-magic text-green-600 mr-2"></i>
-                                        <div class="text-sm text-green-800">
-                                            <p class="font-medium">Auto-generation enabled</p>
-                                            <p class="text-xs mt-1">Code will be generated based on department: EMP-XXXX (sequential)</p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
+                        <input type="text" x-model="form.employee_code" required maxlength="20"
+                               placeholder="EMP-0001"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50"
+                               readonly>
+                        <p class="text-xs text-gray-500 mt-1">Employee code cannot be changed</p>
                     </div>
 
                     <!-- Email -->
@@ -211,30 +156,36 @@
                 </div>
             </div>
 
-            <!-- Password -->
+            <!-- Password Change (Optional) -->
             <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Security</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Change Password (Optional)</h3>
+                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-4">
+                    <p class="text-sm text-yellow-800">
+                        <i class="fas fa-info-circle mr-2"></i>
+                        Leave password fields empty to keep the current password
+                    </p>
+                </div>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Password -->
+                    <!-- New Password -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Password <span class="text-red-500">*</span>
+                            New Password
                         </label>
-                        <input type="password" x-model="form.password" required minlength="8"
+                        <input type="password" x-model="form.password" minlength="8"
                                placeholder="••••••••"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Minimum 8 characters (bcrypt hash)</p>
+                        <p class="text-xs text-gray-500 mt-1">Minimum 8 characters</p>
                     </div>
 
                     <!-- Confirm Password -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Confirm Password <span class="text-red-500">*</span>
+                            Confirm New Password
                         </label>
-                        <input type="password" x-model="form.password_confirmation" required minlength="8"
+                        <input type="password" x-model="form.password_confirmation" minlength="8"
                                placeholder="••••••••"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Re-enter password</p>
+                        <p class="text-xs text-gray-500 mt-1">Re-enter new password</p>
                     </div>
                 </div>
             </div>
@@ -256,8 +207,8 @@
                 </a>
                 <button type="submit" :disabled="loading"
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading">Create User</span>
-                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+                    <span x-show="!loading">Update User</span>
+                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
                 </button>
             </div>
         </form>
@@ -265,12 +216,14 @@
 </div>
 
 <script>
-function userForm() {
+function userEditForm() {
     return {
         loading: false,
+        initialLoading: true,
         departments: [],
         roles: [],
         rolePermissions: [],
+        userId: {{ $userId }},
         form: {
             employee_code: '',
             email: '',
@@ -280,10 +233,41 @@ function userForm() {
             role_id: '',
             password: '',
             password_confirmation: '',
-            is_active: true,
-            auto_generate_code: false,
-            manual_prefix: 'EMP',
-            manual_number: '0001'
+            is_active: true
+        },
+        
+        async loadUser() {
+            try {
+                // TODO: Replace with actual API call
+                // const response = await fetch(`/api/v1/users/${this.userId}`);
+                // const data = await response.json();
+                // this.form = data.data;
+                
+                // Mock data for now
+                setTimeout(async () => {
+                    this.form = {
+                        employee_code: 'EMP-001',
+                        email: 'user@example.com',
+                        full_name: 'John Doe',
+                        phone: '+91 9876543210',
+                        dept_id: '',
+                        role_id: '1', // Mock role ID
+                        password: '',
+                        password_confirmation: '',
+                        is_active: true
+                    };
+                    this.initialLoading = false;
+                    
+                    // Load permissions for the current role
+                    if (this.form.role_id) {
+                        await this.loadRolePermissions();
+                    }
+                }, 500);
+            } catch (error) {
+                console.error('Failed to load user:', error);
+                alert('Failed to load user data');
+                this.initialLoading = false;
+            }
         },
         
         async loadDepartments() {
@@ -328,6 +312,7 @@ function userForm() {
                     { module_code: 'PO', can_view: true, can_create: true, can_edit: true, can_approve: true, can_delete: false },
                     { module_code: 'GRN', can_view: true, can_create: false, can_edit: false, can_approve: false, can_delete: false },
                     { module_code: 'INVENTORY', can_view: true, can_create: true, can_edit: true, can_approve: false, can_delete: true },
+                    { module_code: 'USER_MGMT', can_view: true, can_create: false, can_edit: false, can_approve: false, can_delete: false },
                 ];
             } catch (error) {
                 console.error('Failed to load role permissions:', error);
@@ -335,36 +320,10 @@ function userForm() {
             }
         },
         
-        handleAutoGenerateChange() {
-            if (this.form.auto_generate_code) {
-                this.form.employee_code = ''; // Clear field when auto-generate is checked
-                this.form.manual_prefix = ''; // Clear manual fields
-                this.form.manual_number = '';
-            } else {
-                // Set default manual values when switching to manual
-                this.form.manual_prefix = 'EMP';
-                this.form.manual_number = '0001';
-                this.updateManualCode();
-            }
-        },
-        
-        updateManualCode() {
-            if (this.form.manual_prefix && this.form.manual_number) {
-                this.form.employee_code = `${this.form.manual_prefix}-${this.form.manual_number}`;
-            } else {
-                this.form.employee_code = '';
-            }
-        },
-        
         async submitForm() {
-            if (this.form.password !== this.form.password_confirmation) {
+            // Validate password confirmation if password is provided
+            if (this.form.password && this.form.password !== this.form.password_confirmation) {
                 alert('Passwords do not match!');
-                return;
-            }
-            
-            // Validate employee code if not auto-generated
-            if (!this.form.auto_generate_code && !this.form.employee_code) {
-                alert('Employee Code is required when auto-generation is disabled!');
                 return;
             }
             
@@ -373,19 +332,24 @@ function userForm() {
                 // Prepare form data
                 const formData = { ...this.form };
                 
-                // Remove auto-generate fields if not needed
-                if (formData.auto_generate_code) {
-                    delete formData.manual_prefix;
-                    delete formData.manual_number;
-                    delete formData.employee_code; // Will be generated on backend
+                // Remove password fields if not changing password
+                if (!formData.password) {
+                    delete formData.password;
+                    delete formData.password_confirmation;
                 }
                 
                 // TODO: Replace with actual API call
-                alert('User creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(formData, null, 2));
+                // const response = await fetch(`/api/v1/users/${this.userId}`, {
+                //     method: 'PUT',
+                //     headers: { 'Content-Type': 'application/json' },
+                //     body: JSON.stringify(formData)
+                // });
+                
+                alert('User update - Coming soon\n\nData to be submitted:\n' + JSON.stringify(formData, null, 2));
                 // window.location.href = '/users';
             } catch (error) {
-                console.error('Failed to create user:', error);
-                alert('Failed to create user. Please try again.');
+                console.error('Failed to update user:', error);
+                alert('Failed to update user. Please try again.');
             } finally {
                 this.loading = false;
             }
