@@ -4,9 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    <title>Administrator Login - Nexus ERP</title>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet" />
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet" />
+    <title>Admin Login - Nexus ERP</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet" />
     <script src="https://cdn.tailwindcss.com"></script>
     <script>
         tailwind.config = {
@@ -23,58 +22,54 @@
         }
     </script>
 </head>
-<body class="bg-primary min-h-screen flex items-center justify-center font-display p-4">
-    <!-- Abstract Background Decor -->
-    <div class="fixed inset-0 overflow-hidden pointer-events-none">
-        <div class="absolute -top-[10%] -left-[10%] size-[60%] bg-blue-600/20 rounded-full blur-[120px]"></div>
-        <div class="absolute -bottom-[10%] -right-[10%] size-[60%] bg-indigo-600/20 rounded-full blur-[120px]"></div>
-    </div>
-
-    <div class="w-full max-w-md relative z-10">
-        <div class="bg-white/10 backdrop-blur-2xl border border-white/20 p-8 rounded-[2rem] shadow-2xl">
-            <div class="text-center mb-10">
-                <div class="inline-flex items-center justify-center size-16 bg-white rounded-2xl shadow-xl mb-6">
-                    <span class="material-symbols-outlined text-primary text-4xl font-bold">shield_person</span>
-                </div>
-                <h1 class="text-3xl font-black text-white tracking-tight">Admin Portal</h1>
-                <p class="text-blue-200 mt-2 font-medium">Enterprise Management Suite</p>
+<body class="bg-slate-50 min-h-screen flex items-center justify-center font-display p-4">
+    <div class="w-full max-w-md">
+        <div class="bg-white rounded-2xl shadow-lg border border-slate-200 p-8">
+            <div class="text-center mb-8">
+                <h1 class="text-2xl font-bold text-slate-900 mb-2">Admin Portal</h1>
+                <p class="text-slate-600">Sign in to continue</p>
             </div>
 
-            <form id="loginForm" class="space-y-6">
+            <form id="loginForm" class="space-y-5">
                 <div>
-                    <label for="email" class="block text-xs font-black text-blue-200 uppercase tracking-widest mb-2 ml-1">Admin Email</label>
+                    <label for="email" class="block text-sm font-semibold text-slate-700 mb-2">Email Address</label>
                     <input 
                         type="email" 
                         id="email" 
                         name="email" 
                         required
-                        class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-blue-300/50 focus:ring-2 focus:ring-white/20 focus:bg-white/10 transition-all outline-none"
-                        placeholder="admin@nexus.com">
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
+                        placeholder="admin@company.com">
                 </div>
 
                 <div>
-                    <label for="password" class="block text-xs font-black text-blue-200 uppercase tracking-widest mb-2 ml-1">Security Token</label>
+                    <label for="password" class="block text-sm font-semibold text-slate-700 mb-2">Password</label>
                     <input 
                         type="password" 
                         id="password" 
                         name="password" 
                         required
-                        class="w-full px-6 py-4 bg-white/5 border border-white/10 rounded-2xl text-white placeholder-blue-300/50 focus:ring-2 focus:ring-white/20 focus:bg-white/10 transition-all outline-none"
+                        class="w-full px-4 py-3 bg-slate-50 border border-slate-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all outline-none"
                         placeholder="••••••••">
                 </div>
 
-                <div class="flex items-center justify-end">
-                    <a href="#" class="text-xs font-bold text-blue-200 hover:text-white transition-colors">Request Token Reset</a>
+                <div class="flex items-center justify-between">
+                    <label class="flex items-center gap-2 cursor-pointer">
+                        <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20">
+                        <span class="text-sm text-slate-600">Remember me</span>
+                    </label>
+                    <a href="#" class="text-sm font-semibold text-primary hover:underline">Forgot password?</a>
                 </div>
 
                 <button 
                     type="submit" 
                     id="submitBtn"
-                    class="w-full py-4 bg-white text-primary font-black rounded-2xl hover:bg-blue-50 transition-all shadow-xl flex items-center justify-center gap-2">
-                    Initialize System Access
-                    <span class="material-symbols-outlined text-xl">verified_user</span>
+                    class="w-full py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all">
+                    Sign In
                 </button>
             </form>
+        </div>
+    </div>
 
     <script>
         document.getElementById('loginForm').addEventListener('submit', async function(e) {
@@ -84,7 +79,7 @@
             const password = document.getElementById('password').value;
 
             submitBtn.disabled = true;
-            submitBtn.innerHTML = '<span class="material-symbols-outlined animate-spin text-sm">progress_activity</span> Initializing...';
+            submitBtn.textContent = 'Signing in...';
 
             try {
                 const response = await fetch('/api/v1/auth/login', {
@@ -103,17 +98,19 @@
                 if (response.ok && data.success) {
                     localStorage.setItem('user', JSON.stringify(data.data.user));
                     localStorage.setItem('access_token', data.data.access_token);
+                    
                     // Admin goes to control panel
                     window.location.href = '/control/dashboard';
                 } else {
                     alert(data.message || 'Authentication failed');
                     submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Initialize System Access <span class="material-symbols-outlined text-xl">verified_user</span>';
+                    submitBtn.textContent = 'Sign In';
                 }
             } catch (error) {
                 console.error('Error:', error);
                 alert('An error occurred. Please try again.');
                 submitBtn.disabled = false;
+                submitBtn.textContent = 'Sign In';
             }
         });
     </script>

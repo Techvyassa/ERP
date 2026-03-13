@@ -73,23 +73,23 @@ class PublicController extends Controller
     /**
      * Show specialized logins
      */
-    public function loginProcurement(): View
+    public function loginProcurement(string $orgSlug): View
     {
-        return view('auth.login-procurement');
+        return view('auth.login-procurement', ['orgSlug' => $orgSlug]);
     }
 
-    public function loginWarehouse(): View
+    public function loginWarehouse(string $orgSlug): View
     {
-        return view('auth.login-warehouse');
+        return view('auth.login-warehouse', ['orgSlug' => $orgSlug]);
     }
 
-    public function loginQuality(): View
+    public function loginQuality(string $orgSlug): View
     {
-        return view('auth.login-quality');
+        return view('auth.login-quality', ['orgSlug' => $orgSlug]);
     }
 
-    public function loginAdmin(): View
+    public function loginAdmin(string $orgSlug): View
     {
-        return view('auth.login-admin');
+        return view('auth.login-admin', ['orgSlug' => $orgSlug]);
     }
 }
