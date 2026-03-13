@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Gate Entry &amp; Verification</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#193261",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#13171f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex flex-col min-h-screen w-full overflow-x-hidden">
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-4 sticky top-0 z-50">
+<div class="flex items-center gap-4">
+<div class="bg-primary p-2 rounded-lg text-white">
+<span class="material-symbols-outlined block">factory</span>
+</div>
+<div>
+<h2 class="text-lg font-bold leading-tight tracking-tight">Gate Management System</h2>
+<p class="text-xs text-slate-500 dark:text-slate-400">Security Terminal: Gate 04</p>
+</div>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined">account_circle</span>
+</button>
+</div>
+</header>
+<main class="flex-1 max-w-5xl mx-auto w-full p-4 md:p-8">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
+<div class="flex items-center gap-3">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-primary text-white">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-semibold">Gate Entry</p>
+<p class="text-xs text-primary font-medium">In Progress</p>
+</div>
+</div>
+<div class="flex items-center gap-3 opacity-50">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800">
+<span class="material-symbols-outlined text-sm">dock</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-semibold">Dock Assignment</p>
+<p class="text-xs text-slate-500">Pending</p>
+</div>
+</div>
+<div class="flex items-center gap-3 opacity-50">
+<div class="flex h-10 w-10 items-center justify-center rounded-full bg-slate-200 dark:bg-slate-800">
+<span class="material-symbols-outlined text-sm">unarchive</span>
+</div>
+<div class="flex flex-col">
+<p class="text-sm font-semibold">Unloading</p>
+<p class="text-xs text-slate-500">Pending</p>
+</div>
+</div>
+</div>
+<div class="mb-8">
+<h1 class="text-2xl font-bold mb-2">Vehicle Verification</h1>
+<p class="text-slate-500 dark:text-slate-400">Validate entry documents and vehicle details before dock assignment.</p>
+</div>
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm mb-6">
+<div class="p-1 bg-slate-100 dark:bg-slate-800 flex gap-1">
+<button class="flex-1 py-2 px-4 rounded-lg text-sm font-semibold bg-white dark:bg-primary shadow-sm text-slate-900 dark:text-white transition-all">
+                        Scan ASN
+                    </button>
+<button class="flex-1 py-2 px-4 rounded-lg text-sm font-semibold text-slate-500 hover:bg-white/50 dark:hover:bg-slate-700 transition-all">
+                        Enter PO
+                    </button>
+</div>
+<div class="p-6">
+<div class="flex flex-col md:flex-row gap-4">
+<div class="flex-1">
+<label class="block text-sm font-medium mb-2">ASN / PO Number</label>
+<div class="relative">
+<input class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-3 pr-12 focus:ring-2 focus:ring-primary focus:border-transparent outline-none" placeholder="Scan barcode or enter manually" type="text"/>
+<span class="material-symbols-outlined absolute right-4 top-1/2 -translate-y-1/2 text-slate-400">qr_code_scanner</span>
+</div>
+</div>
+<div class="flex items-end">
+<button class="bg-primary text-white px-8 py-3 rounded-lg font-semibold hover:bg-primary/90 transition-all h-[50px]">
+                                Fetch Details
+                            </button>
+</div>
+</div>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-6 mb-8">
+<div class="space-y-6">
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+<h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">local_shipping</span>
+                            Vehicle Details
+                        </h3>
+<div class="space-y-4">
+<div class="grid grid-cols-2 gap-4">
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Vehicle Number</p>
+<p class="font-medium text-lg">KA-51-MD-9021</p>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Type</p>
+<p class="font-medium">12-Wheeler Heavy</p>
+</div>
+</div>
+<hr class="border-slate-100 dark:border-slate-800"/>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Transporter</p>
+<p class="font-medium">Global Logistics Solutions Ltd.</p>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Driver Information</p>
+<div class="flex items-center gap-3 mt-1">
+<div class="h-10 w-10 rounded-full bg-slate-200 dark:bg-slate-800 overflow-hidden">
+<img class="w-full h-full object-cover" data-alt="Driver profile picture" src="https://lh3.googleusercontent.com/aida-public/AB6AXuASLVNXIS4aQ5axW58LM95fGJwXWKd6R4ezZfgCp9VyLgiu5OxidYP82TCUOYQzVSh2nPvBhaO5jDXDytDvDPaJLbVMcQOkx0-Drlhlxd46Wv2-YdPdMj3zE0dkhYrnKktTRSuMMouaTzlDUHHiVbN0juXV7tgyz4ULKhqE8OaW1q6PuEwKqsIMB16bYOzV6V-0CYAO1Q6ZeftPXDUDQMS_zHyLhV7wSYRdvTfgIQo1CMCkFHpaT9jOoRqHdqtLZlV6cTHCexxBmt0"/>
+</div>
+<div>
+<p class="font-medium text-sm">Rajesh Kumar</p>
+<p class="text-xs text-slate-500">DL: DL89234120932</p>
+</div>
+</div>
+</div>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+<h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">inventory</span>
+                            Vendor Info
+                        </h3>
+<div class="space-y-4">
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Vendor Name</p>
+<p class="font-medium">TechNova Components Inc.</p>
+</div>
+<div>
+<p class="text-xs text-slate-500 uppercase font-bold tracking-wider">Origin</p>
+<p class="font-medium">Pune Distribution Center, MH</p>
+</div>
+</div>
+</div>
+</div>
+<div class="space-y-6">
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+<h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">description</span>
+                            Documents Upload
+                        </h3>
+<div class="space-y-3">
+<div class="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">receipt_long</span>
+<div>
+<p class="text-sm font-medium">Invoice #INV-9021</p>
+<p class="text-xs text-slate-500">Uploaded • 1.2 MB</p>
+</div>
+</div>
+<button class="text-primary hover:underline text-sm font-semibold">View</button>
+</div>
+<div class="flex items-center justify-between p-3 border border-slate-200 dark:border-slate-800 rounded-lg bg-slate-50 dark:bg-slate-950">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-primary">assignment</span>
+<div>
+<p class="text-sm font-medium">E-Way Bill</p>
+<p class="text-xs text-slate-500">Uploaded • 0.8 MB</p>
+</div>
+</div>
+<button class="text-primary hover:underline text-sm font-semibold">View</button>
+</div>
+<button class="w-full flex items-center justify-center gap-2 border-2 border-dashed border-slate-200 dark:border-slate-800 rounded-lg p-4 text-slate-500 hover:border-primary hover:text-primary transition-all">
+<span class="material-symbols-outlined">add_circle</span>
+<span class="text-sm font-semibold">Add More Documents</span>
+</button>
+</div>
+</div>
+<div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-6">
+<h3 class="font-bold text-lg mb-4 flex items-center gap-2">
+<span class="material-symbols-outlined text-primary">verified_user</span>
+                            Security Verification
+                        </h3>
+<div class="space-y-4">
+<label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
+<input class="mt-1 w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<div>
+<p class="text-sm font-semibold">Seal Match</p>
+<p class="text-xs text-slate-500">Container seal number matches ASN data.</p>
+</div>
+</label>
+<label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
+<input class="mt-1 w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<div>
+<p class="text-sm font-semibold">Invoice Match</p>
+<p class="text-xs text-slate-500">Invoice quantity matches physical count/manifest.</p>
+</div>
+</label>
+<label class="flex items-start gap-3 p-3 rounded-lg hover:bg-slate-50 dark:hover:bg-slate-800/50 cursor-pointer border border-transparent hover:border-slate-200 dark:hover:border-slate-800 transition-all">
+<input class="mt-1 w-5 h-5 rounded border-slate-300 text-primary focus:ring-primary" type="checkbox"/>
+<div>
+<p class="text-sm font-semibold">E-Way Bill Valid</p>
+<p class="text-xs text-slate-500">Verification with GST portal successful.</p>
+</div>
+</label>
+</div>
+</div>
+</div>
+</div>
+<div class="fixed bottom-0 left-0 right-0 bg-white dark:bg-background-dark border-t border-slate-200 dark:border-slate-800 p-4 md:p-6 z-40">
+<div class="max-w-5xl mx-auto flex flex-col md:flex-row gap-4 items-center justify-between">
+<div class="flex items-center gap-2 text-slate-500 dark:text-slate-400">
+<span class="material-symbols-outlined text-sm">info</span>
+<p class="text-xs font-medium">Verification must be completed before approval.</p>
+</div>
+<div class="flex gap-4 w-full md:w-auto">
+<button class="flex-1 md:flex-none px-8 py-3 rounded-lg font-bold border border-red-200 dark:border-red-900/50 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 transition-all">
+                            Reject Entry
+                        </button>
+<button class="flex-1 md:flex-none px-8 py-3 rounded-lg font-bold bg-primary text-white hover:bg-primary/90 shadow-lg shadow-primary/20 transition-all flex items-center justify-center gap-2">
+<span>Approve &amp; Send to Dock</span>
+<span class="material-symbols-outlined">arrow_forward</span>
+</button>
+</div>
+</div>
+</div>
+<div class="h-24"></div>
+</main>
+</div>
+</body></html>
