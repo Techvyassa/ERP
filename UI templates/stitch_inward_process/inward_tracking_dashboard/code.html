@@ -1,0 +1,309 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    colors: {
+                        "primary": "#193261",
+                        "background-light": "#f6f7f8",
+                        "background-dark": "#13171f",
+                    },
+                    fontFamily: {
+                        "display": ["Inter", "sans-serif"]
+                    },
+                    borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+                },
+            },
+        }
+    </script>
+<style>
+        body { font-family: 'Inter', sans-serif; }
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
+<div class="flex h-screen overflow-hidden">
+<!-- Sidebar -->
+<aside class="w-64 border-r border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex flex-col">
+<div class="p-6 flex items-center gap-3">
+<div class="size-8 bg-primary rounded flex items-center justify-center text-white">
+<span class="material-symbols-outlined">inventory_2</span>
+</div>
+<h1 class="text-xl font-bold tracking-tight">Nexus ERP</h1>
+</div>
+<nav class="flex-1 px-4 space-y-1">
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined">dashboard</span>
+<span class="text-sm font-medium">Overview</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined">shopping_cart</span>
+<span class="text-sm font-medium">Purchase Orders</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg bg-primary/10 text-primary dark:text-slate-100 dark:bg-primary/40 transition-colors" href="#">
+<span class="material-symbols-outlined">lan</span>
+<span class="text-sm font-medium">Inward Tracking</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined">warehouse</span>
+<span class="text-sm font-medium">Inventory</span>
+</a>
+<a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-primary/20 transition-colors" href="#">
+<span class="material-symbols-outlined">fact_check</span>
+<span class="text-sm font-medium">Quality Control</span>
+</a>
+</nav>
+<div class="p-4 border-t border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-3 p-2">
+<img alt="Profile" class="size-8 rounded-full object-cover" data-alt="Corporate headshot of a male manager" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBFmrjhWn6US6J8LxxH-9EhNvNQ88s0ANkxNH7Z1yGNYlj33g2zHvN8mTbS2RvwwuP1JAQ-UqAkmmtgUxEGFLrHeuGTrHT8-b4k-JLBCmI8BU0rRJkiE9886MWj2bBEMoviErJwTqWD0eogNxBtXX0YYw8vcFqtr7oE7gvT72gBtoL7bQgv4EW-nNMgcdk_erpNrJBjiQjH8ZPJqKsaavE9YMCscYZ8H83frpXRDuqx0k88fCXekP17XUfo_i70pSKW_xDc9g1k3J0"/>
+<div class="overflow-hidden">
+<p class="text-sm font-semibold truncate">Alex Rivera</p>
+<p class="text-xs text-slate-500 truncate">Supply Chain Lead</p>
+</div>
+</div>
+</div>
+</aside>
+<!-- Main Content -->
+<main class="flex-1 flex flex-col overflow-hidden">
+<!-- Top Navbar -->
+<header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark flex items-center justify-between px-8">
+<div class="flex items-center gap-4 flex-1 max-w-xl">
+<div class="relative w-full">
+<span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-slate-400">search</span>
+<input class="w-full pl-10 pr-4 py-2 bg-slate-100 dark:bg-slate-800 border-none rounded-lg focus:ring-2 focus:ring-primary text-sm transition-all" placeholder="Search PO, ASN, or Vendor..." type="text"/>
+</div>
+</div>
+<div class="flex items-center gap-4">
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg relative">
+<span class="material-symbols-outlined">notifications</span>
+<span class="absolute top-2 right-2 size-2 bg-red-500 rounded-full border-2 border-white dark:border-background-dark"></span>
+</button>
+<button class="p-2 text-slate-500 hover:bg-slate-100 dark:hover:bg-slate-800 rounded-lg">
+<span class="material-symbols-outlined">settings</span>
+</button>
+<div class="h-8 w-px bg-slate-200 dark:bg-slate-800 mx-2"></div>
+<button class="bg-primary hover:bg-primary/90 text-white px-4 py-2 rounded-lg text-sm font-medium flex items-center gap-2 transition-colors shadow-sm">
+<span class="material-symbols-outlined text-sm">add</span>
+                        New Entry
+                    </button>
+</div>
+</header>
+<!-- Dashboard Content -->
+<div class="flex-1 overflow-auto p-8 space-y-6">
+<!-- Title & Actions -->
+<div class="flex flex-wrap items-end justify-between gap-4">
+<div>
+<h2 class="text-2xl font-bold tracking-tight">Material Inwarding Tracking</h2>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Monitor end-to-end procurement and receiving lifecycle.</p>
+</div>
+<div class="flex items-center gap-2">
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-lg">filter_list</span>
+                            Filters
+                        </button>
+<button class="flex items-center gap-2 px-4 py-2 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-lg text-sm font-medium hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-lg">download</span>
+                            Export
+                        </button>
+</div>
+</div>
+<!-- Stats Summary -->
+<div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+<div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Total Active POs</span>
+<span class="material-symbols-outlined text-primary">shopping_bag</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold">1,284</span>
+<span class="text-xs font-medium text-emerald-500">+12%</span>
+</div>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Awaiting QC</span>
+<span class="material-symbols-outlined text-amber-500">biotech</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold">42</span>
+<span class="text-xs font-medium text-amber-500">Delayed</span>
+</div>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">In-Transit ASN</span>
+<span class="material-symbols-outlined text-blue-500">local_shipping</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold">156</span>
+<span class="text-xs font-medium text-blue-500">8 Incoming Today</span>
+</div>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+<div class="flex items-center justify-between mb-2">
+<span class="text-xs font-semibold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Payment Ready</span>
+<span class="material-symbols-outlined text-emerald-500">payments</span>
+</div>
+<div class="flex items-baseline gap-2">
+<span class="text-2xl font-bold">89</span>
+<span class="text-xs font-medium text-slate-400">Next 24h</span>
+</div>
+</div>
+</div>
+<!-- High Density Table Container -->
+<div class="bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm overflow-hidden">
+<div class="overflow-x-auto">
+<table class="w-full text-left border-collapse">
+<thead>
+<tr class="bg-slate-50 dark:bg-slate-900/50 border-b border-slate-200 dark:border-slate-700">
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">PO #</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">ASN</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Gate Entry</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">GRN</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">QC Status</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Putaway</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Invoice</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Payment</th>
+<th class="px-6 py-4 text-xs font-bold text-slate-500 dark:text-slate-400 uppercase tracking-wider">Overall Status</th>
+</tr>
+</thead>
+<tbody class="divide-y divide-slate-200 dark:divide-slate-700">
+<!-- Row 1 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap"><span class="font-semibold text-primary dark:text-blue-400">PO-2023-001</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Pass</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">In-Progress</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">Pending</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 rounded-lg text-xs font-bold bg-blue-500 text-white">Receiving</span></td>
+</tr>
+<!-- Row 2 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap"><span class="font-semibold text-primary dark:text-blue-400">PO-2023-442</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">In-Progress</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">Pending</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">Pending</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">Pending</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 rounded-lg text-xs font-bold bg-amber-500 text-white">Verification</span></td>
+</tr>
+<!-- Row 3 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap"><span class="font-semibold text-primary dark:text-blue-400">PO-2023-889</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Pass</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Approved</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">Processing</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 rounded-lg text-xs font-bold bg-emerald-500 text-white">Settlement</span></td>
+</tr>
+<!-- Row 4 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap"><span class="font-semibold text-primary dark:text-blue-400">PO-2023-112</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-blue-100 text-blue-700 dark:bg-blue-500/20 dark:text-blue-400">In-Transit</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">Pending</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 rounded-lg text-xs font-bold bg-slate-400 text-white">Dispatched</span></td>
+</tr>
+<!-- Row 5 -->
+<tr class="hover:bg-slate-50 dark:hover:bg-slate-900/30 transition-colors">
+<td class="px-6 py-4 whitespace-nowrap"><span class="font-semibold text-primary dark:text-blue-400">PO-2023-095</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-emerald-100 text-emerald-700 dark:bg-emerald-500/20 dark:text-emerald-400">Done</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-red-100 text-red-700 dark:bg-red-500/20 dark:text-red-400">Rejected</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">Hold</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-amber-100 text-amber-700 dark:bg-amber-500/20 dark:text-amber-400">Pending</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-2.5 py-1 rounded-full text-xs font-medium bg-slate-100 text-slate-600 dark:bg-slate-700 dark:text-slate-400">N/A</span></td>
+<td class="px-6 py-4 whitespace-nowrap"><span class="px-3 py-1 rounded-lg text-xs font-bold bg-red-500 text-white">Action Required</span></td>
+</tr>
+</tbody>
+</table>
+</div>
+<!-- Pagination -->
+<div class="px-6 py-4 bg-slate-50 dark:bg-slate-900/50 flex items-center justify-between border-t border-slate-200 dark:border-slate-700">
+<span class="text-sm text-slate-500 dark:text-slate-400">Showing 1 to 5 of 124 results</span>
+<div class="flex items-center gap-1">
+<button class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-lg">chevron_left</span>
+</button>
+<button class="size-8 rounded-lg bg-primary text-white text-sm font-medium">1</button>
+<button class="size-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-medium transition-colors">2</button>
+<button class="size-8 rounded-lg hover:bg-slate-200 dark:hover:bg-slate-700 text-sm font-medium transition-colors">3</button>
+<button class="p-1 rounded hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+<span class="material-symbols-outlined text-lg">chevron_right</span>
+</button>
+</div>
+</div>
+</div>
+<!-- Footer Section -->
+<div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
+<div class="p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+<h3 class="text-lg font-bold mb-4">Daily Inwarding Volume</h3>
+<div class="h-48 flex items-end gap-2 px-2">
+<div class="flex-1 bg-primary/20 rounded-t-lg relative group h-32">
+<div class="absolute -top-8 left-1/2 -translate-x-1/2 bg-slate-900 text-white text-[10px] px-1.5 py-0.5 rounded opacity-0 group-hover:opacity-100 transition-opacity whitespace-nowrap">Mon: 45</div>
+</div>
+<div class="flex-1 bg-primary/40 rounded-t-lg relative group h-40"></div>
+<div class="flex-1 bg-primary/60 rounded-t-lg relative group h-24"></div>
+<div class="flex-1 bg-primary rounded-t-lg relative group h-44"></div>
+<div class="flex-1 bg-primary/30 rounded-t-lg relative group h-36"></div>
+<div class="flex-1 bg-primary/50 rounded-t-lg relative group h-28"></div>
+<div class="flex-1 bg-primary/80 rounded-t-lg relative group h-42"></div>
+</div>
+<div class="flex justify-between mt-4 text-[10px] font-bold text-slate-400 uppercase tracking-widest">
+<span>Mon</span><span>Tue</span><span>Wed</span><span>Thu</span><span>Fri</span><span>Sat</span><span>Sun</span>
+</div>
+</div>
+<div class="p-6 bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-xl shadow-sm">
+<h3 class="text-lg font-bold mb-4">Recent Notifications</h3>
+<div class="space-y-4">
+<div class="flex items-start gap-4">
+<div class="size-8 rounded-full bg-amber-100 dark:bg-amber-500/20 flex items-center justify-center text-amber-600 shrink-0">
+<span class="material-symbols-outlined text-sm">warning</span>
+</div>
+<div>
+<p class="text-sm font-semibold">QC Delay Alert</p>
+<p class="text-xs text-slate-500">PO-2023-442 has been in QC queue for over 24 hours.</p>
+<span class="text-[10px] text-slate-400 uppercase font-bold mt-1 inline-block">2 hours ago</span>
+</div>
+</div>
+<div class="flex items-start gap-4">
+<div class="size-8 rounded-full bg-emerald-100 dark:bg-emerald-500/20 flex items-center justify-center text-emerald-600 shrink-0">
+<span class="material-symbols-outlined text-sm">check_circle</span>
+</div>
+<div>
+<p class="text-sm font-semibold">Payment Completed</p>
+<p class="text-xs text-slate-500">PO-2023-889 payment of $12,450.00 processed successfully.</p>
+<span class="text-[10px] text-slate-400 uppercase font-bold mt-1 inline-block">5 hours ago</span>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</main>
+</div>
+</body></html>

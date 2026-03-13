@@ -69,4 +69,27 @@ class PublicController extends Controller
     {
         return view('auth.login');
     }
+
+    /**
+     * Show specialized logins
+     */
+    public function loginProcurement(): View
+    {
+        return view('auth.login-procurement');
+    }
+
+    public function loginWarehouse(): View
+    {
+        return view('auth.login-warehouse');
+    }
+
+    public function loginQuality(): View
+    {
+        return view('auth.login-quality');
+    }
+
+    public function loginAdmin(): View
+    {
+        return view('auth.login-admin');
+    }
 }

@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+
+<html class="dark" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+      tailwind.config = {
+        darkMode: "class",
+        theme: {
+          extend: {
+            colors: {
+              "primary": "#193261",
+              "background-light": "#f6f7f8",
+              "background-dark": "#13171f",
+            },
+            fontFamily: {
+              "display": ["Inter"]
+            },
+            borderRadius: {"DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px"},
+          },
+        },
+      }
+    </script>
+<title>Invoice Verification &amp; Vendor Payment</title>
+</head>
+<body class="bg-background-light dark:bg-background-dark font-display text-slate-900 dark:text-slate-100 antialiased">
+<div class="relative flex h-auto min-h-screen w-full flex-col bg-background-light dark:bg-background-dark overflow-x-hidden">
+<!-- Navigation & Header -->
+<header class="flex items-center justify-between whitespace-nowrap border-b border-solid border-slate-200 dark:border-slate-800 px-10 py-4 bg-background-light dark:bg-background-dark sticky top-0 z-10">
+<div class="flex items-center gap-4">
+<div class="size-8 bg-primary rounded-lg flex items-center justify-center text-white">
+<span class="material-symbols-outlined">account_balance</span>
+</div>
+<h2 class="text-slate-900 dark:text-slate-100 text-lg font-bold leading-tight tracking-tight">Finance Portal</h2>
+</div>
+<div class="flex gap-3">
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors hover:bg-primary/20">
+<span class="material-symbols-outlined text-[20px]">notifications</span>
+</button>
+<button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-300 transition-colors hover:bg-primary/20">
+<span class="material-symbols-outlined text-[20px]">account_circle</span>
+</button>
+</div>
+</header>
+<main class="flex-1 flex flex-col max-w-5xl mx-auto w-full p-6 gap-8">
+<!-- Workflow Stepper Section -->
+<section class="bg-slate-50 dark:bg-slate-900/50 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="flex flex-col gap-4">
+<div class="flex gap-6 justify-between items-center">
+<div class="flex flex-col">
+<p class="text-slate-900 dark:text-slate-100 text-lg font-semibold">Invoice / Payment Verification</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Review matches and finalize vendor disbursement</p>
+</div>
+<div class="flex flex-col items-end">
+<p class="text-primary dark:text-blue-400 text-sm font-bold uppercase tracking-wider">Stage 3 of 4</p>
+<p class="text-slate-900 dark:text-slate-100 text-xl font-bold">75% Complete</p>
+</div>
+</div>
+<div class="w-full bg-slate-200 dark:bg-slate-800 rounded-full h-3">
+<div class="bg-primary h-3 rounded-full" style="width: 75%;"></div>
+</div>
+</div>
+</section>
+<!-- 3-Way Match Results -->
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-xl font-bold px-1 flex items-center gap-2">
+<span class="material-symbols-outlined text-green-500">verified</span>
+                3-Way Match Result
+            </h3>
+<div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+<div class="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+<p class="text-slate-900 dark:text-slate-100 font-medium">PO Price Match</p>
+</div>
+<span class="text-xs font-bold text-green-600 dark:text-green-400 bg-green-500/20 px-2 py-1 rounded">VALIDATED</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+<p class="text-slate-900 dark:text-slate-100 font-medium">GRN Quantity Match</p>
+</div>
+<span class="text-xs font-bold text-green-600 dark:text-green-400 bg-green-500/20 px-2 py-1 rounded">VALIDATED</span>
+</div>
+<div class="flex items-center justify-between p-4 bg-green-500/10 border border-green-500/30 rounded-xl">
+<div class="flex items-center gap-3">
+<span class="material-symbols-outlined text-green-500">check_circle</span>
+<p class="text-slate-900 dark:text-slate-100 font-medium">Invoice Amount Match</p>
+</div>
+<span class="text-xs font-bold text-green-600 dark:text-green-400 bg-green-500/20 px-2 py-1 rounded">VALIDATED</span>
+</div>
+</div>
+</section>
+<!-- Vendor Invoice Entry -->
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-xl font-bold px-1">Vendor Invoice Entry</h3>
+<div class="bg-slate-50 dark:bg-slate-900/30 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-500 dark:text-slate-400">Invoice Number</label>
+<input class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-900 dark:text-slate-100" type="text" value="INV-2024-00892"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-500 dark:text-slate-400">Invoice Date</label>
+<input class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-900 dark:text-slate-100" type="date" value="2023-11-15"/>
+</div>
+<div class="flex flex-col gap-2">
+<label class="text-sm font-medium text-slate-500 dark:text-slate-400">Tax Registration (GST/VAT)</label>
+<input class="w-full bg-white dark:bg-slate-800 border-slate-300 dark:border-slate-700 rounded-lg focus:ring-primary focus:border-primary text-slate-900 dark:text-slate-100" type="text" value="TAX-US-99201"/>
+</div>
+</div>
+</div>
+</section>
+<!-- Payment Run & Summary -->
+<section class="flex flex-col gap-4">
+<h3 class="text-slate-900 dark:text-slate-100 text-xl font-bold px-1">Payment Run Details</h3>
+<div class="grid grid-cols-1 lg:grid-cols-3 gap-6">
+<!-- Bank Details -->
+<div class="lg:col-span-2 bg-slate-50 dark:bg-slate-900/30 p-6 rounded-xl border border-slate-200 dark:border-slate-800">
+<div class="flex items-center gap-4 mb-6">
+<div class="p-3 bg-primary/10 rounded-full">
+<span class="material-symbols-outlined text-primary">account_balance_wallet</span>
+</div>
+<div>
+<p class="text-slate-900 dark:text-slate-100 font-bold text-lg">Acme Tech Solutions Inc.</p>
+<p class="text-slate-500 dark:text-slate-400 text-sm">Primary Vendor Account</p>
+</div>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+<div class="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+<p class="text-xs text-slate-500 mb-1 uppercase font-bold">Bank Name</p>
+<p class="font-medium">Chase Manhattan Bank</p>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+<p class="text-xs text-slate-500 mb-1 uppercase font-bold">Account Number</p>
+<p class="font-medium">**** **** 9012</p>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+<p class="text-xs text-slate-500 mb-1 uppercase font-bold">SWIFT/BIC</p>
+<p class="font-medium">CHASUS33</p>
+</div>
+<div class="p-4 bg-white dark:bg-slate-800 rounded-lg border border-slate-200 dark:border-slate-700">
+<p class="text-xs text-slate-500 mb-1 uppercase font-bold">Routing Transit Number</p>
+<p class="font-medium">021000021</p>
+</div>
+</div>
+</div>
+<!-- Summary Panel -->
+<div class="bg-primary p-6 rounded-xl text-white shadow-xl flex flex-col justify-between">
+<div>
+<h4 class="text-primary-100/70 font-bold text-sm uppercase mb-4">Payment Summary</h4>
+<div class="space-y-3">
+<div class="flex justify-between text-sm">
+<span>Gross Amount</span>
+<span>$12,450.00</span>
+</div>
+<div class="flex justify-between text-sm">
+<span>Tax (8%)</span>
+<span>$996.00</span>
+</div>
+<div class="flex justify-between text-sm">
+<span>Discounts</span>
+<span class="text-green-300">-$245.00</span>
+</div>
+<div class="border-t border-primary/30 my-3"></div>
+<div class="flex justify-between items-end">
+<span class="font-medium">Net Payable</span>
+<span class="text-3xl font-black">$13,201.00</span>
+</div>
+</div>
+</div>
+<p class="text-[10px] text-white/50 mt-6 italic text-center">Funds will be disbursed within 24 hours of generation.</p>
+</div>
+</div>
+</section>
+<!-- Action Button -->
+<div class="flex flex-col items-center justify-center py-6 border-t border-slate-200 dark:border-slate-800">
+<button class="bg-primary hover:bg-primary/90 text-white font-bold py-4 px-10 rounded-xl flex items-center gap-3 transition-all shadow-lg active:scale-95 group">
+<span class="material-symbols-outlined group-hover:rotate-12 transition-transform">payments</span>
+                Generate Payment &amp; Clear Invoice
+            </button>
+<p class="text-slate-500 dark:text-slate-400 text-xs mt-4">By clicking, you authorize the batch payment process for this vendor.</p>
+</div>
+</main>
+<!-- Footer Stats (Subtle) -->
+<footer class="p-8 bg-slate-50 dark:bg-slate-900/80 border-t border-slate-200 dark:border-slate-800">
+<div class="max-w-5xl mx-auto flex justify-around text-center">
+<div>
+<p class="text-slate-400 text-xs uppercase font-bold">Last Payment Run</p>
+<p class="text-slate-900 dark:text-slate-100 font-semibold">Today, 09:45 AM</p>
+</div>
+<div class="w-px h-8 bg-slate-200 dark:bg-slate-800"></div>
+<div>
+<p class="text-slate-400 text-xs uppercase font-bold">Total Batch Value</p>
+<p class="text-slate-900 dark:text-slate-100 font-semibold">$245,092.12</p>
+</div>
+<div class="w-px h-8 bg-slate-200 dark:bg-slate-800"></div>
+<div>
+<p class="text-slate-400 text-xs uppercase font-bold">Pending Approvals</p>
+<p class="text-slate-900 dark:text-slate-100 font-semibold">12 Invoices</p>
+</div>
+</div>
+</footer>
+</div>
+</body></html>
