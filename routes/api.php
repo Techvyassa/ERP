@@ -46,6 +46,43 @@ Route::prefix('v1')->group(function () {
     Route::middleware(['validate.jwt', 'resolve.tenant'])
         ->get('/auth/me', [App\Http\Controllers\AuthController::class, 'me']);
 
+    // Debug: Check current user permissions
+    Route::middleware(['validate.jwt', 'resolve.tenant'])->get('/debug/my-permissions', function (Request $request) {
+        $userId = $request->input('auth_user_id');
+        $tenantDb = $request->input('tenant_db_name');
+        
+        // Switch to tenant DB
+        config(['database.connections.tenant.database' => $tenantDb]);
+        
+        $user = \App\Models\Tenant\User::with('role')->find($userId);
+        $permissions = \App\Models\Tenant\RolePermission::where('role_id', $user->role_id)->get();
+        
+        // Clear cache for this user
+        \Illuminate\Support\Facades\Cache::forget("rbac:user:{$userId}:permissions");
+        
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'user_id' => $userId,
+                'user_email' => $user->email,
+                'role_id' => $user->role_id,
+                'role_name' => $user->role->role_name ?? 'N/A',
+                'role_code' => $user->role->role_code ?? 'N/A',
+                'permissions_count' => $permissions->count(),
+                'permissions' => $permissions->map(fn($p) => [
+                    'module' => $p->module_code,
+                    'view' => $p->can_view,
+                    'create' => $p->can_create,
+                    'edit' => $p->can_edit,
+                    'approve' => $p->can_approve,
+                    'delete' => $p->can_delete,
+                ]),
+                'cache_cleared' => true,
+            ],
+            'message' => 'User permissions retrieved and cache cleared',
+        ]);
+    });
+
     // Organization registration and utilities (public)
     Route::prefix('organizations')->group(function () {
         Route::post('/register', [App\Http\Controllers\OrganizationController::class, 'register']);

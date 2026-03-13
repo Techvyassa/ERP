@@ -381,6 +381,73 @@ class PurchaseOrderController extends Controller
     }
 
     /**
+     * Submit the purchase order for approval.
+     * PATCH /api/v1/purchase-orders/{id}/submit
+     */
+    public function submit(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        try {
+            $purchaseOrder = PurchaseOrder::findOrFail($id);
+
+            if ($purchaseOrder->status !== 'DRAFT') {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'INVALID_STATUS_TRANSITION',
+                        'details' => [
+                            'current_status' => $purchaseOrder->status
+                        ]
+                    ],
+                    'message' => 'Only DRAFT purchase orders can be submitted for approval',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 422);
+            }
+
+            // Ensure there are line items
+            if ($purchaseOrder->lineItems()->count() === 0) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'EMPTY_PO',
+                        'details' => []
+                    ],
+                    'message' => 'Cannot submit a PO with no line items',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 422);
+            }
+
+            $purchaseOrder->status = 'PENDING_APPROVAL';
+            $purchaseOrder->save();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'purchase_order' => $purchaseOrder
+                ],
+                'message' => 'Purchase order submitted for approval successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'PO_SUBMIT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to submit purchase order: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
+    /**
      * Approve the purchase order.
      * PATCH /api/v1/purchase-orders/{id}/approve
      */

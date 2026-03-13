@@ -181,8 +181,19 @@ function departmentForm() {
         
         async loadParentDepartments() {
             try {
-                // TODO: Replace with actual API call
-                this.parentDepartments = [];
+                const response = await fetch('/api/v1/departments', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.parentDepartments = data.data.departments;
+                } else {
+                    console.error('Failed to load parent departments:', data.message);
+                }
             } catch (error) {
                 console.error('Failed to load parent departments:', error);
             }
@@ -219,18 +230,35 @@ function departmentForm() {
             this.loading = true;
             try {
                 // Prepare form data
-                const formData = { ...this.form };
+                const formData = {
+                    dept_name: this.form.dept_name,
+                    parent_dept_id: this.form.parent_dept_id || null,
+                    cost_center_code: this.form.cost_center_code,
+                    is_active: this.form.is_active
+                };
                 
-                // Remove auto-generate fields if not needed
-                if (formData.auto_generate_code) {
-                    delete formData.manual_prefix;
-                    delete formData.manual_number;
-                    delete formData.dept_code; // Will be generated on backend
+                // Add dept_code if not auto-generated
+                if (!this.form.auto_generate_code) {
+                    formData.dept_code = this.form.dept_code;
                 }
                 
-                // TODO: Replace with actual API call
-                alert('Department creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(formData, null, 2));
-                // window.location.href = '/departments';
+                const response = await fetch('/api/v1/departments', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message || 'Department created successfully!');
+                    window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/departments" : "/org/" . $organization->org_slug . "/departments") }}';
+                } else {
+                    alert(data.message || 'Failed to create department. Please try again.');
+                }
             } catch (error) {
                 console.error('Failed to create department:', error);
                 alert('Failed to create department. Please try again.');

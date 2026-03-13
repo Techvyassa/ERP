@@ -201,6 +201,15 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('departments.index');
         
+        Route::get('/departments/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.departments.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'departmentId' => $id
+            ]);
+        })->name('departments.edit');
+        
         Route::get('/roles', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.roles.index', [
