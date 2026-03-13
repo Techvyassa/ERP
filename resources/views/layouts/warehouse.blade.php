@@ -1,96 +1,152 @@
 <!DOCTYPE html>
-<html class="dark" lang="en">
+<html lang="en">
 <head>
-    <meta charset="utf-8"/>
-    <meta content="width=device-width, initial-scale=1.0" name="viewport"/>
-    <title>@yield('title', 'Warehouse Portal - Nexus ERP')</title>
-    <script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
-    <link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap" rel="stylesheet"/>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="csrf-token" content="{{ csrf_token() }}">
+    <title>@yield('title', 'Warehouse Portal') - {{ $organization->org_name }}</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL,GRAD@20..48,100..700,0..1,-50..200" />
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
     <script>
         tailwind.config = {
-            darkMode: "class",
             theme: {
                 extend: {
                     colors: {
-                        "primary": "#193261",
-                        "warehouse": "#f59e0b",
-                        "background-light": "#f6f7f8",
-                        "background-dark": "#0f172a",
+                        primary: '#193261',
+                        warehouse: '#f59e0b'
                     },
                     fontFamily: {
-                        "display": ["Inter", "sans-serif"]
-                    },
-                },
-            },
+                        sans: ['Inter', 'sans-serif']
+                    }
+                }
+            }
         }
     </script>
+    <style>
+        [x-cloak] { display: none !important; }
+        body { font-family: 'Inter', sans-serif; }
+    </style>
+    <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
-<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 font-display">
-<div class="flex h-screen overflow-hidden">
+<body class="bg-gray-50" x-data="{ sidebarOpen: true, user: {} }" x-init="user = JSON.parse(localStorage.getItem('user') || '{}');">
     <!-- Sidebar -->
-    <aside class="w-64 border-r border-slate-700 bg-slate-900 flex flex-col">
-        <div class="p-6 flex items-center gap-3">
-            <div class="size-8 bg-warehouse rounded-lg flex items-center justify-center text-slate-900">
-                <span class="material-symbols-outlined font-bold">warehouse</span>
-            </div>
-            <h1 class="text-xl font-bold tracking-tight text-white">Nexus Store</h1>
-        </div>
-        <nav class="flex-1 px-4 space-y-1">
-            <a class="flex items-center gap-3 px-3 py-2 rounded-lg {{ request()->routeIs('warehouse.dashboard') ? 'bg-warehouse/20 text-warehouse' : 'text-slate-400 hover:bg-slate-800 hover:text-white' }} transition-colors" href="/warehouse/dashboard">
-                <span class="material-symbols-outlined">dashboard</span>
-                <span class="text-sm font-medium">Store Overview</span>
-            </a>
-            <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" href="/warehouse/gate-entry">
-                <span class="material-symbols-outlined">gate</span>
-                <span class="text-sm font-medium">Gate Entry</span>
-            </a>
-            <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" href="/warehouse/receipts">
-                <span class="material-symbols-outlined">inventory_2</span>
-                <span class="text-sm font-medium">Material Receipts</span>
-            </a>
-            <a class="flex items-center gap-3 px-3 py-2 rounded-lg text-slate-400 hover:bg-slate-800 hover:text-white transition-colors" href="/warehouse/putaway">
-                <span class="material-symbols-outlined">shelves</span>
-                <span class="text-sm font-medium">Stock Putaway</span>
-            </a>
-        </nav>
-        <div class="p-4 bg-slate-800/50 mt-auto">
-            <div class="flex items-center gap-3">
-                <div class="size-10 rounded-full bg-warehouse flex items-center justify-center text-slate-900 font-bold">
-                    SK
+    <aside :class="sidebarOpen ? 'w-64' : 'w-20'" class="fixed left-0 top-0 h-full bg-white border-r border-gray-200 transition-all duration-300 z-40">
+        <div class="flex flex-col h-full">
+            <!-- Logo Section -->
+            <div class="flex items-center justify-between p-4 border-b border-gray-200">
+                <div class="flex items-center space-x-3" x-show="sidebarOpen">
+                    <div class="w-10 h-10 bg-warehouse rounded-lg flex items-center justify-center flex-shrink-0">
+                        <span class="material-symbols-outlined text-white text-xl">warehouse</span>
+                    </div>
+                    <div class="overflow-hidden">
+                        <h2 class="text-sm font-semibold text-gray-900 truncate">{{ $organization->org_name }}</h2>
+                        <p class="text-xs text-gray-500 truncate">{{ $organization->org_slug }}</p>
+                    </div>
                 </div>
-                <div class="overflow-hidden text-white">
-                    <p class="text-sm font-semibold truncate text-warehouse">Store Keeper</p>
-                    <p class="text-[10px] uppercase font-bold text-slate-400">Main Warehouse</p>
+                <div x-show="!sidebarOpen" class="w-10 h-10 bg-warehouse rounded-lg flex items-center justify-center mx-auto">
+                    <span class="material-symbols-outlined text-white text-xl">warehouse</span>
+                </div>
+            </div>
+
+            <!-- Navigation -->
+            <nav class="flex-1 overflow-y-auto p-4">
+                <ul class="space-y-2">
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/warehouse/dashboard") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-amber-50 text-warehouse transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">home</span>
+                            <span x-show="sidebarOpen" class="font-medium">Dashboard</span>
+                        </a>
+                    </li>
+                    
+                    <li class="pt-2 border-t border-gray-200"></li>
+                    
+                    <li x-show="sidebarOpen" class="px-3 py-2">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Warehouse</span>
+                    </li>
+                    
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/warehouse/gate-entry") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">door_front</span>
+                            <span x-show="sidebarOpen" class="font-medium">Gate Entry</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/warehouse/receipts") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">receipt_long</span>
+                            <span x-show="sidebarOpen" class="font-medium">Material Receipts</span>
+                        </a>
+                    </li>
+                    
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/warehouse/putaway") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">shelves</span>
+                            <span x-show="sidebarOpen" class="font-medium">Putaway</span>
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+
+            <!-- User Profile Section -->
+            <div class="border-t border-gray-200 p-4">
+                <div class="relative" x-data="{ open: false }">
+                    <button @click="open = !open" class="flex items-center space-x-3 w-full px-3 py-2 rounded-lg hover:bg-gray-100 transition-colors">
+                        <div class="w-10 h-10 bg-warehouse rounded-full flex items-center justify-center flex-shrink-0">
+                            <span class="text-white font-semibold text-sm" x-text="user.first_name && user.last_name ? (user.first_name.charAt(0) + user.last_name.charAt(0)).toUpperCase() : 'U'"></span>
+                        </div>
+                        <div x-show="sidebarOpen" class="flex-1 text-left overflow-hidden">
+                            <p class="text-sm font-medium text-gray-900 truncate" x-text="user.first_name && user.last_name ? user.first_name + ' ' + user.last_name : 'User'"></p>
+                            <p class="text-xs text-gray-500 truncate" x-text="user.email || ''"></p>
+                        </div>
+                    </button>
+                    
+                    <div x-show="open" @click.away="open = false" x-cloak
+                         class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                        <form action="{{ url('/logout') }}" method="POST">
+                            @csrf
+                            <button type="submit" class="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left">
+                                <span class="material-symbols-outlined w-4">logout</span>
+                                <span>Logout</span>
+                            </button>
+                        </form>
+                    </div>
                 </div>
             </div>
         </div>
     </aside>
 
     <!-- Main Content -->
-    <main class="flex-1 flex flex-col overflow-hidden">
-        <header class="h-16 border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-slate-900 flex items-center justify-between px-8">
-            <div class="flex items-center gap-2">
-                <span class="material-symbols-outlined text-slate-400">terminal</span>
-                <span class="text-xs font-mono text-slate-400">NODE_WH_01</span>
-            </div>
-            <div class="flex items-center gap-4">
-                <div class="text-right mr-4">
-                    <p class="text-xs font-bold text-slate-500 uppercase">Current Shift</p>
-                    <p class="text-sm font-bold text-warehouse">06:00 - 14:00 (A)</p>
-                </div>
-                <form action="/logout" method="POST">
-                    @csrf
-                    <button class="bg-warehouse text-slate-900 px-4 py-2 rounded-lg text-sm font-bold hover:bg-warehouse/90 transition-all">
-                        End Shift
+    <div :class="sidebarOpen ? 'ml-64' : 'ml-20'" class="transition-all duration-300">
+        <!-- Top Bar -->
+        <header class="bg-white border-b border-gray-200 sticky top-0 z-30">
+            <div class="flex items-center justify-between px-6 py-4">
+                <div class="flex items-center space-x-4">
+                    <button @click="sidebarOpen = !sidebarOpen" class="text-gray-600 hover:text-gray-900">
+                        <span class="material-symbols-outlined text-xl">menu</span>
                     </button>
-                </form>
+                    <h1 class="text-xl font-semibold text-gray-900">@yield('page-title', 'Warehouse Portal')</h1>
+                </div>
+                
+                <div class="flex items-center space-x-4">
+                    <button class="text-gray-600 hover:text-gray-900">
+                        <span class="material-symbols-outlined text-xl">search</span>
+                    </button>
+                    <button class="text-gray-600 hover:text-gray-900">
+                        <span class="material-symbols-outlined text-xl">notifications</span>
+                    </button>
+                </div>
             </div>
         </header>
-        <div class="flex-1 overflow-auto p-8">
+
+        <!-- Page Content -->
+        <main class="p-6">
             @yield('content')
-        </div>
-    </main>
-</div>
+        </main>
+    </div>
 </body>
 </html>

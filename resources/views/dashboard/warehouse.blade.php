@@ -1,82 +1,154 @@
 @extends('layouts.warehouse')
 
-@section('title', 'Warehouse Operations - Nexus ERP')
+@section('title', 'Warehouse Dashboard - ' . $organization->org_name)
+@section('page-title', 'Warehouse Portal')
 
 @section('content')
-<div class="space-y-6">
-    <!-- Header -->
-    <div class="flex items-center justify-between">
-        <div>
-            <h2 class="text-2xl font-bold">Logistics & Receiving</h2>
-            <p class="text-slate-500">Monitor vehicle entries, material arrivals, and storage.</p>
-        </div>
-        <div class="flex gap-2">
-             <button class="bg-slate-800 text-white px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm">qr_code_scanner</span>
-                Scan Gate Pass
-            </button>
-            <button class="bg-warehouse text-slate-900 px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm">add</span>
+<div x-data="warehouseDashboard()" x-init="init()">
+    <!-- Department Header -->
+    <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 mb-6 text-white shadow-lg">
+        <div class="flex items-center justify-between">
+            <div class="flex items-center gap-4">
+                <div class="bg-amber-500 p-4 rounded-xl">
+                    <span class="material-symbols-outlined text-white text-4xl">warehouse</span>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold mb-1">Warehouse Portal</h2>
+                    <p class="text-white/90">{{ $organization->org_name }}</p>
+                </div>
+            </div>
+            <button class="px-6 py-3 bg-amber-500 text-slate-900 font-bold rounded-lg hover:shadow-lg transition-all">
                 New Gate Entry
             </button>
         </div>
     </div>
 
-    <!-- Quick Stats -->
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white dark:bg-slate-900 border-l-4 border-warehouse p-6 rounded-xl shadow-sm">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Expected Today</p>
-            <h3 class="text-3xl font-black">24 ASNs</h3>
-            <p class="text-xs text-slate-400 mt-2">8 Already arrived at gate</p>
-        </div>
-        <div class="bg-white dark:bg-slate-900 border-l-4 border-emerald-500 p-6 rounded-xl shadow-sm">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Gate Verification</p>
-            <h3 class="text-3xl font-black text-emerald-500">12 Pending</h3>
-            <p class="text-xs text-slate-400 mt-2">Average wait time: 14 mins</p>
-        </div>
-        <div class="bg-white dark:bg-slate-900 border-l-4 border-blue-500 p-6 rounded-xl shadow-sm">
-            <p class="text-xs font-bold text-slate-500 uppercase tracking-widest mb-1">Unloading Bays</p>
-            <h3 class="text-3xl font-black text-blue-500">3 / 5 Active</h3>
-            <p class="text-xs text-slate-400 mt-2">Dock 1, 3, 4 occupied</p>
-        </div>
-    </div>
-
-    <!-- Live Inward Tracker -->
-    <div class="bg-white dark:bg-slate-900 rounded-2xl border border-slate-200 dark:border-slate-800 overflow-hidden shadow-sm">
-        <div class="p-6 border-b border-slate-100 dark:border-slate-800">
-            <h4 class="font-bold">Live Receiving Queue</h4>
-        </div>
-        <div class="p-6">
-            <div class="space-y-4">
-                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div class="flex items-center gap-4">
-                        <div class="size-10 bg-emerald-100 text-emerald-700 rounded-full flex items-center justify-center font-bold">01</div>
-                        <div>
-                            <p class="text-sm font-bold">Truck GJ-01-XX-1234</p>
-                            <p class="text-xs text-slate-500">Vendor: Tata Steel • PO: #45021</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                         <span class="px-3 py-1 bg-emerald-500 text-white rounded-lg text-[10px] font-bold">UNLOADING</span>
-                         <button class="text-slate-400 hover:text-slate-900"><span class="material-symbols-outlined">more_vert</span></button>
-                    </div>
+    <!-- Key Metrics Grid -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-amber-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-amber-600 text-2xl">local_shipping</span>
                 </div>
+                <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded">Expected</span>
+            </div>
+            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.expectedToday">0</h3>
+            <p class="text-sm text-gray-600 mb-2">Expected ASNs Today</p>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-green-600 font-semibold" x-text="stats.arrivedToday">0</span>
+                <span class="text-gray-500">already arrived</span>
+            </div>
+        </div>
 
-                <div class="flex items-center justify-between p-4 bg-slate-50 dark:bg-slate-800/50 rounded-xl border border-slate-200 dark:border-slate-700">
-                    <div class="flex items-center gap-4">
-                        <div class="size-10 bg-amber-100 text-amber-700 rounded-full flex items-center justify-center font-bold">02</div>
-                        <div>
-                            <p class="text-sm font-bold">Vehicle MH-12-AB-9876</p>
-                            <p class="text-xs text-slate-500">Vendor: Reliance Poly • PO: #45025</p>
-                        </div>
-                    </div>
-                    <div class="flex items-center gap-3">
-                         <span class="px-3 py-1 bg-amber-500 text-white rounded-lg text-[10px] font-bold">DOC VERIFICATION</span>
-                         <button class="text-slate-400 hover:text-slate-900"><span class="material-symbols-outlined">more_vert</span></button>
-                    </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-green-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-green-600 text-2xl">fact_check</span>
                 </div>
+                <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">Pending</span>
+            </div>
+            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.gateVerification">0</h3>
+            <p class="text-sm text-gray-600 mb-2">Gate Verification</p>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-gray-600">Avg wait:</span>
+                <span class="text-gray-500" x-text="stats.avgWaitTime">0 mins</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-blue-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-blue-600 text-2xl">warehouse</span>
+                </div>
+                <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">Active</span>
+            </div>
+            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.unloadingBays">0</h3>
+            <p class="text-sm text-gray-600 mb-2">Unloading Bays</p>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-gray-500" x-text="stats.bayStatus">0 / 0</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+            <div class="flex items-center justify-between mb-4">
+                <div class="bg-purple-100 p-3 rounded-lg">
+                    <span class="material-symbols-outlined text-purple-600 text-2xl">inventory</span>
+                </div>
+                <span class="text-xs font-semibold text-purple-600 bg-purple-50 px-2 py-1 rounded">Today</span>
+            </div>
+            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.receiptsToday">0</h3>
+            <p class="text-sm text-gray-600 mb-2">Material Receipts</p>
+            <div class="flex items-center gap-2 text-xs">
+                <span class="text-green-600 font-semibold">Completed</span>
             </div>
         </div>
     </div>
+
+    <!-- Live Receiving Queue -->
+    <div class="bg-white rounded-xl border border-gray-200 p-6">
+        <div class="flex items-center justify-between mb-4">
+            <h3 class="text-lg font-bold text-gray-900">Live Receiving Queue</h3>
+            <span class="text-xs font-semibold text-gray-500">Real-time updates</span>
+        </div>
+        <div class="space-y-4">
+            <template x-for="item in receivingQueue" :key="item.id">
+                <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
+                    <div class="flex items-center gap-4">
+                        <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
+                             :class="item.priorityClass" x-text="item.position"></div>
+                        <div>
+                            <p class="text-sm font-bold text-gray-900" x-text="item.vehicle"></p>
+                            <p class="text-xs text-gray-500" x-text="item.details"></p>
+                        </div>
+                    </div>
+                    <div class="flex items-center gap-3">
+                        <span class="px-3 py-1 rounded-lg text-xs font-bold text-white"
+                              :class="item.statusClass" x-text="item.status"></span>
+                    </div>
+                </div>
+            </template>
+        </div>
+    </div>
 </div>
+
+<script>
+function warehouseDashboard() {
+    return {
+        stats: {
+            expectedToday: 0,
+            arrivedToday: 0,
+            gateVerification: 0,
+            avgWaitTime: '0 mins',
+            unloadingBays: 0,
+            bayStatus: '0 / 0',
+            receiptsToday: 0
+        },
+        receivingQueue: [],
+        
+        init() {
+            this.loadStats();
+            this.loadReceivingQueue();
+        },
+        
+        async loadStats() {
+            this.stats = {
+                expectedToday: 24,
+                arrivedToday: 8,
+                gateVerification: 12,
+                avgWaitTime: '14 mins',
+                unloadingBays: 3,
+                bayStatus: '3 / 5',
+                receiptsToday: 15
+            };
+        },
+        
+        async loadReceivingQueue() {
+            this.receivingQueue = [
+                { id: 1, position: '01', vehicle: 'Truck GJ-01-XX-1234', details: 'Vendor: Tata Steel • PO: #45021', status: 'UNLOADING', statusClass: 'bg-green-500', priorityClass: 'bg-green-500' },
+                { id: 2, position: '02', vehicle: 'Vehicle MH-12-AB-9876', details: 'Vendor: Reliance Poly • PO: #45025', status: 'DOC VERIFICATION', statusClass: 'bg-amber-500', priorityClass: 'bg-amber-500' }
+            ];
+        }
+    }
+}
+</script>
 @endsection
