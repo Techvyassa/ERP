@@ -13,18 +13,21 @@ class DefaultRolePermissionSeeder extends Seeder
      * All module codes in the system
      */
     private const MODULES = [
+        'SETTINGS',     // Settings (Roles, Departments, HSN, GST, Currency)
+        'USERS',        // User Management
         'PR',           // Purchase Requisition
         'PO',           // Purchase Order
+        'ASN',          // Advance Shipping Notice
+        'GATE_ENTRY',   // Gate Entry
+        'MR_GRN',       // Material Receipt & GRN
         'GRN',          // Goods Receipt Note
         'QC',           // Quality Control
+        'STOCK',        // Stock/Putaway Management
         'INVOICE',      // Invoice Management
         'PAYMENT',      // Payment Management
         'INVENTORY',    // Inventory Management
         'WAREHOUSE',    // Warehouse Management
         'MATERIAL',     // Material Management
-        'USER_MGMT',    // User Management
-        'ROLE_MGMT',    // Role Management
-        'DEPT_MGMT',    // Department Management
     ];
 
     /**
@@ -69,7 +72,7 @@ class DefaultRolePermissionSeeder extends Seeder
         foreach (self::MODULES as $moduleCode) {
             RolePermission::updateOrCreate(
                 [
-                    'role_id' => $role->role_id,
+                    'role_id' => $role->id,
                     'module_code' => $moduleCode,
                 ],
                 [
@@ -92,7 +95,7 @@ class DefaultRolePermissionSeeder extends Seeder
         foreach (self::MODULES as $moduleCode) {
             RolePermission::updateOrCreate(
                 [
-                    'role_id' => $role->role_id,
+                    'role_id' => $role->id,
                     'module_code' => $moduleCode,
                 ],
                 [
@@ -115,7 +118,7 @@ class DefaultRolePermissionSeeder extends Seeder
         foreach (self::MODULES as $moduleCode) {
             RolePermission::updateOrCreate(
                 [
-                    'role_id' => $role->role_id,
+                    'role_id' => $role->id,
                     'module_code' => $moduleCode,
                 ],
                 [
@@ -138,7 +141,7 @@ class DefaultRolePermissionSeeder extends Seeder
         foreach (self::MODULES as $moduleCode) {
             RolePermission::updateOrCreate(
                 [
-                    'role_id' => $role->role_id,
+                    'role_id' => $role->id,
                     'module_code' => $moduleCode,
                 ],
                 [
