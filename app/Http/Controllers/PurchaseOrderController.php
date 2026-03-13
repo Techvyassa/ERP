@@ -33,6 +33,17 @@ class PurchaseOrderController extends Controller
                 $query->where('vendor_id', $request->input('vendor_id'));
             }
 
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('po_number', 'like', "%{$search}%")
+                        ->orWhereHas('vendor', function ($vq) use ($search) {
+                            $vq->where('vendor_name', 'like', "%{$search}%")
+                              ->orWhere('vendor_code', 'like', "%{$search}%");
+                        });
+                });
+            }
+
             // Pagination (15 per page by default)
             $perPage = $request->input('per_page', 15);
             $purchaseOrders = $query->orderBy('id', 'desc')->paginate($perPage);

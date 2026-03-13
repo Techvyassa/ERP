@@ -410,7 +410,10 @@ Route::middleware(['web.jwt'])->group(function () {
             
             Route::get('/purchase-orders', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "PO List Page WIP";
+                return view('procurement.purchase-orders.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('purchase-orders');
             
             Route::get('/vendors', function ($orgSlug) use ($getOrg) {
