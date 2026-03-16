@@ -427,7 +427,10 @@ Route::middleware(['web.jwt'])->group(function () {
             
             Route::get('/vendors', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Vendor Master Page WIP";
+                return view('procurement.vendors.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('vendors');
             
             Route::get('/asn', function ($orgSlug) use ($getOrg) {
