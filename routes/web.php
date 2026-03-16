@@ -434,6 +434,14 @@ Route::middleware(['web.jwt'])->group(function () {
                 extract($getOrg($orgSlug));
                 return "ASN Tracking Page WIP";
             })->name('asn');
+            
+            Route::get('/po-approval', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.po-approval.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('po-approval');
         });
         
         // Warehouse Portal
