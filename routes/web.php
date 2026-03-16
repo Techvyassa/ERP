@@ -14,6 +14,15 @@ use App\Models\Control\Organization;
 */
 
 // ============================================================================
+// VENDOR PORTAL (Public, token-based)
+// ============================================================================
+Route::get('/vendor/po/{token}', [App\Http\Controllers\VendorPortalController::class, 'viewPO'])->name('vendor.po.view');
+Route::post('/vendor/po/{token}/acknowledge', [App\Http\Controllers\VendorPortalController::class, 'acknowledge'])->name('vendor.po.acknowledge');
+Route::post('/vendor/po/{token}/vendor-approve', [App\Http\Controllers\VendorPortalController::class, 'vendorApprove'])->name('vendor.po.vendor-approve');
+Route::post('/vendor/po/{token}/vendor-reject', [App\Http\Controllers\VendorPortalController::class, 'vendorReject'])->name('vendor.po.vendor-reject');
+Route::post('/vendor/po/{token}/upload-asn', [App\Http\Controllers\VendorPortalController::class, 'uploadASN'])->name('vendor.po.upload-asn');
+
+// ============================================================================
 // PUBLIC ROUTES
 // ============================================================================
 
@@ -444,7 +453,10 @@ Route::middleware(['web.jwt'])->group(function () {
             
             Route::get('/asn', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "ASN Tracking Page WIP";
+                return view('procurement.asn.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('asn');
             
             Route::get('/po-approval', function ($orgSlug) use ($getOrg) {

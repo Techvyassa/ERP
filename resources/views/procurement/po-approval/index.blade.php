@@ -50,10 +50,10 @@
                 <label class="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">Status</label>
                 <select x-model="filters.status" @change="loadPendingPOs()"
                         class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
+                    <option value="">All Status</option>
                     <option value="PENDING_APPROVAL">Pending Approval</option>
                     <option value="DRAFT">Draft</option>
                     <option value="OPEN">Approved</option>
-                    <option value="">All Status</option>
                 </select>
             </div>
             <div>
@@ -155,6 +155,14 @@
                                             class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
                                             title="Reject">
                                         <span class="material-symbols-outlined text-[18px]">cancel</span>
+                                    </button>
+                                    <!-- Send to Vendor — enabled only when OPEN (approved) -->
+                                    <button @click="sendToVendor(po)"
+                                            :disabled="po.status !== 'OPEN' || sending === po.id"
+                                            class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            :title="po.status === 'OPEN' ? 'Send PO to Vendor' : 'Approve PO first to enable sending'">
+                                        <span class="material-symbols-outlined text-[18px]"
+                                              x-text="sending === po.id ? 'hourglass_top' : 'send'"></span>
                                     </button>
                                 </div>
                             </td>
@@ -277,6 +285,15 @@
                                 </button>
                             </div>
                         </template>
+                        <template x-if="selectedPO.status === 'OPEN' || selectedPO.status === 'PARTIAL'">
+                            <button @click="sendToVendor(selectedPO)"
+                                    :disabled="sending === selectedPO.id"
+                                    class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 flex items-center gap-1.5">
+                                <span class="material-symbols-outlined text-base"
+                                      x-text="sending === selectedPO.id ? 'hourglass_top' : 'send'"></span>
+                                <span x-text="sending === selectedPO.id ? 'Sending...' : 'Send to Vendor'"></span>
+                            </button>
+                        </template>
                     </div>
                 </div>
             </template>
@@ -330,6 +347,100 @@
         <span x-text="toast.message"></span>
     </div>
 
+    <!-- ASN CSV Upload Modal -->
+    <div x-show="showASNModal" x-cloak
+         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+         @click.self="showASNModal = false">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
+            <div class="flex items-center justify-between p-6 border-b border-gray-100">
+                <div>
+                    <h2 class="text-lg font-bold text-gray-900">Upload ASN</h2>
+                    <p class="text-sm text-gray-500 mt-0.5" x-text="asnPO ? 'PO: ' + asnPO.po_number : ''"></p>
+                </div>
+                <button @click="showASNModal = false" class="p-2 text-gray-400 hover:text-gray-600 hover:bg-gray-100 rounded-lg">
+                    <span class="material-symbols-outlined text-xl">close</span>
+                </button>
+            </div>
+
+            <div class="p-6 space-y-4">
+                <!-- CSV Template hint -->
+                <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                    <strong>CSV required columns:</strong> po_line_id, material_id, shipped_qty, uom_id<br>
+                    <strong>Optional:</strong> batch_number, lot_number, manufacturing_date (YYYY-MM-DD), expiry_date, pallet_id, sscc, gross_weight, net_weight
+                    <br><button @click="downloadTemplate()" class="mt-1 underline text-blue-700 hover:text-blue-900">Download template CSV</button>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Ship Date *</label>
+                        <input type="date" x-model="asnForm.ship_date"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">ETA *</label>
+                        <input type="date" x-model="asnForm.eta"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Warehouse *</label>
+                        <select x-model="asnForm.warehouse_id"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-400">
+                            <option value="">Select warehouse</option>
+                            <template x-for="wh in warehouses" :key="wh.id">
+                                <option :value="wh.id" x-text="wh.warehouse_name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Carrier</label>
+                        <input type="text" x-model="asnForm.carrier_name" placeholder="e.g. FedEx"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tracking #</label>
+                        <input type="text" x-model="asnForm.tracking_number"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-400">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Vehicle #</label>
+                        <input type="text" x-model="asnForm.vehicle_number"
+                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-400">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Remarks</label>
+                    <input type="text" x-model="asnForm.remarks"
+                           class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-purple-100 focus:border-purple-400">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">CSV File *</label>
+                    <input type="file" accept=".csv,.txt" @change="onCSVSelect($event)"
+                           class="w-full text-sm text-gray-600 file:mr-3 file:py-2 file:px-4 file:rounded-lg file:border-0 file:text-sm file:font-semibold file:bg-purple-50 file:text-purple-700 hover:file:bg-purple-100">
+                    <p class="text-xs text-gray-400 mt-1" x-show="asnForm.fileName" x-text="'Selected: ' + asnForm.fileName"></p>
+                </div>
+
+                <template x-if="asnError">
+                    <p class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-3 py-2" x-text="asnError"></p>
+                </template>
+            </div>
+
+            <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                <button @click="showASNModal = false"
+                        class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition-colors">
+                    Cancel
+                </button>
+                <button @click="submitASN()"
+                        :disabled="asnUploading || !asnForm.csvFile || !asnForm.ship_date || !asnForm.eta || !asnForm.warehouse_id"
+                        class="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base" x-text="asnUploading ? 'hourglass_top' : 'upload_file'"></span>
+                    <span x-text="asnUploading ? 'Uploading...' : 'Upload ASN'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -338,17 +449,25 @@ function poApprovalData() {
         loading: false,
         pendingPOs: [],
         stats: { pending: 0, approved: 0, rejected: 0 },
-        filters: { search: '', status: 'PENDING_APPROVAL', amountRange: '' },
+        filters: { search: '', status: '', amountRange: '' },
         showDetailsModal: false,
         selectedPO: null,
         showRejectModal: false,
         rejectingPO: null,
         rejectReason: '',
+        sending: null,
+        showASNModal: false,
+        asnPO: null,
+        warehouses: [],
+        asnForm: { ship_date: '', eta: '', warehouse_id: '', carrier_name: '', tracking_number: '', vehicle_number: '', remarks: '', csvFile: null, fileName: '' },
+        asnUploading: false,
+        asnError: null,
         toast: { show: false, type: 'success', message: '' },
 
         async init() {
             await this.loadPendingPOs();
             await this.loadStats();
+            await this.loadWarehouses();
         },
 
         getToken() {
@@ -502,7 +621,7 @@ function poApprovalData() {
         },
 
         resetFilters() {
-            this.filters = { search: '', status: 'PENDING_APPROVAL', amountRange: '' };
+            this.filters = { search: '', status: '', amountRange: '' };
             this.loadPendingPOs();
         },
 
@@ -540,6 +659,106 @@ function poApprovalData() {
         formatCurrency(amount) {
             if (amount == null) return '—';
             return new Intl.NumberFormat('en-IN', { style: 'currency', currency: 'INR', maximumFractionDigits: 0 }).format(amount);
+        },
+
+        async loadWarehouses() {
+            try {
+                const data = await this.apiFetch('/api/v1/warehouses?per_page=100');
+                if (data.success && data.data) {
+                    this.warehouses = data.data.warehouses || data.data.data || [];
+                }
+            } catch (e) {}
+        },
+
+        openASNModal(po) {
+            this.asnPO = po;
+            this.asnError = null;
+            this.asnForm = {
+                ship_date: new Date().toISOString().split('T')[0],
+                eta: po.expected_delivery ? po.expected_delivery.split('T')[0] : '',
+                warehouse_id: '',
+                carrier_name: '',
+                tracking_number: '',
+                vehicle_number: '',
+                remarks: '',
+                csvFile: null,
+                fileName: ''
+            };
+            this.showASNModal = true;
+        },
+
+        onCSVSelect(event) {
+            const file = event.target.files[0];
+            if (file) {
+                this.asnForm.csvFile = file;
+                this.asnForm.fileName = file.name;
+            }
+        },
+
+        downloadTemplate() {
+            const headers = 'po_line_id,material_id,shipped_qty,uom_id,batch_number,lot_number,manufacturing_date,expiry_date,pallet_id,sscc,gross_weight,net_weight';
+            const example = '1,1,10.000,1,BATCH001,LOT001,2026-01-01,2027-01-01,,,25.5,24.0';
+            const blob = new Blob([headers + '\n' + example], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a'); a.href = url; a.download = 'asn_template.csv'; a.click();
+            URL.revokeObjectURL(url);
+        },
+
+        async submitASN() {
+            if (!this.asnForm.csvFile || !this.asnForm.ship_date || !this.asnForm.eta || !this.asnForm.warehouse_id) return;
+            this.asnUploading = true;
+            this.asnError = null;
+            try {
+                const token = this.getToken();
+                const fd = new FormData();
+                fd.append('file', this.asnForm.csvFile);
+                fd.append('po_id', this.asnPO.id);
+                fd.append('vendor_id', this.asnPO.vendor_id);
+                fd.append('warehouse_id', this.asnForm.warehouse_id);
+                fd.append('ship_date', this.asnForm.ship_date);
+                fd.append('eta', this.asnForm.eta);
+                if (this.asnForm.carrier_name)    fd.append('carrier_name', this.asnForm.carrier_name);
+                if (this.asnForm.tracking_number) fd.append('tracking_number', this.asnForm.tracking_number);
+                if (this.asnForm.vehicle_number)  fd.append('vehicle_number', this.asnForm.vehicle_number);
+                if (this.asnForm.remarks)         fd.append('remarks', this.asnForm.remarks);
+
+                const res = await fetch('/api/v1/asn/upload-csv', {
+                    method: 'POST',
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' },
+                    body: fd
+                });
+                const data = await res.json();
+                if (data.success) {
+                    this.showASNModal = false;
+                    this.showToast('success', data.message + ' — ' + (data.data.asn.asn_number || ''));
+                } else {
+                    this.asnError = data.message || 'Failed to upload ASN';
+                }
+            } catch (e) {
+                this.asnError = 'Network error. Please try again.';
+            } finally {
+                this.asnUploading = false;
+            }
+        },
+
+        async sendToVendor(po) {
+            if (!confirm(`Send PO ${po.po_number} to vendor via email?`)) return;
+            this.sending = po.id;
+            try {
+                const data = await this.apiFetch(`/api/v1/purchase-orders/${po.id}/send-to-vendor`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' }
+                });
+                if (data.success) {
+                    this.showToast('success', `PO sent to ${data.data.contact_name} (${data.data.sent_to})`);
+                } else {
+                    this.showToast('error', data.message || 'Failed to send PO');
+                }
+            } catch (e) {
+                this.showToast('error', 'An error occurred while sending');
+            } finally {
+                this.sending = null;
+            }
         },
 
         showToast(type, message) {

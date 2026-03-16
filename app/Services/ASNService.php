@@ -36,7 +36,7 @@ class ASNService
     /**
      * Create ASN with line items
      */
-    public function createASN(array $data, int $userId): ASN
+    public function createASN(array $data, ?int $userId): ASN
     {
         return DB::connection('tenant')->transaction(function () use ($data, $userId) {
             // Validate PO
@@ -225,10 +225,10 @@ class ASNService
                 throw new \Exception('PO line item not found or does not belong to this PO');
             }
             
-            if ($poLineItem->material_id !== $item['material_id']) {
-                throw new \Exception('Material ID does not match PO line item');
+            if ((int) $poLineItem->material_id !== (int) $item['material_id']) {
+                throw new \Exception("Material ID mismatch on line {$item['po_line_id']}: expected {$poLineItem->material_id}, got {$item['material_id']}. Use the downloaded CSV template.");
             }
-            
+
             // Check if shipped quantity exceeds remaining PO quantity
             $remainingQty = $poLineItem->ordered_qty - ($poLineItem->received_qty ?? 0);
             if ($item['shipped_qty'] > $remainingQty) {

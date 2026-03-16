@@ -5,11 +5,15 @@ namespace App\Http\Controllers;
 use App\Models\Tenant\PurchaseOrder;
 use App\Models\Tenant\PoLineItem;
 use App\Models\Tenant\GSTTax;
+use App\Models\Tenant\VendorContact;
+use App\Models\Control\Organization;
 use App\Http\Requests\Tenant\StorePurchaseOrderRequest;
 use App\Http\Requests\Tenant\UpdatePurchaseOrderRequest;
+use App\Mail\PurchaseOrderMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
 
 class PurchaseOrderController extends Controller
@@ -566,6 +570,102 @@ class PurchaseOrderController extends Controller
                 'message' => 'Failed to cancel purchase order: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
+    /**
+     * Send PO to vendor via email.
+     * POST /api/v1/purchase-orders/{id}/send-to-vendor
+     */
+    public function sendToVendor(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        try {
+            $purchaseOrder = PurchaseOrder::with([
+                'vendor.contacts',
+                'lineItems.material',
+                'lineItems.uom',
+            ])->findOrFail($id);
+
+            // Only OPEN (approved) POs can be sent
+            if (!in_array($purchaseOrder->status, ['OPEN', 'PARTIAL'])) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'PO_NOT_APPROVED', 'details' => ['current_status' => $purchaseOrder->status]],
+                    'message' => 'Only approved (OPEN) purchase orders can be sent to vendors',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            if (!$purchaseOrder->vendor) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'VENDOR_NOT_FOUND', 'details' => []],
+                    'message' => 'Vendor not found for this purchase order',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
+            }
+
+            // Find primary active contact with email, fallback to any active contact with email
+            $contact = $purchaseOrder->vendor->contacts
+                ->where('is_active', true)
+                ->where('is_primary', true)
+                ->whereNotNull('email')
+                ->first()
+                ?? $purchaseOrder->vendor->contacts
+                    ->where('is_active', true)
+                    ->whereNotNull('email')
+                    ->first();
+
+            if (!$contact || !$contact->email) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'NO_VENDOR_EMAIL', 'details' => []],
+                    'message' => 'No email address found for this vendor. Please add a contact with an email in Vendor Master.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            // Resolve org name from tenant DB name or request
+            $orgName = $request->input('org_name', config('app.name'));
+            $tenantDb = $request->input('tenant_db_name');
+            $org = null;
+            if ($tenantDb) {
+                $org = Organization::where('tenant_db_name', $tenantDb)->first();
+                if ($org) $orgName = $org->org_name;
+            }
+
+            Mail::to($contact->email, $contact->contact_name)
+                ->send(new PurchaseOrderMail(
+                    $purchaseOrder,
+                    $contact->contact_name,
+                    $orgName,
+                    \App\Http\Controllers\VendorPortalController::generateToken($org ? $org->org_slug : '', $purchaseOrder->id)
+                ));
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'sent_to' => $contact->email,
+                    'contact_name' => $contact->contact_name,
+                ],
+                'message' => 'Purchase order sent to ' . $contact->contact_name . ' (' . $contact->email . ')',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'SEND_FAILED', 'details' => []],
+                'message' => 'Failed to send purchase order: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
             ], 500);
         }
     }
