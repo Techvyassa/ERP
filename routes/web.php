@@ -201,6 +201,15 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('departments.index');
         
+        Route::get('/departments/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.departments.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'departmentId' => $id
+            ]);
+        })->name('departments.edit');
+        
         Route::get('/roles', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.roles.index', [
@@ -418,13 +427,24 @@ Route::middleware(['web.jwt'])->group(function () {
             
             Route::get('/vendors', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Vendor Master Page WIP";
+                return view('procurement.vendors.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('vendors');
             
             Route::get('/asn', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return "ASN Tracking Page WIP";
             })->name('asn');
+            
+            Route::get('/po-approval', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.po-approval.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('po-approval');
         });
         
         // Warehouse Portal

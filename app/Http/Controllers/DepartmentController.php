@@ -277,7 +277,6 @@ class DepartmentController extends Controller
                 ->table('dept_role_map')
                 ->join('role_master', 'dept_role_map.role_id', '=', 'role_master.id')
                 ->where('dept_role_map.dept_id', $id)
-                ->where('dept_role_map.is_active', true)
                 ->where('role_master.is_active', true)
                 ->select(
                     'role_master.id as role_id',

@@ -143,7 +143,9 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Department <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.dept_id" required
+                        <select x-model="form.dept_id" 
+                                @change="loadDepartmentRoles(form.dept_id)"
+                                required
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select Department</option>
                             <template x-for="dept in departments" :key="dept.id">
@@ -159,13 +161,17 @@
                             Role <span class="text-red-500">*</span>
                         </label>
                         <select x-model="form.role_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                :disabled="!form.dept_id"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
                             <option value="">Select Role</option>
-                            <template x-for="role in roles" :key="role.id">
-                                <option :value="role.id" x-text="role.role_name"></option>
+                            <template x-for="role in roles" :key="role.role_id || role.id">
+                                <option :value="role.role_id || role.id" x-text="role.role_name"></option>
                             </template>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">→ role_master(role_id)</p>
+                        <p class="text-xs text-gray-500 mt-1">
+                            <span x-show="!form.dept_id" class="text-orange-600">Select department first</span>
+                            <span x-show="form.dept_id">→ role_master(role_id) - filtered by department</span>
+                        </p>
                     </div>
                 </div>
             </div>
@@ -229,6 +235,7 @@ function userForm() {
         loading: false,
         departments: [],
         roles: [],
+        allRoles: [], // Store all roles for reference
         form: {
             employee_code: '',
             email: '',
@@ -246,8 +253,19 @@ function userForm() {
         
         async loadDepartments() {
             try {
-                // TODO: Replace with actual API call
-                this.departments = [];
+                const response = await fetch('/api/v1/departments', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.departments = data.data.departments;
+                } else {
+                    console.error('Failed to load departments:', data.message);
+                }
             } catch (error) {
                 console.error('Failed to load departments:', error);
             }
@@ -255,10 +273,57 @@ function userForm() {
         
         async loadRoles() {
             try {
-                // TODO: Replace with actual API call
-                this.roles = [];
+                const response = await fetch('/api/v1/roles', {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.allRoles = data.data.roles;
+                    // Initially show all roles until department is selected
+                    this.roles = data.data.roles;
+                } else {
+                    console.error('Failed to load roles:', data.message);
+                }
             } catch (error) {
                 console.error('Failed to load roles:', error);
+            }
+        },
+        
+        async loadDepartmentRoles(deptId) {
+            if (!deptId) {
+                // If no department selected, show all roles
+                this.roles = this.allRoles;
+                return;
+            }
+            
+            try {
+                const response = await fetch(`/api/v1/departments/${deptId}/roles`, {
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                if (data.success) {
+                    this.roles = data.data.roles;
+                    // Reset role selection if current role is not in the new list
+                    if (this.form.role_id && !this.roles.find(r => r.role_id == this.form.role_id)) {
+                        this.form.role_id = '';
+                    }
+                } else {
+                    console.error('Failed to load department roles:', data.message);
+                    // Fallback to all roles
+                    this.roles = this.allRoles;
+                }
+            } catch (error) {
+                console.error('Failed to load department roles:', error);
+                // Fallback to all roles
+                this.roles = this.allRoles;
             }
         },
         
@@ -295,21 +360,69 @@ function userForm() {
                 return;
             }
             
+            // Validate required fields
+            if (!this.form.dept_id) {
+                alert('Please select a department!');
+                return;
+            }
+            
+            if (!this.form.role_id) {
+                alert('Please select a role!');
+                return;
+            }
+            
             this.loading = true;
             try {
-                // Prepare form data
-                const formData = { ...this.form };
+                // Split full name into first and last name
+                const nameParts = this.form.full_name.trim().split(' ');
+                const firstName = nameParts[0] || this.form.full_name;
+                const lastName = nameParts.slice(1).join(' ') || firstName;
                 
-                // Remove auto-generate fields if not needed
-                if (formData.auto_generate_code) {
-                    delete formData.manual_prefix;
-                    delete formData.manual_number;
-                    delete formData.employee_code; // Will be generated on backend
+                // Prepare form data
+                const formData = {
+                    email: this.form.email,
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone: this.form.phone || null,
+                    dept_id: parseInt(this.form.dept_id),
+                    role_id: parseInt(this.form.role_id),
+                    password: this.form.password,
+                    is_active: this.form.is_active
+                };
+                
+                // Add employee code - if auto-generate is enabled, generate a temporary one
+                if (this.form.auto_generate_code) {
+                    // Generate a temporary code - backend should handle this properly
+                    formData.employee_code = 'AUTO-' + Date.now();
+                } else {
+                    formData.employee_code = this.form.employee_code;
                 }
                 
-                // TODO: Replace with actual API call
-                alert('User creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(formData, null, 2));
-                // window.location.href = '/users';
+                const response = await fetch('/api/v1/users', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(formData)
+                });
+
+                const data = await response.json();
+                if (data.success) {
+                    alert(data.message || 'User created successfully!');
+                    window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/users" : "/org/" . $organization->org_slug . "/users") }}';
+                } else {
+                    // Show detailed validation errors if available
+                    if (data.error && data.error.details) {
+                        const errors = Object.entries(data.error.details)
+                            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+                            .join('\n');
+                        alert('Validation failed:\n\n' + errors);
+                    } else {
+                        alert(data.message || 'Failed to create user. Please try again.');
+                    }
+                }
             } catch (error) {
                 console.error('Failed to create user:', error);
                 alert('Failed to create user. Please try again.');

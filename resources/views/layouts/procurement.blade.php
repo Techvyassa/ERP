@@ -74,6 +74,14 @@
                     </li>
                     
                     <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/procurement/po-approval") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">pending_actions</span>
+                            <span x-show="sidebarOpen" class="font-medium">PO Approval</span>
+                        </a>
+                    </li>
+                    
+                    <li>
                         <a href="{{ url("/org/{$organization->org_slug}/procurement/vendors") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">store</span>

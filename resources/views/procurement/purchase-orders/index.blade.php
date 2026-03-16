@@ -104,11 +104,14 @@
                                       :class="getStatusClass(po.status)" x-text="po.status"></span>
                             </td>
                             <td class="py-4 px-6 text-right">
-                                <button @click="viewPO(po.id)" class="text-primary hover:text-primary/80 mr-3">
+                                <button @click="viewPO(po.id)" class="text-primary hover:text-primary/80 mr-3" title="View">
                                     <span class="material-symbols-outlined text-lg">visibility</span>
                                 </button>
-                                <button @click="editPO(po.id)" class="text-gray-600 hover:text-gray-800">
+                                <button @click="editPO(po.id)" class="text-gray-600 hover:text-gray-800 mr-3" title="Edit" x-show="po.status === 'DRAFT'">
                                     <span class="material-symbols-outlined text-lg">edit</span>
+                                </button>
+                                <button @click="sendForApproval(po.id)" class="text-green-600 hover:text-green-800" title="Send for Approval" x-show="po.status === 'DRAFT'">
+                                    <span class="material-symbols-outlined text-lg">send</span>
                                 </button>
                             </td>
                         </tr>
@@ -729,6 +732,37 @@ function purchaseOrdersData() {
             } catch (error) {
                 console.error('Error loading PO details:', error);
                 alert('Error loading purchase order details: ' + error.message);
+            }
+        },
+        
+        async sendForApproval(id) {
+            if (!confirm('Are you sure you want to send this purchase order for approval?')) {
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`/api/v1/purchase-orders/${id}/submit`, {
+                    method: 'PATCH',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json',
+                        'Content-Type': 'application/json'
+                    }
+                });
+                
+                const data = await response.json();
+                console.log('Submit response:', data);
+                
+                if (data.success) {
+                    alert('Purchase order sent for approval successfully!');
+                    await this.loadPurchaseOrders();
+                } else {
+                    alert(data.message || 'Failed to send purchase order for approval');
+                }
+            } catch (error) {
+                console.error('Error sending PO for approval:', error);
+                alert('Error sending purchase order for approval: ' + error.message);
             }
         },
         
