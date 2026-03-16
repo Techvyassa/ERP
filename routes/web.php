@@ -226,6 +226,15 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('users.index');
         
+        Route::get('/users/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.users.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'userId' => $id
+            ]);
+        })->name('users.edit');
+        
         Route::get('/approval-matrix', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.approval-matrix.index', [
