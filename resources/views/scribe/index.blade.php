@@ -100,6 +100,9 @@ POST /api/v1/auth/firebase-login</a>
                                 <a href="#endpoints-GETapi-v1-auth-me">Get current authenticated user profile + permissions
 GET /api/v1/auth/me</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-GETapi-v1-debug-my-permissions">
+                                <a href="#endpoints-GETapi-v1-debug-my-permissions">GET api/v1/debug/my-permissions</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-POSTapi-v1-organizations-register">
                                 <a href="#endpoints-POSTapi-v1-organizations-register">Register a new organization
 POST /api/v1/organizations/register</a>
@@ -446,6 +449,9 @@ DELETE /api/v1/vendor-material-map/{id}</a>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-PUTapi-v1-purchase-orders--id-">
                                 <a href="#endpoints-PUTapi-v1-purchase-orders--id-">Update the specified purchase order in storage.</a>
                             </li>
+                                                                                <li class="tocify-item level-2" data-unique="endpoints-PATCHapi-v1-purchase-orders--id--submit">
+                                <a href="#endpoints-PATCHapi-v1-purchase-orders--id--submit">Submit the purchase order for approval.</a>
+                            </li>
                                                                                 <li class="tocify-item level-2" data-unique="endpoints-PATCHapi-v1-purchase-orders--id--approve">
                                 <a href="#endpoints-PATCHapi-v1-purchase-orders--id--approve">Approve the purchase order.</a>
                             </li>
@@ -684,7 +690,7 @@ DELETE /api/v1/admin/feature-controls/{id}</a>
     </ul>
 
     <ul class="toc-footer" id="last-updated">
-        <li>Last updated: March 12, 2026</li>
+        <li>Last updated: March 16, 2026</li>
     </ul>
 </div>
 
@@ -759,7 +765,7 @@ vary: Origin
 <code class="language-json" style="max-height: 300px;">{
     &quot;success&quot;: true,
     &quot;message&quot;: &quot;ERP API is running&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:04+00:00&quot;
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:33+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -1762,8 +1768,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;18f4cbc7-bdec-4883-b05f-04666d28a984&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;1e9b658e-ba2b-4614-bcdd-fa07b7d7e0b8&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:36+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -1840,6 +1846,140 @@ You can check the Dev Tools console for debugging information.</code></pre>
             </div>
                         </form>
 
+                    <h2 id="endpoints-GETapi-v1-debug-my-permissions">GET api/v1/debug/my-permissions</h2>
+
+<p>
+</p>
+
+
+
+<span id="example-requests-GETapi-v1-debug-my-permissions">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request GET \
+    --get "http://localhost/api/v1/debug/my-permissions" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost/api/v1/debug/my-permissions"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "GET",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-GETapi-v1-debug-my-permissions">
+            <blockquote>
+            <p>Example response (401):</p>
+        </blockquote>
+                <details class="annotation">
+            <summary style="cursor: pointer;">
+                <small onclick="textContent = parentElement.parentElement.open ? 'Show headers' : 'Hide headers'">Show headers</small>
+            </summary>
+            <pre><code class="language-http">cache-control: no-cache, private
+content-type: application/json
+vary: Origin
+ </code></pre></details>         <pre>
+
+<code class="language-json" style="max-height: 300px;">{
+    &quot;success&quot;: false,
+    &quot;error&quot;: {
+        &quot;code&quot;: &quot;TOKEN_REQUIRED&quot;,
+        &quot;details&quot;: []
+    },
+    &quot;message&quot;: &quot;Token required&quot;,
+    &quot;request_id&quot;: &quot;b03d695d-cc12-4654-a550-e04fa871019e&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:36+00:00&quot;
+}</code>
+ </pre>
+    </span>
+<span id="execution-results-GETapi-v1-debug-my-permissions" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-GETapi-v1-debug-my-permissions"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-GETapi-v1-debug-my-permissions"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-GETapi-v1-debug-my-permissions" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-GETapi-v1-debug-my-permissions">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-GETapi-v1-debug-my-permissions" data-method="GET"
+      data-path="api/v1/debug/my-permissions"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('GETapi-v1-debug-my-permissions', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-GETapi-v1-debug-my-permissions"
+                    onclick="tryItOut('GETapi-v1-debug-my-permissions');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-GETapi-v1-debug-my-permissions"
+                    onclick="cancelTryOut('GETapi-v1-debug-my-permissions');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-GETapi-v1-debug-my-permissions"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-green">GET</small>
+            <b><code>api/v1/debug/my-permissions</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="GETapi-v1-debug-my-permissions"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="GETapi-v1-debug-my-permissions"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        </form>
+
                     <h2 id="endpoints-POSTapi-v1-organizations-register">Register a new organization
 POST /api/v1/organizations/register</h2>
 
@@ -1876,7 +2016,7 @@ POST /api/v1/organizations/register</h2>
     \"max_users\": 60,
     \"firebase_uid\": \"architecto\",
     \"firebase_token\": \"architecto\",
-    \"provider\": \"google\",
+    \"provider\": \"email\",
     \"photo_url\": \"http:\\/\\/www.bailey.biz\\/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html\",
     \"selected_plan\": \"architecto\"
 }"
@@ -1912,7 +2052,7 @@ let body = {
     "max_users": 60,
     "firebase_uid": "architecto",
     "firebase_token": "architecto",
-    "provider": "google",
+    "provider": "email",
     "photo_url": "http:\/\/www.bailey.biz\/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html",
     "selected_plan": "architecto"
 };
@@ -2222,10 +2362,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="provider"                data-endpoint="POSTapi-v1-organizations-register"
-               value="google"
+               value="email"
                data-component="body">
     <br>
-<p>Example: <code>google</code></p>
+<p>Example: <code>email</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>google</code></li> <li><code>email</code></li></ul>
         </div>
@@ -2312,8 +2452,8 @@ vary: Origin
         &quot;slug&quot;: &quot;architecto&quot;,
         &quot;message&quot;: &quot;This slug is available&quot;
     },
-    &quot;request_id&quot;: &quot;d4a00a25-5084-4c9d-81f7-b14bed3d3bae&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;1d03cbd5-b2e0-4b73-b4be-f3eb4c651117&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:36+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -2593,8 +2733,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;No active subscription found&quot;,
-    &quot;request_id&quot;: &quot;27515157-1c14-4604-9675-440cbb98159c&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;a28c0649-7363-4a17-a49d-e97a4b1d8174&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:36+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -2836,8 +2976,8 @@ vary: Origin
         ]
     },
     &quot;message&quot;: &quot;Subscription plans retrieved successfully&quot;,
-    &quot;request_id&quot;: &quot;c888bfb6-d734-468d-a9d0-4ef4d92b96e3&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;9974da9c-5a36-4cbd-b24a-8c4838480a9b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -2971,8 +3111,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Subscription plan not found&quot;,
-    &quot;request_id&quot;: &quot;8928a777-16aa-4caa-9f6a-5778a9d377cd&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;d9aadfa2-a1cd-4d1a-95a8-775065dcab1f&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3119,8 +3259,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;a7fad263-abc2-49e1-8fa9-37eeb2bbd6c2&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;c2112707-ec66-471e-90c2-3482368eb483&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3513,8 +3653,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;ba42459b-0fe4-4e36-905d-4a1b7a8d0876&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;0945a1db-00f5-4d1e-876c-ed3324a7032e&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3648,8 +3788,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;349c169e-23b3-4603-aa21-2c4d1abce9c9&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;5876db70-0f4d-4da5-ba66-8d2dcc842092&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -3783,8 +3923,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;750ca418-b079-4f36-a059-e209e8f5c863&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;7083d2f0-4992-4e7e-b6e0-f6fd4a9b650e&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -4184,8 +4324,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;79f97d8f-4172-4286-afb8-49e1f5c7f49b&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;b393ee1c-32b1-4b64-b433-cde180bc35eb&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -4319,8 +4459,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;16e0e26f-769b-487a-a005-76d6d43d9747&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;f8815531-70cc-4002-ac1c-fa634fe069ed&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -4606,7 +4746,7 @@ PUT /api/v1/departments/{id}</h2>
     \"dept_name\": \"b\",
     \"parent_dept_id\": 16,
     \"cost_center_code\": \"n\",
-    \"is_active\": true
+    \"is_active\": false
 }"
 </code></pre></div>
 
@@ -4625,7 +4765,7 @@ let body = {
     "dept_name": "b",
     "parent_dept_id": 16,
     "cost_center_code": "n",
-    "is_active": true
+    "is_active": false
 };
 
 fetch(url, {
@@ -4791,7 +4931,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -4977,8 +5117,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;3cec920a-b8f3-42a5-8ad2-b6953c60926d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;b7541ad6-f140-48ad-bacc-49896208eba5&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -5125,8 +5265,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;b87cd980-3e47-4f72-b698-15e0171d2f63&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;6fb2319e-22d3-4a85-a87b-57e2f3df7e31&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -5260,8 +5400,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;dd9047cd-035b-4fc3-aeca-71990300a65b&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:05+00:00&quot;
+    &quot;request_id&quot;: &quot;f6833e7c-9129-4950-81c2-605e944b0d2f&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:37+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -5890,8 +6030,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;2cddd3f2-924f-4cd9-a4e5-a22dec1ecd05&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;b42ec1b3-3950-4d0e-9cbb-0166135c64ed&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -6005,7 +6145,7 @@ PUT /api/v1/roles/{id}/permissions</h2>
             \"can_view\": false,
             \"can_create\": true,
             \"can_edit\": false,
-            \"can_approve\": false,
+            \"can_approve\": true,
             \"can_delete\": true
         }
     ]
@@ -6030,7 +6170,7 @@ let body = {
             "can_view": false,
             "can_create": true,
             "can_edit": false,
-            "can_approve": false,
+            "can_approve": true,
             "can_delete": true
         }
     ]
@@ -6239,7 +6379,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>can_delete</code></b>&nbsp;&nbsp;
@@ -6324,8 +6464,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;2d8f2483-5292-438a-be10-b0e16f5754b3&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;120ed17e-e49d-4e6a-8805-dec93b83533f&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -6459,8 +6599,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;c50cb31f-9d8f-420d-879c-4ab73c2c0f1c&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;5bd95256-c731-4441-a6c1-b191153cad4a&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -7227,8 +7367,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;e4a6d1bc-6af9-467c-a57f-4c489a22562a&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;72394ba5-1342-4592-aa0e-b8a42d9b1b6c&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -7362,8 +7502,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;9ca37ec4-9b33-4a04-996a-99d9814da6c3&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;7b6d92b8-9638-4a1e-8f3a-bf44fc3e2dc0&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -7634,7 +7774,7 @@ PUT /api/v1/hsn-codes/{id}</h2>
     --data "{
     \"description\": \"Eius et animi quos velit et.\",
     \"default_gst_id\": 16,
-    \"is_active\": false
+    \"is_active\": true
 }"
 </code></pre></div>
 
@@ -7652,7 +7792,7 @@ const headers = {
 let body = {
     "description": "Eius et animi quos velit et.",
     "default_gst_id": 16,
-    "is_active": false
+    "is_active": true
 };
 
 fetch(url, {
@@ -7806,7 +7946,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -7992,8 +8132,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;ae592955-bff6-452d-bf07-9ef348f28cf4&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;47282055-45e7-4767-9b92-e18eb1818655&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -8127,8 +8267,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;9cacc127-29d7-4d88-b099-6f7f1a60fc20&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;8c2296cf-809a-4e10-bf2c-5d6d456f4a0c&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -8242,8 +8382,8 @@ POST /api/v1/gst-taxes</h2>
     \"sgst_rate\": 18,
     \"igst_rate\": 8,
     \"ugst_rate\": 24,
-    \"effective_from\": \"2026-03-12T11:36:06\",
-    \"effective_to\": \"2052-04-04\"
+    \"effective_from\": \"2026-03-16T10:05:38\",
+    \"effective_to\": \"2052-04-08\"
 }"
 </code></pre></div>
 
@@ -8265,8 +8405,8 @@ let body = {
     "sgst_rate": 18,
     "igst_rate": 8,
     "ugst_rate": 24,
-    "effective_from": "2026-03-12T11:36:06",
-    "effective_to": "2052-04-04"
+    "effective_from": "2026-03-16T10:05:38",
+    "effective_to": "2052-04-08"
 };
 
 fetch(url, {
@@ -8430,10 +8570,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="POSTapi-v1-gst-taxes"
-               value="2026-03-12T11:36:06"
+               value="2026-03-16T10:05:38"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:06</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:38</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;
@@ -8442,10 +8582,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_to"                data-endpoint="POSTapi-v1-gst-taxes"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-08</code></p>
         </div>
         </form>
 
@@ -8472,9 +8612,9 @@ PUT /api/v1/gst-taxes/{id}</h2>
     \"sgst_rate\": 7,
     \"igst_rate\": 16,
     \"ugst_rate\": 17,
-    \"effective_from\": \"2026-03-12T11:36:06\",
-    \"effective_to\": \"2052-04-04\",
-    \"is_active\": true
+    \"effective_from\": \"2026-03-16T10:05:38\",
+    \"effective_to\": \"2052-04-08\",
+    \"is_active\": false
 }"
 </code></pre></div>
 
@@ -8495,9 +8635,9 @@ let body = {
     "sgst_rate": 7,
     "igst_rate": 16,
     "ugst_rate": 17,
-    "effective_from": "2026-03-12T11:36:06",
-    "effective_to": "2052-04-04",
-    "is_active": true
+    "effective_from": "2026-03-16T10:05:38",
+    "effective_to": "2052-04-08",
+    "is_active": false
 };
 
 fetch(url, {
@@ -8674,10 +8814,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="PUTapi-v1-gst-taxes--id-"
-               value="2026-03-12T11:36:06"
+               value="2026-03-16T10:05:38"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:06</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:38</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;
@@ -8686,10 +8826,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_to"                data-endpoint="PUTapi-v1-gst-taxes--id-"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
@@ -8711,7 +8851,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -8897,8 +9037,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;f15bda93-87ff-4dfe-9ec2-91b07db01e73&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;8c664f0f-709d-40d0-b3ed-de6ee4a52bb1&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -9032,8 +9172,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;1804f453-eca9-4bed-a8e2-730fd9e043b9&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;072c4847-2f03-4d13-aef2-12137438df57&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:38+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -9145,7 +9285,7 @@ POST /api/v1/currencies</h2>
     \"currency_name\": \"n\",
     \"symbol\": \"g\",
     \"exchange_rate\": 12,
-    \"is_base_currency\": true
+    \"is_base_currency\": false
 }"
 </code></pre></div>
 
@@ -9165,7 +9305,7 @@ let body = {
     "currency_name": "n",
     "symbol": "g",
     "exchange_rate": 12,
-    "is_base_currency": true
+    "is_base_currency": false
 };
 
 fetch(url, {
@@ -9318,7 +9458,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -9343,7 +9483,7 @@ PUT /api/v1/currencies/{id}</h2>
     \"currency_name\": \"b\",
     \"symbol\": \"n\",
     \"exchange_rate\": 84,
-    \"is_base_currency\": true,
+    \"is_base_currency\": false,
     \"is_active\": false
 }"
 </code></pre></div>
@@ -9363,7 +9503,7 @@ let body = {
     "currency_name": "b",
     "symbol": "n",
     "exchange_rate": 84,
-    "is_base_currency": true,
+    "is_base_currency": false,
     "is_active": false
 };
 
@@ -9530,7 +9670,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
@@ -9737,8 +9877,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;86981e28-7727-4e9b-bc79-17e0712315b7&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;6e77968c-8121-4932-ac57-05997cbf8d79&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -9879,8 +10019,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;5f6fd897-d80e-4627-b2c3-3e7301cb26b1&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;e9ac726e-b77c-4434-b9f1-6322b3f53903&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -10026,8 +10166,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;8cf2b558-9341-4e5a-b59b-3edf422bb464&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;fd76af8d-2cec-47fa-8e66-a35e35439132&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -10139,7 +10279,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"uom_type\": \"vdljnikhwaykcmyu\",
     \"base_uom_id\": 16,
     \"conversion_factor\": 39,
-    \"auto_generate_code\": false,
+    \"auto_generate_code\": true,
     \"manual_prefix\": \"gzmiyv\",
     \"manual_number\": \"dljnik\"
 }"
@@ -10162,7 +10302,7 @@ let body = {
     "uom_type": "vdljnikhwaykcmyu",
     "base_uom_id": 16,
     "conversion_factor": 39,
-    "auto_generate_code": false,
+    "auto_generate_code": true,
     "manual_prefix": "gzmiyv",
     "manual_number": "dljnik"
 };
@@ -10329,7 +10469,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>manual_prefix</code></b>&nbsp;&nbsp;
@@ -10760,8 +10900,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;fa915911-c893-4f7f-9aff-968428d1fc9a&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;a3a15a7d-b477-49e2-95fa-d413ea672dcd&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -10902,8 +11042,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;0d84eeb9-e1c3-44cb-a97f-ae32d56109cc&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;a45dd73e-f939-4532-948e-d5bea161de6c&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -11049,8 +11189,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;74c72a97-f893-429d-a61a-466606b36dd8&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;7756ba33-f451-45e0-9765-d1ea97dcd2ee&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -11162,7 +11302,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"warehouse_type\": \"ykcmyuwpwlvqwrsi\",
     \"address\": \"architecto\",
     \"incharge_user_id\": 16,
-    \"auto_generate_code\": false,
+    \"auto_generate_code\": true,
     \"manual_prefix\": \"ngzmiy\",
     \"manual_number\": \"vdljni\"
 }"
@@ -11185,7 +11325,7 @@ let body = {
     "warehouse_type": "ykcmyuwpwlvqwrsi",
     "address": "architecto",
     "incharge_user_id": 16,
-    "auto_generate_code": false,
+    "auto_generate_code": true,
     "manual_prefix": "ngzmiy",
     "manual_number": "vdljni"
 };
@@ -11352,7 +11492,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>manual_prefix</code></b>&nbsp;&nbsp;
@@ -11401,7 +11541,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"warehouse_type\": \"ngzmiyvdljnikhwa\",
     \"address\": \"architecto\",
     \"incharge_user_id\": 16,
-    \"is_active\": true
+    \"is_active\": false
 }"
 </code></pre></div>
 
@@ -11421,7 +11561,7 @@ let body = {
     "warehouse_type": "ngzmiyvdljnikhwa",
     "address": "architecto",
     "incharge_user_id": 16,
-    "is_active": true
+    "is_active": false
 };
 
 fetch(url, {
@@ -11599,7 +11739,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -11783,8 +11923,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;ab2be2ec-514e-49dc-9714-f4e5d1308e13&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;d22ad922-6638-4af2-8872-f40fc9ae2e3e&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -11925,8 +12065,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;22ef0856-efe8-426b-a739-5d176bda9cde&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;795ff6d2-da62-4c7a-9cef-a93c2694708b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -12072,8 +12212,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;b3580c25-5c75-4a5a-bfb4-f7265c0d0b11&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;42d75db8-ae0c-47ea-8866-6715e175dba8&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:39+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -12439,7 +12579,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"rack\": \"vdljni\",
     \"shelf\": \"khwayk\",
     \"max_weight_kg\": 54,
-    \"is_active\": true
+    \"is_active\": false
 }"
 </code></pre></div>
 
@@ -12460,7 +12600,7 @@ let body = {
     "rack": "vdljni",
     "shelf": "khwayk",
     "max_weight_kg": 54,
-    "is_active": true
+    "is_active": false
 };
 
 fetch(url, {
@@ -12650,7 +12790,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -12834,8 +12974,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;20e01917-739b-45e5-9890-bc3581f2a5e9&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;3f75b39e-180e-44bc-8039-9f17c6dbbaf0&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -12976,8 +13116,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;2e83f5c8-c761-4dce-a9a8-9323e7151d1e&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;0964e282-8719-4212-b462-c9b4b7ac7916&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -13123,8 +13263,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;43ba2eee-d7d7-4c8d-9df7-0a0538f171e0&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:06+00:00&quot;
+    &quot;request_id&quot;: &quot;ac4bbc1a-bf45-4feb-9ae8-41190c29be85&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -13244,7 +13384,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"shelf_life_days\": 77,
     \"qc_required\": false,
     \"inspection_type\": \"iyvdlj\",
-    \"is_batch_tracked\": false,
+    \"is_batch_tracked\": true,
     \"standard_cost\": 52,
     \"valuation_method\": \"ikhway\",
     \"is_active\": false,
@@ -13279,7 +13419,7 @@ let body = {
     "shelf_life_days": 77,
     "qc_required": false,
     "inspection_type": "iyvdlj",
-    "is_batch_tracked": false,
+    "is_batch_tracked": true,
     "standard_cost": 52,
     "valuation_method": "ikhway",
     "is_active": false,
@@ -13556,7 +13696,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>standard_cost</code></b>&nbsp;&nbsp;
@@ -14229,8 +14369,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;a85c414b-8c78-4b90-9f7b-2f91d385dc95&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;90eee8cb-b7fa-4e94-9f0f-a05851c4c5f4&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -14371,8 +14511,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;948d0f23-4151-4c84-a5f4-24db0e6a653d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;96c9c5ee-e5bc-49f6-ad58-ddbd1abd9d2d&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -14518,8 +14658,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;0512e7b3-d2da-405f-b866-55e2e63d2103&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;05ab1e09-bb7c-445b-9654-94c384ced716&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -14915,7 +15055,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"hsn_code_id\": 16,
     \"standard_cost\": 39,
     \"mrp\": 84,
-    \"is_active\": false
+    \"is_active\": true
 }"
 </code></pre></div>
 
@@ -14938,7 +15078,7 @@ let body = {
     "hsn_code_id": 16,
     "standard_cost": 39,
     "mrp": 84,
-    "is_active": false
+    "is_active": true
 };
 
 fetch(url, {
@@ -15152,7 +15292,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -15337,8 +15477,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;4893fa7a-dc29-488c-ba88-d0b36f65ba9d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;480fd666-617c-4000-ac44-b81ff39515a3&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -15472,8 +15612,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;e927608f-cc12-4b76-ab79-10fcebcf803b&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;655b939b-23f8-497d-b3bd-58aebb24147d&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -15907,8 +16047,8 @@ PUT /api/v1/vendors/{id}</h2>
     \"bank_name\": \"y\",
     \"bank_account_no\": \"k\",
     \"ifsc_code\": \"cmyuwp\",
-    \"is_approved\": false,
-    \"approved_date\": \"2026-03-12T11:36:07\",
+    \"is_approved\": true,
+    \"approved_date\": \"2026-03-16T10:05:40\",
     \"rating_score\": 8,
     \"blacklisted\": true
 }"
@@ -15937,8 +16077,8 @@ let body = {
     "bank_name": "y",
     "bank_account_no": "k",
     "ifsc_code": "cmyuwp",
-    "is_approved": false,
-    "approved_date": "2026-03-12T11:36:07",
+    "is_approved": true,
+    "approved_date": "2026-03-16T10:05:40",
     "rating_score": 8,
     "blacklisted": true
 };
@@ -16214,7 +16354,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>approved_date</code></b>&nbsp;&nbsp;
@@ -16223,10 +16363,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="approved_date"                data-endpoint="PUTapi-v1-vendors--id-"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:40"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:40</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>rating_score</code></b>&nbsp;&nbsp;
@@ -16446,8 +16586,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;12288a60-366a-4601-a6f6-0fd260e80307&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;b6f7c353-1b8f-46f8-84ac-974fccb0a43d&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -16581,8 +16721,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;d073b709-bd9e-4f2b-a054-b81ba0d363a6&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;49448fa7-f3bd-4403-ae11-6537a57a2e74&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:40+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -16908,7 +17048,7 @@ PUT /api/v1/vendor-contacts/{id}</h2>
     \"phone\": \"ykcmyuwpwlvqwrsi\",
     \"email\": \"pfritsch@example.com\",
     \"is_primary\": false,
-    \"is_active\": true
+    \"is_active\": false
 }"
 </code></pre></div>
 
@@ -16929,7 +17069,7 @@ let body = {
     "phone": "ykcmyuwpwlvqwrsi",
     "email": "pfritsch@example.com",
     "is_primary": false,
-    "is_active": true
+    "is_active": false
 };
 
 fetch(url, {
@@ -17117,7 +17257,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
         </form>
 
@@ -17303,8 +17443,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;ca0c077c-b608-45be-b071-2719a9a454d2&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;2099f4cc-30dd-4327-aa5c-b97560e11fe4&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -17438,8 +17578,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;84a882cc-2854-4758-8d70-10533717bba6&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;1a1598c6-8a23-4fb7-bf85-9fc2a38167f3&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -17553,7 +17693,7 @@ POST /api/v1/vendor-material-map</h2>
     \"last_purchase_price\": 84,
     \"lead_time_days\": 12,
     \"min_order_qty\": 77,
-    \"is_preferred\": false
+    \"is_preferred\": true
 }"
 </code></pre></div>
 
@@ -17575,7 +17715,7 @@ let body = {
     "last_purchase_price": 84,
     "lead_time_days": 12,
     "min_order_qty": 77,
-    "is_preferred": false
+    "is_preferred": true
 };
 
 fetch(url, {
@@ -17752,7 +17892,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
         </form>
 
@@ -17778,7 +17918,7 @@ PUT /api/v1/vendor-material-map/{id}</h2>
     \"last_purchase_price\": 39,
     \"lead_time_days\": 84,
     \"min_order_qty\": 12,
-    \"is_preferred\": true,
+    \"is_preferred\": false,
     \"is_active\": true
 }"
 </code></pre></div>
@@ -17799,7 +17939,7 @@ let body = {
     "last_purchase_price": 39,
     "lead_time_days": 84,
     "min_order_qty": 12,
-    "is_preferred": true,
+    "is_preferred": false,
     "is_active": true
 };
 
@@ -17966,7 +18106,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>is_active</code></b>&nbsp;&nbsp;
@@ -18173,8 +18313,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;e42d75a1-1e23-478a-a053-c9781748063f&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;f5e0898e-f392-42c2-a6c1-045d9cae2ac5&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -18307,8 +18447,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;ce322225-1b49-4f34-b203-0ebd359d156f&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;99d1508a-075b-459a-bb0a-027fa203b557&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -18424,9 +18564,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"delivery_terms\": \"iyvdljnikhwaykcm\",
     \"discount_amount\": 50,
     \"freight_charges\": 72,
-    \"po_date\": \"2026-03-12T11:36:07\",
-    \"expected_delivery\": \"2052-04-04\",
-    \"valid_until\": \"2052-04-04\",
+    \"po_date\": \"2026-03-16T10:05:41\",
+    \"expected_delivery\": \"2052-04-08\",
+    \"valid_until\": \"2052-04-08\",
     \"terms_conditions\": \"architecto\",
     \"remarks\": \"architecto\",
     \"line_items\": [
@@ -18438,7 +18578,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"unit_price\": 39,
             \"discount_pct\": 7,
             \"gst_tax_id\": 16,
-            \"scheduled_delivery\": \"2052-04-04\",
+            \"scheduled_delivery\": \"2052-04-08\",
             \"under_delivery_tolerance\": 22,
             \"over_delivery_tolerance\": 7
         }
@@ -18467,9 +18607,9 @@ let body = {
     "delivery_terms": "iyvdljnikhwaykcm",
     "discount_amount": 50,
     "freight_charges": 72,
-    "po_date": "2026-03-12T11:36:07",
-    "expected_delivery": "2052-04-04",
-    "valid_until": "2052-04-04",
+    "po_date": "2026-03-16T10:05:41",
+    "expected_delivery": "2052-04-08",
+    "valid_until": "2052-04-08",
     "terms_conditions": "architecto",
     "remarks": "architecto",
     "line_items": [
@@ -18481,7 +18621,7 @@ let body = {
             "unit_price": 39,
             "discount_pct": 7,
             "gst_tax_id": 16,
-            "scheduled_delivery": "2052-04-04",
+            "scheduled_delivery": "2052-04-08",
             "under_delivery_tolerance": 22,
             "over_delivery_tolerance": 7
         }
@@ -18685,10 +18825,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="po_date"                data-endpoint="POSTapi-v1-purchase-orders"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:41"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:41</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>expected_delivery</code></b>&nbsp;&nbsp;
@@ -18697,10 +18837,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="expected_delivery"                data-endpoint="POSTapi-v1-purchase-orders"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>valid_until</code></b>&nbsp;&nbsp;
@@ -18709,10 +18849,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="valid_until"                data-endpoint="POSTapi-v1-purchase-orders"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>terms_conditions</code></b>&nbsp;&nbsp;
@@ -18839,10 +18979,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.scheduled_delivery"                data-endpoint="POSTapi-v1-purchase-orders"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-08</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>under_delivery_tolerance</code></b>&nbsp;&nbsp;
@@ -18898,9 +19038,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"delivery_terms\": \"iyvdljnikhwaykcm\",
     \"discount_amount\": 50,
     \"freight_charges\": 72,
-    \"po_date\": \"2026-03-12T11:36:07\",
-    \"expected_delivery\": \"2052-04-04\",
-    \"valid_until\": \"2052-04-04\",
+    \"po_date\": \"2026-03-16T10:05:41\",
+    \"expected_delivery\": \"2052-04-08\",
+    \"valid_until\": \"2052-04-08\",
     \"terms_conditions\": \"architecto\",
     \"remarks\": \"architecto\",
     \"line_items\": [
@@ -18913,7 +19053,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"unit_price\": 39,
             \"discount_pct\": 7,
             \"gst_tax_id\": 16,
-            \"scheduled_delivery\": \"2052-04-04\",
+            \"scheduled_delivery\": \"2052-04-08\",
             \"under_delivery_tolerance\": 22,
             \"over_delivery_tolerance\": 7
         }
@@ -18942,9 +19082,9 @@ let body = {
     "delivery_terms": "iyvdljnikhwaykcm",
     "discount_amount": 50,
     "freight_charges": 72,
-    "po_date": "2026-03-12T11:36:07",
-    "expected_delivery": "2052-04-04",
-    "valid_until": "2052-04-04",
+    "po_date": "2026-03-16T10:05:41",
+    "expected_delivery": "2052-04-08",
+    "valid_until": "2052-04-08",
     "terms_conditions": "architecto",
     "remarks": "architecto",
     "line_items": [
@@ -18957,7 +19097,7 @@ let body = {
             "unit_price": 39,
             "discount_pct": 7,
             "gst_tax_id": 16,
-            "scheduled_delivery": "2052-04-04",
+            "scheduled_delivery": "2052-04-08",
             "under_delivery_tolerance": 22,
             "over_delivery_tolerance": 7
         }
@@ -19174,10 +19314,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="po_date"                data-endpoint="PUTapi-v1-purchase-orders--id-"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:41"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:41</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>expected_delivery</code></b>&nbsp;&nbsp;
@@ -19186,10 +19326,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="expected_delivery"                data-endpoint="PUTapi-v1-purchase-orders--id-"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>valid_until</code></b>&nbsp;&nbsp;
@@ -19198,10 +19338,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="valid_until"                data-endpoint="PUTapi-v1-purchase-orders--id-"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>terms_conditions</code></b>&nbsp;&nbsp;
@@ -19340,10 +19480,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.scheduled_delivery"                data-endpoint="PUTapi-v1-purchase-orders--id-"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>po_date</code>. Example: <code>2052-04-08</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>under_delivery_tolerance</code></b>&nbsp;&nbsp;
@@ -19372,6 +19512,130 @@ You can check the Dev Tools console for debugging information.</code></pre>
                                     </details>
         </div>
         </form>
+
+                    <h2 id="endpoints-PATCHapi-v1-purchase-orders--id--submit">Submit the purchase order for approval.</h2>
+
+<p>
+</p>
+
+<p>PATCH /api/v1/purchase-orders/{id}/submit</p>
+
+<span id="example-requests-PATCHapi-v1-purchase-orders--id--submit">
+<blockquote>Example request:</blockquote>
+
+
+<div class="bash-example">
+    <pre><code class="language-bash">curl --request PATCH \
+    "http://localhost/api/v1/purchase-orders/architecto/submit" \
+    --header "Content-Type: application/json" \
+    --header "Accept: application/json"</code></pre></div>
+
+
+<div class="javascript-example">
+    <pre><code class="language-javascript">const url = new URL(
+    "http://localhost/api/v1/purchase-orders/architecto/submit"
+);
+
+const headers = {
+    "Content-Type": "application/json",
+    "Accept": "application/json",
+};
+
+
+fetch(url, {
+    method: "PATCH",
+    headers,
+}).then(response =&gt; response.json());</code></pre></div>
+
+</span>
+
+<span id="example-responses-PATCHapi-v1-purchase-orders--id--submit">
+</span>
+<span id="execution-results-PATCHapi-v1-purchase-orders--id--submit" hidden>
+    <blockquote>Received response<span
+                id="execution-response-status-PATCHapi-v1-purchase-orders--id--submit"></span>:
+    </blockquote>
+    <pre class="json"><code id="execution-response-content-PATCHapi-v1-purchase-orders--id--submit"
+      data-empty-response-text="<Empty response>" style="max-height: 400px;"></code></pre>
+</span>
+<span id="execution-error-PATCHapi-v1-purchase-orders--id--submit" hidden>
+    <blockquote>Request failed with error:</blockquote>
+    <pre><code id="execution-error-message-PATCHapi-v1-purchase-orders--id--submit">
+
+Tip: Check that you&#039;re properly connected to the network.
+If you&#039;re a maintainer of ths API, verify that your API is running and you&#039;ve enabled CORS.
+You can check the Dev Tools console for debugging information.</code></pre>
+</span>
+<form id="form-PATCHapi-v1-purchase-orders--id--submit" data-method="PATCH"
+      data-path="api/v1/purchase-orders/{id}/submit"
+      data-authed="0"
+      data-hasfiles="0"
+      data-isarraybody="0"
+      autocomplete="off"
+      onsubmit="event.preventDefault(); executeTryOut('PATCHapi-v1-purchase-orders--id--submit', this);">
+    <h3>
+        Request&nbsp;&nbsp;&nbsp;
+                    <button type="button"
+                    style="background-color: #8fbcd4; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-tryout-PATCHapi-v1-purchase-orders--id--submit"
+                    onclick="tryItOut('PATCHapi-v1-purchase-orders--id--submit');">Try it out ⚡
+            </button>
+            <button type="button"
+                    style="background-color: #c97a7e; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-canceltryout-PATCHapi-v1-purchase-orders--id--submit"
+                    onclick="cancelTryOut('PATCHapi-v1-purchase-orders--id--submit');" hidden>Cancel 🛑
+            </button>&nbsp;&nbsp;
+            <button type="submit"
+                    style="background-color: #6ac174; padding: 5px 10px; border-radius: 5px; border-width: thin;"
+                    id="btn-executetryout-PATCHapi-v1-purchase-orders--id--submit"
+                    data-initial-text="Send Request 💥"
+                    data-loading-text="⏱ Sending..."
+                    hidden>Send Request 💥
+            </button>
+            </h3>
+            <p>
+            <small class="badge badge-purple">PATCH</small>
+            <b><code>api/v1/purchase-orders/{id}/submit</code></b>
+        </p>
+                <h4 class="fancy-heading-panel"><b>Headers</b></h4>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Content-Type</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Content-Type"                data-endpoint="PATCHapi-v1-purchase-orders--id--submit"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                                <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>Accept</code></b>&nbsp;&nbsp;
+&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="Accept"                data-endpoint="PATCHapi-v1-purchase-orders--id--submit"
+               value="application/json"
+               data-component="header">
+    <br>
+<p>Example: <code>application/json</code></p>
+            </div>
+                        <h4 class="fancy-heading-panel"><b>URL Parameters</b></h4>
+                    <div style="padding-left: 28px; clear: unset;">
+                <b style="line-height: 2;"><code>id</code></b>&nbsp;&nbsp;
+<small>string</small>&nbsp;
+ &nbsp;
+ &nbsp;
+                <input type="text" style="display: none"
+                              name="id"                data-endpoint="PATCHapi-v1-purchase-orders--id--submit"
+               value="architecto"
+               data-component="url">
+    <br>
+<p>The ID of the purchase order. Example: <code>architecto</code></p>
+            </div>
+                    </form>
 
                     <h2 id="endpoints-PATCHapi-v1-purchase-orders--id--approve">Approve the purchase order.</h2>
 
@@ -19678,8 +19942,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;cf5d0e5d-d8d4-4113-bf9f-dc49f4ac0187&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;1ed7f505-22ce-44e9-ba33-c8713eef6027&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -19813,8 +20077,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;184e09cd-6f1d-4442-ab29-92ef2bb39fa2&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;9f8ff5c8-3f85-4da6-be30-ecb69d609d7c&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -19948,8 +20212,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;35bfbdca-e990-493a-b683-ff8d73369db7&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;7814fb8d-a162-4169-aad5-3b3dba069462&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -20096,8 +20360,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;916ad915-8d17-42b5-8e17-d41988ce61a1&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;45666bd6-07b9-4838-b464-57299de3c27f&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -20244,8 +20508,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;edb128bc-03b9-4491-bc9a-083a5608d86c&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;f524b7df-fb1c-4b67-9ad9-572e8da8a2a5&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -20379,8 +20643,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;c0eeced2-f0b8-468c-afad-ccc72bd76229&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;9e133a55-a0d2-4268-85e7-f44cfc19de6b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:41+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -20491,9 +20755,9 @@ POST /api/v1/asn</h2>
     \"po_id\": 16,
     \"vendor_id\": 16,
     \"warehouse_id\": 16,
-    \"ship_date\": \"2026-03-12T11:36:07\",
-    \"eta\": \"2052-04-04\",
-    \"actual_arrival\": \"2026-03-12T11:36:07\",
+    \"ship_date\": \"2026-03-16T10:05:41\",
+    \"eta\": \"2052-04-08\",
+    \"actual_arrival\": \"2026-03-16T10:05:41\",
     \"carrier_name\": \"n\",
     \"tracking_number\": \"g\",
     \"vehicle_number\": \"zmiyvdljnikhwayk\",
@@ -20513,8 +20777,8 @@ POST /api/v1/asn</h2>
             \"uom_id\": 16,
             \"batch_number\": \"n\",
             \"lot_number\": \"g\",
-            \"manufacturing_date\": \"2026-03-12T11:36:07\",
-            \"expiry_date\": \"2052-04-04\",
+            \"manufacturing_date\": \"2026-03-16T10:05:41\",
+            \"expiry_date\": \"2052-04-08\",
             \"pallet_id\": \"n\",
             \"sscc\": \"g\",
             \"gross_weight\": 12,
@@ -20544,9 +20808,9 @@ let body = {
     "po_id": 16,
     "vendor_id": 16,
     "warehouse_id": 16,
-    "ship_date": "2026-03-12T11:36:07",
-    "eta": "2052-04-04",
-    "actual_arrival": "2026-03-12T11:36:07",
+    "ship_date": "2026-03-16T10:05:41",
+    "eta": "2052-04-08",
+    "actual_arrival": "2026-03-16T10:05:41",
     "carrier_name": "n",
     "tracking_number": "g",
     "vehicle_number": "zmiyvdljnikhwayk",
@@ -20566,8 +20830,8 @@ let body = {
             "uom_id": 16,
             "batch_number": "n",
             "lot_number": "g",
-            "manufacturing_date": "2026-03-12T11:36:07",
-            "expiry_date": "2052-04-04",
+            "manufacturing_date": "2026-03-16T10:05:41",
+            "expiry_date": "2052-04-08",
             "pallet_id": "n",
             "sscc": "g",
             "gross_weight": 12,
@@ -20706,10 +20970,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="ship_date"                data-endpoint="POSTapi-v1-asn"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:41"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:41</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>eta</code></b>&nbsp;&nbsp;
@@ -20718,10 +20982,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="eta"                data-endpoint="POSTapi-v1-asn"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>ship_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>ship_date</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>actual_arrival</code></b>&nbsp;&nbsp;
@@ -20730,10 +20994,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="actual_arrival"                data-endpoint="POSTapi-v1-asn"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:41"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:41</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>carrier_name</code></b>&nbsp;&nbsp;
@@ -20956,10 +21220,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.manufacturing_date"                data-endpoint="POSTapi-v1-asn"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:41"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:41</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>expiry_date</code></b>&nbsp;&nbsp;
@@ -20968,10 +21232,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.expiry_date"                data-endpoint="POSTapi-v1-asn"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-08</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>pallet_id</code></b>&nbsp;&nbsp;
@@ -21103,9 +21367,9 @@ PUT /api/v1/asn/{id}</h2>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"ship_date\": \"2026-03-12T11:36:07\",
-    \"eta\": \"2052-04-04\",
-    \"actual_arrival\": \"2026-03-12T11:36:07\",
+    \"ship_date\": \"2026-03-16T10:05:42\",
+    \"eta\": \"2052-04-08\",
+    \"actual_arrival\": \"2026-03-16T10:05:42\",
     \"carrier_name\": \"n\",
     \"tracking_number\": \"g\",
     \"vehicle_number\": \"zmiyvdljnikhwayk\",
@@ -21131,9 +21395,9 @@ const headers = {
 };
 
 let body = {
-    "ship_date": "2026-03-12T11:36:07",
-    "eta": "2052-04-04",
-    "actual_arrival": "2026-03-12T11:36:07",
+    "ship_date": "2026-03-16T10:05:42",
+    "eta": "2052-04-08",
+    "actual_arrival": "2026-03-16T10:05:42",
     "carrier_name": "n",
     "tracking_number": "g",
     "vehicle_number": "zmiyvdljnikhwayk",
@@ -21248,10 +21512,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="ship_date"                data-endpoint="PUTapi-v1-asn--id-"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>eta</code></b>&nbsp;&nbsp;
@@ -21260,10 +21524,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="eta"                data-endpoint="PUTapi-v1-asn--id-"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>ship_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>ship_date</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>actual_arrival</code></b>&nbsp;&nbsp;
@@ -21272,10 +21536,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="actual_arrival"                data-endpoint="PUTapi-v1-asn--id-"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>carrier_name</code></b>&nbsp;&nbsp;
@@ -21955,8 +22219,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;965796f2-8d55-4eed-98e3-68cabb1f3c67&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;9c350b70-beb7-4090-86b1-4d3ff382f5b9&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -22089,8 +22353,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;1ca3d638-ac05-4f4e-b168-181b64b7ab12&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;545531b3-a8a7-4304-9d57-52d2f3f0531f&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -22236,8 +22500,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;95ef56a4-0f20-4d75-9d4b-65bd0ec9a8ac&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;8ecf8bc5-1761-4eaa-a808-4c134be8ea40&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -22383,8 +22647,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;b5048ed0-cd80-4a16-96e2-a08220419169&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;f4d456a1-1c77-4e16-bee9-bc762ce570f2&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -22517,8 +22781,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;8d83bb52-2173-4d5e-90a1-f6bf2812ee18&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;bc65bcde-0754-4229-bf13-1d1c816eff35&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -22635,10 +22899,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"challan_number\": \"m\",
     \"vendor_invoice_number\": \"y\",
     \"eway_bill_number\": \"u\",
-    \"eway_bill_expiry\": \"2026-03-12T11:36:07\",
-    \"material_type\": \"CAPITAL_GOODS\",
+    \"eway_bill_expiry\": \"2026-03-16T10:05:42\",
+    \"material_type\": \"RAW_MATERIAL\",
     \"gross_weight_kg\": 61,
-    \"arrived_at\": \"2026-03-12 11:36:07\",
+    \"arrived_at\": \"2026-03-16 10:05:42\",
     \"remarks\": \"architecto\"
 }"
 </code></pre></div>
@@ -22665,10 +22929,10 @@ let body = {
     "challan_number": "m",
     "vendor_invoice_number": "y",
     "eway_bill_number": "u",
-    "eway_bill_expiry": "2026-03-12T11:36:07",
-    "material_type": "CAPITAL_GOODS",
+    "eway_bill_expiry": "2026-03-16T10:05:42",
+    "material_type": "RAW_MATERIAL",
     "gross_weight_kg": 61,
-    "arrived_at": "2026-03-12 11:36:07",
+    "arrived_at": "2026-03-16 10:05:42",
     "remarks": "architecto"
 };
 
@@ -22881,10 +23145,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="eway_bill_expiry"                data-endpoint="POSTapi-v1-gate-entries"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>material_type</code></b>&nbsp;&nbsp;
@@ -22893,10 +23157,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="material_type"                data-endpoint="POSTapi-v1-gate-entries"
-               value="CAPITAL_GOODS"
+               value="RAW_MATERIAL"
                data-component="body">
     <br>
-<p>Example: <code>CAPITAL_GOODS</code></p>
+<p>Example: <code>RAW_MATERIAL</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>RAW_MATERIAL</code></li> <li><code>PACKAGING</code></li> <li><code>CONSUMABLE</code></li> <li><code>CAPITAL_GOODS</code></li> <li><code>SPARE_PARTS</code></li></ul>
         </div>
@@ -22919,10 +23183,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="arrived_at"                data-endpoint="POSTapi-v1-gate-entries"
-               value="2026-03-12 11:36:07"
+               value="2026-03-16 10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>Y-m-d H:i:s</code>. Example: <code>2026-03-12 11:36:07</code></p>
+<p>Must be a valid date in the format <code>Y-m-d H:i:s</code>. Example: <code>2026-03-16 10:05:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>remarks</code></b>&nbsp;&nbsp;
@@ -22955,16 +23219,16 @@ Must be one of:
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"challan_verified\": true,
+    \"challan_verified\": false,
     \"invoice_verified\": false,
-    \"eway_bill_valid\": true,
-    \"po_status_valid\": false,
+    \"eway_bill_valid\": false,
+    \"po_status_valid\": true,
     \"seal_number\": \"b\",
     \"seal_intact\": false,
-    \"external_damage\": true,
+    \"external_damage\": false,
     \"tare_weight_kg\": 39,
     \"net_weight_kg\": 84,
-    \"weight_variance_flag\": true,
+    \"weight_variance_flag\": false,
     \"dock_assigned\": \"z\",
     \"approval_status\": \"PENDING\",
     \"rejection_reason\": \"architecto\",
@@ -22984,16 +23248,16 @@ const headers = {
 };
 
 let body = {
-    "challan_verified": true,
+    "challan_verified": false,
     "invoice_verified": false,
-    "eway_bill_valid": true,
-    "po_status_valid": false,
+    "eway_bill_valid": false,
+    "po_status_valid": true,
     "seal_number": "b",
     "seal_intact": false,
-    "external_damage": true,
+    "external_damage": false,
     "tare_weight_kg": 39,
     "net_weight_kg": 84,
-    "weight_variance_flag": true,
+    "weight_variance_flag": false,
     "dock_assigned": "z",
     "approval_status": "PENDING",
     "rejection_reason": "architecto",
@@ -23115,7 +23379,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>invoice_verified</code></b>&nbsp;&nbsp;
@@ -23159,7 +23423,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>po_status_valid</code></b>&nbsp;&nbsp;
@@ -23181,7 +23445,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>seal_number</code></b>&nbsp;&nbsp;
@@ -23237,7 +23501,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>tare_weight_kg</code></b>&nbsp;&nbsp;
@@ -23283,7 +23547,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>dock_assigned</code></b>&nbsp;&nbsp;
@@ -23517,8 +23781,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;9f856320-9921-49b8-83b1-396011302b1c&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;c7e78599-693a-47dd-b468-47c3984caa6b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -23664,8 +23928,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;01891d0c-8e48-464b-b38e-7f7a6444ce69&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;acfede1f-0b47-4acf-a7d4-69ec3974c246&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -23811,8 +24075,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;55aa3b9e-2566-4b2c-8b13-638e56192916&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;66379d58-86a4-4c3e-ac27-7dc3cd8cc3c2&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -23945,8 +24209,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;33d45ae1-9842-4654-902e-d769b84c7402&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;4127a7ea-d8ec-442e-8f8d-1247af12cc01&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -24079,8 +24343,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;931958b5-b8b8-4d37-8fbf-80cb863e0567&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;156a4458-3d82-4c90-8373-982a9d9dad98&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -24190,7 +24454,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"ge_id\": 16,
     \"po_id\": 16,
     \"vendor_id\": 16,
-    \"unloading_started_at\": \"2026-03-12 11:36:07\",
+    \"unloading_started_at\": \"2026-03-16 10:05:42\",
     \"remarks\": \"architecto\",
     \"line_items\": [
         {
@@ -24200,10 +24464,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"uom_id\": 16,
             \"rejected_on_arrival\": 4326.41688,
             \"batch_number\": \"m\",
-            \"manufacturing_date\": \"2026-03-12T11:36:07\",
-            \"expiry_date\": \"2052-04-04\",
+            \"manufacturing_date\": \"2026-03-16T10:05:42\",
+            \"expiry_date\": \"2052-04-08\",
             \"provisional_bin_id\": 16,
-            \"damage_found\": true,
+            \"damage_found\": false,
             \"damage_remarks\": \"architecto\"
         }
     ]
@@ -24225,7 +24489,7 @@ let body = {
     "ge_id": 16,
     "po_id": 16,
     "vendor_id": 16,
-    "unloading_started_at": "2026-03-12 11:36:07",
+    "unloading_started_at": "2026-03-16 10:05:42",
     "remarks": "architecto",
     "line_items": [
         {
@@ -24235,10 +24499,10 @@ let body = {
             "uom_id": 16,
             "rejected_on_arrival": 4326.41688,
             "batch_number": "m",
-            "manufacturing_date": "2026-03-12T11:36:07",
-            "expiry_date": "2052-04-04",
+            "manufacturing_date": "2026-03-16T10:05:42",
+            "expiry_date": "2052-04-08",
             "provisional_bin_id": 16,
-            "damage_found": true,
+            "damage_found": false,
             "damage_remarks": "architecto"
         }
     ]
@@ -24369,10 +24633,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="unloading_started_at"                data-endpoint="POSTapi-v1-material-receipts"
-               value="2026-03-12 11:36:07"
+               value="2026-03-16 10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>Y-m-d H:i:s</code>. Example: <code>2026-03-12 11:36:07</code></p>
+<p>Must be a valid date in the format <code>Y-m-d H:i:s</code>. Example: <code>2026-03-16 10:05:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>remarks</code></b>&nbsp;&nbsp;
@@ -24475,10 +24739,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.manufacturing_date"                data-endpoint="POSTapi-v1-material-receipts"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:42</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>expiry_date</code></b>&nbsp;&nbsp;
@@ -24487,10 +24751,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.expiry_date"                data-endpoint="POSTapi-v1-material-receipts"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-08</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>provisional_bin_id</code></b>&nbsp;&nbsp;
@@ -24524,7 +24788,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>true</code></p>
+<p>Example: <code>false</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>damage_remarks</code></b>&nbsp;&nbsp;
@@ -24559,7 +24823,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"unloading_completed_at\": \"2026-03-12 11:36:07\",
+    \"unloading_completed_at\": \"2026-03-16 10:05:42\",
     \"remarks\": \"architecto\",
     \"line_items\": [
         {
@@ -24570,10 +24834,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"uom_id\": 16,
             \"rejected_on_arrival\": 4326.41688,
             \"batch_number\": \"m\",
-            \"manufacturing_date\": \"2026-03-12T11:36:07\",
-            \"expiry_date\": \"2052-04-04\",
+            \"manufacturing_date\": \"2026-03-16T10:05:42\",
+            \"expiry_date\": \"2052-04-08\",
             \"provisional_bin_id\": 16,
-            \"damage_found\": false,
+            \"damage_found\": true,
             \"damage_remarks\": \"architecto\"
         }
     ]
@@ -24592,7 +24856,7 @@ const headers = {
 };
 
 let body = {
-    "unloading_completed_at": "2026-03-12 11:36:07",
+    "unloading_completed_at": "2026-03-16 10:05:42",
     "remarks": "architecto",
     "line_items": [
         {
@@ -24603,10 +24867,10 @@ let body = {
             "uom_id": 16,
             "rejected_on_arrival": 4326.41688,
             "batch_number": "m",
-            "manufacturing_date": "2026-03-12T11:36:07",
-            "expiry_date": "2052-04-04",
+            "manufacturing_date": "2026-03-16T10:05:42",
+            "expiry_date": "2052-04-08",
             "provisional_bin_id": 16,
-            "damage_found": false,
+            "damage_found": true,
             "damage_remarks": "architecto"
         }
     ]
@@ -24714,10 +24978,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="unloading_completed_at"                data-endpoint="PUTapi-v1-material-receipts--id-"
-               value="2026-03-12 11:36:07"
+               value="2026-03-16 10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date in the format <code>Y-m-d H:i:s</code>. Example: <code>2026-03-12 11:36:07</code></p>
+<p>Must be a valid date in the format <code>Y-m-d H:i:s</code>. Example: <code>2026-03-16 10:05:42</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>remarks</code></b>&nbsp;&nbsp;
@@ -24832,10 +25096,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.manufacturing_date"                data-endpoint="PUTapi-v1-material-receipts--id-"
-               value="2026-03-12T11:36:07"
+               value="2026-03-16T10:05:42"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:07</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:42</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>expiry_date</code></b>&nbsp;&nbsp;
@@ -24844,10 +25108,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.expiry_date"                data-endpoint="PUTapi-v1-material-receipts--id-"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-08</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>provisional_bin_id</code></b>&nbsp;&nbsp;
@@ -24881,7 +25145,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
             <code>false</code>
         </label>
     <br>
-<p>Example: <code>false</code></p>
+<p>Example: <code>true</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>damage_remarks</code></b>&nbsp;&nbsp;
@@ -25203,8 +25467,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;794ab718-7d37-465d-baec-66130540e3d5&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:07+00:00&quot;
+    &quot;request_id&quot;: &quot;dc3116bf-8c5d-4769-b555-7b0ab0dbfac7&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:42+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -25350,8 +25614,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;6558217b-c885-479f-b4a7-d8d416172f75&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;4456ec0c-6229-4223-b66b-d17e9a716e51&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -25497,8 +25761,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;45f689ad-5113-47fb-a927-7ed67b9dba29&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;27bf6085-2f4a-44ef-bc5f-61d603bf54f4&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -25644,8 +25908,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;e68486b2-c556-43e6-8a3d-9b627b36b045&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;5f236701-e3c4-4379-9b98-e3f43bfb989a&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -25778,8 +26042,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;20800d64-8b0e-49b5-834a-dee3cc008646&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;8d128650-fc13-409f-be63-9a48096595f8&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -25912,8 +26176,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;3a92b173-a156-4a41-805c-1dbc483f7c62&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;0b0d4981-5469-43a2-90c0-5aa4c87b1121&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -26046,8 +26310,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;66f77160-b190-46db-8fbd-eb6b9910f192&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;713a16ae-e95e-4142-bf29-b810da6ac25d&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -26155,8 +26419,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Accept: application/json" \
     --data "{
     \"mr_id\": 16,
-    \"grn_date\": \"2026-03-12T11:36:08\",
-    \"posting_date\": \"2026-03-12T11:36:08\",
+    \"grn_date\": \"2026-03-16T10:05:43\",
+    \"posting_date\": \"2026-03-16T10:05:43\",
     \"remarks\": \"architecto\",
     \"line_items\": [
         {
@@ -26165,8 +26429,8 @@ You can check the Dev Tools console for debugging information.</code></pre>
             \"accepted_qty\": 4326.41688,
             \"uom_id\": 16,
             \"batch_number\": \"n\",
-            \"manufacturing_date\": \"2026-03-12T11:36:08\",
-            \"expiry_date\": \"2052-04-04\",
+            \"manufacturing_date\": \"2026-03-16T10:05:43\",
+            \"expiry_date\": \"2052-04-08\",
             \"unit_price\": 4326.41688,
             \"tax_rate\": 4326.41688,
             \"warehouse_bin_id\": 16
@@ -26188,8 +26452,8 @@ const headers = {
 
 let body = {
     "mr_id": 16,
-    "grn_date": "2026-03-12T11:36:08",
-    "posting_date": "2026-03-12T11:36:08",
+    "grn_date": "2026-03-16T10:05:43",
+    "posting_date": "2026-03-16T10:05:43",
     "remarks": "architecto",
     "line_items": [
         {
@@ -26198,8 +26462,8 @@ let body = {
             "accepted_qty": 4326.41688,
             "uom_id": 16,
             "batch_number": "n",
-            "manufacturing_date": "2026-03-12T11:36:08",
-            "expiry_date": "2052-04-04",
+            "manufacturing_date": "2026-03-16T10:05:43",
+            "expiry_date": "2052-04-08",
             "unit_price": 4326.41688,
             "tax_rate": 4326.41688,
             "warehouse_bin_id": 16
@@ -26308,10 +26572,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="grn_date"                data-endpoint="POSTapi-v1-grn"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>posting_date</code></b>&nbsp;&nbsp;
@@ -26320,10 +26584,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="posting_date"                data-endpoint="POSTapi-v1-grn"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>remarks</code></b>&nbsp;&nbsp;
@@ -26414,10 +26678,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.manufacturing_date"                data-endpoint="POSTapi-v1-grn"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>expiry_date</code></b>&nbsp;&nbsp;
@@ -26426,10 +26690,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.expiry_date"                data-endpoint="POSTapi-v1-grn"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>. Example: <code>2052-04-08</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>unit_price</code></b>&nbsp;&nbsp;
@@ -26488,16 +26752,16 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"grn_date\": \"2026-03-12T11:36:08\",
-    \"posting_date\": \"2026-03-12T11:36:08\",
+    \"grn_date\": \"2026-03-16T10:05:43\",
+    \"posting_date\": \"2026-03-16T10:05:43\",
     \"remarks\": \"architecto\",
     \"line_items\": [
         {
             \"id\": 16,
             \"accepted_qty\": 4326.41688,
             \"batch_number\": \"m\",
-            \"manufacturing_date\": \"2026-03-12T11:36:08\",
-            \"expiry_date\": \"2026-03-12T11:36:08\",
+            \"manufacturing_date\": \"2026-03-16T10:05:43\",
+            \"expiry_date\": \"2026-03-16T10:05:43\",
             \"warehouse_bin_id\": 16
         }
     ]
@@ -26516,16 +26780,16 @@ const headers = {
 };
 
 let body = {
-    "grn_date": "2026-03-12T11:36:08",
-    "posting_date": "2026-03-12T11:36:08",
+    "grn_date": "2026-03-16T10:05:43",
+    "posting_date": "2026-03-16T10:05:43",
     "remarks": "architecto",
     "line_items": [
         {
             "id": 16,
             "accepted_qty": 4326.41688,
             "batch_number": "m",
-            "manufacturing_date": "2026-03-12T11:36:08",
-            "expiry_date": "2026-03-12T11:36:08",
+            "manufacturing_date": "2026-03-16T10:05:43",
+            "expiry_date": "2026-03-16T10:05:43",
             "warehouse_bin_id": 16
         }
     ]
@@ -26633,10 +26897,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="grn_date"                data-endpoint="PUTapi-v1-grn--id-"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>posting_date</code></b>&nbsp;&nbsp;
@@ -26645,10 +26909,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="posting_date"                data-endpoint="PUTapi-v1-grn--id-"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>remarks</code></b>&nbsp;&nbsp;
@@ -26715,10 +26979,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.manufacturing_date"                data-endpoint="PUTapi-v1-grn--id-"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>expiry_date</code></b>&nbsp;&nbsp;
@@ -26727,10 +26991,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="line_items.0.expiry_date"                data-endpoint="PUTapi-v1-grn--id-"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
                     </div>
                                                                 <div style="margin-left: 14px; clear: unset;">
                         <b style="line-height: 2;"><code>warehouse_bin_id</code></b>&nbsp;&nbsp;
@@ -27073,8 +27337,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;3e677a3a-3c94-4fbf-a5c5-e2ad765fe1bd&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;f1458b39-6c33-4944-9628-fc5e95f1d46e&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -27207,8 +27471,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;93b5ef96-6b85-495e-ac41-85681449d9d6&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;3a73ac0e-ceda-44cf-b1c5-eae10be99342&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -27341,8 +27605,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;03ad9fb9-1859-4d42-ba64-8ac2e9b54ff0&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;2c91591c-355f-478d-b623-dad1dc4c72b8&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -27475,8 +27739,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;81acc723-79ee-45ff-ae19-4079f4aee78e&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;17f942a7-bb6e-4876-86d6-1b208fed85c2&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -27622,8 +27886,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;e5192594-bfa0-4232-9a06-7cbe452d125c&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;a4963e16-e9e0-4e6c-8a67-482c3455ca16&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -27769,8 +28033,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;16fce37e-19b8-4156-89a6-cf6b119c8361&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;ca673c2c-3446-4b9a-bc0f-afe8bd62c4b7&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -27903,8 +28167,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;6256be4f-640e-4583-8923-9eb73aacc6ff&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;4beb3127-b3f9-480a-9237-64560f356c02&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:43+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -28016,9 +28280,9 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"material_id\": 16,
     \"lot_qty\": 4326.41688,
     \"sample_size\": 4326.41688,
-    \"sampling_method\": \"100PCT\",
+    \"sampling_method\": \"SKIP\",
     \"assigned_to\": 16,
-    \"due_by\": \"2052-04-04\",
+    \"due_by\": \"2052-04-08\",
     \"remarks\": \"architecto\"
 }"
 </code></pre></div>
@@ -28040,9 +28304,9 @@ let body = {
     "material_id": 16,
     "lot_qty": 4326.41688,
     "sample_size": 4326.41688,
-    "sampling_method": "100PCT",
+    "sampling_method": "SKIP",
     "assigned_to": 16,
-    "due_by": "2052-04-04",
+    "due_by": "2052-04-08",
     "remarks": "architecto"
 };
 
@@ -28195,10 +28459,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="sampling_method"                data-endpoint="POSTapi-v1-qc"
-               value="100PCT"
+               value="SKIP"
                data-component="body">
     <br>
-<p>Example: <code>100PCT</code></p>
+<p>Example: <code>SKIP</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>AQL</code></li> <li><code>100PCT</code></li> <li><code>SKIP</code></li></ul>
         </div>
@@ -28221,10 +28485,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="due_by"                data-endpoint="POSTapi-v1-qc"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after <code>now</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after <code>now</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>remarks</code></b>&nbsp;&nbsp;
@@ -28259,7 +28523,7 @@ Must be one of:
     --data "{
     \"sample_size\": 4326.41688,
     \"assigned_to\": 16,
-    \"due_by\": \"2026-03-12T11:36:08\",
+    \"due_by\": \"2026-03-16T10:05:43\",
     \"remarks\": \"architecto\"
 }"
 </code></pre></div>
@@ -28278,7 +28542,7 @@ const headers = {
 let body = {
     "sample_size": 4326.41688,
     "assigned_to": 16,
-    "due_by": "2026-03-12T11:36:08",
+    "due_by": "2026-03-16T10:05:43",
     "remarks": "architecto"
 };
 
@@ -28408,10 +28672,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="due_by"                data-endpoint="PUTapi-v1-qc--id-"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:43"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:43</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>remarks</code></b>&nbsp;&nbsp;
@@ -28921,7 +29185,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     --header "Content-Type: application/json" \
     --header "Accept: application/json" \
     --data "{
-    \"decision\": \"ACCEPTED\",
+    \"decision\": \"CONDITIONALLY_ACCEPTED\",
     \"accepted_qty\": 4326.41688,
     \"rejected_qty\": 4326.41688,
     \"override_approved_by\": 16,
@@ -28943,7 +29207,7 @@ const headers = {
 };
 
 let body = {
-    "decision": "ACCEPTED",
+    "decision": "CONDITIONALLY_ACCEPTED",
     "accepted_qty": 4326.41688,
     "rejected_qty": 4326.41688,
     "override_approved_by": 16,
@@ -29054,10 +29318,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="decision"                data-endpoint="POSTapi-v1-qc--id--decision"
-               value="ACCEPTED"
+               value="CONDITIONALLY_ACCEPTED"
                data-component="body">
     <br>
-<p>Example: <code>ACCEPTED</code></p>
+<p>Example: <code>CONDITIONALLY_ACCEPTED</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>ACCEPTED</code></li> <li><code>REJECTED</code></li> <li><code>CONDITIONALLY_ACCEPTED</code></li> <li><code>REWORK_REQUIRED</code></li></ul>
         </div>
@@ -29191,8 +29455,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;2a612621-e224-4bb8-a5c1-025d037571cb&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;89510b66-cee7-47ad-831c-da9dd9baf868&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:44+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -29325,8 +29589,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;5db46529-ba19-4828-8512-d668dfe5480d&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;73182900-3403-496a-a6d1-c951300b7014&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:44+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -29459,8 +29723,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;77d263bf-6903-45e1-9843-686b10d728bc&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;bb424039-8492-4e2f-a5b5-01bf51d9d140&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:44+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -29593,8 +29857,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;99cfa3c6-b667-497b-99cf-82cdcb66f03b&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;77d2a740-79e3-4ab5-8d9e-c74c858af2fa&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:44+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -29727,8 +29991,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;4bcc7be9-b904-484f-a03a-b66ed55aa8e1&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;9ca26e2b-6c0a-4650-86ac-d99a4a533691&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:44+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -29842,7 +30106,7 @@ You can check the Dev Tools console for debugging information.</code></pre>
     \"uom_id\": 16,
     \"source_bin_id\": 16,
     \"destination_bin_id\": 16,
-    \"strategy\": \"EMPTY_BIN\",
+    \"strategy\": \"FIFO\",
     \"assigned_to\": 16,
     \"remarks\": \"architecto\"
 }"
@@ -29867,7 +30131,7 @@ let body = {
     "uom_id": 16,
     "source_bin_id": 16,
     "destination_bin_id": 16,
-    "strategy": "EMPTY_BIN",
+    "strategy": "FIFO",
     "assigned_to": 16,
     "remarks": "architecto"
 };
@@ -30045,10 +30309,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="strategy"                data-endpoint="POSTapi-v1-putaway"
-               value="EMPTY_BIN"
+               value="FIFO"
                data-component="body">
     <br>
-<p>Example: <code>EMPTY_BIN</code></p>
+<p>Example: <code>FIFO</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>MANUAL</code></li> <li><code>FIXED_BIN</code></li> <li><code>EMPTY_BIN</code></li> <li><code>FIFO</code></li> <li><code>FEFO</code></li></ul>
         </div>
@@ -30758,8 +31022,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;2a389862-4af0-40b7-91fb-76c302ef2bdd&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;8c8e5964-0dfb-4e62-9573-a9ea83d3203b&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:44+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -30906,8 +31170,8 @@ vary: Origin
         &quot;details&quot;: []
     },
     &quot;message&quot;: &quot;Token required&quot;,
-    &quot;request_id&quot;: &quot;5eed0643-7b50-42eb-a900-165cfbafb044&quot;,
-    &quot;timestamp&quot;: &quot;2026-03-12T11:36:08+00:00&quot;
+    &quot;request_id&quot;: &quot;a7069bd1-0189-4bec-92df-b76b1455f867&quot;,
+    &quot;timestamp&quot;: &quot;2026-03-16T10:05:44+00:00&quot;
 }</code>
  </pre>
     </span>
@@ -31017,10 +31281,10 @@ POST /api/v1/admin/feature-controls</h2>
     --data "{
     \"org_id\": 16,
     \"feature_key\": \"n\",
-    \"feature_type\": \"BOOLEAN\",
+    \"feature_type\": \"JSON\",
     \"feature_value\": \"architecto\",
-    \"effective_from\": \"2026-03-12T11:36:08\",
-    \"effective_to\": \"2052-04-04\",
+    \"effective_from\": \"2026-03-16T10:05:44\",
+    \"effective_to\": \"2052-04-08\",
     \"notes\": \"architecto\"
 }"
 </code></pre></div>
@@ -31039,10 +31303,10 @@ const headers = {
 let body = {
     "org_id": 16,
     "feature_key": "n",
-    "feature_type": "BOOLEAN",
+    "feature_type": "JSON",
     "feature_value": "architecto",
-    "effective_from": "2026-03-12T11:36:08",
-    "effective_to": "2052-04-04",
+    "effective_from": "2026-03-16T10:05:44",
+    "effective_to": "2052-04-08",
     "notes": "architecto"
 };
 
@@ -31159,10 +31423,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="feature_type"                data-endpoint="POSTapi-v1-admin-feature-controls"
-               value="BOOLEAN"
+               value="JSON"
                data-component="body">
     <br>
-<p>Example: <code>BOOLEAN</code></p>
+<p>Example: <code>JSON</code></p>
 Must be one of:
 <ul style="list-style-type: square;"><li><code>BOOLEAN</code></li> <li><code>NUMERIC</code></li> <li><code>TEXT</code></li> <li><code>JSON</code></li></ul>
         </div>
@@ -31185,10 +31449,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="POSTapi-v1-admin-feature-controls"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:44"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:44</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;
@@ -31197,10 +31461,10 @@ Must be one of:
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_to"                data-endpoint="POSTapi-v1-admin-feature-controls"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>notes</code></b>&nbsp;&nbsp;
@@ -31235,8 +31499,8 @@ PUT /api/v1/admin/feature-controls/{id}</h2>
     --header "Accept: application/json" \
     --data "{
     \"feature_value\": \"architecto\",
-    \"effective_from\": \"2026-03-12T11:36:08\",
-    \"effective_to\": \"2052-04-04\",
+    \"effective_from\": \"2026-03-16T10:05:44\",
+    \"effective_to\": \"2052-04-08\",
     \"notes\": \"architecto\"
 }"
 </code></pre></div>
@@ -31254,8 +31518,8 @@ const headers = {
 
 let body = {
     "feature_value": "architecto",
-    "effective_from": "2026-03-12T11:36:08",
-    "effective_to": "2052-04-04",
+    "effective_from": "2026-03-16T10:05:44",
+    "effective_to": "2052-04-08",
     "notes": "architecto"
 };
 
@@ -31373,10 +31637,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_from"                data-endpoint="PUTapi-v1-admin-feature-controls--id-"
-               value="2026-03-12T11:36:08"
+               value="2026-03-16T10:05:44"
                data-component="body">
     <br>
-<p>Must be a valid date. Example: <code>2026-03-12T11:36:08</code></p>
+<p>Must be a valid date. Example: <code>2026-03-16T10:05:44</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>effective_to</code></b>&nbsp;&nbsp;
@@ -31385,10 +31649,10 @@ You can check the Dev Tools console for debugging information.</code></pre>
  &nbsp;
                 <input type="text" style="display: none"
                               name="effective_to"                data-endpoint="PUTapi-v1-admin-feature-controls--id-"
-               value="2052-04-04"
+               value="2052-04-08"
                data-component="body">
     <br>
-<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-04</code></p>
+<p>Must be a valid date. Must be a date after <code>effective_from</code>. Example: <code>2052-04-08</code></p>
         </div>
                 <div style=" padding-left: 28px;  clear: unset;">
             <b style="line-height: 2;"><code>notes</code></b>&nbsp;&nbsp;

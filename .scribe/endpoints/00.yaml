@@ -30,7 +30,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"success":true,"message":"ERP API is running","timestamp":"2026-03-12T11:36:04+00:00"}'
+        content: '{"success":true,"message":"ERP API is running","timestamp":"2026-03-16T10:05:33+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -414,7 +414,47 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"18f4cbc7-bdec-4883-b05f-04666d28a984","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1e9b658e-ba2b-4614-bcdd-fa07b7d7e0b8","timestamp":"2026-03-16T10:05:36+00:00"}'
+        headers:
+          cache-control: 'no-cache, private'
+          content-type: application/json
+          vary: Origin
+        description: null
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - GET
+    uri: api/v1/debug/my-permissions
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: ''
+      description: ''
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters: []
+    cleanUrlParameters: []
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
+    fileParameters: []
+    responses:
+      -
+        custom: []
+        status: 401
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b03d695d-cc12-4654-a550-e04fa871019e","timestamp":"2026-03-16T10:05:36+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -653,7 +693,7 @@ endpoints:
         name: provider
         description: ''
         required: false
-        example: google
+        example: email
         type: string
         enumValues:
           - google
@@ -702,7 +742,7 @@ endpoints:
       max_users: 60
       firebase_uid: architecto
       firebase_token: architecto
-      provider: google
+      provider: email
       photo_url: 'http://www.bailey.biz/quos-velit-et-fugiat-sunt-nihil-accusantium-harum.html'
       selected_plan: architecto
     fileParameters: []
@@ -755,7 +795,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"success":true,"data":{"available":true,"slug":"architecto","message":"This slug is available"},"request_id":"d4a00a25-5084-4c9d-81f7-b14bed3d3bae","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":true,"data":{"available":true,"slug":"architecto","message":"This slug is available"},"request_id":"1d03cbd5-b2e0-4b73-b4be-f3eb4c651117","timestamp":"2026-03-16T10:05:36+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -842,7 +882,7 @@ endpoints:
       -
         custom: []
         status: 404
-        content: '{"success":false,"error":{"code":"NO_ACTIVE_SUBSCRIPTION","details":[]},"message":"No active subscription found","request_id":"27515157-1c14-4604-9675-440cbb98159c","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"NO_ACTIVE_SUBSCRIPTION","details":[]},"message":"No active subscription found","request_id":"a28c0649-7363-4a17-a49d-e97a4b1d8174","timestamp":"2026-03-16T10:05:36+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -884,7 +924,7 @@ endpoints:
       -
         custom: []
         status: 200
-        content: '{"success":true,"data":{"plans":[{"plan_id":1,"plan_code":"TRIAL","plan_name":"Trial Plan","description":"14-day free trial with full access","billing_cycle":"MONTHLY","price_amount":"0.00","currency_code":"INR","max_users":5,"max_warehouses":1,"max_materials":100,"storage_gb":5,"api_rate_limit_day":1000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":2,"plan_code":"BASIC","plan_name":"Basic Plan","description":"Basic features for small teams","billing_cycle":"MONTHLY","price_amount":"999.00","currency_code":"INR","max_users":10,"max_warehouses":2,"max_materials":500,"storage_gb":10,"api_rate_limit_day":5000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":3,"plan_code":"PROFESSIONAL","plan_name":"Professional Plan","description":"Advanced features for growing businesses","billing_cycle":"MONTHLY","price_amount":"2999.00","currency_code":"INR","max_users":50,"max_warehouses":5,"max_materials":2000,"storage_gb":50,"api_rate_limit_day":20000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30},{"plan_id":4,"plan_code":"ENTERPRISE","plan_name":"Enterprise Plan","description":"Full features for large organizations","billing_cycle":"MONTHLY","price_amount":"9999.00","currency_code":"INR","max_users":999,"max_warehouses":999,"max_materials":999999,"storage_gb":500,"api_rate_limit_day":100000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30}]},"message":"Subscription plans retrieved successfully","request_id":"c888bfb6-d734-468d-a9d0-4ef4d92b96e3","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":true,"data":{"plans":[{"plan_id":1,"plan_code":"TRIAL","plan_name":"Trial Plan","description":"14-day free trial with full access","billing_cycle":"MONTHLY","price_amount":"0.00","currency_code":"INR","max_users":5,"max_warehouses":1,"max_materials":100,"storage_gb":5,"api_rate_limit_day":1000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":2,"plan_code":"BASIC","plan_name":"Basic Plan","description":"Basic features for small teams","billing_cycle":"MONTHLY","price_amount":"999.00","currency_code":"INR","max_users":10,"max_warehouses":2,"max_materials":500,"storage_gb":10,"api_rate_limit_day":5000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","REPORTS","USERS","SETTINGS"],"billing_cycle_days":30},{"plan_id":3,"plan_code":"PROFESSIONAL","plan_name":"Professional Plan","description":"Advanced features for growing businesses","billing_cycle":"MONTHLY","price_amount":"2999.00","currency_code":"INR","max_users":50,"max_warehouses":5,"max_materials":2000,"storage_gb":50,"api_rate_limit_day":20000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30},{"plan_id":4,"plan_code":"ENTERPRISE","plan_name":"Enterprise Plan","description":"Full features for large organizations","billing_cycle":"MONTHLY","price_amount":"9999.00","currency_code":"INR","max_users":999,"max_warehouses":999,"max_materials":999999,"storage_gb":500,"api_rate_limit_day":100000,"modules_included":["PR","PO","GRN","QC","INVOICE","PAYMENT","INVENTORY","WAREHOUSE","REPORTS","SETTINGS"],"billing_cycle_days":30}]},"message":"Subscription plans retrieved successfully","request_id":"9974da9c-5a36-4cbd-b24a-8c4838480a9b","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -938,7 +978,7 @@ endpoints:
       -
         custom: []
         status: 404
-        content: '{"success":false,"error":{"code":"PLAN_NOT_FOUND","details":[]},"message":"Subscription plan not found","request_id":"8928a777-16aa-4caa-9f6a-5778a9d377cd","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"PLAN_NOT_FOUND","details":[]},"message":"Subscription plan not found","request_id":"d9aadfa2-a1cd-4d1a-95a8-775065dcab1f","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -980,7 +1020,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a7fad263-abc2-49e1-8fa9-37eeb2bbd6c2","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c2112707-ec66-471e-90c2-3482368eb483","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1175,7 +1215,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ba42459b-0fe4-4e36-905d-4a1b7a8d0876","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"0945a1db-00f5-4d1e-876c-ed3324a7032e","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1217,7 +1257,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"349c169e-23b3-4603-aa21-2c4d1abce9c9","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5876db70-0f4d-4da5-ba66-8d2dcc842092","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1259,7 +1299,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"750ca418-b079-4f36-a059-e209e8f5c863","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"7083d2f0-4992-4e7e-b6e0-f6fd4a9b650e","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1391,7 +1431,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"79f97d8f-4172-4286-afb8-49e1f5c7f49b","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b393ee1c-32b1-4b64-b433-cde180bc35eb","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1445,7 +1485,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"16e0e26f-769b-487a-a005-76d6d43d9747","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f8815531-70cc-4002-ac1c-fa634fe069ed","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1623,7 +1663,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -1633,7 +1673,7 @@ endpoints:
       dept_name: b
       parent_dept_id: 16
       cost_center_code: 'n'
-      is_active: true
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -1729,7 +1769,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3cec920a-b8f3-42a5-8ad2-b6953c60926d","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b7541ad6-f140-48ad-bacc-49896208eba5","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1771,7 +1811,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b87cd980-3e47-4f72-b698-15e0171d2f63","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"6fb2319e-22d3-4a85-a87b-57e2f3df7e31","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -1825,7 +1865,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"dd9047cd-035b-4fc3-aeca-71990300a65b","timestamp":"2026-03-12T11:36:05+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f6833e7c-9129-4950-81c2-605e944b0d2f","timestamp":"2026-03-16T10:05:37+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2085,7 +2125,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2cddd3f2-924f-4cd9-a4e5-a22dec1ecd05","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b42ec1b3-3950-4d0e-9cbb-0166135c64ed","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2194,7 +2234,7 @@ endpoints:
         name: 'permissions[].can_approve'
         description: ''
         required: true
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -2218,7 +2258,7 @@ endpoints:
           can_view: false
           can_create: true
           can_edit: false
-          can_approve: false
+          can_approve: true
           can_delete: true
     fileParameters: []
     responses: []
@@ -2258,7 +2298,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2d8f2483-5292-438a-be10-b0e16f5754b3","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"120ed17e-e49d-4e6a-8805-dec93b83533f","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2312,7 +2352,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c50cb31f-9d8f-420d-879c-4ab73c2c0f1c","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5bd95256-c731-4441-a6c1-b191153cad4a","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2679,7 +2719,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"e4a6d1bc-6af9-467c-a57f-4c489a22562a","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"72394ba5-1342-4592-aa0e-b8a42d9b1b6c","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2733,7 +2773,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9ca37ec4-9b33-4a04-996a-99d9814da6c3","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"7b6d92b8-9638-4a1e-8f3a-bf44fc3e2dc0","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -2888,7 +2928,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -2897,7 +2937,7 @@ endpoints:
     cleanBodyParameters:
       description: 'Eius et animi quos velit et.'
       default_gst_id: 16
-      is_active: false
+      is_active: true
     fileParameters: []
     responses: []
     responseFields: []
@@ -2981,7 +3021,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ae592955-bff6-452d-bf07-9ef348f28cf4","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"47282055-45e7-4767-9b92-e18eb1818655","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3035,7 +3075,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9cacc127-29d7-4d88-b099-6f7f1a60fc20","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8c2296cf-809a-4e10-bf2c-5d6d456f4a0c","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3142,7 +3182,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: true
-        example: '2026-03-12T11:36:06'
+        example: '2026-03-16T10:05:38'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3153,7 +3193,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3166,8 +3206,8 @@ endpoints:
       sgst_rate: 18
       igst_rate: 8
       ugst_rate: 24
-      effective_from: '2026-03-12T11:36:06'
-      effective_to: '2052-04-04'
+      effective_from: '2026-03-16T10:05:38'
+      effective_to: '2052-04-08'
     fileParameters: []
     responses: []
     responseFields: []
@@ -3283,7 +3323,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:06'
+        example: '2026-03-16T10:05:38'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3294,7 +3334,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -3305,7 +3345,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -3317,9 +3357,9 @@ endpoints:
       sgst_rate: 7
       igst_rate: 16
       ugst_rate: 17
-      effective_from: '2026-03-12T11:36:06'
-      effective_to: '2052-04-04'
-      is_active: true
+      effective_from: '2026-03-16T10:05:38'
+      effective_to: '2052-04-08'
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -3403,7 +3443,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f15bda93-87ff-4dfe-9ec2-91b07db01e73","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8c664f0f-709d-40d0-b3ed-de6ee4a52bb1","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3457,7 +3497,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1804f453-eca9-4bed-a8e2-730fd9e043b9","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"072c4847-2f03-4d13-aef2-12137438df57","timestamp":"2026-03-16T10:05:38+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3542,7 +3582,7 @@ endpoints:
         name: is_base_currency
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -3553,7 +3593,7 @@ endpoints:
       currency_name: 'n'
       symbol: g
       exchange_rate: 12
-      is_base_currency: true
+      is_base_currency: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -3647,7 +3687,7 @@ endpoints:
         name: is_base_currency
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -3668,7 +3708,7 @@ endpoints:
       currency_name: b
       symbol: 'n'
       exchange_rate: 84
-      is_base_currency: true
+      is_base_currency: false
       is_active: false
     fileParameters: []
     responses: []
@@ -3751,7 +3791,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"86981e28-7727-4e9b-bc79-17e0712315b7","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"6e77968c-8121-4932-ac57-05997cbf8d79","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3803,7 +3843,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5f6fd897-d80e-4627-b2c3-3e7301cb26b1","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"e9ac726e-b77c-4434-b9f1-6322b3f53903","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3855,7 +3895,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8cf2b558-9341-4e5a-b59b-3edf422bb464","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"fd76af8d-2cec-47fa-8e66-a35e35439132","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -3949,7 +3989,7 @@ endpoints:
         name: auto_generate_code
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -3983,7 +4023,7 @@ endpoints:
       uom_type: vdljnikhwaykcmyu
       base_uom_id: 16
       conversion_factor: 39
-      auto_generate_code: false
+      auto_generate_code: true
       manual_prefix: gzmiyv
       manual_number: dljnik
     fileParameters: []
@@ -4179,7 +4219,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"fa915911-c893-4f7f-9aff-968428d1fc9a","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a3a15a7d-b477-49e2-95fa-d413ea672dcd","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -4231,7 +4271,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"0d84eeb9-e1c3-44cb-a97f-ae32d56109cc","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a45dd73e-f939-4532-948e-d5bea161de6c","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -4283,7 +4323,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"74c72a97-f893-429d-a61a-466606b36dd8","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"7756ba33-f451-45e0-9765-d1ea97dcd2ee","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -4377,7 +4417,7 @@ endpoints:
         name: auto_generate_code
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -4411,7 +4451,7 @@ endpoints:
       warehouse_type: ykcmyuwpwlvqwrsi
       address: architecto
       incharge_user_id: 16
-      auto_generate_code: false
+      auto_generate_code: true
       manual_prefix: ngzmiy
       manual_number: vdljni
     fileParameters: []
@@ -4516,7 +4556,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -4527,7 +4567,7 @@ endpoints:
       warehouse_type: ngzmiyvdljnikhwa
       address: architecto
       incharge_user_id: 16
-      is_active: true
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -4607,7 +4647,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ab2be2ec-514e-49dc-9714-f4e5d1308e13","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"d22ad922-6638-4af2-8872-f40fc9ae2e3e","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -4659,7 +4699,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"22ef0856-efe8-426b-a739-5d176bda9cde","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"795ff6d2-da62-4c7a-9cef-a93c2694708b","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -4711,7 +4751,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b3580c25-5c75-4a5a-bfb4-f7265c0d0b11","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"42d75db8-ae0c-47ea-8866-6715e175dba8","timestamp":"2026-03-16T10:05:39+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -4967,7 +5007,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -4979,7 +5019,7 @@ endpoints:
       rack: vdljni
       shelf: khwayk
       max_weight_kg: 54
-      is_active: true
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -5059,7 +5099,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"20e01917-739b-45e5-9890-bc3581f2a5e9","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3f75b39e-180e-44bc-8039-9f17c6dbbaf0","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -5111,7 +5151,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2e83f5c8-c761-4dce-a9a8-9323e7151d1e","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"0964e282-8719-4212-b462-c9b4b7ac7916","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -5163,7 +5203,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"43ba2eee-d7d7-4c8d-9df7-0a0538f171e0","timestamp":"2026-03-12T11:36:06+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ac4bbc1a-bf45-4feb-9ae8-41190c29be85","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -5345,7 +5385,7 @@ endpoints:
         name: is_batch_tracked
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -5431,7 +5471,7 @@ endpoints:
       shelf_life_days: 77
       qc_required: false
       inspection_type: iyvdlj
-      is_batch_tracked: false
+      is_batch_tracked: true
       standard_cost: 52
       valuation_method: ikhway
       is_active: false
@@ -5763,7 +5803,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a85c414b-8c78-4b90-9f7b-2f91d385dc95","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"90eee8cb-b7fa-4e94-9f0f-a05851c4c5f4","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -5815,7 +5855,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"948d0f23-4151-4c84-a5f4-24db0e6a653d","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"96c9c5ee-e5bc-49f6-ad58-ddbd1abd9d2d","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -5867,7 +5907,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"0512e7b3-d2da-405f-b866-55e2e63d2103","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"05ab1e09-bb7c-445b-9654-94c384ced716","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -6169,7 +6209,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -6183,7 +6223,7 @@ endpoints:
       hsn_code_id: 16
       standard_cost: 39
       mrp: 84
-      is_active: false
+      is_active: true
     fileParameters: []
     responses: []
     responseFields: []
@@ -6265,7 +6305,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"4893fa7a-dc29-488c-ba88-d0b36f65ba9d","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"480fd666-617c-4000-ac44-b81ff39515a3","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -6319,7 +6359,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"e927608f-cc12-4b76-ab79-10fcebcf803b","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"655b939b-23f8-497d-b3bd-58aebb24147d","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -6716,7 +6756,7 @@ endpoints:
         name: is_approved
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -6727,7 +6767,7 @@ endpoints:
         name: approved_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:40'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -6767,8 +6807,8 @@ endpoints:
       bank_name: 'y'
       bank_account_no: k
       ifsc_code: cmyuwp
-      is_approved: false
-      approved_date: '2026-03-12T11:36:07'
+      is_approved: true
+      approved_date: '2026-03-16T10:05:40'
       rating_score: 8
       blacklisted: true
     fileParameters: []
@@ -6854,7 +6894,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"12288a60-366a-4601-a6f6-0fd260e80307","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b6f7c353-1b8f-46f8-84ac-974fccb0a43d","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -6908,7 +6948,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"d073b709-bd9e-4f2b-a054-b81ba0d363a6","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"49448fa7-f3bd-4403-ae11-6537a57a2e74","timestamp":"2026-03-16T10:05:40+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -7121,7 +7161,7 @@ endpoints:
         name: is_active
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -7133,7 +7173,7 @@ endpoints:
       phone: ykcmyuwpwlvqwrsi
       email: pfritsch@example.com
       is_primary: false
-      is_active: true
+      is_active: false
     fileParameters: []
     responses: []
     responseFields: []
@@ -7217,7 +7257,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ca0c077c-b608-45be-b071-2719a9a454d2","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2099f4cc-30dd-4327-aa5c-b97560e11fe4","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -7271,7 +7311,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"84a882cc-2854-4758-8d70-10533717bba6","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1a1598c6-8a23-4fb7-bf85-9fc2a38167f3","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -7378,7 +7418,7 @@ endpoints:
         name: is_preferred
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -7391,7 +7431,7 @@ endpoints:
       last_purchase_price: 84
       lead_time_days: 12
       min_order_qty: 77
-      is_preferred: false
+      is_preferred: true
     fileParameters: []
     responses: []
     responseFields: []
@@ -7485,7 +7525,7 @@ endpoints:
         name: is_preferred
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -7507,7 +7547,7 @@ endpoints:
       last_purchase_price: 39
       lead_time_days: 84
       min_order_qty: 12
-      is_preferred: true
+      is_preferred: false
       is_active: true
     fileParameters: []
     responses: []
@@ -7590,7 +7630,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"e42d75a1-1e23-478a-a053-c9781748063f","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f5e0898e-f392-42c2-a6c1-045d9cae2ac5","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -7642,7 +7682,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ce322225-1b49-4f34-b203-0ebd359d156f","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"99d1508a-075b-459a-bb0a-027fa203b557","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -7780,7 +7820,7 @@ endpoints:
         name: po_date
         description: 'Must be a valid date.'
         required: true
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:41'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -7791,7 +7831,7 @@ endpoints:
         name: expected_delivery
         description: 'Must be a valid date. Must be a date after or equal to <code>po_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -7802,7 +7842,7 @@ endpoints:
         name: valid_until
         description: 'Must be a valid date. Must be a date after or equal to <code>po_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -7924,7 +7964,7 @@ endpoints:
         name: 'line_items[].scheduled_delivery'
         description: 'Must be a valid date. Must be a date after or equal to <code>po_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -7962,9 +8002,9 @@ endpoints:
       delivery_terms: iyvdljnikhwaykcm
       discount_amount: 50
       freight_charges: 72
-      po_date: '2026-03-12T11:36:07'
-      expected_delivery: '2052-04-04'
-      valid_until: '2052-04-04'
+      po_date: '2026-03-16T10:05:41'
+      expected_delivery: '2052-04-08'
+      valid_until: '2052-04-08'
       terms_conditions: architecto
       remarks: architecto
       line_items:
@@ -7976,7 +8016,7 @@ endpoints:
           unit_price: 39
           discount_pct: 7
           gst_tax_id: 16
-          scheduled_delivery: '2052-04-04'
+          scheduled_delivery: '2052-04-08'
           under_delivery_tolerance: 22
           over_delivery_tolerance: 7
     fileParameters: []
@@ -8125,7 +8165,7 @@ endpoints:
         name: po_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:41'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -8136,7 +8176,7 @@ endpoints:
         name: expected_delivery
         description: 'Must be a valid date. Must be a date after or equal to <code>po_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -8147,7 +8187,7 @@ endpoints:
         name: valid_until
         description: 'Must be a valid date. Must be a date after or equal to <code>po_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -8279,7 +8319,7 @@ endpoints:
         name: 'line_items[].scheduled_delivery'
         description: 'Must be a valid date. Must be a date after or equal to <code>po_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -8317,9 +8357,9 @@ endpoints:
       delivery_terms: iyvdljnikhwaykcm
       discount_amount: 50
       freight_charges: 72
-      po_date: '2026-03-12T11:36:07'
-      expected_delivery: '2052-04-04'
-      valid_until: '2052-04-04'
+      po_date: '2026-03-16T10:05:41'
+      expected_delivery: '2052-04-08'
+      valid_until: '2052-04-08'
       terms_conditions: architecto
       remarks: architecto
       line_items:
@@ -8332,9 +8372,52 @@ endpoints:
           unit_price: 39
           discount_pct: 7
           gst_tax_id: 16
-          scheduled_delivery: '2052-04-04'
+          scheduled_delivery: '2052-04-08'
           under_delivery_tolerance: 22
           over_delivery_tolerance: 7
+    fileParameters: []
+    responses: []
+    responseFields: []
+    auth: []
+    controller: null
+    method: null
+    route: null
+  -
+    custom: []
+    httpMethods:
+      - PATCH
+    uri: 'api/v1/purchase-orders/{id}/submit'
+    metadata:
+      custom: []
+      groupName: Endpoints
+      groupDescription: ''
+      subgroup: ''
+      subgroupDescription: ''
+      title: 'Submit the purchase order for approval.'
+      description: 'PATCH /api/v1/purchase-orders/{id}/submit'
+      authenticated: false
+      deprecated: false
+    headers:
+      Content-Type: application/json
+      Accept: application/json
+    urlParameters:
+      id:
+        custom: []
+        name: id
+        description: 'The ID of the purchase order.'
+        required: true
+        example: architecto
+        type: string
+        enumValues: []
+        exampleWasSpecified: false
+        nullable: false
+        deprecated: false
+    cleanUrlParameters:
+      id: architecto
+    queryParameters: []
+    cleanQueryParameters: []
+    bodyParameters: []
+    cleanBodyParameters: []
     fileParameters: []
     responses: []
     responseFields: []
@@ -8459,7 +8542,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"cf5d0e5d-d8d4-4113-bf9f-dc49f4ac0187","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1ed7f505-22ce-44e9-ba33-c8713eef6027","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -8501,7 +8584,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"184e09cd-6f1d-4442-ab29-92ef2bb39fa2","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9f8ff5c8-3f85-4da6-be30-ecb69d609d7c","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -8555,7 +8638,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"35bfbdca-e990-493a-b683-ff8d73369db7","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"7814fb8d-a162-4169-aad5-3b3dba069462","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -8609,7 +8692,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"916ad915-8d17-42b5-8e17-d41988ce61a1","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"45666bd6-07b9-4838-b464-57299de3c27f","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -8651,7 +8734,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"edb128bc-03b9-4491-bc9a-083a5608d86c","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f524b7df-fb1c-4b67-9ad9-572e8da8a2a5","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -8705,7 +8788,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c0eeced2-f0b8-468c-afad-ccc72bd76229","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9e133a55-a0d2-4268-85e7-f44cfc19de6b","timestamp":"2026-03-16T10:05:41+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -8779,7 +8862,7 @@ endpoints:
         name: ship_date
         description: 'Must be a valid date.'
         required: true
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:41'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -8790,7 +8873,7 @@ endpoints:
         name: eta
         description: 'Must be a valid date. Must be a date after or equal to <code>ship_date</code>.'
         required: true
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -8801,7 +8884,7 @@ endpoints:
         name: actual_arrival
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:41'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9011,7 +9094,7 @@ endpoints:
         name: 'line_items[].manufacturing_date'
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:41'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9022,7 +9105,7 @@ endpoints:
         name: 'line_items[].expiry_date'
         description: 'Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9131,9 +9214,9 @@ endpoints:
       po_id: 16
       vendor_id: 16
       warehouse_id: 16
-      ship_date: '2026-03-12T11:36:07'
-      eta: '2052-04-04'
-      actual_arrival: '2026-03-12T11:36:07'
+      ship_date: '2026-03-16T10:05:41'
+      eta: '2052-04-08'
+      actual_arrival: '2026-03-16T10:05:41'
       carrier_name: 'n'
       tracking_number: g
       vehicle_number: zmiyvdljnikhwayk
@@ -9153,8 +9236,8 @@ endpoints:
           uom_id: 16
           batch_number: 'n'
           lot_number: g
-          manufacturing_date: '2026-03-12T11:36:07'
-          expiry_date: '2052-04-04'
+          manufacturing_date: '2026-03-16T10:05:41'
+          expiry_date: '2052-04-08'
           pallet_id: 'n'
           sscc: g
           gross_weight: 12
@@ -9213,7 +9296,7 @@ endpoints:
         name: ship_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9224,7 +9307,7 @@ endpoints:
         name: eta
         description: 'Must be a valid date. Must be a date after or equal to <code>ship_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9235,7 +9318,7 @@ endpoints:
         name: actual_arrival
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9352,9 +9435,9 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      ship_date: '2026-03-12T11:36:07'
-      eta: '2052-04-04'
-      actual_arrival: '2026-03-12T11:36:07'
+      ship_date: '2026-03-16T10:05:42'
+      eta: '2052-04-08'
+      actual_arrival: '2026-03-16T10:05:42'
       carrier_name: 'n'
       tracking_number: g
       vehicle_number: zmiyvdljnikhwayk
@@ -9581,7 +9664,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"965796f2-8d55-4eed-98e3-68cabb1f3c67","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9c350b70-beb7-4090-86b1-4d3ff382f5b9","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -9633,7 +9716,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"1ca3d638-ac05-4f4e-b168-181b64b7ab12","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"545531b3-a8a7-4304-9d57-52d2f3f0531f","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -9685,7 +9768,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"95ef56a4-0f20-4d75-9d4b-65bd0ec9a8ac","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8ecf8bc5-1761-4eaa-a808-4c134be8ea40","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -9725,7 +9808,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"b5048ed0-cd80-4a16-96e2-a08220419169","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f4d456a1-1c77-4e16-bee9-bc762ce570f2","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -9777,7 +9860,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8d83bb52-2173-4d5e-90a1-f6bf2812ee18","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"bc65bcde-0754-4229-bf13-1d1c816eff35","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -9926,7 +10009,7 @@ endpoints:
         name: eway_bill_expiry
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9937,7 +10020,7 @@ endpoints:
         name: material_type
         description: ''
         required: true
-        example: CAPITAL_GOODS
+        example: RAW_MATERIAL
         type: string
         enumValues:
           - RAW_MATERIAL
@@ -9964,7 +10047,7 @@ endpoints:
         name: arrived_at
         description: 'Must be a valid date in the format <code>Y-m-d H:i:s</code>.'
         required: true
-        example: '2026-03-12 11:36:07'
+        example: '2026-03-16 10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -9992,10 +10075,10 @@ endpoints:
       challan_number: m
       vendor_invoice_number: 'y'
       eway_bill_number: u
-      eway_bill_expiry: '2026-03-12T11:36:07'
-      material_type: CAPITAL_GOODS
+      eway_bill_expiry: '2026-03-16T10:05:42'
+      material_type: RAW_MATERIAL
       gross_weight_kg: 61
-      arrived_at: '2026-03-12 11:36:07'
+      arrived_at: '2026-03-16 10:05:42'
       remarks: architecto
     fileParameters: []
     responses: []
@@ -10044,7 +10127,7 @@ endpoints:
         name: challan_verified
         description: ''
         required: true
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -10066,7 +10149,7 @@ endpoints:
         name: eway_bill_valid
         description: ''
         required: true
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -10077,7 +10160,7 @@ endpoints:
         name: po_status_valid
         description: ''
         required: true
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -10110,7 +10193,7 @@ endpoints:
         name: external_damage
         description: ''
         required: true
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -10143,7 +10226,7 @@ endpoints:
         name: weight_variance_flag
         description: ''
         required: true
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -10197,16 +10280,16 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      challan_verified: true
+      challan_verified: false
       invoice_verified: false
-      eway_bill_valid: true
-      po_status_valid: false
+      eway_bill_valid: false
+      po_status_valid: true
       seal_number: b
       seal_intact: false
-      external_damage: true
+      external_damage: false
       tare_weight_kg: 39
       net_weight_kg: 84
-      weight_variance_flag: true
+      weight_variance_flag: false
       dock_assigned: z
       approval_status: PENDING
       rejection_reason: architecto
@@ -10302,7 +10385,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9f856320-9921-49b8-83b1-396011302b1c","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"c7e78599-693a-47dd-b468-47c3984caa6b","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -10354,7 +10437,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"01891d0c-8e48-464b-b38e-7f7a6444ce69","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"acfede1f-0b47-4acf-a7d4-69ec3974c246","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -10394,7 +10477,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"55aa3b9e-2566-4b2c-8b13-638e56192916","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"66379d58-86a4-4c3e-ac27-7dc3cd8cc3c2","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -10434,7 +10517,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"33d45ae1-9842-4654-902e-d769b84c7402","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"4127a7ea-d8ec-442e-8f8d-1247af12cc01","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -10486,7 +10569,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"931958b5-b8b8-4d37-8fbf-80cb863e0567","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"156a4458-3d82-4c90-8373-982a9d9dad98","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -10558,7 +10641,7 @@ endpoints:
         name: unloading_started_at
         description: 'Must be a valid date in the format <code>Y-m-d H:i:s</code>.'
         required: false
-        example: '2026-03-12 11:36:07'
+        example: '2026-03-16 10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -10658,7 +10741,7 @@ endpoints:
         name: 'line_items[].manufacturing_date'
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -10669,7 +10752,7 @@ endpoints:
         name: 'line_items[].expiry_date'
         description: 'Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -10691,7 +10774,7 @@ endpoints:
         name: 'line_items[].damage_found'
         description: ''
         required: false
-        example: true
+        example: false
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -10712,7 +10795,7 @@ endpoints:
       ge_id: 16
       po_id: 16
       vendor_id: 16
-      unloading_started_at: '2026-03-12 11:36:07'
+      unloading_started_at: '2026-03-16 10:05:42'
       remarks: architecto
       line_items:
         -
@@ -10722,10 +10805,10 @@ endpoints:
           uom_id: 16
           rejected_on_arrival: 4326.41688
           batch_number: m
-          manufacturing_date: '2026-03-12T11:36:07'
-          expiry_date: '2052-04-04'
+          manufacturing_date: '2026-03-16T10:05:42'
+          expiry_date: '2052-04-08'
           provisional_bin_id: 16
-          damage_found: true
+          damage_found: false
           damage_remarks: architecto
     fileParameters: []
     responses: []
@@ -10774,7 +10857,7 @@ endpoints:
         name: unloading_completed_at
         description: 'Must be a valid date in the format <code>Y-m-d H:i:s</code>.'
         required: false
-        example: '2026-03-12 11:36:07'
+        example: '2026-03-16 10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -10884,7 +10967,7 @@ endpoints:
         name: 'line_items[].manufacturing_date'
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:07'
+        example: '2026-03-16T10:05:42'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -10895,7 +10978,7 @@ endpoints:
         name: 'line_items[].expiry_date'
         description: 'Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -10917,7 +11000,7 @@ endpoints:
         name: 'line_items[].damage_found'
         description: ''
         required: false
-        example: false
+        example: true
         type: boolean
         enumValues: []
         exampleWasSpecified: false
@@ -10935,7 +11018,7 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      unloading_completed_at: '2026-03-12 11:36:07'
+      unloading_completed_at: '2026-03-16 10:05:42'
       remarks: architecto
       line_items:
         -
@@ -10946,10 +11029,10 @@ endpoints:
           uom_id: 16
           rejected_on_arrival: 4326.41688
           batch_number: m
-          manufacturing_date: '2026-03-12T11:36:07'
-          expiry_date: '2052-04-04'
+          manufacturing_date: '2026-03-16T10:05:42'
+          expiry_date: '2052-04-08'
           provisional_bin_id: 16
-          damage_found: false
+          damage_found: true
           damage_remarks: architecto
     fileParameters: []
     responses: []
@@ -11085,7 +11168,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"794ab718-7d37-465d-baec-66130540e3d5","timestamp":"2026-03-12T11:36:07+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"dc3116bf-8c5d-4769-b555-7b0ab0dbfac7","timestamp":"2026-03-16T10:05:42+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11137,7 +11220,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"6558217b-c885-479f-b4a7-d8d416172f75","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"4456ec0c-6229-4223-b66b-d17e9a716e51","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11189,7 +11272,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"45f689ad-5113-47fb-a927-7ed67b9dba29","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"27bf6085-2f4a-44ef-bc5f-61d603bf54f4","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11229,7 +11312,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"e68486b2-c556-43e6-8a3d-9b627b36b045","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5f236701-e3c4-4379-9b98-e3f43bfb989a","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11269,7 +11352,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"20800d64-8b0e-49b5-834a-dee3cc008646","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8d128650-fc13-409f-be63-9a48096595f8","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11309,7 +11392,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3a92b173-a156-4a41-805c-1dbc483f7c62","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"0b0d4981-5469-43a2-90c0-5aa4c87b1121","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11361,7 +11444,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"66f77160-b190-46db-8fbd-eb6b9910f192","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"713a16ae-e95e-4142-bf29-b810da6ac25d","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11411,7 +11494,7 @@ endpoints:
         name: grn_date
         description: 'Must be a valid date.'
         required: true
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11422,7 +11505,7 @@ endpoints:
         name: posting_date
         description: 'Must be a valid date.'
         required: true
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11511,7 +11594,7 @@ endpoints:
         name: 'line_items[].manufacturing_date'
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11522,7 +11605,7 @@ endpoints:
         name: 'line_items[].expiry_date'
         description: 'Must be a valid date. Must be a date after or equal to <code>line_items.*.manufacturing_date</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11563,8 +11646,8 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       mr_id: 16
-      grn_date: '2026-03-12T11:36:08'
-      posting_date: '2026-03-12T11:36:08'
+      grn_date: '2026-03-16T10:05:43'
+      posting_date: '2026-03-16T10:05:43'
       remarks: architecto
       line_items:
         -
@@ -11573,8 +11656,8 @@ endpoints:
           accepted_qty: 4326.41688
           uom_id: 16
           batch_number: 'n'
-          manufacturing_date: '2026-03-12T11:36:08'
-          expiry_date: '2052-04-04'
+          manufacturing_date: '2026-03-16T10:05:43'
+          expiry_date: '2052-04-08'
           unit_price: 4326.41688
           tax_rate: 4326.41688
           warehouse_bin_id: 16
@@ -11625,7 +11708,7 @@ endpoints:
         name: grn_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11636,7 +11719,7 @@ endpoints:
         name: posting_date
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11702,7 +11785,7 @@ endpoints:
         name: 'line_items[].manufacturing_date'
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11713,7 +11796,7 @@ endpoints:
         name: 'line_items[].expiry_date'
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -11731,16 +11814,16 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      grn_date: '2026-03-12T11:36:08'
-      posting_date: '2026-03-12T11:36:08'
+      grn_date: '2026-03-16T10:05:43'
+      posting_date: '2026-03-16T10:05:43'
       remarks: architecto
       line_items:
         -
           id: 16
           accepted_qty: 4326.41688
           batch_number: m
-          manufacturing_date: '2026-03-12T11:36:08'
-          expiry_date: '2026-03-12T11:36:08'
+          manufacturing_date: '2026-03-16T10:05:43'
+          expiry_date: '2026-03-16T10:05:43'
           warehouse_bin_id: 16
     fileParameters: []
     responses: []
@@ -11876,7 +11959,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3e677a3a-3c94-4fbf-a5c5-e2ad765fe1bd","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"f1458b39-6c33-4944-9628-fc5e95f1d46e","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11916,7 +11999,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"93b5ef96-6b85-495e-ac41-85681449d9d6","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"3a73ac0e-ceda-44cf-b1c5-eae10be99342","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -11956,7 +12039,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"03ad9fb9-1859-4d42-ba64-8ac2e9b54ff0","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2c91591c-355f-478d-b623-dad1dc4c72b8","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12008,7 +12091,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"81acc723-79ee-45ff-ae19-4079f4aee78e","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"17f942a7-bb6e-4876-86d6-1b208fed85c2","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12060,7 +12143,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"e5192594-bfa0-4232-9a06-7cbe452d125c","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a4963e16-e9e0-4e6c-8a67-482c3455ca16","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12100,7 +12183,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"16fce37e-19b8-4156-89a6-cf6b119c8361","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"ca673c2c-3446-4b9a-bc0f-afe8bd62c4b7","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12152,7 +12235,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"6256be4f-640e-4583-8923-9eb73aacc6ff","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"4beb3127-b3f9-480a-9237-64560f356c02","timestamp":"2026-03-16T10:05:43+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12246,7 +12329,7 @@ endpoints:
         name: sampling_method
         description: ''
         required: true
-        example: 100PCT
+        example: SKIP
         type: string
         enumValues:
           - AQL
@@ -12271,7 +12354,7 @@ endpoints:
         name: due_by
         description: 'Must be a valid date. Must be a date after <code>now</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -12294,9 +12377,9 @@ endpoints:
       material_id: 16
       lot_qty: 4326.41688
       sample_size: 4326.41688
-      sampling_method: 100PCT
+      sampling_method: SKIP
       assigned_to: 16
-      due_by: '2052-04-04'
+      due_by: '2052-04-08'
       remarks: architecto
     fileParameters: []
     responses: []
@@ -12367,7 +12450,7 @@ endpoints:
         name: due_by
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:43'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -12387,7 +12470,7 @@ endpoints:
     cleanBodyParameters:
       sample_size: 4326.41688
       assigned_to: 16
-      due_by: '2026-03-12T11:36:08'
+      due_by: '2026-03-16T10:05:43'
       remarks: architecto
     fileParameters: []
     responses: []
@@ -12649,7 +12732,7 @@ endpoints:
         name: decision
         description: ''
         required: true
-        example: ACCEPTED
+        example: CONDITIONALLY_ACCEPTED
         type: string
         enumValues:
           - ACCEPTED
@@ -12726,7 +12809,7 @@ endpoints:
         nullable: true
         deprecated: false
     cleanBodyParameters:
-      decision: ACCEPTED
+      decision: CONDITIONALLY_ACCEPTED
       accepted_qty: 4326.41688
       rejected_qty: 4326.41688
       override_approved_by: 16
@@ -12769,7 +12852,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2a612621-e224-4bb8-a5c1-025d037571cb","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"89510b66-cee7-47ad-831c-da9dd9baf868","timestamp":"2026-03-16T10:05:44+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12809,7 +12892,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5db46529-ba19-4828-8512-d668dfe5480d","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"73182900-3403-496a-a6d1-c951300b7014","timestamp":"2026-03-16T10:05:44+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12849,7 +12932,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"77d263bf-6903-45e1-9843-686b10d728bc","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"bb424039-8492-4e2f-a5b5-01bf51d9d140","timestamp":"2026-03-16T10:05:44+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12889,7 +12972,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"99cfa3c6-b667-497b-99cf-82cdcb66f03b","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"77d2a740-79e3-4ab5-8d9e-c74c858af2fa","timestamp":"2026-03-16T10:05:44+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -12941,7 +13024,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"4bcc7be9-b904-484f-a03a-b66ed55aa8e1","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"9ca26e2b-6c0a-4650-86ac-d99a4a533691","timestamp":"2026-03-16T10:05:44+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -13057,7 +13140,7 @@ endpoints:
         name: strategy
         description: ''
         required: true
-        example: EMPTY_BIN
+        example: FIFO
         type: string
         enumValues:
           - MANUAL
@@ -13098,7 +13181,7 @@ endpoints:
       uom_id: 16
       source_bin_id: 16
       destination_bin_id: 16
-      strategy: EMPTY_BIN
+      strategy: FIFO
       assigned_to: 16
       remarks: architecto
     fileParameters: []
@@ -13407,7 +13490,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"2a389862-4af0-40b7-91fb-76c302ef2bdd","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"8c8e5964-0dfb-4e62-9573-a9ea83d3203b","timestamp":"2026-03-16T10:05:44+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -13461,7 +13544,7 @@ endpoints:
       -
         custom: []
         status: 401
-        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"5eed0643-7b50-42eb-a900-165cfbafb044","timestamp":"2026-03-12T11:36:08+00:00"}'
+        content: '{"success":false,"error":{"code":"TOKEN_REQUIRED","details":[]},"message":"Token required","request_id":"a7069bd1-0189-4bec-92df-b76b1455f867","timestamp":"2026-03-16T10:05:44+00:00"}'
         headers:
           cache-control: 'no-cache, private'
           content-type: application/json
@@ -13524,7 +13607,7 @@ endpoints:
         name: feature_type
         description: ''
         required: true
-        example: BOOLEAN
+        example: JSON
         type: string
         enumValues:
           - BOOLEAN
@@ -13550,7 +13633,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:44'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -13561,7 +13644,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -13581,10 +13664,10 @@ endpoints:
     cleanBodyParameters:
       org_id: 16
       feature_key: 'n'
-      feature_type: BOOLEAN
+      feature_type: JSON
       feature_value: architecto
-      effective_from: '2026-03-12T11:36:08'
-      effective_to: '2052-04-04'
+      effective_from: '2026-03-16T10:05:44'
+      effective_to: '2052-04-08'
       notes: architecto
     fileParameters: []
     responses: []
@@ -13646,7 +13729,7 @@ endpoints:
         name: effective_from
         description: 'Must be a valid date.'
         required: false
-        example: '2026-03-12T11:36:08'
+        example: '2026-03-16T10:05:44'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -13657,7 +13740,7 @@ endpoints:
         name: effective_to
         description: 'Must be a valid date. Must be a date after <code>effective_from</code>.'
         required: false
-        example: '2052-04-04'
+        example: '2052-04-08'
         type: string
         enumValues: []
         exampleWasSpecified: false
@@ -13676,8 +13759,8 @@ endpoints:
         deprecated: false
     cleanBodyParameters:
       feature_value: architecto
-      effective_from: '2026-03-12T11:36:08'
-      effective_to: '2052-04-04'
+      effective_from: '2026-03-16T10:05:44'
+      effective_to: '2052-04-08'
       notes: architecto
     fileParameters: []
     responses: []
