@@ -28,7 +28,7 @@ class ASNController extends Controller
             $query = ASN::with(['purchaseOrder', 'vendor', 'warehouse', 'lineItems']);
 
             // Apply filters
-            if ($request->has('status')) {
+            if ($request->filled('status')) {
                 $query->where('status', $request->input('status'));
             }
 
@@ -425,32 +425,124 @@ class ASNController extends Controller
     }
 
     /**
-     * Get ASNs by vendor
-     * GET /api/v1/asn/by-vendor/{vendorId}
+     * Upload ASN via CSV for a specific PO
+     * POST /api/v1/asn/upload-csv
+     * CSV columns: po_line_id, material_id, shipped_qty, uom_id, batch_number, lot_number, manufacturing_date, expiry_date
      */
-    public function getByVendor(Request $request, int $vendorId): JsonResponse
+    public function uploadCSV(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
 
+        $request->validate([
+            'file'         => 'required|file|mimes:csv,txt|max:2048',
+            'po_id'        => 'required|integer',
+            'vendor_id'    => 'required|integer',
+            'warehouse_id' => 'required|integer',
+            'ship_date'    => 'required|date',
+            'eta'          => 'required|date',
+            'carrier_name'     => 'nullable|string|max:100',
+            'tracking_number'  => 'nullable|string|max:100',
+            'vehicle_number'   => 'nullable|string|max:50',
+            'remarks'          => 'nullable|string|max:500',
+        ]);
+
         try {
-            $asns = ASN::with(['purchaseOrder', 'warehouse', 'lineItems'])
-                ->byVendor($vendorId)
-                ->get();
+            $userId = $request->input('auth_user_id');
+
+            // Parse CSV
+            $file = $request->file('file');
+            $handle = fopen($file->getRealPath(), 'r');
+            $headers = array_map('trim', fgetcsv($handle));
+
+            $required = ['po_line_id', 'material_id', 'shipped_qty', 'uom_id'];
+            foreach ($required as $col) {
+                if (!in_array($col, $headers)) {
+                    fclose($handle);
+                    return response()->json([
+                        'success' => false,
+                        'error' => ['code' => 'INVALID_CSV', 'details' => []],
+                        'message' => "CSV missing required column: {$col}. Required: " . implode(', ', $required),
+                        'request_id' => $requestId,
+                        'timestamp' => now()->toIso8601String(),
+                    ], 422);
+                }
+            }
+
+            $lineItems = [];
+            $rowNum = 1;
+            while (($row = fgetcsv($handle)) !== false) {
+                $rowNum++;
+                if (count($row) < count($headers)) continue;
+                $data = array_combine($headers, array_map('trim', $row));
+
+                if (empty($data['po_line_id']) || empty($data['material_id']) || empty($data['shipped_qty']) || empty($data['uom_id'])) {
+                    fclose($handle);
+                    return response()->json([
+                        'success' => false,
+                        'error' => ['code' => 'INVALID_CSV_ROW', 'details' => ['row' => $rowNum]],
+                        'message' => "Row {$rowNum}: po_line_id, material_id, shipped_qty, uom_id are required",
+                        'request_id' => $requestId,
+                        'timestamp' => now()->toIso8601String(),
+                    ], 422);
+                }
+
+                $lineItems[] = [
+                    'po_line_id'         => (int) $data['po_line_id'],
+                    'material_id'        => (int) $data['material_id'],
+                    'shipped_qty'        => (float) $data['shipped_qty'],
+                    'uom_id'             => (int) $data['uom_id'],
+                    'batch_number'       => $data['batch_number'] ?? null,
+                    'lot_number'         => $data['lot_number'] ?? null,
+                    'manufacturing_date' => !empty($data['manufacturing_date']) ? $data['manufacturing_date'] : null,
+                    'expiry_date'        => !empty($data['expiry_date']) ? $data['expiry_date'] : null,
+                    'pallet_id'          => $data['pallet_id'] ?? null,
+                    'sscc'               => $data['sscc'] ?? null,
+                    'gross_weight'       => !empty($data['gross_weight']) ? (float) $data['gross_weight'] : null,
+                    'net_weight'         => !empty($data['net_weight']) ? (float) $data['net_weight'] : null,
+                ];
+            }
+            fclose($handle);
+
+            if (empty($lineItems)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'EMPTY_CSV', 'details' => []],
+                    'message' => 'CSV file has no data rows',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            $asnData = [
+                'po_id'          => (int) $request->input('po_id'),
+                'vendor_id'      => (int) $request->input('vendor_id'),
+                'warehouse_id'   => (int) $request->input('warehouse_id'),
+                'ship_date'      => $request->input('ship_date'),
+                'eta'            => $request->input('eta'),
+                'carrier_name'   => $request->input('carrier_name'),
+                'tracking_number'=> $request->input('tracking_number'),
+                'vehicle_number' => $request->input('vehicle_number'),
+                'remarks'        => $request->input('remarks'),
+                'line_items'     => $lineItems,
+            ];
+
+            $asn = $this->asnService->createASN($asnData, $userId);
 
             return response()->json([
                 'success' => true,
-                'data' => ['asns' => $asns],
-                'message' => 'ASNs retrieved successfully',
+                'data' => ['asn' => $asn],
+                'message' => 'ASN created from CSV with ' . count($lineItems) . ' line item(s)',
                 'request_id' => $requestId,
-                'timestamp' => now()->toIso8601String()
-            ], 200);
+                'timestamp' => now()->toIso8601String(),
+            ], 201);
+
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
-                'error' => ['code' => 'FETCH_FAILED', 'details' => []],
-                'message' => $e->getMessage(),
+                'error' => ['code' => 'ASN_CSV_FAILED', 'details' => []],
+                'message' => 'Failed to create ASN: ' . $e->getMessage(),
                 'request_id' => $requestId,
-                'timestamp' => now()->toIso8601String()
+                'timestamp' => now()->toIso8601String(),
             ], 500);
         }
     }

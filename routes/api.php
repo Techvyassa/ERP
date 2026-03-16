@@ -282,6 +282,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/release', [App\Http\Controllers\PurchaseOrderController::class, 'release']); // APPROVED → OPEN
                 Route::patch('/{id}/close', [App\Http\Controllers\PurchaseOrderController::class, 'close']); // OPEN/PARTIAL → CLOSED
                 Route::patch('/{id}/cancel', [App\Http\Controllers\PurchaseOrderController::class, 'cancel']); // Any → CANCELLED
+                Route::post('/{id}/send-to-vendor', [App\Http\Controllers\PurchaseOrderController::class, 'sendToVendor']); // Send PO email to vendor
             });
         });
 
@@ -295,6 +296,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/overdue', [App\Http\Controllers\ASNController::class, 'overdue']);
                 Route::get('/by-po/{poId}', [App\Http\Controllers\ASNController::class, 'getByPO']);
                 Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\ASNController::class, 'getByVendor']);
+                Route::post('/upload-csv', [App\Http\Controllers\ASNController::class, 'uploadCSV']);
                 
                 // Resource routes
                 Route::get('/', [App\Http\Controllers\ASNController::class, 'index']);
