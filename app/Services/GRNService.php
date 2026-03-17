@@ -54,7 +54,10 @@ class GRNService
             
             // Update Material Receipt status
             $mr->update(['status' => 'GRN_POSTED']);
-            
+
+            // Update PO line received/pending quantities
+            $this->updatePOLineQuantities($grn);
+
             Log::info('GRN created', [
                 'grn_id' => $grn->id,
                 'grn_number' => $grn->grn_number,
@@ -136,7 +139,10 @@ class GRNService
             'approved_by' => $userId,
             'approved_at' => now(),
         ]);
-        
+
+        // Release stock from RESTRICTED to UNRESTRICTED
+        $grn->lineItems()->update(['stock_status' => 'UNRESTRICTED']);
+
         Log::info('GRN approved', [
             'grn_id' => $grn->id,
             'grn_number' => $grn->grn_number,
@@ -173,6 +179,59 @@ class GRNService
         ]);
         
         return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
+    }
+
+    /**
+     * Update PO line received/pending quantities after GRN creation
+     */
+    private function updatePOLineQuantities(GRN $grn): void
+    {
+        // Load GRN line items with their MR line items
+        $grn->load('lineItems.mrLineItem');
+
+        foreach ($grn->lineItems as $grnLine) {
+            $mrLine = $grnLine->mrLineItem;
+            if (!$mrLine || !$mrLine->po_line_id) {
+                continue;
+            }
+
+            $poLine = PoLineItem::find($mrLine->po_line_id);
+            if (!$poLine) {
+                continue;
+            }
+
+            // Add accepted qty to received_qty
+            $newReceivedQty = $poLine->received_qty + $grnLine->accepted_qty;
+            $newPendingQty = max(0, $poLine->ordered_qty - $newReceivedQty);
+
+            // Determine receipt status
+            $receiptStatus = 'OPEN';
+            if ($newPendingQty <= 0) {
+                $receiptStatus = 'FULLY_RECEIVED';
+            } elseif ($newReceivedQty > 0) {
+                $receiptStatus = 'PARTIAL';
+            }
+
+            $poLine->update([
+                'received_qty' => $newReceivedQty,
+                'pending_qty' => $newPendingQty,
+                'receipt_status' => $receiptStatus,
+            ]);
+        }
+
+        // Update PO header status
+        $po = $grn->purchaseOrder;
+        if ($po) {
+            $allLines = $po->lineItems;
+            $allFullyReceived = $allLines->every(fn($l) => $l->fresh()->receipt_status === 'FULLY_RECEIVED');
+            $anyReceived = $allLines->some(fn($l) => $l->fresh()->received_qty > 0);
+
+            if ($allFullyReceived) {
+                $po->update(['status' => 'FULLY_RECEIVED']);
+            } elseif ($anyReceived) {
+                $po->update(['status' => 'PARTIAL']);
+            }
+        }
     }
 
     /**
