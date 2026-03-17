@@ -179,44 +179,60 @@
                         </div>
                     </div>
                     <div>
-                        <div class="flex items-center justify-between mb-3">
+                        <div class="flex items-center justify-between mb-2">
                             <h4 class="text-sm font-bold text-gray-800">Received Items</h4>
                             <button type="button" @click="addLine()"
                                 class="text-xs px-3 py-1.5 bg-gray-100 rounded-lg hover:bg-gray-200 transition">+ Add Item</button>
                         </div>
+
+                        <!-- Column headers -->
+                        <div class="grid grid-cols-12 gap-2 px-3 mb-1">
+                            <div class="col-span-4 text-xs font-semibold text-gray-500">Material</div>
+                            <div class="col-span-2 text-xs font-semibold text-gray-500">Expected</div>
+                            <div class="col-span-2 text-xs font-semibold text-gray-500">Received *</div>
+                            <div class="col-span-2 text-xs font-semibold text-gray-500">Rejected</div>
+                            <div class="col-span-2 text-xs font-semibold text-gray-500">Batch / Lot</div>
+                        </div>
+
                         <div class="space-y-2">
                             <template x-for="(line, i) in form.line_items" :key="i">
-                                <div class="grid grid-cols-12 gap-2 items-start bg-gray-50 p-3 rounded-lg">
+                                <div class="grid grid-cols-12 gap-2 items-center bg-gray-50 px-3 py-2 rounded-lg">
                                     <div class="col-span-4">
                                         <select x-model="line.material_id" required
                                             class="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-primary/20">
-                                            <option value="">Material</option>
+                                            <option value="">Select material</option>
                                             <template x-for="m in materials" :key="m.id">
                                                 <option :value="m.id" x-text="m.material_code + ' — ' + m.material_name"></option>
                                             </template>
                                         </select>
                                     </div>
+                                    <!-- Expected qty from PO (read-only) -->
                                     <div class="col-span-2">
-                                        <input type="number" x-model="line.received_qty" placeholder="Rcvd Qty" required min="0" step="0.001"
+                                        <input type="number" :value="line.expected_qty ?? '—'" readonly
+                                            class="w-full px-2 py-1.5 border border-gray-100 rounded text-xs bg-blue-50 text-blue-700 font-semibold cursor-default"
+                                            tabindex="-1">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <input type="number" x-model="line.received_qty" placeholder="0" required min="0" step="0.001"
                                             class="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-primary/20">
                                     </div>
                                     <div class="col-span-2">
-                                        <input type="number" x-model="line.rejected_qty" placeholder="Rej Qty" min="0" step="0.001"
+                                        <input type="number" x-model="line.rejected_qty" placeholder="0" min="0" step="0.001"
                                             class="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-primary/20">
                                     </div>
-                                    <div class="col-span-3">
-                                        <input type="text" x-model="line.batch_number" placeholder="Batch / Lot No."
+                                    <div class="col-span-1">
+                                        <input type="text" x-model="line.batch_number" placeholder="Batch"
                                             class="w-full px-2 py-1.5 border border-gray-200 rounded text-xs focus:ring-1 focus:ring-primary/20">
                                     </div>
-                                    <div class="col-span-1 flex justify-end pt-1">
-                                        <button type="button" @click="form.line_items.splice(i,1)" class="text-red-500 hover:text-red-700">
+                                    <div class="col-span-1 flex justify-end">
+                                        <button type="button" @click="form.line_items.splice(i,1)" class="text-red-400 hover:text-red-600">
                                             <span class="material-symbols-outlined text-base">delete</span>
                                         </button>
                                     </div>
                                 </div>
                             </template>
                         </div>
-                        <p class="text-xs text-gray-400 mt-1">Rejected Qty = items returned immediately due to visible damage</p>
+                        <p class="text-xs text-gray-400 mt-1">Expected qty pulled from PO pending qty. Rejected = visible damage on arrival.</p>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">Remarks</label>
@@ -446,24 +462,55 @@ function mrData() {
         },
 
         openCreateModal() {
-            this.form = { ge_id: '', dock_number: '', remarks: '', line_items: [{ material_id: '', received_qty: '', rejected_qty: 0, batch_number: '' }] };
+            this.form = { ge_id: '', dock_number: '', remarks: '', line_items: [{ material_id: '', po_line_id: null, uom_id: null, expected_qty: null, received_qty: '', rejected_qty: 0, batch_number: '' }] };
             this.selectedGE = null;
             this.showCreateModal = true;
         },
 
         onGESelect() {
             this.selectedGE = this.gateEntries.find(g => g.id == this.form.ge_id) || null;
-            if (this.selectedGE) this.form.po_id = this.selectedGE.po_id;
+            if (this.selectedGE) {
+                this.form.po_id = this.selectedGE.po_id;
+                this.loadPOLines(this.selectedGE.po_id);
+            }
+        },
+
+        async loadPOLines(poId) {
+            if (!poId) return;
+            try {
+                const res = await fetch(`/api/v1/purchase-orders/${poId}`, { headers: headers() });
+                const data = await res.json();
+                const poLines = data.success ? (data.data?.purchase_order?.line_items ?? []) : [];
+                if (poLines.length > 0) {
+                    this.form.line_items = poLines.map(l => ({
+                        material_id: l.material_id,
+                        po_line_id: l.id,
+                        uom_id: l.uom_id,
+                        expected_qty: parseFloat(l.pending_qty ?? l.ordered_qty ?? 0),
+                        received_qty: '',
+                        rejected_qty: 0,
+                        batch_number: '',
+                    }));
+                } else {
+                    this.form.line_items = [{ material_id: '', po_line_id: null, uom_id: null, expected_qty: null, received_qty: '', rejected_qty: 0, batch_number: '' }];
+                }
+            } catch (e) {
+                console.error('Failed to load PO lines', e);
+            }
         },
 
         addLine() {
-            this.form.line_items.push({ material_id: '', received_qty: '', rejected_qty: 0, batch_number: '' });
+            this.form.line_items.push({ material_id: '', po_line_id: null, uom_id: null, expected_qty: null, received_qty: '', rejected_qty: 0, batch_number: '' });
         },
 
         async saveReceipt() {
             this.saving = true;
             try {
-                const res = await fetch('/api/v1/material-receipts', { method: 'POST', headers: headers(), body: JSON.stringify(this.form) });
+                const payload = {
+                    ...this.form,
+                    vendor_id: this.selectedGE?.vendor_id ?? null,
+                };
+                const res = await fetch('/api/v1/material-receipts', { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
                 const data = await res.json();
                 if (data.success) { this.showCreateModal = false; await this.loadReceipts(); }
                 else alert(data.message || 'Failed to create MR');
@@ -550,4 +597,3 @@ function mrData() {
 }
 </script>
 @endsection
-}
