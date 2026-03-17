@@ -104,7 +104,7 @@ class OrganizationController extends Controller
         
         $validator = Validator::make($request->all(), [
             'org_name' => 'required|string|max:255',
-            'org_slug' => 'required|string|max:100|regex:/^[a-z0-9-]+$/|unique:organizations,org_slug',
+            'org_slug' => 'nullable|string|max:100|regex:/^[a-z0-9-]+$/|unique:organizations,org_slug',
             'primary_email' => 'required|email|max:255|unique:organizations,primary_email',
             'primary_phone' => 'nullable|string|max:20',
             'first_name' => 'required|string|max:100',
@@ -142,11 +142,37 @@ class OrganizationController extends Controller
         try {
             DB::connection('control')->beginTransaction();
 
+            // Generate org_slug from org_name if not provided
+            $orgSlug = $request->input('org_slug');
+            if (!$orgSlug) {
+                $baseSlug = Str::slug($request->input('org_name'));
+                $orgSlug = $baseSlug;
+                $counter = 1;
+                while (Organization::where('org_slug', $orgSlug)->exists()) {
+                    $orgSlug = $baseSlug . '-' . $counter;
+                    $counter++;
+                }
+            }
+
+            // Get max_users from selected plan or use default
+            $maxUsers = $request->input('max_users');
+            $selectedPlanCode = $request->input('selected_plan');
+            
+            if (!$maxUsers && $selectedPlanCode) {
+                $plan = \App\Models\Control\SubscriptionPlan::where('plan_code', $selectedPlanCode)->active()->first();
+                if ($plan) {
+                    $maxUsers = $plan->max_users;
+                }
+            }
+            
+            // Default to 10 if still not set
+            $maxUsers = $maxUsers ?? 10;
+
             // Create organization with PENDING status
             $organization = Organization::create([
-                'org_slug' => $request->input('org_slug'),
+                'org_slug' => $orgSlug,
                 'org_name' => $request->input('org_name'),
-                'tenant_db_name' => 'erp_' . str_replace('-', '_', $request->input('org_slug')),
+                'tenant_db_name' => 'erp_' . str_replace('-', '_', $orgSlug),
                 'registration_status' => 'PENDING',
                 'primary_email' => $request->input('primary_email'),
                 'primary_phone' => $request->input('primary_phone'),
@@ -158,7 +184,7 @@ class OrganizationController extends Controller
                 'country_code' => $request->input('country_code'),
                 'timezone' => $request->input('timezone', 'UTC'),
                 'currency_code' => $request->input('currency_code', 'USD'),
-                'max_users' => $request->input('max_users', 10),
+                'max_users' => $maxUsers,
             ]);
 
             DB::connection('control')->commit();
