@@ -102,11 +102,7 @@
       <div class="grand">Grand Total: ₹{{ number_format($po->grand_total, 2) }}</div>
     </div>
 
-    @if($po->remarks)
-    <div class="note">
-      <strong>Remarks:</strong> {{ $po->remarks }}
-    </div>
-    @endif
+    {{-- Remarks hidden --}}
 
     <p style="font-size:13px;color:#64748b;">
       Please confirm this order by replying to this email. For any queries, contact your procurement team.
@@ -116,11 +112,8 @@
     <div style="text-align:center;margin:24px 0;">
       <a href="{{ $viewUrl }}"
          style="display:inline-block;background:#1e40af;color:#fff;text-decoration:none;padding:12px 28px;border-radius:8px;font-size:14px;font-weight:600;">
-        View PO &amp; Add Remarks
+        View PO
       </a>
-      <p style="font-size:11px;color:#94a3b8;margin-top:8px;">
-        Or copy this link: <a href="{{ $viewUrl }}" style="color:#1e40af;">{{ $viewUrl }}</a>
-      </p>
     </div>
     @endif
   </div>

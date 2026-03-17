@@ -89,13 +89,14 @@
                         </a>
                     </li>
                     
-                    <li>
+                    {{-- ASN Tracking commented out --}}
+                    {{-- <li>
                         <a href="{{ url("/org/{$organization->org_slug}/procurement/asn") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
                             <span x-show="sidebarOpen" class="font-medium">ASN Tracking</span>
                         </a>
-                    </li>
+                    </li> --}}
                 </ul>
             </nav>
 
