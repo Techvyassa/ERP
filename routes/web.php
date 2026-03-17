@@ -423,6 +423,7 @@ Route::middleware(['web.jwt'])->group(function () {
         Route::get('/procurement/login', [PublicController::class, 'loginProcurement'])->name('procurement.login');
         Route::get('/warehouse/login', [PublicController::class, 'loginWarehouse'])->name('warehouse.login');
         Route::get('/quality/login', [PublicController::class, 'loginQuality'])->name('quality.login');
+        Route::get('/security/login', [PublicController::class, 'loginSecurity'])->name('security.login');
         Route::get('/admin/login', [PublicController::class, 'loginAdmin'])->name('admin.login');
 
         // Procurement Portal

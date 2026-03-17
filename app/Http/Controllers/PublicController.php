@@ -92,4 +92,9 @@ class PublicController extends Controller
     {
         return view('auth.login-admin', ['orgSlug' => $orgSlug]);
     }
+
+    public function loginSecurity(string $orgSlug): View
+    {
+        return view('auth.login-security', ['orgSlug' => $orgSlug]);
+    }
 }
