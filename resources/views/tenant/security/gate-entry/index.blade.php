@@ -515,11 +515,20 @@ function gateEntryData() {
         async loadPOs() {
             this.poLoading = true;
             try {
+                // Fetch all gate entries to know which POs already have one
+                const geRes = await fetch(`/api/v1/gate-entries?per_page=500`, { headers: headers() });
+                const geData = await geRes.json();
+                const usedPoIds = new Set(
+                    (geData.success ? (geData.data?.data || []) : [])
+                        .filter(e => e.status !== 'REJECTED') // allow re-entry if rejected
+                        .map(e => e.po_id)
+                );
+
                 const p = new URLSearchParams({ per_page: 100, status: 'OPEN' });
                 const res = await fetch(`/api/v1/purchase-orders?${p}`, { headers: headers() });
                 const data = await res.json();
                 if (data.success) {
-                    this.purchaseOrders = data.data?.data || [];
+                    this.purchaseOrders = (data.data?.data || []).filter(po => !usedPoIds.has(po.id));
                 } else {
                     this.purchaseOrders = [];
                 }
