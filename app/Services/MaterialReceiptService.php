@@ -129,7 +129,7 @@ class MaterialReceiptService
         
         $mr->update([
             'unloading_completed_at' => now(),
-            'status' => 'COMPLETED',
+            'status' => 'PENDING_GRN',
             'updated_by' => $userId,
         ]);
         
