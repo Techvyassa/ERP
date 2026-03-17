@@ -68,7 +68,7 @@
                     
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/warehouse/gate-entry") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouse.gate-entry') ? 'bg-amber-50 text-warehouse font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">door_front</span>
                             <span x-show="sidebarOpen" class="font-medium">Gate Entry</span>
                         </a>
@@ -76,15 +76,23 @@
                     
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/warehouse/receipts") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouse.receipts') ? 'bg-amber-50 text-warehouse font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">receipt_long</span>
                             <span x-show="sidebarOpen" class="font-medium">Material Receipts</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/warehouse/grn") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouse.grn') ? 'bg-amber-50 text-warehouse font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">inventory_2</span>
+                            <span x-show="sidebarOpen" class="font-medium">GRN</span>
                         </a>
                     </li>
                     
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/warehouse/putaway") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouse.putaway') ? 'bg-amber-50 text-warehouse font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">shelves</span>
                             <span x-show="sidebarOpen" class="font-medium">Putaway</span>
                         </a>

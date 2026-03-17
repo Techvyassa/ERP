@@ -53,14 +53,14 @@ Route::get('/auth/google/callback', function () {
 // ============================================================================
 
 Route::middleware(['web.jwt'])->group(function () {
-    
+
     // ------------------------------------------------------------------------
     // MAIN DASHBOARD (Entry Point)
     // ------------------------------------------------------------------------
     Route::get('/dashboard', function () {
         return view('dashboard.main');
     })->name('dashboard');
-    
+
     // ------------------------------------------------------------------------
     // SUPER ADMIN / CONTROL PANEL ROUTES
     // ------------------------------------------------------------------------
@@ -69,43 +69,43 @@ Route::middleware(['web.jwt'])->group(function () {
         Route::get('/dashboard', function () {
             return view('control.dashboard');
         })->name('dashboard');
-        
+
         // Organizations Management
         Route::get('/organizations', function () {
             return view('control.organizations.index');
         })->name('organizations.index');
-        
+
         // Subscriptions Management
         Route::get('/subscriptions', function () {
             return view('control.subscriptions.index');
         })->name('subscriptions.index');
-        
+
         // Subscription Plans Management
         Route::get('/plans', function () {
             return view('control.plans.index');
         })->name('plans.index');
-        
+
         // Payments Management
         Route::get('/payments', function () {
             return view('control.payments.index');
         })->name('payments.index');
-        
+
         // Feature Control
         Route::get('/features', function () {
             return view('control.features.index');
         })->name('features.index');
-        
+
         // System Settings
         Route::get('/settings', function () {
             return view('control.settings');
         })->name('settings');
-        
+
         // Admin Profile
         Route::get('/profile', function () {
             return view('control.profile');
         })->name('profile');
     });
-    
+
     // ------------------------------------------------------------------------
     // TENANT ROUTES (Organization-specific)
     // Pattern: /org/{org_slug}/...
@@ -117,11 +117,11 @@ Route::middleware(['web.jwt'])->group(function () {
             $tenantType = 'path';
             return compact('org', 'tenantType');
         };
-        
+
         // ====================================================================
         // DASHBOARD & SETUP
         // ====================================================================
-        
+
         // Main Tenant Dashboard
         Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -130,7 +130,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('dashboard');
-        
+
         // Profile Completion
         Route::get('/profile-completion', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -139,7 +139,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('profile-completion');
-        
+
         // Master Data Setup Dashboard
         Route::get('/master-setup', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -148,11 +148,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('master-setup');
-        
+
         // ====================================================================
         // CATEGORY DASHBOARDS
         // ====================================================================
-        
+
         // Organization & Access Control Dashboard
         Route::get('/organization-dashboard', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -161,7 +161,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('organization-dashboard');
-        
+
         // Inventory & Material Management Dashboard
         Route::get('/inventory-dashboard', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -170,7 +170,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('inventory-dashboard');
-        
+
         // Vendor & Procurement Dashboard
         Route::get('/vendor-dashboard', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -179,7 +179,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('vendor-dashboard');
-        
+
         // Tax & Financial Dashboard
         Route::get('/tax-dashboard', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -188,7 +188,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('tax-dashboard');
-        
+
         // Production & BOM Dashboard
         Route::get('/production-dashboard', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -197,11 +197,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('production-dashboard');
-        
+
         // ====================================================================
         // ORGANIZATION MASTERS
         // ====================================================================
-        
+
         Route::get('/departments', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.departments.index', [
@@ -209,7 +209,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('departments.index');
-        
+
         Route::get('/departments/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.departments.edit', [
@@ -218,7 +218,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'departmentId' => $id
             ]);
         })->name('departments.edit');
-        
+
         Route::get('/roles', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.roles.index', [
@@ -226,7 +226,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('roles.index');
-        
+
         Route::get('/users', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.users.index', [
@@ -234,7 +234,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('users.index');
-        
+
         Route::get('/users/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.users.edit', [
@@ -243,7 +243,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'userId' => $id
             ]);
         })->name('users.edit');
-        
+
         Route::get('/approval-matrix', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.approval-matrix.index', [
@@ -251,11 +251,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('approval-matrix.index');
-        
+
         // ====================================================================
         // INVENTORY MASTERS
         // ====================================================================
-        
+
         Route::get('/materials', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.inventory.materials.index', [
@@ -263,7 +263,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('materials.index');
-        
+
         Route::get('/products', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.inventory.products.index', [
@@ -271,7 +271,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('products.index');
-        
+
         Route::get('/warehouses', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.inventory.warehouses.index', [
@@ -279,7 +279,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('warehouses.index');
-        
+
         Route::get('/bin-locations', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.inventory.bin-locations.index', [
@@ -287,7 +287,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('bin-locations.index');
-        
+
         Route::get('/uom', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.inventory.uom.index', [
@@ -295,11 +295,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('uom.index');
-        
+
         // ====================================================================
         // VENDOR MASTERS
         // ====================================================================
-        
+
         Route::get('/vendors', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendors.index', [
@@ -307,7 +307,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('vendors.index');
-        
+
         Route::get('/vendors/create', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendors.create', [
@@ -315,7 +315,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('vendors.create');
-        
+
         Route::get('/vendors/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendors.edit', [
@@ -324,7 +324,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'vendorId' => $id
             ]);
         })->name('vendors.edit');
-        
+
         Route::get('/vendor-contacts', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendor-contacts.index', [
@@ -332,7 +332,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('vendor-contacts.index');
-        
+
         Route::get('/vendor-contacts/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendor-contacts.edit', [
@@ -341,7 +341,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'contactId' => $id
             ]);
         })->name('vendor-contacts.edit');
-        
+
         Route::get('/vendor-material-map', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendor-material-map.index', [
@@ -349,7 +349,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('vendor-material-map.index');
-        
+
         Route::get('/vendor-material-map/create', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendor-material-map.create', [
@@ -357,7 +357,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('vendor-material-map.create');
-        
+
         Route::get('/vendor-material-map/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.vendor.vendor-material-map.edit', [
@@ -366,11 +366,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 'id' => $id
             ]);
         })->name('vendor-material-map.edit');
-        
+
         // ====================================================================
         // TAX MASTERS
         // ====================================================================
-        
+
         Route::get('/hsn-codes', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.tax.hsn-codes.index', [
@@ -378,7 +378,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('hsn-codes.index');
-        
+
         Route::get('/gst-taxes', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.tax.gst-taxes.index', [
@@ -386,7 +386,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('gst-taxes.index');
-        
+
         Route::get('/currency', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.tax.currency.index', [
@@ -394,11 +394,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('currency.index');
-        
+
         // ====================================================================
         // BOM MASTERS
         // ====================================================================
-        
+
         Route::get('/bom-header', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.bom.bom-header.index', [
@@ -406,7 +406,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('bom-header.index');
-        
+
         Route::get('/bom-detail', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.bom.bom-detail.index', [
@@ -414,17 +414,17 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('bom-detail.index');
-        
+
         // ====================================================================
         // DEPARTMENTAL PORTALS (Organization-specific)
         // ====================================================================
-        
+
         // Specialized Department Logins
         Route::get('/procurement/login', [PublicController::class, 'loginProcurement'])->name('procurement.login');
         Route::get('/warehouse/login', [PublicController::class, 'loginWarehouse'])->name('warehouse.login');
         Route::get('/quality/login', [PublicController::class, 'loginQuality'])->name('quality.login');
         Route::get('/admin/login', [PublicController::class, 'loginAdmin'])->name('admin.login');
-        
+
         // Procurement Portal
         Route::prefix('procurement')->name('procurement.')->group(function () use ($getOrg) {
             Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
@@ -434,7 +434,7 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('dashboard');
-            
+
             Route::get('/purchase-orders', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('procurement.purchase-orders.index', [
@@ -442,7 +442,7 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('purchase-orders');
-            
+
             Route::get('/vendors', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('procurement.vendors.index', [
@@ -450,7 +450,7 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('vendors');
-            
+
             Route::get('/asn', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('procurement.asn.index', [
@@ -458,7 +458,7 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('asn');
-            
+
             Route::get('/po-approval', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('procurement.po-approval.index', [
@@ -467,8 +467,8 @@ Route::middleware(['web.jwt'])->group(function () {
                 ]);
             })->name('po-approval');
         });
-        
-        // Warehouse Portal
+
+        // Warehouse/store Department Portal
         Route::prefix('warehouse')->name('warehouse.')->group(function () use ($getOrg) {
             Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
@@ -477,23 +477,37 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('dashboard');
-            
+
             Route::get('/gate-entry', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Gate Entry Page WIP";
+                return view('tenant.warehouse.gate-entry.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('gate-entry');
-            
+
             Route::get('/receipts', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Material Receipts Page WIP";
+                return view('tenant.warehouse.material-receipts.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('receipts');
-            
+
+            Route::get('/grn', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.grn.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('grn');
+
             Route::get('/putaway', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return "Putaway Page WIP";
             })->name('putaway');
         });
-        
+
         // Quality Portal
         Route::prefix('quality')->name('quality.')->group(function () use ($getOrg) {
             Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
@@ -503,27 +517,27 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('dashboard');
-            
+
             Route::get('/inspections', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return "Inspections Page WIP";
             })->name('inspections');
-            
+
             Route::get('/decisions', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return "Usage Decisions Page WIP";
             })->name('decisions');
-            
+
             Route::get('/reports', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return "Quality Reports Page WIP";
             })->name('reports');
         });
-        
+
         // ====================================================================
         // OTHER PAGES
         // ====================================================================
-        
+
         Route::get('/reports', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.reports.index', [
@@ -531,7 +545,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('reports.index');
-        
+
         Route::get('/settings', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.settings', [
@@ -539,7 +553,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('settings');
-        
+
         Route::get('/profile', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.profile', [

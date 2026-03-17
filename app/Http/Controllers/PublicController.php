@@ -18,12 +18,12 @@ class PublicController extends Controller
             ->public()
             ->orderBy('price_amount', 'asc')
             ->get();
-        
+
         return view('landing', [
             'plans' => $plans
         ]);
     }
-    
+
     /**
      * Show the pricing/subscription selection page
      * GET /pricing
@@ -34,12 +34,12 @@ class PublicController extends Controller
             ->public()
             ->orderBy('price_amount', 'asc')
             ->get();
-        
+
         return view('subscription.select', [
             'plans' => $plans
         ]);
     }
-    
+
     /**
      * Show the registration page with optional selected plan
      * GET /register
@@ -48,19 +48,19 @@ class PublicController extends Controller
     {
         $selectedPlanCode = $request->query('plan');
         $selectedPlan = null;
-        
+
         if ($selectedPlanCode) {
             $selectedPlan = SubscriptionPlan::where('plan_code', $selectedPlanCode)
                 ->active()
                 ->public()
                 ->first();
         }
-        
+
         return view('auth.register', [
             'selectedPlan' => $selectedPlan
         ]);
     }
-    
+
     /**
      * Show the login page
      * GET /login
