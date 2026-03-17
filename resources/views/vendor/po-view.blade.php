@@ -56,10 +56,11 @@
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
         <div class="px-6 py-4 border-b border-gray-100 flex items-center justify-between">
             <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest">Line Items</h2>
-            <button @click="downloadTemplate()"
+            {{-- Download ASN Template CSV commented out --}}
+            {{-- <button @click="downloadTemplate()"
                     class="text-xs text-blue-600 hover:text-blue-800 flex items-center gap-1 font-semibold">
                 ↓ Download ASN Template CSV
-            </button>
+            </button> --}}
         </div>
         <div class="overflow-x-auto">
             <table class="w-full text-sm">
@@ -110,210 +111,40 @@
     </div>
 
 
-    {{-- ===== STEP 1: VENDOR APPROVE / REJECT ===== --}}
+    {{-- ===== STEP 1: VENDOR APPROVE / REJECT (commented out) ===== --}}
+    {{--
     @if($vendorRejected)
-    {{-- Rejected state --}}
     <div class="bg-red-50 border border-red-200 rounded-xl p-6 text-center">
         <div class="text-4xl mb-3">✗</div>
         <h3 class="text-lg font-bold text-red-700 mb-1">PO Rejected</h3>
         <p class="text-sm text-red-600">You have rejected this purchase order. It has been marked as cancelled.</p>
     </div>
-
     @elseif(!$vendorApproved)
-    {{-- Step 1: Pending vendor decision --}}
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center gap-3 mb-4">
-            <span class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold">1</span>
-            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-widest">Review &amp; Respond to PO</h2>
-        </div>
-        <p class="text-sm text-gray-500 mb-5">Please review the purchase order above and confirm whether you accept or reject it.</p>
-
-        <template x-if="step1Error">
-            <div class="mb-4 bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700" x-text="step1Error"></div>
-        </template>
-
-        <div class="mb-4">
-            <label class="block text-xs font-semibold text-gray-600 mb-1.5">Remarks (optional)</label>
-            <textarea x-model="step1Remark" rows="2"
-                      placeholder="Add any notes or conditions..."
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 resize-none"></textarea>
-        </div>
-
-        <div class="flex items-center gap-3">
-            <button @click="approvePO()"
-                    :disabled="step1Loading"
-                    class="px-6 py-2.5 bg-green-600 text-white text-sm font-semibold rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                <svg x-show="step1Loading && step1Action==='approve'" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                </svg>
-                ✓ Approve PO
-            </button>
-            <button @click="showRejectModal = true"
-                    :disabled="step1Loading"
-                    class="px-6 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                ✗ Reject PO
-            </button>
-        </div>
+        ... approve / reject / remark UI ...
     </div>
-
-    {{-- Reject confirmation modal --}}
-    <div x-show="showRejectModal" x-cloak
-         class="fixed inset-0 bg-black/40 flex items-center justify-center z-50 p-4">
-        <div class="bg-white rounded-xl shadow-xl max-w-md w-full p-6" @click.stop>
-            <h3 class="text-base font-bold text-gray-900 mb-2">Reject Purchase Order?</h3>
-            <p class="text-sm text-gray-500 mb-4">This will cancel the PO. Please provide a reason (optional).</p>
-            <textarea x-model="rejectReason" rows="3"
-                      placeholder="Reason for rejection..."
-                      class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-red-100 focus:border-red-400 resize-none mb-4"></textarea>
-            <div class="flex gap-3">
-                <button @click="rejectPO()"
-                        :disabled="step1Loading"
-                        class="flex-1 py-2.5 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 transition-colors disabled:opacity-50 flex items-center justify-center gap-2">
-                    <svg x-show="step1Loading && step1Action==='reject'" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                        <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                        <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                    </svg>
-                    Confirm Reject
-                </button>
-                <button @click="showRejectModal = false"
-                        class="flex-1 py-2.5 bg-gray-100 text-gray-700 text-sm font-semibold rounded-lg hover:bg-gray-200 transition-colors">
-                    Cancel
-                </button>
-            </div>
-        </div>
-    </div>
-
     @else
-    {{-- Step 1 complete — vendor approved --}}
     <div class="bg-green-50 border border-green-200 rounded-xl p-4 flex items-center gap-3">
-        <span class="flex items-center justify-center w-7 h-7 rounded-full bg-green-600 text-white text-xs font-bold shrink-0">✓</span>
-        <div>
-            <p class="text-sm font-semibold text-green-800">PO Approved by Vendor</p>
-            <p class="text-xs text-green-600">You have accepted this purchase order. Please proceed to upload your ASN below.</p>
-        </div>
+        ... vendor approved banner ...
     </div>
     @endif
+    --}}
 
-    {{-- ===== STEP 2: ASN UPLOAD (only after vendor approves) ===== --}}
+    {{-- ===== STEP 2: ASN UPLOAD (commented out) ===== --}}
+    {{--
     @if($vendorApproved && !$vendorRejected)
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <div class="flex items-center gap-3 mb-1">
-            <span class="flex items-center justify-center w-7 h-7 rounded-full bg-blue-600 text-white text-xs font-bold">2</span>
-            <h2 class="text-sm font-bold text-gray-700 uppercase tracking-widest">Upload Advance Shipping Notice (ASN)</h2>
-        </div>
-        <p class="text-sm text-gray-500 mb-5 ml-10">Fill in shipment details and upload your CSV. Use the template button above to get the pre-filled CSV.</p>
-
-        <template x-if="asnSuccess">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800 text-sm font-medium">
-                ✓ ASN <strong x-text="asnNumber"></strong> submitted successfully. The buyer has been notified.
-            </div>
-        </template>
-
-        <template x-if="!asnSuccess">
-            <div class="space-y-4">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Ship Date <span class="text-red-500">*</span></label>
-                        <input type="date" x-model="asn.ship_date"
-                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">ETA <span class="text-red-500">*</span></label>
-                        <input type="date" x-model="asn.eta"
-                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Delivery Warehouse <span class="text-red-500">*</span></label>
-                        <select x-model="asn.warehouse_id"
-                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-                            <option value="">Select warehouse</option>
-                            @foreach($warehouses as $wh)
-                            <option value="{{ $wh->id }}">{{ $wh->warehouse_name }} ({{ $wh->warehouse_code }})</option>
-                            @endforeach
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Carrier</label>
-                        <input type="text" x-model="asn.carrier_name" placeholder="e.g. FedEx, DTDC"
-                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Tracking Number</label>
-                        <input type="text" x-model="asn.tracking_number"
-                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1.5">Vehicle Number</label>
-                        <input type="text" x-model="asn.vehicle_number" placeholder="e.g. GJ01AB1234"
-                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-                    </div>
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">Remarks</label>
-                    <input type="text" x-model="asn.remarks" placeholder="Any notes for the buyer..."
-                           class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400">
-                </div>
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1.5">CSV File <span class="text-red-500">*</span></label>
-                    <div class="border-2 border-dashed border-gray-200 rounded-lg p-5 text-center hover:border-blue-300 transition-colors">
-                        <input type="file" accept=".csv,.txt" @change="onFileSelect($event)" class="hidden" id="csvFile">
-                        <label for="csvFile" class="cursor-pointer block">
-                            <p class="text-sm text-gray-500 font-medium" x-text="asn.fileName || 'Click to select CSV file'"></p>
-                            <p class="text-xs text-gray-400 mt-1">Required columns: po_line_id, material_id, shipped_qty, uom_id</p>
-                        </label>
-                    </div>
-                </div>
-                <template x-if="asnError">
-                    <div class="bg-red-50 border border-red-200 rounded-lg px-4 py-3 text-sm text-red-700" x-text="asnError"></div>
-                </template>
-                <div class="flex items-center gap-3 pt-1">
-                    <button @click="submitASN()"
-                            :disabled="asnUploading || !asn.csvFile || !asn.ship_date || !asn.eta || !asn.warehouse_id"
-                            class="px-6 py-2.5 bg-blue-600 text-white text-sm font-semibold rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                        <svg x-show="asnUploading" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                        </svg>
-                        <span x-text="asnUploading ? 'Uploading...' : 'Submit ASN'"></span>
-                    </button>
-                    <p class="text-xs text-gray-400">Buyer will be notified once submitted</p>
-                </div>
-            </div>
-        </template>
+        ... ASN upload form ...
     </div>
     @endif
+    --}}
 
-    {{-- Acknowledgement / Remarks --}}
+    {{-- Acknowledgement / Remarks (commented out) --}}
+    {{--
     <div class="bg-white rounded-xl shadow-sm border border-gray-200 p-6">
-        <h2 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Acknowledgement / Remarks</h2>
-        <template x-if="ackSubmitted">
-            <div class="bg-green-50 border border-green-200 rounded-lg p-4 text-green-800 text-sm font-medium">
-                ✓ Your acknowledgement has been sent. Thank you.
-            </div>
-        </template>
-        <template x-if="!ackSubmitted">
-            <div>
-                <textarea x-model="remark" rows="3"
-                          placeholder="e.g. We confirm receipt of this PO. Expected dispatch by 20 Mar 2026..."
-                          class="w-full px-4 py-3 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-100 focus:border-blue-400 resize-none"></textarea>
-                <div class="flex items-center gap-3 mt-3">
-                    <button @click="acknowledge()"
-                            :disabled="ackSending || !remark.trim()"
-                            class="px-5 py-2 bg-gray-800 text-white text-sm font-semibold rounded-lg hover:bg-gray-900 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                        <svg x-show="ackSending" class="animate-spin h-4 w-4" fill="none" viewBox="0 0 24 24">
-                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z"></path>
-                        </svg>
-                        <span x-text="ackSending ? 'Sending...' : 'Send Acknowledgement'"></span>
-                    </button>
-                </div>
-                <template x-if="ackError">
-                    <p class="mt-2 text-sm text-red-600" x-text="ackError"></p>
-                </template>
-            </div>
-        </template>
+        ... acknowledgement / remarks form ...
     </div>
+    --}}
 
 </div>
 
