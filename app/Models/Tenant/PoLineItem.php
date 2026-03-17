@@ -25,7 +25,6 @@ class PoLineItem extends Model
         'under_delivery_tolerance',
         'over_delivery_tolerance',
         'received_qty',
-        'pending_qty',
         'receipt_status',
     ];
 

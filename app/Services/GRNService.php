@@ -214,7 +214,6 @@ class GRNService
 
             $poLine->update([
                 'received_qty' => $newReceivedQty,
-                'pending_qty' => $newPendingQty,
                 'receipt_status' => $receiptStatus,
             ]);
         }
@@ -229,7 +228,7 @@ class GRNService
             if ($allFullyReceived) {
                 $po->update(['status' => 'FULLY_RECEIVED']);
             } elseif ($anyReceived) {
-                $po->update(['status' => 'PARTIAL']);
+                $po->update(['status' => 'PARTIALLY_RECEIVED']);
             }
         }
     }
@@ -308,8 +307,8 @@ class GRNService
      */
     private function validateMaterialReceipt(MaterialReceipt $mr): void
     {
-        if ($mr->status !== 'COMPLETED') {
-            throw new \Exception('Material Receipt must be in COMPLETED status. Current status: ' . $mr->status);
+        if (!in_array($mr->status, ['PENDING_GRN', 'COMPLETED'])) {
+            throw new \Exception('Material Receipt must be in PENDING_GRN or COMPLETED status. Current status: ' . $mr->status);
         }
     }
 }

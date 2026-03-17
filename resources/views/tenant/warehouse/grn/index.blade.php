@@ -383,11 +383,13 @@ function grnData() {
             const data = await res.json();
             this.selectedMR = data.success ? data.data : mr;
             this.form.line_items = (this.selectedMR.line_items || []).map(l => ({
-                mr_line_item_id: l.id,
+                mr_line_id: l.id,
                 material_id: l.material_id,
                 material_name: l.material?.material_name || l.material_id,
                 received_qty: l.received_qty,
                 accepted_qty: l.received_qty,
+                uom_id: l.uom_id,
+                unit_price: l.unit_price || 0,
                 batch_number: l.batch_number || '',
                 warehouse_bin: '',
             }));
