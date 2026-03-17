@@ -486,6 +486,14 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('gate-entry');
+
+            Route::get('/gate-verification', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.security.gate-verification.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('gate-verification');
         });
 
         // Warehouse/store Department Portal
