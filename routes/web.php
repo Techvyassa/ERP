@@ -468,11 +468,11 @@ Route::middleware(['web.jwt'])->group(function () {
             })->name('po-approval');
         });
 
-        // Warehouse/store Department Portal
-        Route::prefix('warehouse')->name('warehouse.')->group(function () use ($getOrg) {
+        // Security Department Portal
+        Route::prefix('security')->name('security.')->group(function () use ($getOrg) {
             Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return view('dashboard.warehouse', [
+                return view('tenant.security.dashboard', [
                     'organization' => $org,
                     'tenantType' => $tenantType
                 ]);
@@ -480,11 +480,22 @@ Route::middleware(['web.jwt'])->group(function () {
 
             Route::get('/gate-entry', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return view('tenant.warehouse.gate-entry.index', [
+                return view('tenant.security.gate-entry.index', [
                     'organization' => $org,
                     'tenantType' => $tenantType
                 ]);
             })->name('gate-entry');
+        });
+
+        // Warehouse/store Department Portal
+        Route::prefix('warehouse')->name('warehouse.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.dashboard', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('dashboard');
 
             Route::get('/receipts', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));

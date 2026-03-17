@@ -17,9 +17,6 @@
                     <p class="text-white/90">{{ $organization->org_name }}</p>
                 </div>
             </div>
-            <button class="px-6 py-3 bg-amber-500 text-slate-900 font-bold rounded-lg hover:shadow-lg transition-all">
-                New Gate Entry
-            </button>
         </div>
     </div>
 
@@ -43,15 +40,14 @@
         <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between mb-4">
                 <div class="bg-green-100 p-3 rounded-lg">
-                    <span class="material-symbols-outlined text-green-600 text-2xl">fact_check</span>
+                    <span class="material-symbols-outlined text-green-600 text-2xl">assignment_turned_in</span>
                 </div>
                 <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">Pending</span>
             </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.gateVerification">0</h3>
-            <p class="text-sm text-gray-600 mb-2">Gate Verification</p>
+            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.pendingQC">0</h3>
+            <p class="text-sm text-gray-600 mb-2">Pending QC</p>
             <div class="flex items-center gap-2 text-xs">
-                <span class="text-gray-600">Avg wait:</span>
-                <span class="text-gray-500" x-text="stats.avgWaitTime">0 mins</span>
+                <span class="text-gray-500">Awaiting inspection</span>
             </div>
         </div>
 
@@ -117,8 +113,7 @@ function warehouseDashboard() {
         stats: {
             expectedToday: 0,
             arrivedToday: 0,
-            gateVerification: 0,
-            avgWaitTime: '0 mins',
+            pendingQC: 0,
             unloadingBays: 0,
             bayStatus: '0 / 0',
             receiptsToday: 0
@@ -134,8 +129,7 @@ function warehouseDashboard() {
             this.stats = {
                 expectedToday: 24,
                 arrivedToday: 8,
-                gateVerification: 12,
-                avgWaitTime: '14 mins',
+                pendingQC: 12,
                 unloadingBays: 3,
                 bayStatus: '3 / 5',
                 receiptsToday: 15

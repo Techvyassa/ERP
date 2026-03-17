@@ -1,4 +1,4 @@
-@extends('layouts.warehouse')
+@extends('layouts.security')
 
 @section('title', 'Gate Entry - ' . $organization->org_name)
 @section('page-title', 'Gate Entry')
