@@ -352,6 +352,7 @@ Route::prefix('v1')->group(function () {
 
                 // Status transitions
                 Route::patch('/{id}/start-unloading', [App\Http\Controllers\MaterialReceiptController::class, 'startUnloading']); // Start unloading timer
+                
                 Route::patch('/{id}/complete', [App\Http\Controllers\MaterialReceiptController::class, 'completeUnloading']); // IN_PROGRESS → COMPLETED
             });
 
