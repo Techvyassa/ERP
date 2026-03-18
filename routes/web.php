@@ -516,15 +516,27 @@ Route::middleware(['web.jwt'])->group(function () {
 
             Route::get('/putaway', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Putaway Page WIP";
+                return view('tenant.warehouse.putaway.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('putaway');
+
+            Route::get('/putaway/{id}', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.putaway.show', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'taskId' => $id
+                ]);
+            })->name('putaway.show');
         });
 
         // Quality Portal
         Route::prefix('quality')->name('quality.')->group(function () use ($getOrg) {
             Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return view('dashboard.quality', [
+                return view('tenant.quality.dashboard', [
                     'organization' => $org,
                     'tenantType' => $tenantType
                 ]);
@@ -532,17 +544,35 @@ Route::middleware(['web.jwt'])->group(function () {
 
             Route::get('/inspections', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Inspections Page WIP";
+                return view('tenant.quality.inspections.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('inspections');
+
+            Route::get('/inspections/{id}', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.quality.inspections.show', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'lotId' => $id
+                ]);
+            })->name('inspections.show');
 
             Route::get('/decisions', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Usage Decisions Page WIP";
+                return view('tenant.quality.decisions.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('decisions');
 
             Route::get('/reports', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return "Quality Reports Page WIP";
+                return view('tenant.quality.reports.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
             })->name('reports');
         });
 

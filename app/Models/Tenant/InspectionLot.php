@@ -10,41 +10,27 @@ class InspectionLot extends Model
     protected $table = 'inspection_lots';
 
     protected $fillable = [
-        'lot_number',
         'grn_id',
-        'grn_line_id',
         'material_id',
-        'lot_qty',
         'sample_size',
-        'sampling_method',
-        'assigned_to',
-        'due_by',
         'status',
-        'remarks',
+        'created_by',
+        'approved_by',
+        'approved_at',
     ];
 
     protected $casts = [
-        'lot_qty' => 'decimal:3',
-        'sample_size' => 'decimal:3',
-        'due_by' => 'datetime',
+        'approved_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
 
     /**
-     * Get the GRN header
+     * Get the GRN
      */
     public function grn()
     {
         return $this->belongsTo(GRN::class, 'grn_id');
-    }
-
-    /**
-     * Get the GRN line item
-     */
-    public function grnLineItem()
-    {
-        return $this->belongsTo(GRNLineItem::class, 'grn_line_id');
     }
 
     /**
@@ -56,54 +42,43 @@ class InspectionLot extends Model
     }
 
     /**
-     * Get the assigned QC technician
+     * Get QC results
      */
-    public function assignedTechnician()
+    public function qcResults()
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->hasMany(QCResult::class, 'inspection_lot_id');
     }
 
     /**
-     * Get the test results
+     * Get QC decision
      */
-    public function testResults()
+    public function qcDecision()
     {
-        return $this->hasMany(InspectionResult::class, 'lot_id');
+        return $this->hasOne(QCDecision::class, 'inspection_lot_id');
     }
 
     /**
-     * Get the usage decision
+     * Get creator
      */
-    public function usageDecision()
+    public function creator()
     {
-        return $this->hasOne(UsageDecision::class, 'lot_id');
+        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
-     * Generate lot number: IL-YY-NNNN
+     * Get approver
      */
-    public static function generateLotNumber(): string
+    public function approver()
     {
-        $year = now()->format('y');
-        $month = now()->format('m');
-        
-        $lastLot = self::where('lot_number', 'like', "IL-{$year}{$month}/%")
-            ->orderBy('id', 'desc')
-            ->first();
-        
-        $nextNumber = $lastLot 
-            ? intval(substr($lastLot->lot_number, -4)) + 1
-            : 1;
-        
-        return sprintf('IL-%s%s/%04d', $year, $month, $nextNumber);
+        return $this->belongsTo(User::class, 'approved_by');
     }
 
     /**
-     * Check if lot can be edited
+     * Check if lot can be started
      */
-    public function canEdit(): bool
+    public function canStart(): bool
     {
-        return in_array($this->status, ['PENDING', 'IN_PROGRESS']);
+        return $this->status === 'PENDING';
     }
 
     /**
@@ -112,14 +87,6 @@ class InspectionLot extends Model
     public function canComplete(): bool
     {
         return $this->status === 'IN_PROGRESS';
-    }
-
-    /**
-     * Check if decision can be made
-     */
-    public function canMakeDecision(): bool
-    {
-        return $this->status === 'COMPLETED';
     }
 
     /**
@@ -152,21 +119,5 @@ class InspectionLot extends Model
     public function scopeByGRN($query, int $grnId)
     {
         return $query->where('grn_id', $grnId);
-    }
-
-    /**
-     * Scope: By Material
-     */
-    public function scopeByMaterial($query, int $materialId)
-    {
-        return $query->where('material_id', $materialId);
-    }
-
-    /**
-     * Scope: By Technician
-     */
-    public function scopeByTechnician($query, int $userId)
-    {
-        return $query->where('assigned_to', $userId);
     }
 }

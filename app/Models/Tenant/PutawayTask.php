@@ -10,22 +10,16 @@ class PutawayTask extends Model
     protected $table = 'putaway_tasks';
 
     protected $fillable = [
-        'task_number',
-        'grn_line_id',
+        'grn_id',
         'material_id',
-        'batch_number',
-        'quantity',
-        'uom_id',
         'source_bin_id',
         'destination_bin_id',
-        'strategy',
+        'quantity',
         'status',
-        'bin_scan_confirmed',
-        'item_scan_confirmed',
-        'completed_at',
-        'assigned_to',
+        'strategy',
+        'created_by',
         'completed_by',
-        'remarks',
+        'completed_at',
     ];
 
     protected $casts = [
@@ -36,11 +30,11 @@ class PutawayTask extends Model
     ];
 
     /**
-     * Get the GRN line item
+     * Get the GRN
      */
-    public function grnLineItem()
+    public function grn()
     {
-        return $this->belongsTo(GRNLineItem::class, 'grn_line_id');
+        return $this->belongsTo(GRN::class, 'grn_id');
     }
 
     /**
@@ -52,15 +46,7 @@ class PutawayTask extends Model
     }
 
     /**
-     * Get the UOM
-     */
-    public function uom()
-    {
-        return $this->belongsTo(UOM::class, 'uom_id');
-    }
-
-    /**
-     * Get the source bin
+     * Get source bin
      */
     public function sourceBin()
     {
@@ -68,7 +54,7 @@ class PutawayTask extends Model
     }
 
     /**
-     * Get the destination bin
+     * Get destination bin
      */
     public function destinationBin()
     {
@@ -76,46 +62,27 @@ class PutawayTask extends Model
     }
 
     /**
-     * Get the assigned operator
+     * Get putaway lines
      */
-    public function assignedOperator()
+    public function putawayLines()
     {
-        return $this->belongsTo(User::class, 'assigned_to');
+        return $this->hasMany(PutawayLine::class, 'putaway_task_id');
     }
 
     /**
-     * Get the operator who completed
+     * Get creator
      */
-    public function completedByOperator()
+    public function creator()
+    {
+        return $this->belongsTo(User::class, 'created_by');
+    }
+
+    /**
+     * Get completer
+     */
+    public function completer()
     {
         return $this->belongsTo(User::class, 'completed_by');
-    }
-
-    /**
-     * Generate task number: PT-YYMM-NNNN
-     */
-    public static function generateTaskNumber(): string
-    {
-        $year = now()->format('y');
-        $month = now()->format('m');
-        
-        $lastTask = self::where('task_number', 'like', "PT-{$year}{$month}/%")
-            ->orderBy('id', 'desc')
-            ->first();
-        
-        $nextNumber = $lastTask 
-            ? intval(substr($lastTask->task_number, -4)) + 1
-            : 1;
-        
-        return sprintf('PT-%s%s/%04d', $year, $month, $nextNumber);
-    }
-
-    /**
-     * Check if task can be edited
-     */
-    public function canEdit(): bool
-    {
-        return in_array($this->status, ['PENDING', 'IN_PROGRESS']);
     }
 
     /**
@@ -139,7 +106,7 @@ class PutawayTask extends Model
      */
     public function canCancel(): bool
     {
-        return in_array($this->status, ['PENDING', 'IN_PROGRESS']);
+        return !in_array($this->status, ['COMPLETED', 'CANCELLED']);
     }
 
     /**
@@ -164,29 +131,5 @@ class PutawayTask extends Model
     public function scopeCompleted($query)
     {
         return $query->where('status', 'COMPLETED');
-    }
-
-    /**
-     * Scope: By operator
-     */
-    public function scopeByOperator($query, int $userId)
-    {
-        return $query->where('assigned_to', $userId);
-    }
-
-    /**
-     * Scope: By material
-     */
-    public function scopeByMaterial($query, int $materialId)
-    {
-        return $query->where('material_id', $materialId);
-    }
-
-    /**
-     * Scope: By destination bin
-     */
-    public function scopeByDestinationBin($query, int $binId)
-    {
-        return $query->where('destination_bin_id', $binId);
     }
 }

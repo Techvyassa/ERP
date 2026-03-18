@@ -347,17 +347,17 @@
                                 <tbody class="divide-y divide-gray-100">
                                     <template x-for="line in selectedGRN?.line_items" :key="line.id">
                                         <tr class="hover:bg-gray-50">
-                                            <td class="px-3 py-2" x-text="line.material?.material_name || '—'"></td>
-                                            <td class="px-3 py-2" x-text="line.material?.hsn_code?.hsn_code || '—'"></td>
-                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.po_line_item?.ordered_qty || '—'"></td>
-                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.received_qty || '—'"></td>
-                                            <td class="px-3 py-2 text-right font-semibold" x-text="line.accepted_qty"></td>
-                                            <td class="px-3 py-2 text-right text-red-600" x-text="(parseFloat(line.mr_line_item?.received_qty || 0) - parseFloat(line.accepted_qty || 0)).toFixed(3)"></td>
-                                            <td class="px-3 py-2" x-text="line.uom?.uom_code || '—'"></td>
+                                            <td class="px-3 py-2" x-text="line.material?.material_name || line.material_name || '—'"></td>
+                                            <td class="px-3 py-2" x-text="line.material?.hsn_code?.hsn_code || line.hsn_code || '—'"></td>
+                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.po_line_item?.ordered_qty || line.ordered_qty || '—'"></td>
+                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.received_qty || line.received_qty || '—'"></td>
+                                            <td class="px-3 py-2 text-right font-semibold" x-text="line.accepted_qty || '—'"></td>
+                                            <td class="px-3 py-2 text-right text-red-600" x-text="(parseFloat(line.mr_line_item?.received_qty || line.received_qty || 0) - parseFloat(line.accepted_qty || 0)).toFixed(3)"></td>
+                                            <td class="px-3 py-2" x-text="line.uom?.uom_code || line.uom_code || '—'"></td>
                                             <td class="px-3 py-2 text-right" x-text="'₹' + parseFloat(line.unit_price || 0).toFixed(2)"></td>
                                             <td class="px-3 py-2 text-right font-semibold" x-text="'₹' + parseFloat(line.line_value || 0).toFixed(2)"></td>
                                             <td class="px-3 py-2" x-text="line.batch_number || '—'"></td>
-                                            <td class="px-3 py-2" x-text="line.warehouse_bin?.bin_code || '—'"></td>
+                                            <td class="px-3 py-2" x-text="line.warehouse_bin?.bin_code || line.bin_code || '—'"></td>
                                         </tr>
                                     </template>
                                 </tbody>
@@ -401,6 +401,7 @@
                     <div class="pt-6 border-t-2 border-gray-300 text-center text-xs text-gray-500">
                         <p x-text="'Document Generated: ' + new Date().toLocaleString('en-IN')"></p>
                         <p class="mt-1">This is a computer-generated document. No signature required.</p>
+                        <p class="mt-2 text-gray-400" x-text="'Downloaded: ' + new Date().toLocaleString('en-IN')"></p>
                     </div>
                 </div>
             </div>
@@ -540,30 +541,44 @@ function grnData() {
             const element = document.getElementById('grnPrintContent');
             const timestamp = new Date().toLocaleString('en-IN');
             
-            // Create a wrapper with watermark
+            // Clone the element to avoid modifying the original
+            const clonedElement = element.cloneNode(true);
+            
+            // Create wrapper with watermark
             const wrapper = document.createElement('div');
             wrapper.style.position = 'relative';
-            wrapper.innerHTML = element.innerHTML;
+            wrapper.style.width = '100%';
             
-            // Add watermark text
-            const watermark = document.createElement('div');
-            watermark.style.position = 'fixed';
-            watermark.style.top = '50%';
-            watermark.style.left = '50%';
-            watermark.style.transform = 'translate(-50%, -50%) rotate(-45deg)';
-            watermark.style.fontSize = '60px';
-            watermark.style.color = 'rgba(200, 200, 200, 0.15)';
-            watermark.style.zIndex = '-1';
-            watermark.style.whiteSpace = 'nowrap';
-            watermark.style.pointerEvents = 'none';
-            watermark.textContent = 'Downloaded: ' + timestamp;
-            wrapper.appendChild(watermark);
+            // Add watermark background
+            const watermarkBg = document.createElement('div');
+            watermarkBg.style.position = 'absolute';
+            watermarkBg.style.top = '50%';
+            watermarkBg.style.left = '50%';
+            watermarkBg.style.transform = 'translate(-50%, -50%) rotate(-45deg)';
+            watermarkBg.style.fontSize = '80px';
+            watermarkBg.style.fontWeight = 'bold';
+            watermarkBg.style.color = 'rgba(180, 180, 180, 0.08)';
+            watermarkBg.style.zIndex = '0';
+            watermarkBg.style.whiteSpace = 'nowrap';
+            watermarkBg.style.pointerEvents = 'none';
+            watermarkBg.style.width = '200%';
+            watermarkBg.style.textAlign = 'center';
+            watermarkBg.textContent = 'Downloaded: ' + timestamp;
+            
+            wrapper.appendChild(watermarkBg);
+            
+            // Add content
+            const contentDiv = document.createElement('div');
+            contentDiv.style.position = 'relative';
+            contentDiv.style.zIndex = '1';
+            contentDiv.innerHTML = clonedElement.innerHTML;
+            wrapper.appendChild(contentDiv);
             
             const opt = {
                 margin: 10,
                 filename: `GRN-${grnNumber}.pdf`,
                 image: { type: 'jpeg', quality: 0.98 },
-                html2canvas: { scale: 2, logging: false },
+                html2canvas: { scale: 2, logging: false, backgroundColor: '#ffffff' },
                 jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
             };
             
@@ -579,8 +594,11 @@ function grnData() {
             printWindow.document.write('<html><head><title>GRN - ' + this.selectedGRN.grn_number + '</title>');
             printWindow.document.write('<style>');
             printWindow.document.write('* { margin: 0; padding: 0; box-sizing: border-box; }');
+            printWindow.document.write('html, body { height: 100%; }');
             printWindow.document.write('body { font-family: "Arial", sans-serif; padding: 20px; background: white; position: relative; }');
-            printWindow.document.write('body::before { content: "Downloaded: ' + timestamp + '"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 60px; color: rgba(200, 200, 200, 0.15); z-index: -1; white-space: nowrap; pointer-events: none; }');
+            printWindow.document.write('@page { size: landscape A4; margin: 20mm; }');
+            printWindow.document.write('.watermark { position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 80px; font-weight: bold; color: rgba(180, 180, 180, 0.08); z-index: 0; white-space: nowrap; pointer-events: none; width: 200%; text-align: center; }');
+            printWindow.document.write('.content { position: relative; z-index: 1; }');
             printWindow.document.write('.header { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; }');
             printWindow.document.write('.header-item { }');
             printWindow.document.write('.header-item p { margin: 0; font-size: 11px; color: #666; font-weight: bold; }');
@@ -599,9 +617,14 @@ function grnData() {
             printWindow.document.write('.signature-name { font-size: 11px; color: #333; font-weight: bold; }');
             printWindow.document.write('.remarks { background-color: #f5f5f5; border: 1px solid #ddd; padding: 10px; margin: 15px 0; font-size: 10px; }');
             printWindow.document.write('.footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; text-align: center; font-size: 10px; color: #666; }');
-            printWindow.document.write('@media print { body { padding: 0; } body::before { position: fixed; } }');
+            printWindow.document.write('.footer-watermark { font-size: 9px; color: #999; margin-top: 10px; }');
+            printWindow.document.write('@media print { body { padding: 0; margin: 0; } .watermark { position: fixed; } }');
             printWindow.document.write('</style></head><body>');
+            printWindow.document.write('<div class="watermark">Downloaded: ' + timestamp + '</div>');
+            printWindow.document.write('<div class="content">');
             printWindow.document.write(element.innerHTML);
+            printWindow.document.write('<div class="footer"><div class="footer-watermark">Downloaded: ' + timestamp + '</div></div>');
+            printWindow.document.write('</div>');
             printWindow.document.write('</body></html>');
             printWindow.document.close();
             setTimeout(() => printWindow.print(), 250);

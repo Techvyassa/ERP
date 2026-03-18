@@ -7,6 +7,7 @@ use App\Models\Tenant\GRNLineItem;
 use App\Models\Tenant\MaterialReceipt;
 use App\Models\Tenant\MRLineItem;
 use App\Models\Tenant\PoLineItem;
+use App\Services\QCService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -143,11 +144,25 @@ class GRNService
         // Release stock from RESTRICTED to UNRESTRICTED
         $grn->lineItems()->update(['stock_status' => 'UNRESTRICTED']);
 
-        Log::info('GRN approved', [
-            'grn_id' => $grn->id,
-            'grn_number' => $grn->grn_number,
-            'approved_by' => $userId,
-        ]);
+        // Auto-create inspection lot for Quality department
+        try {
+            $qcService = app(QCService::class);
+            $inspectionLot = $qcService->createInspectionLot($grn, $userId);
+            
+            Log::info('GRN approved and inspection lot created', [
+                'grn_id' => $grn->id,
+                'grn_number' => $grn->grn_number,
+                'inspection_lot_id' => $inspectionLot->id,
+                'approved_by' => $userId,
+            ]);
+        } catch (\Exception $e) {
+            Log::error('Failed to create inspection lot for GRN', [
+                'grn_id' => $grn->id,
+                'error' => $e->getMessage(),
+            ]);
+            // Don't fail the approval if inspection lot creation fails
+            // Quality team can manually create it if needed
+        }
         
         return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
     }

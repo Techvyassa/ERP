@@ -7,26 +7,20 @@ use Illuminate\Database\Eloquent\Model;
 class QCParameter extends Model
 {
     protected $connection = 'tenant';
-    protected $table = 'qc_parameters_master';
+    protected $table = 'qc_parameters';
 
     protected $fillable = [
         'material_id',
         'parameter_name',
-        'parameter_category',
-        'standard_min',
-        'standard_max',
-        'standard_value',
-        'unit_of_measurement',
+        'standard_value_min',
+        'standard_value_max',
+        'unit',
         'test_method',
-        'is_critical',
-        'display_order',
-        'is_active',
-        'created_by',
     ];
 
     protected $casts = [
-        'is_critical' => 'boolean',
-        'is_active' => 'boolean',
+        'standard_value_min' => 'decimal:4',
+        'standard_value_max' => 'decimal:4',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -40,26 +34,18 @@ class QCParameter extends Model
     }
 
     /**
-     * Get the creator
+     * Get QC results for this parameter
      */
-    public function creator()
+    public function qcResults()
     {
-        return $this->belongsTo(User::class, 'created_by');
+        return $this->hasMany(QCResult::class, 'qc_parameter_id');
     }
 
     /**
-     * Scope: Active parameters
+     * Check if observed value is within standard range
      */
-    public function scopeActive($query)
+    public function isWithinStandard($observedValue): bool
     {
-        return $query->where('is_active', true);
-    }
-
-    /**
-     * Scope: By material
-     */
-    public function scopeByMaterial($query, int $materialId)
-    {
-        return $query->where('material_id', $materialId);
+        return $observedValue >= $this->standard_value_min && $observedValue <= $this->standard_value_max;
     }
 }
