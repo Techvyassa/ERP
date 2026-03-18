@@ -22,9 +22,16 @@ return new class extends Migration
 
             // --- Scope ---
             $table->unsignedBigInteger('material_id')->comment('FK → material_master');
+            $table->string('parameter_code', 50)->comment('API-friendly code: e.g. PURITY, MOISTURE');
             $table->string('parameter_name', 100)->comment('e.g. Purity %, Moisture, Hardness, Tensile Strength');
             $table->string('parameter_category', 50)->nullable()
                 ->comment('PHYSICAL / CHEMICAL / MICROBIOLOGICAL / DIMENSIONAL');
+
+            // --- Data Type ---
+            $table->enum('data_type', ['NUMERIC', 'TEXT', 'BOOLEAN'])->default('NUMERIC')
+                ->comment('Type of QC measurement');
+            $table->enum('tolerance_type', ['RANGE', 'MIN_ONLY', 'MAX_ONLY', 'EXACT'])->default('RANGE')
+                ->comment('How the acceptance criteria is evaluated');
 
             // --- Specification Limits ---
             $table->string('standard_min', 50)->nullable()->comment('Minimum acceptable value');
@@ -58,6 +65,7 @@ return new class extends Migration
             $table->index('material_id');
             $table->index('is_active');
             $table->index('is_critical');
+            $table->unique(['material_id', 'parameter_code'], 'uq_material_param_code');
             $table->unique(['material_id', 'parameter_name'], 'uq_material_parameter');
         });
     }
