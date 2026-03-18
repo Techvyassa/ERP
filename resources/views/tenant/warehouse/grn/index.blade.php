@@ -265,48 +265,143 @@
     <div x-show="showViewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
             <div class="fixed inset-0 bg-gray-900/50" @click="showViewModal = false"></div>
-            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
+            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-6xl max-h-[90vh] overflow-y-auto">
                 <div class="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200">
                     <h3 class="text-lg font-bold text-gray-900">GRN — <span x-text="selectedGRN?.grn_number"></span></h3>
-                    <button @click="showViewModal = false"><span class="material-symbols-outlined text-gray-400">close</span></button>
+                    <div class="flex items-center gap-3">
+                        <button @click="downloadGRNPDF()" title="Download PDF" class="p-2 hover:bg-gray-100 rounded-lg text-blue-600">
+                            <span class="material-symbols-outlined">download</span>
+                        </button>
+                        <button @click="printGRN()" title="Print" class="p-2 hover:bg-gray-100 rounded-lg text-green-600">
+                            <span class="material-symbols-outlined">print</span>
+                        </button>
+                        <button @click="showViewModal = false" class="p-2 hover:bg-gray-100 rounded-lg">
+                            <span class="material-symbols-outlined text-gray-400">close</span>
+                        </button>
+                    </div>
                 </div>
-                <div class="p-6 space-y-4 text-sm" x-show="selectedGRN">
-                    <div class="grid grid-cols-2 gap-3">
-                        <div><p class="text-xs text-gray-500">Status</p>
+                <div class="p-6 space-y-6 text-sm" x-show="selectedGRN" id="grnPrintContent">
+                    <!-- Watermark -->
+                    <div class="fixed inset-0 flex items-center justify-center pointer-events-none opacity-10 z-0" style="transform: rotate(-45deg);">
+                        <div class="text-center">
+                            <p class="text-6xl font-bold text-gray-400" x-text="'Downloaded: ' + new Date().toLocaleString('en-IN')"></p>
+                        </div>
+                    </div>
+
+                    <!-- Header Info -->
+                    <div class="grid grid-cols-4 gap-4 pb-4 border-b border-gray-200">
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">GRN No</p>
+                            <p class="font-bold text-primary" x-text="selectedGRN?.grn_number"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">GRN Date</p>
+                            <p class="font-medium" x-text="formatDate(selectedGRN?.grn_date)"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">PO Number</p>
+                            <p class="font-medium" x-text="selectedGRN?.purchase_order?.po_number || '—'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Vendor Name</p>
+                            <p class="font-medium" x-text="selectedGRN?.vendor?.vendor_name || '—'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Invoice No</p>
+                            <p class="font-medium" x-text="selectedGRN?.purchase_order?.po_number || '—'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Invoice Date</p>
+                            <p class="font-medium" x-text="formatDate(selectedGRN?.grn_date)"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Posting Date</p>
+                            <p class="font-medium" x-text="formatDate(selectedGRN?.posting_date)"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Status</p>
                             <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="statusClass(selectedGRN?.status)" x-text="selectedGRN?.status?.replace(/_/g,' ')"></span>
                         </div>
-                        <div><p class="text-xs text-gray-500">GRN Date</p><p class="font-medium" x-text="formatDate(selectedGRN?.grn_date)"></p></div>
-                        <div><p class="text-xs text-gray-500">Posting Date</p><p class="font-medium" x-text="formatDate(selectedGRN?.posting_date)"></p></div>
-                        <div><p class="text-xs text-gray-500">Vendor</p><p class="font-medium" x-text="selectedGRN?.vendor?.vendor_name || '—'"></p></div>
-                        <div><p class="text-xs text-gray-500">PO Number</p><p class="font-medium" x-text="selectedGRN?.purchase_order?.po_number || '—'"></p></div>
-                        <div><p class="text-xs text-gray-500">MR Number</p><p class="font-medium" x-text="selectedGRN?.material_receipt?.mr_number || '—'"></p></div>
                     </div>
+
+                    <!-- Line Items Table -->
                     <div x-show="selectedGRN?.line_items?.length">
-                        <p class="text-xs font-bold text-gray-500 uppercase mb-2">Line Items</p>
-                        <table class="w-full text-xs border border-gray-200 rounded-lg overflow-hidden">
-                            <thead class="bg-gray-50">
-                                <tr>
-                                    <th class="text-left px-3 py-2 font-semibold text-gray-600">Material</th>
-                                    <th class="text-right px-3 py-2 font-semibold text-gray-600">Accepted Qty</th>
-                                    <th class="text-left px-3 py-2 font-semibold text-gray-600">UOM</th>
-                                    <th class="text-left px-3 py-2 font-semibold text-gray-600">Batch</th>
-                                    <th class="text-left px-3 py-2 font-semibold text-gray-600">Bin</th>
-                                </tr>
-                            </thead>
-                            <tbody class="divide-y divide-gray-100">
-                                <template x-for="line in selectedGRN?.line_items" :key="line.id">
+                        <p class="text-xs font-bold text-gray-700 uppercase mb-3">Line Items</p>
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="w-full text-xs">
+                                <thead class="bg-gray-100 border-b border-gray-200">
                                     <tr>
-                                        <td class="px-3 py-2" x-text="line.material?.material_name || '—'"></td>
-                                        <td class="px-3 py-2 text-right font-semibold" x-text="line.accepted_qty"></td>
-                                        <td class="px-3 py-2" x-text="line.uom?.uom_code || '—'"></td>
-                                        <td class="px-3 py-2" x-text="line.batch_number || '—'"></td>
-                                        <td class="px-3 py-2" x-text="line.warehouse_bin?.bin_code || '—'"></td>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Item Description</th>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">HSN Code</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Ordered Qty</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Received Qty</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Accepted Qty</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Rejected Qty</th>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Unit</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Rate</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Amount</th>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Batch</th>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Bin</th>
                                     </tr>
-                                </template>
-                            </tbody>
-                        </table>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <template x-for="line in selectedGRN?.line_items" :key="line.id">
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-3 py-2" x-text="line.material?.material_name || '—'"></td>
+                                            <td class="px-3 py-2" x-text="line.material?.hsn_code?.hsn_code || '—'"></td>
+                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.po_line_item?.ordered_qty || '—'"></td>
+                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.received_qty || '—'"></td>
+                                            <td class="px-3 py-2 text-right font-semibold" x-text="line.accepted_qty"></td>
+                                            <td class="px-3 py-2 text-right text-red-600" x-text="(parseFloat(line.mr_line_item?.received_qty || 0) - parseFloat(line.accepted_qty || 0)).toFixed(3)"></td>
+                                            <td class="px-3 py-2" x-text="line.uom?.uom_code || '—'"></td>
+                                            <td class="px-3 py-2 text-right" x-text="'₹' + parseFloat(line.unit_price || 0).toFixed(2)"></td>
+                                            <td class="px-3 py-2 text-right font-semibold" x-text="'₹' + parseFloat(line.line_value || 0).toFixed(2)"></td>
+                                            <td class="px-3 py-2" x-text="line.batch_number || '—'"></td>
+                                            <td class="px-3 py-2" x-text="line.warehouse_bin?.bin_code || '—'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                                <tfoot class="bg-gray-50 border-t-2 border-gray-300">
+                                    <tr>
+                                        <td colspan="8" class="px-3 py-2 text-right font-bold">Total:</td>
+                                        <td class="px-3 py-2 text-right font-bold" x-text="'₹' + parseFloat(selectedGRN?.grand_total || 0).toFixed(2)"></td>
+                                        <td colspan="2"></td>
+                                    </tr>
+                                </tfoot>
+                            </table>
+                        </div>
                     </div>
-                    <div x-show="selectedGRN?.remarks"><p class="text-xs text-gray-500">Remarks</p><p x-text="selectedGRN?.remarks"></p></div>
+
+                    <!-- Signatures Section -->
+                    <div class="grid grid-cols-3 gap-6 pt-4 border-t border-gray-200">
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold mb-2">Received By</p>
+                            <div class="border-t-2 border-gray-400 pt-2 h-16"></div>
+                            <p class="text-xs text-gray-600 mt-1" x-text="selectedGRN?.material_receipt?.creator?.first_name + ' ' + selectedGRN?.material_receipt?.creator?.last_name || '—'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold mb-2">Inspected By</p>
+                            <div class="border-t-2 border-gray-400 pt-2 h-16"></div>
+                            <p class="text-xs text-gray-600 mt-1">QC Team</p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold mb-2">Approved By</p>
+                            <div class="border-t-2 border-gray-400 pt-2 h-16"></div>
+                            <p class="text-xs text-gray-600 mt-1" x-text="selectedGRN?.approver?.first_name + ' ' + selectedGRN?.approver?.last_name || '—'"></p>
+                        </div>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div class="pt-4 border-t border-gray-200">
+                        <p class="text-xs text-gray-500 font-semibold mb-2">Remarks</p>
+                        <p class="text-gray-700 bg-gray-50 p-3 rounded" x-text="selectedGRN?.remarks || '—'"></p>
+                    </div>
+
+                    <!-- Footer with Watermark Info -->
+                    <div class="pt-6 border-t-2 border-gray-300 text-center text-xs text-gray-500">
+                        <p x-text="'Document Generated: ' + new Date().toLocaleString('en-IN')"></p>
+                        <p class="mt-1">This is a computer-generated document. No signature required.</p>
+                    </div>
                 </div>
             </div>
         </div>
@@ -438,7 +533,82 @@ function grnData() {
         statusClass(s) {
             return { 'PROVISIONAL': 'bg-amber-100 text-amber-700', 'QC_PENDING': 'bg-blue-100 text-blue-700', 'ACCEPTED': 'bg-green-100 text-green-700', 'REJECTED': 'bg-red-100 text-red-700', 'PARTIALLY_ACCEPTED': 'bg-orange-100 text-orange-700', 'CANCELLED': 'bg-gray-100 text-gray-500' }[s] ?? 'bg-gray-100 text-gray-600';
         },
+
+        downloadGRNPDF() {
+            if (!this.selectedGRN) return;
+            const grnNumber = this.selectedGRN.grn_number.replace(/\//g, '-');
+            const element = document.getElementById('grnPrintContent');
+            const timestamp = new Date().toLocaleString('en-IN');
+            
+            // Create a wrapper with watermark
+            const wrapper = document.createElement('div');
+            wrapper.style.position = 'relative';
+            wrapper.innerHTML = element.innerHTML;
+            
+            // Add watermark text
+            const watermark = document.createElement('div');
+            watermark.style.position = 'fixed';
+            watermark.style.top = '50%';
+            watermark.style.left = '50%';
+            watermark.style.transform = 'translate(-50%, -50%) rotate(-45deg)';
+            watermark.style.fontSize = '60px';
+            watermark.style.color = 'rgba(200, 200, 200, 0.15)';
+            watermark.style.zIndex = '-1';
+            watermark.style.whiteSpace = 'nowrap';
+            watermark.style.pointerEvents = 'none';
+            watermark.textContent = 'Downloaded: ' + timestamp;
+            wrapper.appendChild(watermark);
+            
+            const opt = {
+                margin: 10,
+                filename: `GRN-${grnNumber}.pdf`,
+                image: { type: 'jpeg', quality: 0.98 },
+                html2canvas: { scale: 2, logging: false },
+                jsPDF: { orientation: 'landscape', unit: 'mm', format: 'a4' }
+            };
+            
+            html2pdf().set(opt).from(wrapper).save();
+        },
+
+        printGRN() {
+            if (!this.selectedGRN) return;
+            const element = document.getElementById('grnPrintContent');
+            const printWindow = window.open('', '', 'height=900,width=1200');
+            const timestamp = new Date().toLocaleString('en-IN');
+            
+            printWindow.document.write('<html><head><title>GRN - ' + this.selectedGRN.grn_number + '</title>');
+            printWindow.document.write('<style>');
+            printWindow.document.write('* { margin: 0; padding: 0; box-sizing: border-box; }');
+            printWindow.document.write('body { font-family: "Arial", sans-serif; padding: 20px; background: white; position: relative; }');
+            printWindow.document.write('body::before { content: "Downloaded: ' + timestamp + '"; position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%) rotate(-45deg); font-size: 60px; color: rgba(200, 200, 200, 0.15); z-index: -1; white-space: nowrap; pointer-events: none; }');
+            printWindow.document.write('.header { display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #333; }');
+            printWindow.document.write('.header-item { }');
+            printWindow.document.write('.header-item p { margin: 0; font-size: 11px; color: #666; font-weight: bold; }');
+            printWindow.document.write('.header-item strong { display: block; font-size: 13px; margin-top: 5px; color: #000; }');
+            printWindow.document.write('.section-title { font-size: 12px; font-weight: bold; color: #333; margin-top: 25px; margin-bottom: 10px; text-transform: uppercase; }');
+            printWindow.document.write('table { width: 100%; border-collapse: collapse; margin: 15px 0; }');
+            printWindow.document.write('th { background-color: #e5e5e5; border: 1px solid #999; padding: 8px; text-align: left; font-size: 10px; font-weight: bold; color: #333; }');
+            printWindow.document.write('td { border: 1px solid #ddd; padding: 8px; font-size: 10px; }');
+            printWindow.document.write('tbody tr:nth-child(even) { background-color: #f9f9f9; }');
+            printWindow.document.write('tfoot { background-color: #e5e5e5; font-weight: bold; }');
+            printWindow.document.write('tfoot td { border: 1px solid #999; }');
+            printWindow.document.write('.text-right { text-align: right; }');
+            printWindow.document.write('.signatures { display: grid; grid-template-columns: repeat(3, 1fr); gap: 40px; margin-top: 40px; }');
+            printWindow.document.write('.signature-box { text-align: center; }');
+            printWindow.document.write('.signature-line { border-top: 2px solid #333; margin: 50px 0 10px 0; }');
+            printWindow.document.write('.signature-name { font-size: 11px; color: #333; font-weight: bold; }');
+            printWindow.document.write('.remarks { background-color: #f5f5f5; border: 1px solid #ddd; padding: 10px; margin: 15px 0; font-size: 10px; }');
+            printWindow.document.write('.footer { margin-top: 40px; padding-top: 20px; border-top: 2px solid #333; text-align: center; font-size: 10px; color: #666; }');
+            printWindow.document.write('@media print { body { padding: 0; } body::before { position: fixed; } }');
+            printWindow.document.write('</style></head><body>');
+            printWindow.document.write(element.innerHTML);
+            printWindow.document.write('</body></html>');
+            printWindow.document.close();
+            setTimeout(() => printWindow.print(), 250);
+        },
     };
 }
 </script>
 @endsection
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>

@@ -61,11 +61,11 @@ class GRNController extends Controller
     {
         try {
             $grn = GRN::with([
-                'lineItems.material',
+                'lineItems.material.hsnCode',
                 'lineItems.uom',
                 'lineItems.warehouseBin',
-                'lineItems.mrLineItem',
-                'materialReceipt',
+                'lineItems.mrLineItem.poLineItem',
+                'materialReceipt.creator',
                 'purchaseOrder',
                 'vendor',
                 'creator',
