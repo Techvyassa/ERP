@@ -243,6 +243,14 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('users.index');
 
+        Route::get('/users/create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.users.create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('users.create');
+
         Route::get('/users/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.users.edit', [

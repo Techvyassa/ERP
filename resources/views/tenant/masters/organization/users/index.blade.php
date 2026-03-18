@@ -8,7 +8,7 @@
 @endpush
 
 @section('content')
-<div x-data="userMasterData()" x-init="loadData()">
+<div x-data="userMasterData('{{ url(request()->get('tenant_type') === 'subdomain' ? '' : '/org/' . $organization->org_slug) }}')" x-init="loadData()">
     <!-- CSV Upload Modal -->
     <div x-show="showUploadModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
         <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
@@ -173,6 +173,7 @@
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Department</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
                             <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
+                            <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Dept URL</th>
                             <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                         </tr>
                     </thead>
@@ -180,7 +181,7 @@
                     <tbody class="bg-white divide-y divide-gray-200">
                         <template x-if="loading">
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="8" class="px-6 py-12 text-center">
                                     <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
                                     <p class="text-gray-600 mt-2">Loading users...</p>
                                 </td>
@@ -189,7 +190,7 @@
 
                         <template x-if="!loading && items.length === 0">
                             <tr>
-                                <td colspan="7" class="px-6 py-12 text-center">
+                                <td colspan="8" class="px-6 py-12 text-center">
                                     <i class="fas fa-users text-6xl text-gray-300 mb-4"></i>
                                     <p class="text-gray-600">No users found.</p>
                                 </td>
@@ -207,6 +208,21 @@
                                     <span class="px-2 py-1 text-xs rounded-full"
                                           :class="item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
                                           x-text="item.is_active ? 'Active' : 'Inactive'"></span>
+                                </td>
+                                <td class="px-6 py-4 whitespace-nowrap text-sm">
+                                    <template x-if="item.department">
+                                        <div class="flex items-center gap-2">
+                                            <span class="text-blue-600 text-xs truncate max-w-[160px]" x-text="deptUrl(item)" :title="deptUrl(item)"></span>
+                                            <button @click="copyDeptUrl(item)"
+                                                    class="flex-shrink-0 inline-flex items-center gap-1 px-2 py-1 text-xs bg-gray-100 hover:bg-gray-200 text-gray-600 hover:text-gray-900 rounded transition-colors border border-gray-200"
+                                                    title="Copy URL">
+                                                <i class="fas fa-copy"></i> Copy
+                                            </button>
+                                        </div>
+                                    </template>
+                                    <template x-if="!item.department">
+                                        <span class="text-gray-400 text-xs">—</span>
+                                    </template>
                                 </td>
                                 <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
                                     <button @click="openViewModal(item)" class="inline-flex items-center px-3 py-1.5 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded transition-colors" title="View">
@@ -254,8 +270,9 @@
 </div>
 
 <script>
- function userMasterData() {
+ function userMasterData(baseUrl) {
      return {
+         baseUrl: baseUrl || '',
          showUploadModal: false,
          selectedFile: null,
          uploading: false,
@@ -387,6 +404,33 @@
              } catch (e) {
                  console.error('Failed to deactivate user:', e);
                  this.showNotification(e.message || 'Failed to deactivate user', 'error');
+             }
+         },
+
+         deptUrl(item) {
+             if (!item.department) return '';
+             const name = (item.department.dept_name || item.department.dept_code || '').toLowerCase();
+             let portal = 'admin';
+             if (name.includes('procurement') || name.includes('purchase')) portal = 'procurement';
+             else if (name.includes('warehouse') || name.includes('store')) portal = 'warehouse';
+             else if (name.includes('quality') || name.includes('qc')) portal = 'quality';
+             else if (name.includes('security') || name.includes('guard')) portal = 'security';
+             return this.baseUrl + '/' + portal + '/login';
+         },
+
+         async copyDeptUrl(item) {
+             const url = this.deptUrl(item);
+             try {
+                 await navigator.clipboard.writeText(url);
+                 this.showNotification('URL copied!', 'success');
+             } catch (e) {
+                 const el = document.createElement('textarea');
+                 el.value = url;
+                 document.body.appendChild(el);
+                 el.select();
+                 document.execCommand('copy');
+                 document.body.removeChild(el);
+                 this.showNotification('URL copied!', 'success');
              }
          },
 

@@ -116,7 +116,7 @@
                 </div>
 
                 <!-- Role Permissions Preview -->
-                <div x-show="form.role_id && rolePermissions.length > 0" x-transition class="mt-6">
+                <!-- <div x-show="form.role_id && rolePermissions.length > 0" x-transition class="mt-6">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h4 class="text-sm font-semibold text-blue-900 mb-3 flex items-center">
                             <i class="fas fa-shield-alt mr-2"></i>
@@ -153,7 +153,7 @@
                             </template>
                         </div>
                     </div>
-                </div>
+                </div> -->
             </div>
 
             <!-- Password Change (Optional) -->
