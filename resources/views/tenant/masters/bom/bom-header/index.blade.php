@@ -118,7 +118,6 @@ function bomData() {
             this.loading = true;
             try {
                 const params = new URLSearchParams();
-                params.append('is_active', '1'); // Default to active only
                 if (this.filters.search) params.append('search', this.filters.search);
 
                 const response = await fetch(`/api/v1/bom-headers?${params.toString()}`, {
@@ -131,7 +130,8 @@ function bomData() {
                     throw new Error((data && data.message) ? data.message : 'Failed to load BOMs');
                 }
 
-                let boms = (data && data.data && data.data.boms) ? data.data.boms : [];
+                // API returns data directly as array, not nested
+                let boms = Array.isArray(data.data) ? data.data : (data.data && data.data.boms) ? data.data.boms : [];
                 
                 // Client-side filtering for product
                 if (this.filters.product) {
@@ -147,13 +147,11 @@ function bomData() {
                     id: b.id,
                     bom_code: b.bom_code,
                     product_name: b.product ? b.product.product_name : 'N/A',
-                    version: b.bom_version || 'v1.0',
+                    version: b.version || 'v1.0',
                     batch_size: b.batch_size || 1,
-                    output_uom_name: b.product && b.product.uom ? b.product.uom.uom_code : '',
+                    output_uom_name: b.output_uom ? b.output_uom.uom_code : '',
                     effective_from: b.effective_from || '-',
-                    bom_status: this.getBOMStatus(b),
-                    is_active: b.is_active,
-                    is_approved: b.is_approved
+                    bom_status: b.bom_status || 'DRAFT'
                 }));
 
                 // Apply status filter
@@ -170,9 +168,7 @@ function bomData() {
         },
         
         getBOMStatus(bom) {
-            if (!bom.is_active) return 'OBSOLETE';
-            if (!bom.is_approved) return 'DRAFT';
-            return 'ACTIVE';
+            return bom.bom_status || 'DRAFT';
         },
         
         resetFilters() {

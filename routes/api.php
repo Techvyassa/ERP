@@ -438,7 +438,16 @@ Route::prefix('v1')->group(function () {
                 Route::delete('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'destroy']);
             });
 
-            // BOM Detail
+            // Allow BOM users to access Materials and UOMs for BOM creation
+            Route::prefix('materials')->group(function () {
+                Route::get('/', [App\Http\Controllers\MaterialController::class, 'index']);
+            });
+            
+            Route::prefix('uoms')->group(function () {
+                Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
+            });
+
+            // BOM Details
             Route::prefix('bom-details')->group(function () {
                 Route::get('/', [App\Http\Controllers\BOMDetailController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\BOMDetailController::class, 'show']);

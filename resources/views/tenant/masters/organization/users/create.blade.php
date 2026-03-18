@@ -116,7 +116,7 @@
                             Full Name <span class="text-red-500">*</span>
                         </label>
                         <input type="text" x-model="form.full_name" required
-                            placeholder="John Doe"
+                            placeholder="Full Name"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Display name</p>
                     </div>
@@ -127,7 +127,7 @@
                             Phone
                         </label>
                         <input type="text" x-model="form.phone"
-                            placeholder="+91 9876543210"
+                            placeholder="+91 0000000000"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Contact number</p>
                     </div>
@@ -290,11 +290,16 @@
 
             async loadDepartments() {
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch('/api/v1/departments');
-                    // const data = await response.json();
-                    // this.departments = data.data;
-                    this.departments = [];
+                    const response = await fetch('/api/v1/departments', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        // API returns data directly as array, not nested
+                        this.departments = Array.isArray(data.data) ? data.data : (data.data?.departments || []);
+                    }
                 } catch (error) {
                     console.error('Failed to load departments:', error);
                 }
@@ -302,11 +307,16 @@
 
             async loadRoles() {
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch('/api/v1/roles');
-                    // const data = await response.json();
-                    // this.roles = data.data;
-                    this.roles = [];
+                    const response = await fetch('/api/v1/roles', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        // API returns data directly as array, not nested
+                        this.roles = Array.isArray(data.data) ? data.data : (data.data?.roles || []);
+                    }
                 } catch (error) {
                     console.error('Failed to load roles:', error);
                 }
@@ -319,45 +329,15 @@
                 }
 
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`);
-                    // const data = await response.json();
-                    // this.rolePermissions = data.data.permissions;
-
-                    // Mock data for demonstration
-                    this.rolePermissions = [{
-                            module_code: 'PR',
-                            can_view: true,
-                            can_create: true,
-                            can_edit: true,
-                            can_approve: false,
-                            can_delete: false
-                        },
-                        {
-                            module_code: 'PO',
-                            can_view: true,
-                            can_create: true,
-                            can_edit: true,
-                            can_approve: true,
-                            can_delete: false
-                        },
-                        {
-                            module_code: 'GRN',
-                            can_view: true,
-                            can_create: false,
-                            can_edit: false,
-                            can_approve: false,
-                            can_delete: false
-                        },
-                        {
-                            module_code: 'INVENTORY',
-                            can_view: true,
-                            can_create: true,
-                            can_edit: true,
-                            can_approve: false,
-                            can_delete: true
-                        },
-                    ];
+                    const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`, {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.rolePermissions = Array.isArray(data.data) ? data.data : (data.data?.permissions || []);
+                    }
                 } catch (error) {
                     console.error('Failed to load role permissions:', error);
                     this.rolePermissions = [];
@@ -437,10 +417,11 @@
 
                     const response = await fetch('/api/v1/users', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
                             'Content-Type': 'application/json',
-                            'Accept': 'application/json'
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
                         body: JSON.stringify(formData)
                     });

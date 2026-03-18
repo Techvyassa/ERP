@@ -33,9 +33,7 @@ class UOMController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'uoms' => $uoms
-                ],
+                'data' => $uoms->toArray(),
                 'message' => 'UOMs retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()

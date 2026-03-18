@@ -3,37 +3,31 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BOMHeader extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'bom_header';
+    public $timestamps = false;
 
     protected $fillable = [
         'bom_code',
-        'bom_version',
+        'version',
         'product_id',
-        'bom_description',
         'effective_from',
         'effective_to',
+        'bom_status',
         'batch_size',
-        'is_active',
-        'is_approved',
-        'approved_by',
-        'approved_at',
+        'output_uom_id',
+        'remarks',
         'created_by',
-        'updated_by'
+        'approved_by'
     ];
 
     protected $casts = [
-        'is_active' => 'boolean',
-        'is_approved' => 'boolean',
         'effective_from' => 'date',
         'effective_to' => 'date',
-        'approved_at' => 'datetime',
-        'batch_size' => 'decimal:2'
+        'batch_size' => 'decimal:3'
     ];
 
     // Relationships
@@ -42,9 +36,9 @@ class BOMHeader extends Model
         return $this->belongsTo(Product::class, 'product_id');
     }
 
-    public function bomDetails()
+    public function outputUom()
     {
-        return $this->hasMany(BOMDetail::class, 'bom_header_id');
+        return $this->belongsTo(UOM::class, 'output_uom_id');
     }
 
     public function approver()
@@ -57,20 +51,20 @@ class BOMHeader extends Model
         return $this->belongsTo(User::class, 'created_by');
     }
 
-    public function updater()
+    public function bomDetails()
     {
-        return $this->belongsTo(User::class, 'updated_by');
+        return $this->hasMany(BOMDetail::class, 'bom_id');
     }
 
     // Scopes
     public function scopeActive($query)
     {
-        return $query->where('is_active', true);
+        return $query->where('bom_status', 'ACTIVE');
     }
 
     public function scopeApproved($query)
     {
-        return $query->where('is_approved', true);
+        return $query->where('bom_status', 'ACTIVE');
     }
 
     public function scopeByProduct($query, $productId)

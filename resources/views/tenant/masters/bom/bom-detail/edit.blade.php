@@ -1,21 +1,21 @@
 @extends('tenant.layouts.bom')
 
-@section('title', 'Create BOM Detail')
-@section('page-title', 'Create New BOM Component')
+@section('title', 'Edit BOM Detail')
+@section('page-title', 'Edit BOM Component')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
 @endpush
 
 @section('content')
-<div x-data="bomDetailForm()" x-init="loadDropdowns()">
+<div x-data="bomDetailForm()" x-init="loadData()">
     <div class="max-w-3xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create New BOM Component</h2>
-                    <p class="text-gray-600 mt-1">Add material component to BOM</p>
+                    <h2 class="text-2xl font-bold text-gray-900">Edit BOM Component</h2>
+                    <p class="text-gray-600 mt-1">Update material component details</p>
                 </div>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-detail' : '/org/' . $organization->org_slug . '/bom-detail') }}" 
                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -35,14 +35,14 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             BOM <span class="text-red-500">*</span>
                         </label>
-                        <select x-model.number="form.bom_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select x-model.number="form.bom_id" required disabled
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-gray-50">
                             <option value="">Select BOM</option>
                             <template x-for="bom in boms" :key="bom.id">
                                 <option :value="bom.id" x-text="bom.bom_code + ' - v' + bom.version"></option>
                             </template>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">Select the BOM this material belongs to</p>
+                        <p class="text-xs text-gray-500 mt-1">BOM cannot be changed after creation</p>
                     </div>
 
                     <!-- Material -->
@@ -162,7 +162,7 @@
                     <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
                     <div class="text-sm text-blue-800">
                         <p class="font-semibold mb-1">About BOM Detail</p>
-                        <p>Each BOM Detail represents a material component required to produce the product. Sequence numbers must be unique within a BOM.</p>
+                        <p>Update the material component details. The BOM header cannot be changed after creation.</p>
                     </div>
                 </div>
             </div>
@@ -180,17 +180,6 @@
                 </div>
             </template>
 
-            <!-- Debug Info -->
-            <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 mb-6">
-                <div class="text-xs text-yellow-800">
-                    <p class="font-semibold mb-2">Debug Info:</p>
-                    <p>BOMs: <span x-text="boms.length"></span> loaded</p>
-                    <p>Materials: <span x-text="materials.length"></span> loaded</p>
-                    <p>UOMs: <span x-text="uoms.length"></span> loaded</p>
-                    <p class="mt-2 text-gray-600">Check browser console (F12) for detailed logs</p>
-                </div>
-            </div>
-
             <!-- Form Actions -->
             <div class="flex items-center justify-end space-x-4 pt-6 border-t">
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-detail' : '/org/' . $organization->org_slug . '/bom-detail') }}" 
@@ -199,8 +188,8 @@
                 </a>
                 <button type="submit" :disabled="loading"
                         class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading">Create Component</span>
-                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+                    <span x-show="!loading">Update Component</span>
+                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
                 </button>
             </div>
         </form>
@@ -217,6 +206,7 @@ function bomDetailForm() {
         uoms: [],
         tenantType: '{{ request()->get("tenant_type") }}',
         orgSlug: '{{ $organization->org_slug ?? "" }}',
+        detailId: {{ $id }},
         form: {
             bom_id: '',
             material_id: '',
@@ -242,11 +232,11 @@ function bomDetailForm() {
             });
         },
         
-        async loadDropdowns() {
-            console.log('Starting loadDropdowns...');
+        async loadData() {
+            console.log('Starting loadData...');
+            this.loading = true;
             try {
                 // Load BOMs
-                console.log('Loading BOMs...');
                 try {
                     const bomsResponse = await fetch('/api/v1/bom-headers', {
                         method: 'GET',
@@ -256,18 +246,13 @@ function bomDetailForm() {
                             'Content-Type': 'application/json'
                         }
                     });
-                    console.log('BOMs response status:', bomsResponse.status);
                     
                     if (bomsResponse.ok) {
                         const bomsData = await bomsResponse.json();
-                        console.log('BOMs data:', bomsData);
                         this.boms = Array.isArray(bomsData.data) ? bomsData.data : (bomsData.data && bomsData.data.boms) ? bomsData.data.boms : [];
-                        console.log('BOMs loaded:', this.boms.length, this.boms);
                     } else {
-                        const errorText = await bomsResponse.text();
-                        console.error('BOM Headers error:', bomsResponse.status, errorText);
                         if (bomsResponse.status === 403) {
-                            this.error = 'You do not have permission to access BOM Headers. Please contact your administrator.';
+                            this.error = 'You do not have permission to access BOM Headers.';
                         } else {
                             this.error = `Failed to load BOMs: ${bomsResponse.status}`;
                         }
@@ -278,7 +263,6 @@ function bomDetailForm() {
                 }
                 
                 // Load Materials
-                console.log('Loading Materials...');
                 try {
                     const materialsResponse = await fetch('/api/v1/materials', {
                         method: 'GET',
@@ -288,18 +272,13 @@ function bomDetailForm() {
                             'Content-Type': 'application/json'
                         }
                     });
-                    console.log('Materials response status:', materialsResponse.status);
                     
                     if (materialsResponse.ok) {
                         const materialsData = await materialsResponse.json();
-                        console.log('Materials data:', materialsData);
                         this.materials = Array.isArray(materialsData.data) ? materialsData.data : (materialsData.data && materialsData.data.materials) ? materialsData.data.materials : [];
-                        console.log('Materials loaded:', this.materials.length, this.materials);
                     } else {
-                        const errorText = await materialsResponse.text();
-                        console.error('Materials error:', materialsResponse.status, errorText);
                         if (materialsResponse.status === 403) {
-                            this.error = 'You do not have permission to access Materials. Please contact your administrator.';
+                            this.error = 'You do not have permission to access Materials.';
                         } else {
                             this.error = `Failed to load Materials: ${materialsResponse.status}`;
                         }
@@ -310,7 +289,6 @@ function bomDetailForm() {
                 }
                 
                 // Load UOMs
-                console.log('Loading UOMs...');
                 try {
                     const uomsResponse = await fetch('/api/v1/uoms', {
                         method: 'GET',
@@ -320,18 +298,13 @@ function bomDetailForm() {
                             'Content-Type': 'application/json'
                         }
                     });
-                    console.log('UOMs response status:', uomsResponse.status);
                     
                     if (uomsResponse.ok) {
                         const uomsData = await uomsResponse.json();
-                        console.log('UOMs data:', uomsData);
                         this.uoms = Array.isArray(uomsData.data) ? uomsData.data : (uomsData.data && uomsData.data.uoms) ? uomsData.data.uoms : [];
-                        console.log('UOMs loaded:', this.uoms.length, this.uoms);
                     } else {
-                        const errorText = await uomsResponse.text();
-                        console.error('UOMs error:', uomsResponse.status, errorText);
                         if (uomsResponse.status === 403) {
-                            this.error = 'You do not have permission to access UOMs. Please contact your administrator.';
+                            this.error = 'You do not have permission to access UOMs.';
                         } else {
                             this.error = `Failed to load UOMs: ${uomsResponse.status}`;
                         }
@@ -341,15 +314,43 @@ function bomDetailForm() {
                     this.error = `Error loading UOMs: ${e.message}`;
                 }
                 
-                console.log('Final state - BOMs:', this.boms.length, 'Materials:', this.materials.length, 'UOMs:', this.uoms.length);
-                if (this.boms.length === 0 && this.materials.length === 0 && this.uoms.length === 0) {
-                    if (!this.error) {
-                        this.error = 'No data loaded from API. Check console for details.';
+                // Load BOM Detail
+                try {
+                    const detailResponse = await fetch(`/api/v1/bom-details/${this.detailId}`, {
+                        method: 'GET',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'Content-Type': 'application/json'
+                        }
+                    });
+                    
+                    if (detailResponse.ok) {
+                        const detailData = await detailResponse.json();
+                        const detail = detailData.data;
+                        this.form = {
+                            bom_id: detail.bom_id,
+                            material_id: detail.material_id,
+                            line_no: detail.line_no,
+                            qty_required: detail.qty_required,
+                            uom_id: detail.uom_id,
+                            scrap_percent: detail.scrap_percent || 0,
+                            substitute_material_id: detail.substitute_material_id || '',
+                            is_critical: detail.is_critical || false,
+                            remarks: detail.remarks || ''
+                        };
+                    } else {
+                        this.error = `Failed to load BOM detail: ${detailResponse.status}`;
                     }
+                } catch (e) {
+                    console.error('Failed to load BOM detail:', e);
+                    this.error = `Error loading BOM detail: ${e.message}`;
                 }
             } catch (error) {
-                console.error('Failed to load dropdowns:', error);
+                console.error('Failed to load data:', error);
                 this.error = 'Failed to load form data: ' + error.message;
+            } finally {
+                this.loading = false;
             }
         },
         
@@ -365,9 +366,8 @@ function bomDetailForm() {
                 if (!this.form.qty_required) throw new Error('Quantity Required is required');
                 if (!this.form.uom_id) throw new Error('UOM is required');
                 
-                // Prepare data with proper types
+                // Prepare data with proper types (don't include effective_qty - it's a generated column)
                 const submitData = {
-                    bom_id: parseInt(this.form.bom_id),
                     material_id: parseInt(this.form.material_id),
                     line_no: parseInt(this.form.line_no),
                     qty_required: parseFloat(this.form.qty_required),
@@ -378,10 +378,8 @@ function bomDetailForm() {
                     remarks: this.form.remarks || null
                 };
                 
-                console.log('Submitting BOM Detail:', submitData);
-                
-                const response = await fetch('/api/v1/bom-details', {
-                    method: 'POST',
+                const response = await fetch(`/api/v1/bom-details/${this.detailId}`, {
+                    method: 'PUT',
                     credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
@@ -391,29 +389,24 @@ function bomDetailForm() {
                     body: JSON.stringify(submitData)
                 });
                 
-                console.log('Response status:', response.status);
                 const result = await response.json();
-                console.log('Response data:', result);
                 
                 if (!response.ok) {
-                    let errorMessage = result.message || 'Failed to create BOM detail';
                     if (result.error?.details) {
-                        const errors = Object.entries(result.error.details)
-                            .map(([key, value]) => `${key}: ${Array.isArray(value) ? value.join(', ') : value}`)
-                            .join('\n');
-                        errorMessage = errors || errorMessage;
+                        const errors = Object.values(result.error.details).flat();
+                        throw new Error(errors.join(', '));
                     }
-                    throw new Error(errorMessage);
+                    throw new Error(result.message || 'Failed to update BOM detail');
                 }
                 
-                alert('BOM detail created successfully');
+                alert('BOM detail updated successfully');
                 if (this.tenantType === 'subdomain') {
                     window.location.href = '/bom-detail';
                 } else {
                     window.location.href = `/org/${this.orgSlug}/bom-detail`;
                 }
             } catch (error) {
-                console.error('Failed to create BOM detail:', error);
+                console.error('Failed to update BOM detail:', error);
                 this.error = error.message;
             } finally {
                 this.loading = false;

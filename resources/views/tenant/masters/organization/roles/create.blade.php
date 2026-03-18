@@ -3,6 +3,10 @@
 @section('title', 'Create Role')
 @section('page-title', 'Create New Role')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="roleForm()">
     <div class="max-w-3xl mx-auto">
@@ -112,9 +116,26 @@ function roleForm() {
         async submitForm() {
             this.loading = true;
             try {
-                // TODO: Replace with actual API call
-                alert('Role creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(this.form, null, 2));
-                // window.location.href = '/roles';
+                const response = await fetch('/api/v1/roles', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(this.form)
+                });
+                
+                const data = await response.json();
+                
+                if (!response.ok) {
+                    alert(data.message || 'Failed to create role');
+                    return;
+                }
+                
+                alert('Role created successfully!');
+                window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/roles" : "/org/" . $organization->org_slug . "/roles") }}';
             } catch (error) {
                 console.error('Failed to create role:', error);
                 alert('Failed to create role. Please try again.');
