@@ -16,28 +16,55 @@ class QCService
      */
     public function createInspectionLot(GRN $grn, int $userId): InspectionLot
     {
+        Log::debug('[QCService] Starting createInspectionLot', [
+            'grn_id' => $grn->id,
+            'grn_number' => $grn->grn_number,
+            'user_id' => $userId
+        ]);
+        
         return DB::connection('tenant')->transaction(function () use ($grn, $userId) {
             // Get first line item to determine material and sample size
             $firstLineItem = $grn->lineItems->first();
             
+            Log::debug('[QCService] First line item', [
+                'grn_id' => $grn->id,
+                'line_item' => $firstLineItem ? $firstLineItem->toArray() : null
+            ]);
+            
             if (!$firstLineItem) {
+                Log::warning('[QCService] GRN has no line items', ['grn_id' => $grn->id]);
                 throw new \Exception('GRN has no line items');
             }
 
             // Calculate sample size (10% of accepted qty, minimum 1)
             $sampleSize = max(1, ceil($firstLineItem->accepted_qty * 0.1));
+            
+            Log::debug('[QCService] Sample size calculated', [
+                'grn_id' => $grn->id,
+                'accepted_qty' => $firstLineItem->accepted_qty,
+                'sample_size' => $sampleSize
+            ]);
+
+            // Generate lot number
+            $lotNumber = 'IL-' . now()->format('y') . '-' . str_pad(InspectionLot::count() + 1, 4, '0', STR_PAD_LEFT);
 
             $lot = InspectionLot::create([
+                'lot_number' => $lotNumber,
                 'grn_id' => $grn->id,
+                'grn_line_id' => $firstLineItem->id,
                 'material_id' => $firstLineItem->material_id,
+                'lot_qty' => $firstLineItem->accepted_qty,
                 'sample_size' => $sampleSize,
+                'sampling_method' => 'AQL',
                 'status' => 'PENDING',
                 'created_by' => $userId,
             ]);
 
-            Log::info('Inspection lot created', [
+            Log::info('[QCService] Inspection lot created', [
                 'lot_id' => $lot->id,
+                'lot_number' => $lotNumber,
                 'grn_id' => $grn->id,
+                'grn_line_id' => $firstLineItem->id,
                 'material_id' => $firstLineItem->material_id,
                 'sample_size' => $sampleSize,
             ]);

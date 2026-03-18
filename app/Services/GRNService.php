@@ -129,36 +129,48 @@ class GRNService
      */
     public function approveGRN(int $id, int $userId): GRN
     {
+        Log::debug('[GRNService] Starting approveGRN', ['grn_id' => $id, 'user_id' => $userId]);
+        
         $grn = GRN::findOrFail($id);
+        Log::debug('[GRNService] GRN found', ['grn_id' => $grn->id, 'grn_number' => $grn->grn_number, 'status' => $grn->status]);
         
         if (!$grn->canApprove()) {
+            Log::warning('[GRNService] GRN cannot be approved', ['grn_id' => $grn->id, 'status' => $grn->status]);
             throw new \Exception('GRN cannot be approved in current status: ' . $grn->status);
         }
         
+        // Update GRN status
         $grn->update([
             'status' => 'QC_PENDING',
             'approved_by' => $userId,
             'approved_at' => now(),
         ]);
+        Log::debug('[GRNService] GRN status updated to QC_PENDING', ['grn_id' => $grn->id]);
 
         // Release stock from RESTRICTED to UNRESTRICTED
         $grn->lineItems()->update(['stock_status' => 'UNRESTRICTED']);
+        Log::debug('[GRNService] Stock status updated', ['grn_id' => $grn->id]);
 
         // Auto-create inspection lot for Quality department
         try {
+            Log::debug('[GRNService] Attempting to create inspection lot', ['grn_id' => $grn->id]);
+            
             $qcService = app(QCService::class);
+            Log::debug('[GRNService] QCService instantiated', ['grn_id' => $grn->id]);
+            
             $inspectionLot = $qcService->createInspectionLot($grn, $userId);
             
-            Log::info('GRN approved and inspection lot created', [
+            Log::info('[GRNService] GRN approved and inspection lot created', [
                 'grn_id' => $grn->id,
                 'grn_number' => $grn->grn_number,
                 'inspection_lot_id' => $inspectionLot->id,
                 'approved_by' => $userId,
             ]);
         } catch (\Exception $e) {
-            Log::error('Failed to create inspection lot for GRN', [
+            Log::error('[GRNService] Failed to create inspection lot for GRN', [
                 'grn_id' => $grn->id,
                 'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
             ]);
             // Don't fail the approval if inspection lot creation fails
             // Quality team can manually create it if needed

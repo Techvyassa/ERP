@@ -47,6 +47,7 @@ return new class extends Migration
             ])->default('PENDING')->comment('QC lot lifecycle status');
 
             // --- Audit ---
+            $table->unsignedBigInteger('created_by')->comment('FK → users (who created the lot)');
             $table->text('remarks')->nullable();
             $table->timestampsTz();
 
@@ -54,6 +55,7 @@ return new class extends Migration
             $table->foreign('grn_id')->references('id')->on('grn_headers')->onDelete('cascade');
             $table->foreign('grn_line_id')->references('id')->on('grn_line_items')->onDelete('cascade');
             $table->foreign('material_id')->references('id')->on('material_master')->onDelete('restrict');
+            $table->foreign('created_by')->references('id')->on('users')->onDelete('restrict');
             $table->foreign('assigned_to')->references('id')->on('users')->onDelete('set null');
 
             // Indexes

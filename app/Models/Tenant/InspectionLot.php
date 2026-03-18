@@ -10,16 +10,26 @@ class InspectionLot extends Model
     protected $table = 'inspection_lots';
 
     protected $fillable = [
+        'lot_number',
         'grn_id',
+        'grn_line_id',
         'material_id',
+        'lot_qty',
         'sample_size',
+        'sampling_method',
+        'assigned_to',
+        'due_by',
         'status',
         'created_by',
         'approved_by',
         'approved_at',
+        'remarks',
     ];
 
     protected $casts = [
+        'lot_qty' => 'decimal:3',
+        'sample_size' => 'decimal:3',
+        'due_by' => 'datetime',
         'approved_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
@@ -34,11 +44,27 @@ class InspectionLot extends Model
     }
 
     /**
+     * Get the GRN line item
+     */
+    public function grnLine()
+    {
+        return $this->belongsTo(GRNLineItem::class, 'grn_line_id');
+    }
+
+    /**
      * Get the material
      */
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_id');
+    }
+
+    /**
+     * Get assigned QC technician
+     */
+    public function assignedUser()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
     }
 
     /**
