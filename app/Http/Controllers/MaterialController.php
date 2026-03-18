@@ -272,6 +272,171 @@ class MaterialController extends Controller
         }
     }
 
+    /**
+     * Search materials by barcode (actually searches by material_code)
+     * Used by store department for quick material lookup during receiving/pickup
+     */
+    public function searchByBarcode(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'code' => 'required|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $code = $request->input('code');
+
+            $material = Material::with(['uom', 'hsnCode', 'defaultWarehouse'])
+                ->where('material_code', $code)
+                ->first();
+
+            if (!$material) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'MATERIAL_NOT_FOUND',
+                        'details' => []
+                    ],
+                    'message' => 'Material not found for code: ' . $code,
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 404);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'material' => $material,
+                    'barcode_html' => $this->bar128($material->material_code)
+                ],
+                'message' => 'Material found successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'BARCODE_SEARCH_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to search material: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
+    /**
+     * Search materials with filters
+     * Used by store department for material lookup
+     */
+    public function search(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'q' => 'nullable|string|max:100',
+            'material_code' => 'nullable|string|max:30',
+            'id' => 'nullable|integer',
+            'category_id' => 'nullable|integer|exists:tenant.material_categories,id',
+            'material_type' => 'nullable|string|max:20',
+            'is_active' => 'nullable|boolean',
+            'page' => 'nullable|integer|min:1',
+            'per_page' => 'nullable|integer|min:1|max:100',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $query = Material::with(['uom', 'hsnCode', 'defaultWarehouse']);
+
+            // Search by material code
+            if ($request->has('material_code')) {
+                $query->where('material_code', 'LIKE', '%' . $request->input('material_code') . '%');
+            }
+
+            // Search by ID
+            if ($request->has('id')) {
+                $query->where('id', $request->input('id'));
+            }
+
+            // Search by keyword (material_code or material_name)
+            if ($request->has('q')) {
+                $keyword = $request->input('q');
+                $query->where(function ($q) use ($keyword) {
+                    $q->where('material_code', 'LIKE', '%' . $keyword . '%')
+                      ->orWhere('material_name', 'LIKE', '%' . $keyword . '%');
+                });
+            }
+
+            // Filter by category
+            if ($request->has('category_id')) {
+                $query->where('category_id', $request->input('category_id'));
+            }
+
+            // Filter by material type
+            if ($request->has('material_type')) {
+                $query->where('material_type', $request->input('material_type'));
+            }
+
+            // Filter by active status
+            if ($request->has('is_active')) {
+                $query->where('is_active', $request->input('is_active'));
+            }
+
+            $perPage = $request->input('per_page', 20);
+            $page = $request->input('page', 1);
+
+            $materials = $query->orderBy('material_code', 'asc')
+                ->paginate($perPage, ['*'], 'page', $page);
+
+            return response()->json([
+                'success' => true,
+                'data' => $materials,
+                'message' => 'Materials retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'MATERIAL_SEARCH_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to search materials: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
     private function bar128(string $text): string
     {
         $char128asc = ' !"#$%&\'()*+,-./0123456789:;<=>?@ABCDEFGHIJKLMNOPQRSTUVWXYZ[\\]^_`abcdefghijklmnopqrstuvwxyz{|}~';

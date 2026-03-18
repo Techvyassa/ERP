@@ -217,6 +217,8 @@ Route::prefix('v1')->group(function () {
             Route::prefix('materials')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialController::class, 'index']);
                 Route::get('/barcode', [App\Http\Controllers\MaterialController::class, 'barcode']);
+                Route::get('/search/barcode', [App\Http\Controllers\MaterialController::class, 'searchByBarcode']);
+                Route::get('/search', [App\Http\Controllers\MaterialController::class, 'search']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
