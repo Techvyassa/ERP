@@ -7,11 +7,16 @@ use Illuminate\Database\Eloquent\Model;
 class QCDecision extends Model
 {
     protected $connection = 'tenant';
-    protected $table = 'qc_decisions';
+    protected $table = 'usage_decisions';
 
     protected $fillable = [
-        'inspection_lot_id',
+        'lot_id',
         'decision',
+        'accepted_qty',
+        'rejected_qty',
+        'override_approved_by',
+        'override_reason',
+        'coa_file_path',
         'remarks',
         'decided_by',
         'decided_at',
@@ -28,7 +33,7 @@ class QCDecision extends Model
      */
     public function inspectionLot()
     {
-        return $this->belongsTo(InspectionLot::class, 'inspection_lot_id');
+        return $this->belongsTo(InspectionLot::class, 'lot_id');
     }
 
     /**

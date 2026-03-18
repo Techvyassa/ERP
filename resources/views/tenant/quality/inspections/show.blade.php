@@ -68,13 +68,13 @@
                     </template>
                     <template x-for="result in qcResults" :key="result.id">
                         <tr class="hover:bg-gray-50">
-                            <td class="py-3 px-5 font-medium text-gray-900" x-text="result.qc_parameter?.parameter_name"></td>
-                            <td class="py-3 px-5 text-right text-gray-700" x-text="result.qc_parameter?.standard_value_min"></td>
-                            <td class="py-3 px-5 text-right text-gray-700" x-text="result.qc_parameter?.standard_value_max"></td>
+                            <td class="py-3 px-5 font-medium text-gray-900" x-text="result.parameter_name"></td>
+                            <td class="py-3 px-5 text-right text-gray-700" x-text="result.standard_min || '—'"></td>
+                            <td class="py-3 px-5 text-right text-gray-700" x-text="result.standard_max || '—'"></td>
                             <td class="py-3 px-5 text-right font-semibold text-gray-900" x-text="result.observed_value"></td>
-                            <td class="py-3 px-5 text-gray-700" x-text="result.qc_parameter?.unit"></td>
+                            <td class="py-3 px-5 text-gray-700" x-text="result.unit_of_measurement || '—'"></td>
                             <td class="py-3 px-5">
-                                <span class="px-2 py-1 rounded text-xs font-bold" :class="result.qc_parameter?.isWithinStandard ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" x-text="result.qc_parameter?.isWithinStandard ? 'PASS' : 'FAIL'"></span>
+                                <span class="px-2 py-1 rounded text-xs font-bold" :class="result.is_pass ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" x-text="result.is_pass ? 'PASS' : (result.is_pass === false ? 'FAIL' : '—')"></span>
                             </td>
                         </tr>
                     </template>
@@ -173,15 +173,17 @@ function qcInspectionDetail() {
 
         async init() {
             await this.loadLot();
-            await this.loadResults();
-            await this.loadParameters();
         },
 
         async loadLot() {
             try {
                 const res = await fetch(`/api/v1/qc/${lotId}`, { headers: headers() });
                 const data = await res.json();
-                this.lot = data.data || {};
+                if (data.success) {
+                    this.lot = data.data || {};
+                    await this.loadResults();
+                    await this.loadParameters();
+                }
             } catch (e) {
                 console.error('Failed to load lot:', e);
             }
@@ -191,7 +193,7 @@ function qcInspectionDetail() {
             try {
                 const res = await fetch(`/api/v1/qc/${lotId}`, { headers: headers() });
                 const data = await res.json();
-                this.qcResults = data.data?.qc_results || [];
+                this.qcResults = data.data?.test_results || [];
             } catch (e) {
                 console.error('Failed to load results:', e);
             }

@@ -85,7 +85,7 @@
                     </template>
                     <template x-for="decision in decisions" :key="decision.id">
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="'LOT-' + decision.inspection_lot_id"></td>
+                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="'LOT-' + decision.lot_id"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.inspection_lot?.material?.material_name || '—'"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.inspection_lot?.grn?.grn_number || '—'"></td>
                             <td class="py-3 px-5">
@@ -126,7 +126,7 @@ function qcDecisions() {
                 const data = await res.json();
                 if (data.success) {
                     const lots = data.data.data || [];
-                    this.decisions = lots.filter(l => l.qc_decision).map(l => l.qc_decision);
+                    this.decisions = lots.filter(l => l.usage_decision).map(l => l.usage_decision);
                     this.computeStats();
                 }
             } finally { this.loading = false; }

@@ -52,6 +52,14 @@ class InspectionLot extends Model
     }
 
     /**
+     * Get the GRN line item (alias for grnLine)
+     */
+    public function grnLineItem()
+    {
+        return $this->grnLine();
+    }
+
+    /**
      * Get the material
      */
     public function material()
@@ -68,11 +76,19 @@ class InspectionLot extends Model
     }
 
     /**
+     * Get assigned QC technician (alias for assignedUser)
+     */
+    public function assignedTechnician()
+    {
+        return $this->assignedUser();
+    }
+
+    /**
      * Get QC results
      */
     public function qcResults()
     {
-        return $this->hasMany(QCResult::class, 'inspection_lot_id');
+        return $this->hasMany(QCResult::class, 'lot_id');
     }
 
     /**
@@ -80,7 +96,23 @@ class InspectionLot extends Model
      */
     public function qcDecision()
     {
-        return $this->hasOne(QCDecision::class, 'inspection_lot_id');
+        return $this->hasOne(QCDecision::class, 'lot_id');
+    }
+
+    /**
+     * Get QC results (alias for qcResults)
+     */
+    public function testResults()
+    {
+        return $this->qcResults();
+    }
+
+    /**
+     * Get QC decision (alias for qcDecision)
+     */
+    public function usageDecision()
+    {
+        return $this->qcDecision();
     }
 
     /**

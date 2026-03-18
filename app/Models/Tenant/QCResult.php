@@ -7,18 +7,23 @@ use Illuminate\Database\Eloquent\Model;
 class QCResult extends Model
 {
     protected $connection = 'tenant';
-    protected $table = 'qc_results';
+    protected $table = 'inspection_results';
 
     protected $fillable = [
-        'inspection_lot_id',
-        'qc_parameter_id',
+        'lot_id',
+        'parameter_name',
+        'standard_min',
+        'standard_max',
+        'standard_value',
         'observed_value',
-        'status',
-        'recorded_by',
+        'unit_of_measurement',
+        'is_pass',
+        'remarks',
     ];
 
     protected $casts = [
         'observed_value' => 'decimal:4',
+        'is_pass' => 'boolean',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
@@ -28,23 +33,7 @@ class QCResult extends Model
      */
     public function inspectionLot()
     {
-        return $this->belongsTo(InspectionLot::class, 'inspection_lot_id');
-    }
-
-    /**
-     * Get the QC parameter
-     */
-    public function qcParameter()
-    {
-        return $this->belongsTo(QCParameter::class, 'qc_parameter_id');
-    }
-
-    /**
-     * Get the recorder
-     */
-    public function recorder()
-    {
-        return $this->belongsTo(User::class, 'recorded_by');
+        return $this->belongsTo(InspectionLot::class, 'lot_id');
     }
 
     /**
@@ -52,6 +41,9 @@ class QCResult extends Model
      */
     public function isWithinStandard(): bool
     {
-        return $this->qcParameter->isWithinStandard($this->observed_value);
+        if (!$this->standard_min || !$this->standard_max) {
+            return true;
+        }
+        return $this->observed_value >= $this->standard_min && $this->observed_value <= $this->standard_max;
     }
 }

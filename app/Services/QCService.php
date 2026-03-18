@@ -109,21 +109,41 @@ class QCService
 
         return DB::connection('tenant')->transaction(function () use ($lotId, $data, $userId) {
             $result = QCResult::create([
-                'inspection_lot_id' => $lotId,
-                'qc_parameter_id' => $data['qc_parameter_id'],
+                'lot_id' => $lotId,
+                'parameter_name' => $data['parameter_name'],
+                'standard_min' => $data['standard_min'] ?? null,
+                'standard_max' => $data['standard_max'] ?? null,
+                'standard_value' => $data['standard_value'] ?? null,
                 'observed_value' => $data['observed_value'],
-                'status' => 'RECORDED',
-                'recorded_by' => $userId,
+                'unit_of_measurement' => $data['unit_of_measurement'] ?? null,
+                'is_pass' => $this->calculateIsPass($data),
+                'remarks' => $data['remarks'] ?? null,
             ]);
 
             Log::info('QC result recorded', [
                 'result_id' => $result->id,
                 'lot_id' => $lotId,
-                'parameter_id' => $data['qc_parameter_id'],
+                'parameter_name' => $data['parameter_name'],
             ]);
 
-            return $result->load(['qcParameter']);
+            return $result;
         });
+    }
+
+    /**
+     * Calculate if the result passes based on standard values
+     */
+    private function calculateIsPass(array $data): ?bool
+    {
+        if (!isset($data['standard_min']) || !isset($data['standard_max']) || !isset($data['observed_value'])) {
+            return null;
+        }
+        
+        $observed = (float) $data['observed_value'];
+        $min = (float) $data['standard_min'];
+        $max = (float) $data['standard_max'];
+        
+        return $observed >= $min && $observed <= $max;
     }
 
     /**
@@ -163,7 +183,7 @@ class QCService
         return DB::connection('tenant')->transaction(function () use ($lot, $data, $userId) {
             // Create decision
             $decision = QCDecision::create([
-                'inspection_lot_id' => $lot->id,
+                'lot_id' => $lot->id,
                 'decision' => $data['decision'],
                 'remarks' => $data['remarks'] ?? null,
                 'decided_by' => $userId,
