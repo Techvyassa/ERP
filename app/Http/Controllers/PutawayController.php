@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Requests\Tenant\StorePutawayTaskRequest;
 use App\Http\Requests\Tenant\UpdatePutawayTaskRequest;
 use App\Http\Requests\Tenant\CompletePutawayRequest;
+use App\Http\Resources\PutawayTaskResource;
 use App\Models\Tenant\PutawayTask;
 use App\Services\PutawayService;
 use Illuminate\Http\JsonResponse;
@@ -47,7 +48,15 @@ class PutawayController extends Controller
             
             return response()->json([
                 'success' => true,
-                'data' => $tasks,
+                'data' => [
+                    'putaway_tasks' => PutawayTaskResource::collection($tasks)->resolve(),
+                    'pagination' => [
+                        'current_page' => $tasks->currentPage(),
+                        'per_page' => $tasks->perPage(),
+                        'total' => $tasks->total(),
+                        'last_page' => $tasks->lastPage(),
+                    ]
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -75,7 +84,7 @@ class PutawayController extends Controller
             
             return response()->json([
                 'success' => true,
-                'data' => $task,
+                'data' => new PutawayTaskResource($task),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -211,7 +220,7 @@ class PutawayController extends Controller
             
             return response()->json([
                 'success' => true,
-                'data' => $tasks,
+                'data' => PutawayTaskResource::collection($tasks),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -233,7 +242,7 @@ class PutawayController extends Controller
             
             return response()->json([
                 'success' => true,
-                'data' => $tasks,
+                'data' => PutawayTaskResource::collection($tasks),
             ]);
         } catch (\Exception $e) {
             return response()->json([
@@ -255,7 +264,7 @@ class PutawayController extends Controller
             
             return response()->json([
                 'success' => true,
-                'data' => $tasks,
+                'data' => PutawayTaskResource::collection($tasks),
             ]);
         } catch (\Exception $e) {
             return response()->json([

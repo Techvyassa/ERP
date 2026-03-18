@@ -592,7 +592,7 @@ Route::middleware(['web.jwt'])->group(function () {
 
             Route::get('/putaway', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
-                return view('tenant.warehouse.putaway.index', [
+                return view('tenant.warehouse.putaway.index', data: [
                     'organization' => $org,
                     'tenantType' => $tenantType
                 ]);

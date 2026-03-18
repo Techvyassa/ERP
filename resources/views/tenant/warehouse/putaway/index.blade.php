@@ -203,7 +203,7 @@ function putawayData() {
                 const data = await res.json();
                 
                 if (data.success) {
-                    this.tasks = data.data.data || [];
+                    this.tasks = data.data.putaway_tasks || [];
                     this.pagination = data.data.pagination || {};
                     this.updateCounts();
                 }

@@ -432,6 +432,17 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/complete', [App\Http\Controllers\PutawayController::class, 'complete']); // IN_PROGRESS → COMPLETED
                 Route::patch('/{id}/cancel', [App\Http\Controllers\PutawayController::class, 'cancel']); // Any → CANCELLED
             });
+
+            // Alias for putaway-tasks
+            Route::prefix('putaway-tasks')->group(function () {
+                Route::get('/', [App\Http\Controllers\PutawayController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PutawayController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PutawayController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\PutawayController::class, 'update']);
+                Route::patch('/{id}/start', [App\Http\Controllers\PutawayController::class, 'start']);
+                Route::patch('/{id}/complete', [App\Http\Controllers\PutawayController::class, 'complete']);
+                Route::patch('/{id}/cancel', [App\Http\Controllers\PutawayController::class, 'cancel']);
+            });
         });
 
         // BOM (Bill of Materials) Endpoints

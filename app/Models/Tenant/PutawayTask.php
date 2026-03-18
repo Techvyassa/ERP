@@ -100,6 +100,22 @@ class PutawayTask extends Model
     }
 
     /**
+     * Get assigned operator (alias for assignedUser)
+     */
+    public function assignedOperator()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
+     * Get completed by operator (alias for completer)
+     */
+    public function completedByOperator()
+    {
+        return $this->belongsTo(User::class, 'completed_by');
+    }
+
+    /**
      * Check if task can be started
      */
     public function canStart(): bool
