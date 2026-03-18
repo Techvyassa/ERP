@@ -4,7 +4,7 @@
 @section('page-title', 'Create New User')
 
 @section('content')
-<div x-data="userForm()" x-init="loadDepartments(); loadRoles();">
+<div x-data="userForm()" x-init="loadDepartments();">
     <div class="max-w-4xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
@@ -116,7 +116,7 @@
                             Full Name <span class="text-red-500">*</span>
                         </label>
                         <input type="text" x-model="form.full_name" required
-                            placeholder="John Doe"
+                            placeholder="Full Name"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Display name</p>
                     </div>
@@ -127,7 +127,7 @@
                             Phone
                         </label>
                         <input type="text" x-model="form.phone"
-                            placeholder="+91 9876543210"
+                            placeholder="+91 0000000000"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Contact number</p>
                     </div>
@@ -162,55 +162,18 @@
                         </label>
                         <select x-model="form.role_id" required
                             @change="loadRolePermissions()"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Role</option>
+                            :disabled="!form.dept_id"
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
+                            <option value="" x-text="form.dept_id ? 'Select Role' : 'Select a department first'"></option>
                             <template x-for="role in roles" :key="role.role_id || role.id">
                                 <option :value="role.role_id || role.id" x-text="role.role_name"></option>
                             </template>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">→ role_master(role_id)</p>
+                        <p class="text-xs text-gray-500 mt-1">Roles filtered by selected department</p>
                     </div>
                 </div>
 
-                <!-- Role Permissions Preview -->
-                <div x-show="form.role_id && rolePermissions.length > 0" x-transition class="mt-6">
-                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                        <h4 class="text-sm font-semibold text-blue-900 mb-3 flex items-center">
-                            <i class="fas fa-shield-alt mr-2"></i>
-                            Role Permissions Preview
-                        </h4>
-                        <p class="text-xs text-blue-700 mb-3">This user will inherit the following permissions from the selected role:</p>
-                        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3 max-h-64 overflow-y-auto">
-                            <template x-for="permission in rolePermissions" :key="permission.module_code">
-                                <div class="bg-white rounded-lg p-3 border border-blue-100">
-                                    <div class="font-medium text-sm text-gray-900 mb-2" x-text="permission.module_code"></div>
-                                    <div class="space-y-1">
-                                        <div class="flex items-center text-xs">
-                                            <i :class="permission.can_view ? 'fas fa-check-circle text-green-600' : 'fas fa-times-circle text-gray-300'" class="w-4 mr-2"></i>
-                                            <span :class="permission.can_view ? 'text-gray-700' : 'text-gray-400'">View</span>
-                                        </div>
-                                        <div class="flex items-center text-xs">
-                                            <i :class="permission.can_create ? 'fas fa-check-circle text-green-600' : 'fas fa-times-circle text-gray-300'" class="w-4 mr-2"></i>
-                                            <span :class="permission.can_create ? 'text-gray-700' : 'text-gray-400'">Create</span>
-                                        </div>
-                                        <div class="flex items-center text-xs">
-                                            <i :class="permission.can_edit ? 'fas fa-check-circle text-green-600' : 'fas fa-times-circle text-gray-300'" class="w-4 mr-2"></i>
-                                            <span :class="permission.can_edit ? 'text-gray-700' : 'text-gray-400'">Edit</span>
-                                        </div>
-                                        <div class="flex items-center text-xs">
-                                            <i :class="permission.can_approve ? 'fas fa-check-circle text-green-600' : 'fas fa-times-circle text-gray-300'" class="w-4 mr-2"></i>
-                                            <span :class="permission.can_approve ? 'text-gray-700' : 'text-gray-400'">Approve</span>
-                                        </div>
-                                        <div class="flex items-center text-xs">
-                                            <i :class="permission.can_delete ? 'fas fa-check-circle text-green-600' : 'fas fa-times-circle text-gray-300'" class="w-4 mr-2"></i>
-                                            <span :class="permission.can_delete ? 'text-gray-700' : 'text-gray-400'">Delete</span>
-                                        </div>
-                                    </div>
-                                </div>
-                            </template>
-                        </div>
-                    </div>
-                </div>
+
             </div>
 
             <!-- Password -->
@@ -290,25 +253,42 @@
 
             async loadDepartments() {
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch('/api/v1/departments');
-                    // const data = await response.json();
-                    // this.departments = data.data;
-                    this.departments = [];
+                    const response = await fetch('/api/v1/departments', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        // API returns data directly as array, not nested
+                        this.departments = Array.isArray(data.data) ? data.data : (data.data?.departments || []);
+                    }
                 } catch (error) {
                     console.error('Failed to load departments:', error);
                 }
             },
 
             async loadRoles() {
+                // Roles are now loaded per-department via loadDepartmentRoles
+                // This is kept for compatibility but does nothing on init
+            },
+
+            async loadDepartmentRoles(deptId) {
+                this.roles = [];
+                this.form.role_id = '';
+                this.rolePermissions = [];
+                if (!deptId) return;
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch('/api/v1/roles');
-                    // const data = await response.json();
-                    // this.roles = data.data;
-                    this.roles = [];
+                    const response = await fetch(`/api/v1/departments/${deptId}/roles`, {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.roles = Array.isArray(data.data) ? data.data : (data.data?.roles || []);
+                    }
                 } catch (error) {
-                    console.error('Failed to load roles:', error);
+                    console.error('Failed to load department roles:', error);
                 }
             },
 
@@ -319,45 +299,15 @@
                 }
 
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`);
-                    // const data = await response.json();
-                    // this.rolePermissions = data.data.permissions;
-
-                    // Mock data for demonstration
-                    this.rolePermissions = [{
-                            module_code: 'PR',
-                            can_view: true,
-                            can_create: true,
-                            can_edit: true,
-                            can_approve: false,
-                            can_delete: false
-                        },
-                        {
-                            module_code: 'PO',
-                            can_view: true,
-                            can_create: true,
-                            can_edit: true,
-                            can_approve: true,
-                            can_delete: false
-                        },
-                        {
-                            module_code: 'GRN',
-                            can_view: true,
-                            can_create: false,
-                            can_edit: false,
-                            can_approve: false,
-                            can_delete: false
-                        },
-                        {
-                            module_code: 'INVENTORY',
-                            can_view: true,
-                            can_create: true,
-                            can_edit: true,
-                            can_approve: false,
-                            can_delete: true
-                        },
-                    ];
+                    const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`, {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        this.rolePermissions = Array.isArray(data.data) ? data.data : (data.data?.permissions || []);
+                    }
                 } catch (error) {
                     console.error('Failed to load role permissions:', error);
                     this.rolePermissions = [];
@@ -437,10 +387,11 @@
 
                     const response = await fetch('/api/v1/users', {
                         method: 'POST',
+                        credentials: 'same-origin',
                         headers: {
-                            'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
                             'Content-Type': 'application/json',
-                            'Accept': 'application/json'
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
                         body: JSON.stringify(formData)
                     });

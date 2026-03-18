@@ -5,9 +5,12 @@ namespace App\Http\Controllers;
 use App\Models\Tenant\User;
 use App\Models\Tenant\DeptRoleMap;
 use App\Models\Control\ActiveSubscription;
+use App\Models\Control\Organization;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\Mail;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
@@ -146,7 +149,7 @@ class UserController extends Controller
 
         try {
             // Check user capacity limit
-            $orgId = $request->attributes->get('org_id');
+            $orgId = $request->input('tenant_org_id');
             $activeSub = ActiveSubscription::find($orgId);
 
             if ($activeSub) {
@@ -207,6 +210,38 @@ class UserController extends Controller
             ]);
 
             $user->load(['department', 'role']);
+
+            // Send welcome email with credentials and department-specific login URL
+            try {
+                $org = $request->input('tenant_organization') ?? Organization::find($orgId);
+                if ($org) {
+                    $user->load('department');
+                    $deptName = strtolower($user->department?->dept_name ?? $user->department?->dept_code ?? '');
+                    $portal = 'admin';
+                    if (str_contains($deptName, 'procurement') || str_contains($deptName, 'purchase')) $portal = 'procurement';
+                    elseif (str_contains($deptName, 'warehouse') || str_contains($deptName, 'store')) $portal = 'warehouse';
+                    elseif (str_contains($deptName, 'quality') || str_contains($deptName, 'qc')) $portal = 'quality';
+                    elseif (str_contains($deptName, 'security') || str_contains($deptName, 'guard')) $portal = 'security';
+
+                    $loginUrl = config('app.url') . '/org/' . $org->org_slug . '/' . $portal . '/login';
+                    Mail::to($user->email)->send(
+                        new \App\Mail\UserWelcomeEmail(
+                            $org,
+                            $user->first_name,
+                            $user->email,
+                            $request->input('password'),
+                            $loginUrl
+                        )
+                    );
+                }
+            } catch (\Exception $mailEx) {
+                Log::warning('Failed to send user welcome email: ' . $mailEx->getMessage(), [
+                    'user_id' => $user->id,
+                    'email'   => $user->email,
+                    'org_id'  => $orgId ?? null,
+                    'trace'   => $mailEx->getTraceAsString(),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,

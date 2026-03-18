@@ -226,7 +226,15 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('roles.index');
-
+        
+        Route::get('/roles/create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.roles.create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('roles.create');
+        
         Route::get('/users', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.organization.users.index', [
@@ -234,6 +242,14 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('users.index');
+
+        Route::get('/users/create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.organization.users.create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('users.create');
 
         Route::get('/users/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -407,6 +423,32 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('bom-header.index');
 
+        Route::get('/bom-header/create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-header.create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('bom-header.create');
+
+        Route::get('/bom-header/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-header.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'bomId' => $id
+            ]);
+        })->name('bom-header.edit');
+
+        Route::get('/bom-header/{id}/view', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-header.view', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'bomId' => $id
+            ]);
+        })->name('bom-header.view');
+        
         Route::get('/bom-detail', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.bom.bom-detail.index', [
@@ -414,7 +456,33 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('bom-detail.index');
-
+        
+        Route::get('/bom-detail/create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-detail.create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('bom-detail.create');
+        
+        Route::get('/bom-detail/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-detail.edit', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'id' => $id
+            ]);
+        })->name('bom-detail.edit');
+        
+        Route::get('/bom-detail/{id}/view', function ($orgSlug, $id) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-detail.view', [
+                'organization' => $org,
+                'tenantType' => $tenantType,
+                'id' => $id
+            ]);
+        })->name('bom-detail.view');
+        
         // ====================================================================
         // DEPARTMENTAL PORTALS (Organization-specific)
         // ====================================================================
@@ -486,6 +554,14 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('gate-entry');
+
+            Route::get('/gate-verification', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.security.gate-verification.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('gate-verification');
         });
 
         // Warehouse/store Department Portal

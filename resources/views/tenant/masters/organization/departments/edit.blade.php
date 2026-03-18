@@ -3,6 +3,10 @@
 @section('title', 'Edit Department')
 @section('page-title', 'Edit Department')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="departmentEditForm()" x-init="loadDepartment(); loadParentDepartments()">
     <div class="max-w-3xl mx-auto">
@@ -114,11 +118,7 @@
             loading: false,
             initialLoading: true,
             parentDepartments: [],
-            departmentId: {
-                {
-                    $departmentId
-                }
-            },
+            departmentId: null,
             form: {
                 dept_code: '',
                 dept_name: '',
@@ -128,23 +128,39 @@
             },
 
             async loadDepartment() {
+                // Get department ID from URL
+                const urlParts = window.location.pathname.split('/');
+                this.departmentId = urlParts[urlParts.length - 2]; // Get ID before /edit
+                
+                if (!this.departmentId || isNaN(this.departmentId)) {
+                    console.error('Invalid department ID:', this.departmentId);
+                    alert('Invalid department ID');
+                    this.initialLoading = false;
+                    return;
+                }
+                
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch(`/api/v1/departments/${this.departmentId}`);
-                    // const data = await response.json();
-                    // this.form = data.data;
-
-                    // Mock data for now
-                    setTimeout(() => {
-                        this.form = {
-                            dept_code: 'DEPT-001',
-                            dept_name: 'Sample Department',
-                            parent_dept_id: '',
-                            cost_center_code: 'CC-001',
-                            is_active: true
-                        };
-                        this.initialLoading = false;
-                    }, 500);
+                    const response = await fetch(`/api/v1/departments/${this.departmentId}`, {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (!response.ok) {
+                        throw new Error('Failed to load department');
+                    }
+                    
+                    const data = await response.json();
+                    const dept = data.data?.department || data.data;
+                    
+                    this.form = {
+                        dept_code: dept.dept_code || '',
+                        dept_name: dept.dept_name || '',
+                        parent_dept_id: dept.parent_dept_id || '',
+                        cost_center_code: dept.cost_center_code || '',
+                        is_active: dept.is_active !== undefined ? dept.is_active : true
+                    };
+                    
+                    this.initialLoading = false;
                 } catch (error) {
                     console.error('Failed to load department:', error);
                     alert('Failed to load department data');
@@ -154,8 +170,18 @@
 
             async loadParentDepartments() {
                 try {
-                    // TODO: Replace with actual API call
-                    this.parentDepartments = [];
+                    const response = await fetch('/api/v1/departments', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (response.ok) {
+                        const data = await response.json();
+                        // API returns data directly as array, not nested
+                        const allDepts = Array.isArray(data.data) ? data.data : (data.data?.departments || []);
+                        // Filter out current department to prevent self-reference
+                        this.parentDepartments = allDepts.filter(dept => dept.id != this.departmentId);
+                    }
                 } catch (error) {
                     console.error('Failed to load parent departments:', error);
                 }
@@ -164,15 +190,26 @@
             async submitForm() {
                 this.loading = true;
                 try {
-                    // TODO: Replace with actual API call
-                    // const response = await fetch(`/api/v1/departments/${this.departmentId}`, {
-                    //     method: 'PUT',
-                    //     headers: { 'Content-Type': 'application/json' },
-                    //     body: JSON.stringify(this.form)
-                    // });
-
-                    alert('Department update - Coming soon\n\nData to be submitted:\n' + JSON.stringify(this.form, null, 2));
-                    // window.location.href = '/departments';
+                    const response = await fetch(`/api/v1/departments/${this.departmentId}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(this.form)
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        alert(data.message || 'Failed to update department');
+                        return;
+                    }
+                    
+                    alert('Department updated successfully!');
+                    window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/departments" : "/org/" . $organization->org_slug . "/departments") }}';
                 } catch (error) {
                     console.error('Failed to update department:', error);
                     alert('Failed to update department. Please try again.');

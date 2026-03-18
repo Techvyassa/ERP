@@ -101,13 +101,13 @@
                             <span x-show="sidebarOpen" class="font-medium">Roles</span>
                         </a>
                     </li>
-                    <li>
+                    <!-- <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/approval-matrix' : "/org/{$organization->org_slug}/approval-matrix") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.approval-matrix.*') ? 'bg-purple-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">account_tree</span>
                             <span x-show="sidebarOpen" class="font-medium">Approval Matrix</span>
                         </a>
-                    </li>
+                    </li> -->
                 </ul>
             </nav>
 

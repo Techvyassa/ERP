@@ -347,6 +347,7 @@ function materialForm() {
             try {
                 // Load material data and dropdowns
                 const materialResponse = await fetch(`/api/v1/materials/${this.materialId}`, {
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
@@ -401,24 +402,34 @@ function materialForm() {
             try {
                 // Load UOMs, Warehouses, and HSN Codes in parallel
                 const [uomsResponse, warehousesResponse, hsnResponse] = await Promise.all([
-                    fetch('/api/v1/uoms'),
-                    fetch('/api/v1/warehouses'),
-                    fetch('/api/v1/hsn-codes')
+                    fetch('/api/v1/uoms', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    }),
+                    fetch('/api/v1/warehouses', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    }),
+                    fetch('/api/v1/hsn-codes', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    })
                 ]);
                 
                 if (uomsResponse.ok) {
                     const uomsData = await uomsResponse.json();
-                    this.uoms = uomsData.data?.uoms || [];
+                    // API returns data directly as array, not nested
+                    this.uoms = Array.isArray(uomsData.data) ? uomsData.data : (uomsData.data?.uoms || []);
                 }
                 
                 if (warehousesResponse.ok) {
                     const warehousesData = await warehousesResponse.json();
-                    this.warehouses = warehousesData.data?.warehouses || [];
+                    this.warehouses = Array.isArray(warehousesData.data) ? warehousesData.data : (warehousesData.data?.warehouses || []);
                 }
                 
                 if (hsnResponse.ok) {
                     const hsnData = await hsnResponse.json();
-                    this.hsnCodes = hsnData.data?.hsn_codes || [];
+                    this.hsnCodes = Array.isArray(hsnData.data) ? hsnData.data : (hsnData.data?.hsn_codes || []);
                 }
             } catch (error) {
                 console.error('Failed to load dropdowns:', error);
@@ -434,6 +445,7 @@ function materialForm() {
                 
                 const response = await fetch(`/api/v1/materials/${this.materialId}`, {
                     method: 'PUT',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',

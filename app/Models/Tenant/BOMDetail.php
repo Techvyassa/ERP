@@ -3,38 +3,38 @@
 namespace App\Models\Tenant;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\SoftDeletes;
 
 class BOMDetail extends Model
 {
-    use SoftDeletes;
-
+    protected $connection = 'tenant';
     protected $table = 'bom_detail';
+    public $timestamps = false;
 
     protected $fillable = [
-        'bom_header_id',
+        'bom_id',
         'material_id',
-        'sequence_no',
-        'quantity_required',
+        'qty_required',
         'uom_id',
-        'wastage_percentage',
-        'is_optional',
-        'notes',
-        'created_by',
-        'updated_by'
+        'scrap_percent',
+        'effective_qty',
+        'substitute_material_id',
+        'is_critical',
+        'line_no',
+        'remarks',
     ];
 
     protected $casts = [
-        'is_optional' => 'boolean',
-        'quantity_required' => 'decimal:4',
-        'wastage_percentage' => 'decimal:2',
-        'sequence_no' => 'integer'
+        'is_critical' => 'boolean',
+        'qty_required' => 'decimal:4',
+        'scrap_percent' => 'decimal:2',
+        'effective_qty' => 'decimal:4',
+        'line_no' => 'integer'
     ];
 
     // Relationships
     public function bomHeader()
     {
-        return $this->belongsTo(BOMHeader::class, 'bom_header_id');
+        return $this->belongsTo(BOMHeader::class, 'bom_id');
     }
 
     public function material()
@@ -47,19 +47,24 @@ class BOMDetail extends Model
         return $this->belongsTo(UOM::class, 'uom_id');
     }
 
+    public function substituteMaterial()
+    {
+        return $this->belongsTo(Material::class, 'substitute_material_id');
+    }
+
     // Scopes
-    public function scopeByBOM($query, $bomHeaderId)
+    public function scopeByBOM($query, $bomId)
     {
-        return $query->where('bom_header_id', $bomHeaderId);
+        return $query->where('bom_id', $bomId);
     }
 
-    public function scopeRequired($query)
+    public function scopeCritical($query)
     {
-        return $query->where('is_optional', false);
+        return $query->where('is_critical', true);
     }
 
-    public function scopeOptional($query)
+    public function scopeNonCritical($query)
     {
-        return $query->where('is_optional', true);
+        return $query->where('is_critical', false);
     }
 }

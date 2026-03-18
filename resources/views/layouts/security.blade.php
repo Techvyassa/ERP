@@ -73,6 +73,14 @@
                             <span x-show="sidebarOpen" class="font-medium">Gate Entry</span>
                         </a>
                     </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/security/gate-verification") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.security.gate-verification') ? 'bg-indigo-50 text-security font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">fact_check</span>
+                            <span x-show="sidebarOpen" class="font-medium">Gate Verification</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
 
