@@ -23,7 +23,14 @@ class MaterialReceiptController extends Controller
      */
     public function index(Request $request): JsonResponse
     {
-        $query = MaterialReceipt::with(['gateEntry', 'purchaseOrder', 'vendor', 'lineItems', 'creator']);
+        $query = MaterialReceipt::with([
+            'gateEntry', 
+            'purchaseOrder', 
+            'vendor', 
+            'lineItems.material',
+            'lineItems.uom',
+            'creator'
+        ]);
         
         // Filter by status
         if ($request->has('status')) {
@@ -137,7 +144,12 @@ class MaterialReceiptController extends Controller
      */
     public function byGateEntry(int $geId): JsonResponse
     {
-        $receipts = MaterialReceipt::with(['lineItems', 'purchaseOrder', 'vendor'])
+        $receipts = MaterialReceipt::with([
+            'lineItems.material',
+            'lineItems.uom',
+            'purchaseOrder', 
+            'vendor'
+        ])
             ->byGateEntry($geId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -154,7 +166,12 @@ class MaterialReceiptController extends Controller
      */
     public function byPO(int $poId): JsonResponse
     {
-        $receipts = MaterialReceipt::with(['lineItems', 'gateEntry', 'vendor'])
+        $receipts = MaterialReceipt::with([
+            'lineItems.material',
+            'lineItems.uom',
+            'gateEntry', 
+            'vendor'
+        ])
             ->byPO($poId)
             ->orderBy('created_at', 'desc')
             ->get();
@@ -171,7 +188,13 @@ class MaterialReceiptController extends Controller
      */
     public function pendingGRN(Request $request): JsonResponse
     {
-        $receipts = MaterialReceipt::with(['gateEntry', 'purchaseOrder', 'vendor', 'lineItems'])
+        $receipts = MaterialReceipt::with([
+            'gateEntry', 
+            'purchaseOrder', 
+            'vendor', 
+            'lineItems.material',
+            'lineItems.uom'
+        ])
             ->pendingGRN()
             ->orderBy('created_at', 'asc')
             ->paginate(20);
