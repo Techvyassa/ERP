@@ -135,15 +135,28 @@ class QCService
      */
     private function calculateIsPass(array $data): ?bool
     {
-        if (!isset($data['standard_min']) || !isset($data['standard_max']) || !isset($data['observed_value'])) {
+        if (!isset($data['observed_value'])) {
             return null;
         }
         
         $observed = (float) $data['observed_value'];
-        $min = (float) $data['standard_min'];
-        $max = (float) $data['standard_max'];
+        $toleranceType = $data['tolerance_type'] ?? 'RANGE';
         
-        return $observed >= $min && $observed <= $max;
+        if ($toleranceType === 'RANGE' && isset($data['standard_min'], $data['standard_max'])) {
+            $min = (float) $data['standard_min'];
+            $max = (float) $data['standard_max'];
+            return $observed >= $min && $observed <= $max;
+        } elseif ($toleranceType === 'MIN_ONLY' && isset($data['standard_min'])) {
+            $min = (float) $data['standard_min'];
+            return $observed >= $min;
+        } elseif ($toleranceType === 'MAX_ONLY' && isset($data['standard_max'])) {
+            $max = (float) $data['standard_max'];
+            return $observed <= $max;
+        } elseif ($toleranceType === 'EXACT' && isset($data['standard_value'])) {
+            return (string) $observed === (string) $data['standard_value'];
+        }
+        
+        return null;
     }
 
     /**
@@ -229,10 +242,12 @@ class QCService
         
         foreach ($lot->grn->lineItems as $lineItem) {
             $putawayService->createPutawayTask([
-                'grn_id' => $lot->grn->id,
+                'grn_line_id' => $lineItem->id,
                 'material_id' => $lineItem->material_id,
                 'source_bin_id' => $lineItem->warehouse_bin_id,
                 'quantity' => $lineItem->accepted_qty,
+                'uom_id' => $lineItem->uom_id,
+                'batch_number' => $lineItem->batch_number,
                 'strategy' => 'MANUAL', // Default strategy
             ], $userId);
         }

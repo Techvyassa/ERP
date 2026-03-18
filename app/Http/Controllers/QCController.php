@@ -11,6 +11,7 @@ use App\Models\Tenant\QCParameter;
 use App\Services\QCService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Validator;
 
 class QCController extends Controller
 {
@@ -27,7 +28,13 @@ class QCController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = InspectionLot::with(['grn', 'material', 'assignedTechnician', 'testResults', 'usageDecision']);
+            $query = InspectionLot::with([
+                'grn',
+                'material',
+                'assignedTechnician',
+                'testResults',
+                'usageDecision.decisionMaker'
+            ]);
             
             // Filter by status
             if ($request->has('status')) {
@@ -180,17 +187,50 @@ class QCController extends Controller
     /**
      * Record test result
      */
-    public function recordTestResult(int $lotId, RecordTestResultRequest $request): JsonResponse
+    public function recordTestResult(int $lotId, Request $request): JsonResponse
     {
         try {
             $userId = $request->input('auth_user_id');
-            $result = $this->qcService->recordTestResult($lotId, $request->validated(), $userId);
+            
+            // Get JSON input directly from the request
+            $jsonData = $request->json()->all();
+            
+            // Validate manually
+            $validator = \Validator::make($jsonData, [
+                'parameter_id' => 'nullable|integer',
+                'parameter_code' => 'nullable|string|max:50',
+                'parameter_name' => 'required|string|max:100',
+                'standard_min' => 'nullable|string|max:50',
+                'standard_max' => 'nullable|string|max:50',
+                'standard_value' => 'nullable|string|max:100',
+                'observed_value' => 'required|numeric',
+                'unit_of_measurement' => 'nullable|string|max:20',
+                'remarks' => 'nullable|string',
+            ]);
+            
+            if ($validator->fails()) {
+                throw new \App\Exceptions\ValidationException(
+                    $validator->errors()->toArray(),
+                    'Validation failed'
+                );
+            }
+            
+            $result = $this->qcService->recordTestResult($lotId, $validator->validated(), $userId);
             
             return response()->json([
                 'success' => true,
                 'message' => 'Test result recorded successfully',
                 'data' => $result,
             ], 201);
+        } catch (\App\Exceptions\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => $e->getCode(),
+                    'details' => $e->getDetails(),
+                ],
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -202,17 +242,48 @@ class QCController extends Controller
     /**
      * Make usage decision
      */
-    public function makeDecision(int $id, MakeUsageDecisionRequest $request): JsonResponse
+    public function makeDecision(int $id, Request $request): JsonResponse
     {
         try {
             $userId = $request->input('auth_user_id');
-            $decision = $this->qcService->makeUsageDecision($id, $request->validated(), $userId);
+            
+            // Get JSON input directly from the request
+            $jsonData = $request->json()->all();
+            
+            // Validate manually
+            $validator = \Validator::make($jsonData, [
+                'decision' => 'required|in:ACCEPTED,REJECTED,CONDITIONALLY_ACCEPTED,REWORK_REQUIRED',
+                'accepted_qty' => 'nullable|numeric|gt:0',
+                'rejected_qty' => 'nullable|numeric|gt:0',
+                'override_approved_by' => 'nullable|integer',
+                'override_reason' => 'nullable|string|max:500',
+                'coa_file_path' => 'nullable|string|max:500',
+                'remarks' => 'nullable|string|max:500',
+            ]);
+            
+            if ($validator->fails()) {
+                throw new \App\Exceptions\ValidationException(
+                    $validator->errors()->toArray(),
+                    'Validation failed'
+                );
+            }
+            
+            $decision = $this->qcService->makeDecision($id, $validator->validated(), $userId);
             
             return response()->json([
                 'success' => true,
                 'message' => 'Usage decision recorded successfully',
                 'data' => $decision,
             ]);
+        } catch (\App\Exceptions\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => $e->getCode(),
+                    'details' => $e->getDetails(),
+                ],
+                'message' => $e->getMessage(),
+            ], 422);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

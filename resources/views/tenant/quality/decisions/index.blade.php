@@ -86,12 +86,12 @@
                     <template x-for="decision in decisions" :key="decision.id">
                         <tr class="hover:bg-gray-50 transition">
                             <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="'LOT-' + decision.lot_id"></td>
-                            <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.inspection_lot?.material?.material_name || '—'"></td>
-                            <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.inspection_lot?.grn?.grn_number || '—'"></td>
+                            <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.material_name"></td>
+                            <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.grn_number"></td>
                             <td class="py-3 px-5">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold" :class="decisionClass(decision.decision)" x-text="decision.decision"></span>
                             </td>
-                            <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.decision_maker?.first_name + ' ' + decision.decision_maker?.last_name || '—'"></td>
+                            <td class="py-3 px-5 text-sm text-gray-700" x-text="(decision.decision_maker?.first_name || '') + ' ' + (decision.decision_maker?.last_name || '') || '—'"></td>
                             <td class="py-3 px-5 text-sm text-gray-600" x-text="formatDate(decision.decided_at)"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="decision.remarks || '—'"></td>
                         </tr>
@@ -126,7 +126,23 @@ function qcDecisions() {
                 const data = await res.json();
                 if (data.success) {
                     const lots = data.data.data || [];
-                    this.decisions = lots.filter(l => l.usage_decision).map(l => l.usage_decision);
+                    // Map inspection lots to decisions with lot details
+                    this.decisions = lots
+                        .filter(l => l.usage_decision)
+                        .map(l => {
+                            const decision = l.usage_decision;
+                            return {
+                                id: decision.id,
+                                lot_id: decision.lot_id,
+                                decision: decision.decision,
+                                remarks: decision.remarks,
+                                decided_at: decision.decided_at,
+                                decision_maker: decision.decision_maker,
+                                inspection_lot: l,
+                                material_name: l.material?.material_name || '—',
+                                grn_number: l.grn?.grn_number || '—'
+                            };
+                        });
                     this.computeStats();
                 }
             } finally { this.loading = false; }

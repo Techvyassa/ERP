@@ -125,11 +125,11 @@
                 <form @submit.prevent="addResult()" class="p-6 space-y-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-1">QC Parameter *</label>
-                        <select x-model="newResult.qc_parameter_id" required
+                        <select x-model="newResult.parameter_id" required
                             class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
                             <option value="">Select parameter</option>
                             <template x-for="param in qcParameters" :key="param.id">
-                                <option :value="param.id" x-text="param.parameter_name"></option>
+                                <option :value="param.id" x-text="param.parameter_name + ' (' + param.parameter_code + ')'"></option>
                             </template>
                         </select>
                     </div>
@@ -168,7 +168,7 @@ function qcInspectionDetail() {
         qcParameters: [],
         showAddResultModal: false,
         saving: false,
-        newResult: { qc_parameter_id: '', observed_value: '' },
+        newResult: { parameter_id: '', parameter_name: '', observed_value: '', remarks: '' },
         decision: { decision: '', remarks: '' },
 
         async init() {
@@ -240,15 +240,33 @@ function qcInspectionDetail() {
         async addResult() {
             this.saving = true;
             try {
+                // Find selected parameter to get its details (use loose comparison for type mismatch)
+                const selectedParam = this.qcParameters.find(p => p.id == this.newResult.parameter_id);
+                if (!selectedParam) {
+                    alert('Please select a parameter');
+                    this.saving = false;
+                    return;
+                }
+
                 const res = await fetch(`/api/v1/qc/${lotId}/test-results`, {
                     method: 'POST',
                     headers: headers(),
-                    body: JSON.stringify(this.newResult)
+                    body: JSON.stringify({
+                        parameter_id: parseInt(this.newResult.parameter_id),
+                        parameter_name: selectedParam.parameter_name,
+                        parameter_code: selectedParam.parameter_code,
+                        standard_min: selectedParam.standard_min,
+                        standard_max: selectedParam.standard_max,
+                        standard_value: selectedParam.standard_value,
+                        unit_of_measurement: selectedParam.unit_of_measurement,
+                        observed_value: this.newResult.observed_value,
+                        remarks: this.newResult.remarks
+                    })
                 });
                 const data = await res.json();
                 if (data.success) {
                     this.showAddResultModal = false;
-                    this.newResult = { qc_parameter_id: '', observed_value: '' };
+                    this.newResult = { parameter_id: '', parameter_name: '', observed_value: '', remarks: '' };
                     await this.loadResults();
                     alert('Test result recorded successfully');
                 } else {
@@ -269,7 +287,11 @@ function qcInspectionDetail() {
                 if (data.success) {
                     this.lot = data.data;
                     alert('Decision made successfully');
-                } else {
+                    // Refresh the page after 1 second
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 1000);
+                } else {}
                     alert(data.message || 'Failed to make decision');
                 }
             } finally { this.saving = false; }

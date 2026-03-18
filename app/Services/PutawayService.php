@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Tenant\PutawayTask;
 use App\Models\Tenant\PutawayLine;
 use App\Models\Tenant\GRN;
+use App\Models\Tenant\GRNLineItem;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -16,33 +17,42 @@ class PutawayService
     public function createPutawayTask(array $data, int $userId): PutawayTask
     {
         return DB::connection('tenant')->transaction(function () use ($data, $userId) {
-            $grn = GRN::findOrFail($data['grn_id']);
-
-            // Validate GRN has accepted stock
-            if (!$grn->lineItems()->where('stock_status', 'UNRESTRICTED')->exists()) {
-                throw new \Exception('GRN has no unrestricted stock for putaway');
-            }
+            // Validate grn_line_id exists
+            $grnLineItem = \App\Models\Tenant\GRNLineItem::findOrFail($data['grn_line_id']);
 
             $task = PutawayTask::create([
-                'grn_id' => $data['grn_id'],
+                'task_number' => $this->generateTaskNumber(),
+                'grn_line_id' => $data['grn_line_id'],
                 'material_id' => $data['material_id'],
+                'batch_number' => $data['batch_number'] ?? $grnLineItem->batch_number,
+                'quantity' => $data['quantity'],
+                'uom_id' => $data['uom_id'] ?? $grnLineItem->uom_id,
                 'source_bin_id' => $data['source_bin_id'] ?? null,
                 'destination_bin_id' => $data['destination_bin_id'] ?? null,
-                'quantity' => $data['quantity'],
                 'status' => 'PENDING',
                 'strategy' => $data['strategy'] ?? 'MANUAL',
-                'created_by' => $userId,
+                'assigned_to' => $userId,
             ]);
 
             Log::info('Putaway task created', [
                 'task_id' => $task->id,
-                'grn_id' => $data['grn_id'],
+                'task_number' => $task->task_number,
+                'grn_line_id' => $data['grn_line_id'],
                 'material_id' => $data['material_id'],
                 'quantity' => $data['quantity'],
             ]);
 
-            return $task->load(['grn', 'material', 'sourceBin', 'destinationBin']);
+            return $task->load(['material', 'sourceBin', 'destinationBin']);
         });
+    }
+
+    /**
+     * Generate unique task number
+     */
+    private function generateTaskNumber(): string
+    {
+        $count = PutawayTask::count() + 1;
+        return 'PT-' . now()->format('y') . '-' . str_pad($count, 4, '0', STR_PAD_LEFT);
     }
 
     /**

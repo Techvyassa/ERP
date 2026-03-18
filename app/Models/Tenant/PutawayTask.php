@@ -10,16 +10,22 @@ class PutawayTask extends Model
     protected $table = 'putaway_tasks';
 
     protected $fillable = [
-        'grn_id',
+        'task_number',
+        'grn_line_id',
         'material_id',
+        'batch_number',
+        'quantity',
+        'uom_id',
         'source_bin_id',
         'destination_bin_id',
-        'quantity',
-        'status',
         'strategy',
-        'created_by',
-        'completed_by',
+        'status',
+        'bin_scan_confirmed',
+        'item_scan_confirmed',
         'completed_at',
+        'assigned_to',
+        'completed_by',
+        'remarks',
     ];
 
     protected $casts = [
@@ -30,11 +36,11 @@ class PutawayTask extends Model
     ];
 
     /**
-     * Get the GRN
+     * Get the GRN line item
      */
-    public function grn()
+    public function grnLineItem()
     {
-        return $this->belongsTo(GRN::class, 'grn_id');
+        return $this->belongsTo(GRNLineItem::class, 'grn_line_id');
     }
 
     /**
@@ -43,6 +49,14 @@ class PutawayTask extends Model
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_id');
+    }
+
+    /**
+     * Get UOM
+     */
+    public function uom()
+    {
+        return $this->belongsTo(UOM::class, 'uom_id');
     }
 
     /**
@@ -62,19 +76,19 @@ class PutawayTask extends Model
     }
 
     /**
+     * Get assigned user
+     */
+    public function assignedUser()
+    {
+        return $this->belongsTo(User::class, 'assigned_to');
+    }
+
+    /**
      * Get putaway lines
      */
     public function putawayLines()
     {
         return $this->hasMany(PutawayLine::class, 'putaway_task_id');
-    }
-
-    /**
-     * Get creator
-     */
-    public function creator()
-    {
-        return $this->belongsTo(User::class, 'created_by');
     }
 
     /**
