@@ -427,6 +427,27 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // BOM (Bill of Materials) Endpoints
+        Route::middleware(['check.module.permission:BOM'])->group(function () {
+            // BOM Header
+            Route::prefix('bom-headers')->group(function () {
+                Route::get('/', [App\Http\Controllers\BOMHeaderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\BOMHeaderController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'destroy']);
+            });
+
+            // BOM Detail
+            Route::prefix('bom-details')->group(function () {
+                Route::get('/', [App\Http\Controllers\BOMDetailController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\BOMDetailController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\BOMDetailController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\BOMDetailController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\BOMDetailController::class, 'destroy']);
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {

@@ -241,6 +241,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [false, false, false, false, false],
+                'BOM'        => [true,  false, false, false, false],
             ],
             'PROC_MGR' => [
                 'PO'         => [true,  true,  true,  true,  false],
@@ -251,6 +252,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [true,  false, false, false, false],
+                'BOM'        => [true,  false, false, false, false],
             ],
             // ── Security ─────────────────────────────────────────────────
             'SECURITY_GUARD' => [
@@ -262,6 +264,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [false, false, false, false, false],
                 'REPORTS'    => [false, false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             'SECURITY_SUPVR' => [
                 'PO'         => [false, false, false, false, false],
@@ -272,6 +275,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [false, false, false, false, false],
                 'REPORTS'    => [false, false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             // ── Warehouse ─────────────────────────────────────────────────
             'STOREKEEPER' => [
@@ -283,6 +287,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [false, false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             'STORE_MGR' => [
                 'PO'         => [false, false, false, false, false],
@@ -293,6 +298,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [true,  false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             // ── Quality ───────────────────────────────────────────────────
             'QC_TECH' => [
@@ -304,6 +310,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [false, false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             'QC_MGR' => [
                 'PO'         => [false, false, false, false, false],
@@ -314,6 +321,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [true,  false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             // ── Finance ───────────────────────────────────────────────────
             'AP_CLERK' => [
@@ -325,6 +333,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [false, false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             'FIN_MGR' => [
                 'PO'         => [false, false, false, false, false],
@@ -335,6 +344,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [true,  true,  true,  true,  false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [true,  false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             'CFO' => [
                 'PO'         => [false, false, false, false, false],
@@ -345,6 +355,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [true,  true,  true,  true,  false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [true,  false, false, false, false],
+                'BOM'        => [false, false, false, false, false],
             ],
             // ── PPC ───────────────────────────────────────────────────────
             'PPC_USER' => [
@@ -356,6 +367,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [false, false, false, false, false],
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [true,  false, false, false, false],
+                'BOM'        => [true,  true,  true,  false, false],
             ],
             // ── Admin ─────────────────────────────────────────────────────
             'ADMIN' => [
@@ -367,6 +379,7 @@ class RbacSeeder extends Seeder
                 'PAYMENT'    => [true, true, true, true, true],
                 'STOCK'      => [true, true, true, true, true],
                 'REPORTS'    => [true, true, true, true, true],
+                'BOM'        => [true, true, true, true, true],
             ],
         ];
 

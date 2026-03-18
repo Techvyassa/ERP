@@ -3,6 +3,10 @@
 @section('title', 'BOM Header')
 @section('page-title', 'Bill of Materials - Header')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="bomData()" x-init="loadData()">
     <div class="bg-white rounded-xl shadow p-6 mb-6">
@@ -74,9 +78,26 @@
                                       x-text="item.bom_status"></span>
                             </td>
                             <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="viewDetails(item)" class="text-green-600 hover:text-green-900 mr-3" title="View Details"><i class="fas fa-eye"></i></button>
-                                <button @click="edit(item)" class="text-blue-600 hover:text-blue-900 mr-3" title="Edit"><i class="fas fa-edit"></i></button>
-                                <button @click="deleteItem(item)" class="text-red-600 hover:text-red-900" title="Delete"><i class="fas fa-trash"></i></button>
+                                <div class="flex items-center justify-end gap-2">
+                                    <button @click="viewDetails(item)" 
+                                            class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors" 
+                                            title="View Details">
+                                        <i class="fas fa-eye mr-1"></i>
+                                        View
+                                    </button>
+                                    <button @click="edit(item)" 
+                                            class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" 
+                                            title="Edit">
+                                        <i class="fas fa-edit mr-1"></i>
+                                        Edit
+                                    </button>
+                                    <button @click="deleteItem(item)" 
+                                            class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
+                                            title="Delete">
+                                        <i class="fas fa-trash mr-1"></i>
+                                        Delete
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </template>
@@ -89,13 +110,114 @@
 <script>
 function bomData() {
     return {
-        items: [], loading: false, filters: { search: '', product: '', bom_status: '' },
-        async loadData() { this.loading = true; try { this.items = []; } catch (e) { alert('Failed to load BOMs.'); } finally { this.loading = false; } },
-        resetFilters() { this.filters = { search: '', product: '', bom_status: '' }; this.loadData(); },
-        openCreateModal() { alert('Create BOM - Coming soon'); },
-        viewDetails(item) { alert('View BOM details: ' + item.bom_code + ' - Coming soon'); },
-        edit(item) { alert('Edit BOM: ' + item.bom_code + ' - Coming soon'); },
-        async deleteItem(item) { if (confirm('Delete BOM: ' + item.bom_code + '?')) { alert('Delete functionality - Coming soon'); } }
+        items: [],
+        loading: false,
+        filters: { search: '', product: '', bom_status: '' },
+        
+        async loadData() {
+            this.loading = true;
+            try {
+                const params = new URLSearchParams();
+                params.append('is_active', '1'); // Default to active only
+                if (this.filters.search) params.append('search', this.filters.search);
+
+                const response = await fetch(`/api/v1/bom-headers?${params.toString()}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+
+                if (!response.ok || !data || data.success !== true) {
+                    throw new Error((data && data.message) ? data.message : 'Failed to load BOMs');
+                }
+
+                let boms = (data && data.data && data.data.boms) ? data.data.boms : [];
+                
+                // Client-side filtering for product
+                if (this.filters.product) {
+                    const productLower = this.filters.product.toLowerCase();
+                    boms = boms.filter(b => 
+                        (b.product && b.product.product_name && b.product.product_name.toLowerCase().includes(productLower)) ||
+                        (b.product && b.product.product_code && b.product.product_code.toLowerCase().includes(productLower))
+                    );
+                }
+
+                // Transform data for display
+                this.items = boms.map(b => ({
+                    id: b.id,
+                    bom_code: b.bom_code,
+                    product_name: b.product ? b.product.product_name : 'N/A',
+                    version: b.bom_version || 'v1.0',
+                    batch_size: b.batch_size || 1,
+                    output_uom_name: b.product && b.product.uom ? b.product.uom.uom_code : '',
+                    effective_from: b.effective_from || '-',
+                    bom_status: this.getBOMStatus(b),
+                    is_active: b.is_active,
+                    is_approved: b.is_approved
+                }));
+
+                // Apply status filter
+                if (this.filters.bom_status) {
+                    this.items = this.items.filter(item => item.bom_status === this.filters.bom_status);
+                }
+            } catch (error) {
+                console.error('Failed to load BOMs:', error);
+                alert(error.message || 'Failed to load BOMs. Please try again.');
+                this.items = [];
+            } finally {
+                this.loading = false;
+            }
+        },
+        
+        getBOMStatus(bom) {
+            if (!bom.is_active) return 'OBSOLETE';
+            if (!bom.is_approved) return 'DRAFT';
+            return 'ACTIVE';
+        },
+        
+        resetFilters() {
+            this.filters = { search: '', product: '', bom_status: '' };
+            this.loadData();
+        },
+        
+        viewDetails(item) {
+            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
+            window.location.href = `${baseUrl}/${item.id}/view`;
+        },
+        
+        edit(item) {
+            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
+            window.location.href = `${baseUrl}/${item.id}/edit`;
+        },
+        
+        async deleteItem(item) {
+            if (confirm('Are you sure you want to delete BOM: ' + item.bom_code + '?\n\nThis will deactivate the BOM and soft delete it.')) {
+                try {
+                    const response = await fetch(`/api/v1/bom-headers/${item.id}`, {
+                        method: 'DELETE',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
+                    });
+                    const data = await response.json();
+
+                    if (!response.ok || !data || data.success !== true) {
+                        throw new Error((data && data.message) ? data.message : 'Failed to delete BOM');
+                    }
+
+                    // Remove item from display immediately
+                    this.items = this.items.filter(i => i.id !== item.id);
+                    
+                    alert('BOM deleted successfully');
+                } catch (error) {
+                    console.error('Failed to delete BOM:', error);
+                    alert(error.message || 'Failed to delete BOM. Please try again.');
+                }
+            }
+        }
     }
 }
 </script>
