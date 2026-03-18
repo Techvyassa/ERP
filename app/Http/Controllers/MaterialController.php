@@ -38,14 +38,12 @@ class MaterialController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'materials' => $materials->items(),
-                    'pagination' => [
-                        'current_page' => $materials->currentPage(),
-                        'per_page' => $materials->perPage(),
-                        'total' => $materials->total(),
-                        'last_page' => $materials->lastPage(),
-                    ]
+                'data' => $materials->items(),
+                'pagination' => [
+                    'current_page' => $materials->currentPage(),
+                    'per_page' => $materials->perPage(),
+                    'total' => $materials->total(),
+                    'last_page' => $materials->lastPage(),
                 ],
                 'message' => 'Materials retrieved successfully',
                 'request_id' => $requestId,

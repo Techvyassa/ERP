@@ -243,11 +243,15 @@ function uomData() {
                 if (this.filters.uom_type) params.append('uom_type', this.filters.uom_type);
                 if (this.filters.is_active) params.append('is_active', this.filters.is_active);
                 
-                const response = await fetch(`/api/v1/uoms?${params}`);
+                const response = await fetch(`/api/v1/uoms?${params}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
                 if (!response.ok) throw new Error('Failed to load UOMs');
                 
                 const data = await response.json();
-                this.items = data.data?.uoms || [];
+                // API returns data directly as array, not nested
+                this.items = Array.isArray(data.data) ? data.data : (data.data?.uoms || []);
                 
                 // Update pagination (simplified since API doesn't return pagination)
                 this.pagination = {
@@ -359,6 +363,7 @@ function uomData() {
                 try {
                     const response = await fetch(`/api/v1/uoms/${item.id}`, {
                         method: 'DELETE',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',

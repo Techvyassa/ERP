@@ -13,11 +13,11 @@
                 <h2 class="text-2xl font-bold text-gray-900">Roles</h2>
                 <p class="text-gray-600 mt-1">Manage user roles and permissions</p>
             </div>
-            <button @click="openCreateModal()" 
-                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/roles/create' : '/org/' . $organization->org_slug . '/roles/create') }}"
+               class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
                 <span class="material-symbols-outlined text-sm">add</span>
                 <span>Add Role</span>
-            </button>
+            </a>
         </div>
 
         <!-- Search and Filters -->

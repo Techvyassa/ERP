@@ -28,6 +28,10 @@ class DefaultRolePermissionSeeder extends Seeder
         'INVENTORY',    // Inventory Management
         'WAREHOUSE',    // Warehouse Management
         'MATERIAL',     // Material Management
+        'USER_MGMT',    // User Management
+        'ROLE_MGMT',    // Role Management
+        'DEPT_MGMT',    // Department Management
+        'BOM',          // Bill of Materials
     ];
 
     /**

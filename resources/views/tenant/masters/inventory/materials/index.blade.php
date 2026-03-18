@@ -389,12 +389,16 @@ function materialData() {
                 if (this.filters.material_type) params.append('material_type', this.filters.material_type);
                 if (this.filters.is_active) params.append('is_active', this.filters.is_active);
                 
-                const response = await fetch(`/api/v1/materials?${params}`);
+                const response = await fetch(`/api/v1/materials?${params}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
                 if (!response.ok) throw new Error('Failed to load materials');
                 
                 const data = await response.json();
-                this.items = data.data?.materials || [];
-                this.pagination = data.data?.pagination || { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
+                // API returns data directly as array, not nested
+                this.items = Array.isArray(data.data) ? data.data : (data.data?.materials || []);
+                this.pagination = data.pagination || { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
             } catch (error) {
                 console.error('Failed to load materials:', error);
                 this.showNotification('Failed to load materials', 'error');
