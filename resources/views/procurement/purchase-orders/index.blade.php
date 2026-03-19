@@ -383,8 +383,8 @@ function purchaseOrdersData() {
                 const data = await response.json();
                 console.log('Materials API response:', data);
                 
-                if (data.success && data.data && data.data.materials) {
-                    this.materials = data.data.materials;
+                if (data.success && Array.isArray(data.data)) {
+                    this.materials = data.data;
                     console.log('Loaded materials:', this.materials.length);
                 } else {
                     console.warn('No materials found in response');
