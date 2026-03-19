@@ -181,18 +181,18 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\CurrencyController::class, 'destroy']);
         });
 
+        // UOM Master management endpoints (with RBAC middleware for SETTINGS module)
+        Route::middleware(['check.module.permission:SETTINGS'])->prefix('uoms')->group(function () {
+            Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
+            Route::get('/barcode', [App\Http\Controllers\UOMController::class, 'barcode']);
+            Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\UOMController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\UOMController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\UOMController::class, 'destroy']);
+        });
+
         // INVENTORY Management Endpoints
         Route::middleware(['check.module.permission:INVENTORY'])->group(function () {
-            // UOM Master
-            Route::prefix('uoms')->group(function () {
-                Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
-                Route::get('/barcode', [App\Http\Controllers\UOMController::class, 'barcode']);
-                Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
-                Route::post('/', [App\Http\Controllers\UOMController::class, 'store']);
-                Route::put('/{id}', [App\Http\Controllers\UOMController::class, 'update']);
-                Route::delete('/{id}', [App\Http\Controllers\UOMController::class, 'destroy']);
-            });
-
             // Warehouse Master
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
@@ -459,10 +459,6 @@ Route::prefix('v1')->group(function () {
             // Allow BOM users to access Materials and UOMs for BOM creation
             Route::prefix('materials')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialController::class, 'index']);
-            });
-            
-            Route::prefix('uoms')->group(function () {
-                Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
             });
 
             // BOM Details
