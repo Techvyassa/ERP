@@ -55,6 +55,26 @@ class CheckModulePermission
             );
         }
 
+        // Admin bypass: Check if user has admin role (role_id = 1)
+        // Admins have full access to all modules
+        $this->dbRouter->switchToTenant($tenantDbName);
+        $user = \App\Models\Tenant\User::find($userId);
+        
+        if ($user && $user->role_id === 1) {
+            // Admin user - grant all permissions
+            $request->merge([
+                'user_permissions' => [],
+                'module_permissions' => [
+                    'can_view' => true,
+                    'can_create' => true,
+                    'can_edit' => true,
+                    'can_approve' => true,
+                    'can_delete' => true,
+                ],
+            ]);
+            return $next($request);
+        }
+
         // Determine action from HTTP method
         $method = $request->method();
         $action = match ($method) {
