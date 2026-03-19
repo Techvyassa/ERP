@@ -99,8 +99,9 @@
                     localStorage.setItem('user', JSON.stringify(data.data.user));
                     localStorage.setItem('access_token', data.data.access_token);
                     
-                    // Use organization slug from the page
+                    // Track which department login page was used for logout redirect
                     const orgSlug = '{{ $orgSlug }}';
+                    localStorage.setItem('login_portal_url', `/org/${orgSlug}/procurement/login`);
                     window.location.href = `/org/${orgSlug}/procurement/dashboard`;
                 } else {
                     alert(data.message || 'Authentication failed');

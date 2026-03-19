@@ -100,6 +100,7 @@ ursor-pointer">
                     localStorage.setItem('access_token', data.data.access_token);
 
                     const orgSlug = '{{ $orgSlug }}';
+                    localStorage.setItem('login_portal_url', `/org/${orgSlug}/security/login`);
                     window.location.href = `/org/${orgSlug}/security/dashboard`;
                 } else {
                     errorMsg.textContent = data.message || 'Authentication failed. Please check your credentials.';

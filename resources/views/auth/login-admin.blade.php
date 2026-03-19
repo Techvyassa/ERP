@@ -99,7 +99,8 @@
                     localStorage.setItem('user', JSON.stringify(data.data.user));
                     localStorage.setItem('access_token', data.data.access_token);
                     
-                    // Admin goes to control panel
+                    // Admin goes to control panel (no department portal URL)
+                    localStorage.removeItem('login_portal_url');
                     window.location.href = '/control/dashboard';
                 } else {
                     alert(data.message || 'Authentication failed');

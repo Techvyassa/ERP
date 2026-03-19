@@ -101,6 +101,7 @@
                     
                     // Use organization slug from the page
                     const orgSlug = '{{ $orgSlug }}';
+                    localStorage.setItem('login_portal_url', `/org/${orgSlug}/warehouse/login`);
                     window.location.href = `/org/${orgSlug}/warehouse/dashboard`;
                 } else {
                     alert(data.message || 'Authentication failed');
