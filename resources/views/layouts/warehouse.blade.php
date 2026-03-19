@@ -107,8 +107,9 @@
                     
                     <div x-show="open" @click.away="open = false" x-cloak
                          class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                        <form action="{{ url('/logout') }}" method="POST">
+                        <form action="{{ route('tenant.logout', $organization->org_slug) }}" method="POST">
                             @csrf
+                            <input type="hidden" name="redirect_to" value="/org/{{ $organization->org_slug }}/warehouse/login">
                             <button type="submit" class="flex items-center space-x-3 px-4 py-2 text-sm text-red-600 hover:bg-red-50 w-full text-left">
                                 <span class="material-symbols-outlined w-4">logout</span>
                                 <span>Logout</span>

@@ -483,11 +483,10 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
             'tenantType' => request()->get('tenant_type')
         ]);
     })->name('tenant.profile');
-    
-    // Logout
-    Route::post('/logout', function () {
-        return redirect()->route('login')
-            ->withCookie(cookie()->forget('auth_token'))
-            ->with('success', 'You have been logged out successfully');
-    })->name('tenant.logout');
+
 });
+
+// Logout — outside auth middleware, CSRF excluded so it works on both subdomain and path
+Route::post('/logout', [\App\Http\Controllers\LogoutController::class, 'logout'])
+    ->name('tenant.logout')
+    ->withoutMiddleware([\Illuminate\Foundation\Http\Middleware\VerifyCsrfToken::class]);

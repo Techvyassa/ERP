@@ -681,15 +681,10 @@ Route::middleware(['web.jwt'])->group(function () {
         })->name('profile');
     });
 
-    // ------------------------------------------------------------------------
-    // LOGOUT
-    // ------------------------------------------------------------------------
-    Route::post('/logout', function () {
-        return redirect()->route('home')
-            ->withCookie(cookie()->forget('auth_token'))
-            ->with('success', 'You have been logged out successfully');
-    })->name('logout');
 });
+
+// Logout — outside auth middleware so it always works regardless of token state
+Route::post('/logout', [\App\Http\Controllers\LogoutController::class, 'logout'])->name('logout');
 
 // ============================================================================
 // TEST & DEBUG ROUTES (Remove in production)

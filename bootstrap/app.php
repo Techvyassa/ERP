@@ -36,10 +36,21 @@ return Application::configure(basePath: dirname(__DIR__))
             'check.module.permission' => \App\Http\Middleware\CheckModulePermission::class,
             'detect.tenant' => \App\Http\Middleware\DetectTenantContext::class,
         ]);
+
+        // Allow the API middleware group to write cookies (needed for auth_token)
+        $middleware->appendToGroup('api', [
+            \Illuminate\Cookie\Middleware\AddQueuedCookiesToResponse::class,
+        ]);
         
         // Exclude auth_token from cookie encryption
         $middleware->encryptCookies(except: [
             'auth_token',
+        ]);
+
+        // Exclude logout from CSRF — works across subdomain and path-based tenant routes
+        $middleware->validateCsrfTokens(except: [
+            'logout',
+            'org/*/logout',
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
