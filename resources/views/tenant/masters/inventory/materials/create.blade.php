@@ -203,7 +203,7 @@
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select HSN Code</option>
                             <template x-for="hsn in hsnCodes" :key="hsn.id">
-                                <option :value="hsn.id" x-text="hsn.code + ' - ' + hsn.description"></option>
+                                <option :value="hsn.id" x-text="hsn.hsn_code + ' - ' + hsn.description"></option>
                             </template>
                         </select>
                     </div>
@@ -483,18 +483,20 @@ function materialForm() {
                 
                 if (uomsResponse.ok) {
                     const uomsData = await uomsResponse.json();
-                    // API returns data directly as array, not nested
-                    this.uoms = Array.isArray(uomsData.data) ? uomsData.data : (uomsData.data?.uoms || []);
+                    // UOM API returns data directly as array
+                    this.uoms = Array.isArray(uomsData.data) ? uomsData.data : [];
                 }
                 
                 if (warehousesResponse.ok) {
                     const warehousesData = await warehousesResponse.json();
-                    this.warehouses = Array.isArray(warehousesData.data) ? warehousesData.data : (warehousesData.data?.warehouses || []);
+                    // Warehouse API returns data.warehouses
+                    this.warehouses = warehousesData.data?.warehouses || [];
                 }
                 
                 if (hsnResponse.ok) {
                     const hsnData = await hsnResponse.json();
-                    this.hsnCodes = Array.isArray(hsnData.data) ? hsnData.data : (hsnData.data?.hsn_codes || []);
+                    // HSN Code API returns data.hsn_codes
+                    this.hsnCodes = hsnData.data?.hsn_codes || [];
                 }
                 
             } catch (error) {
@@ -534,7 +536,7 @@ function materialForm() {
                 
                 this.showNotification('Material created successfully!', 'success');
                 setTimeout(() => {
-                    window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/materials' : '/org/' . $organization->org_slug . '/materials') }}';
+                    window.location.href = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/materials' : '/org/' . $organization->org_slug . '/materials') }}";
                 }, 1500);
                 
             } catch (error) {

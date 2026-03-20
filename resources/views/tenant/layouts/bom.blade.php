@@ -84,7 +84,7 @@
                         <a href="{{ url($tenantType === 'subdomain' ? '/bom-header' : "/org/{$organization->org_slug}/bom-header") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.bom-header.*') ? 'bg-orange-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">list_alt</span>
-                            <span x-show="sidebarOpen" class="font-medium">BOM Header</span>
+                            <span x-show="sidebarOpen" class="font-medium">BOM </span>
                         </a>
                     </li>
                     <li>

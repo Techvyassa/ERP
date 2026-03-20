@@ -308,10 +308,18 @@ div.b128 {
                                     <i class="fas fa-edit mr-1"></i>
                                     Edit
                                 </button>
-                                <button @click="deleteItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Delete">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Delete
-                                </button>
+                                <template x-if="item.is_active">
+                                    <button @click="deactivateItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Deactivate">
+                                        <i class="fas fa-ban mr-1"></i>
+                                        Deactivate
+                                    </button>
+                                </template>
+                                <template x-if="!item.is_active">
+                                    <button @click="activateItem(item)" class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors ml-2" title="Activate">
+                                        <i class="fas fa-check mr-1"></i>
+                                        Activate
+                                    </button>
+                                </template>
                                 <button @click="showBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded transition-colors ml-2" title="Barcode">
                                     <i class="fas fa-barcode mr-1"></i>
                                     Barcode
@@ -566,29 +574,67 @@ function materialData() {
             printWindow.print();
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to delete material: ' + item.material_code + '?')) {
+        async deactivateItem(item) {
+            if (confirm('Are you sure you want to deactivate material: ' + item.material_code + '?')) {
                 try {
                     const response = await fetch(`/api/v1/materials/${item.id}`, {
-                        method: 'DELETE',
+                        method: 'PUT',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        },
+                        body: JSON.stringify({
+                            ...item,
+                            is_active: false
+                        })
                     });
                     
                     const data = await response.json();
                     
                     if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to delete material', 'error');
+                        this.showNotification(data.message || 'Failed to deactivate material', 'error');
                         return;
                     }
                     
-                    this.showNotification('Material deleted successfully', 'success');
+                    this.showNotification('Material deactivated successfully', 'success');
                     this.loadData(); // Refresh list
                 } catch (error) {
-                    console.error('Failed to delete material:', error);
+                    console.error('Failed to deactivate material:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
+            }
+        },
+
+        async activateItem(item) {
+            if (confirm('Are you sure you want to activate material: ' + item.material_code + '?')) {
+                try {
+                    const response = await fetch(`/api/v1/materials/${item.id}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ...item,
+                            is_active: true
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to activate material', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('Material activated successfully', 'success');
+                    this.loadData(); // Refresh list
+                } catch (error) {
+                    console.error('Failed to activate material:', error);
                     this.showNotification('Network error. Please try again.', 'error');
                 }
             }

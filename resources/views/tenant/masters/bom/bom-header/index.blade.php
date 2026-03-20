@@ -91,12 +91,30 @@
                                         <i class="fas fa-edit mr-1"></i>
                                         Edit
                                     </button>
-                                    <button @click="deleteItem(item)" 
-                                            class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
-                                            title="Delete">
-                                        <i class="fas fa-trash mr-1"></i>
-                                        Delete
-                                    </button>
+                                    <template x-if="item.bom_status === 'ACTIVE'">
+                                        <button @click="deactivateItem(item)" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
+                                                title="Make Obsolete">
+                                            <i class="fas fa-ban mr-1"></i>
+                                            Deactivate
+                                        </button>
+                                    </template>
+                                    <template x-if="item.bom_status === 'OBSOLETE'">
+                                        <button @click="activateItem(item)" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors" 
+                                                title="Make Active">
+                                            <i class="fas fa-check mr-1"></i>
+                                            Activate
+                                        </button>
+                                    </template>
+                                    <template x-if="item.bom_status === 'DRAFT'">
+                                        <button @click="activateItem(item)" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" 
+                                                title="Make Active">
+                                            <i class="fas fa-play mr-1"></i>
+                                            Activate
+                                        </button>
+                                    </template>
                                 </div>
                             </td>
                         </tr>
@@ -146,9 +164,11 @@ function bomData() {
                 this.items = boms.map(b => ({
                     id: b.id,
                     bom_code: b.bom_code,
+                    product_id: b.product_id,
                     product_name: b.product ? b.product.product_name : 'N/A',
                     version: b.version || 'v1.0',
                     batch_size: b.batch_size || 1,
+                    output_uom_id: b.output_uom_id,
                     output_uom_name: b.output_uom ? b.output_uom.uom_code : '',
                     effective_from: b.effective_from || '-',
                     bom_status: b.bom_status || 'DRAFT'
@@ -186,33 +206,101 @@ function bomData() {
             window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to delete BOM: ' + item.bom_code + '?\n\nThis will deactivate the BOM and soft delete it.')) {
+        async deactivateItem(item) {
+            if (confirm('Are you sure you want to make BOM: ' + item.bom_code + ' obsolete?')) {
                 try {
                     const response = await fetch(`/api/v1/bom-headers/${item.id}`, {
-                        method: 'DELETE',
+                        method: 'PUT',
                         credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        },
+                        body: JSON.stringify({
+                            bom_code: item.bom_code,
+                            product_id: item.product_id,
+                            version: item.version,
+                            batch_size: item.batch_size,
+                            output_uom_id: item.output_uom_id,
+                            effective_from: item.effective_from,
+                            bom_status: 'OBSOLETE'
+                        })
                     });
-                    const data = await response.json();
-
-                    if (!response.ok || !data || data.success !== true) {
-                        throw new Error((data && data.message) ? data.message : 'Failed to delete BOM');
-                    }
-
-                    // Remove item from display immediately
-                    this.items = this.items.filter(i => i.id !== item.id);
                     
-                    alert('BOM deleted successfully');
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to deactivate BOM', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('BOM made obsolete successfully', 'success');
+                    this.loadData(); // Refresh the list
                 } catch (error) {
-                    console.error('Failed to delete BOM:', error);
-                    alert(error.message || 'Failed to delete BOM. Please try again.');
+                    console.error('Failed to deactivate BOM:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
                 }
             }
+        },
+
+        async activateItem(item) {
+            const action = item.bom_status === 'DRAFT' ? 'activate' : 'reactivate';
+            if (confirm(`Are you sure you want to ${action} BOM: ` + item.bom_code + '?')) {
+                try {
+                    const response = await fetch(`/api/v1/bom-headers/${item.id}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            bom_code: item.bom_code,
+                            product_id: item.product_id,
+                            version: item.version,
+                            batch_size: item.batch_size,
+                            output_uom_id: item.output_uom_id,
+                            effective_from: item.effective_from,
+                            bom_status: 'ACTIVE'
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to activate BOM', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('BOM activated successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to activate BOM:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
+            }
+        },
+
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
     }
 }

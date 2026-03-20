@@ -174,10 +174,18 @@
                                     <i class="fas fa-edit mr-1"></i>
                                     Edit
                                 </button>
-                                <button @click="deleteItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Delete">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Delete
-                                </button>
+                                <template x-if="item.is_active">
+                                    <button @click="deactivateItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Deactivate">
+                                        <i class="fas fa-ban mr-1"></i>
+                                        Deactivate
+                                    </button>
+                                </template>
+                                <template x-if="!item.is_active">
+                                    <button @click="activateItem(item)" class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors ml-2" title="Activate">
+                                        <i class="fas fa-check mr-1"></i>
+                                        Activate
+                                    </button>
+                                </template>
                                 <button @click="showBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded transition-colors ml-2" title="Barcode">
                                     <i class="fas fa-barcode mr-1"></i>
                                     Barcode
@@ -249,12 +257,24 @@ function productData() {
                 if (this.filters.product_category) params.append('product_category', this.filters.product_category);
                 if (this.filters.is_active) params.append('is_active', this.filters.is_active);
                 
-                const response = await fetch(`/api/v1/products?${params}`);
+                const response = await fetch(`/api/v1/products?${params}`, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json'
+                    }
+                });
                 if (!response.ok) throw new Error('Failed to load products');
                 
                 const data = await response.json();
-                this.items = data.data?.products || [];
-                this.pagination = data.data?.pagination || { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
+                // Handle both array and nested object response formats
+                if (Array.isArray(data)) {
+                    this.items = data;
+                } else if (data.data) {
+                    this.items = Array.isArray(data.data) ? data.data : (data.data.products || []);
+                    this.pagination = data.data.pagination || { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
+                } else {
+                    this.items = [];
+                }
             } catch (error) {
                 console.error('Failed to load products:', error);
                 this.showNotification('Failed to load products', 'error');
@@ -351,29 +371,67 @@ function productData() {
             printWindow.print();
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to delete product: ' + item.product_code + '?')) {
+        async deactivateItem(item) {
+            if (confirm('Are you sure you want to deactivate product: ' + item.product_code + '?')) {
                 try {
                     const response = await fetch(`/api/v1/products/${item.id}`, {
-                        method: 'DELETE',
+                        method: 'PUT',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        },
+                        body: JSON.stringify({
+                            ...item,
+                            is_active: false
+                        })
                     });
                     
                     const data = await response.json();
                     
                     if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to delete product', 'error');
+                        this.showNotification(data.message || 'Failed to deactivate product', 'error');
                         return;
                     }
                     
-                    this.showNotification('Product deleted successfully', 'success');
+                    this.showNotification('Product deactivated successfully', 'success');
                     this.loadData(); // Refresh the list
                 } catch (error) {
-                    console.error('Failed to delete product:', error);
+                    console.error('Failed to deactivate product:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
+            }
+        },
+
+        async activateItem(item) {
+            if (confirm('Are you sure you want to activate product: ' + item.product_code + '?')) {
+                try {
+                    const response = await fetch(`/api/v1/products/${item.id}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ...item,
+                            is_active: true
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to activate product', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('Product activated successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to activate product:', error);
                     this.showNotification('Network error. Please try again.', 'error');
                 }
             }

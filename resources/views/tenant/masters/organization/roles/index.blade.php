@@ -3,6 +3,10 @@
 @section('title', 'Roles')
 @section('page-title', 'Role Management')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="roleManager()" x-init="init()">
     <!-- Main Roles List -->
@@ -93,12 +97,20 @@
                                             title="Edit">
                                         <span class="material-symbols-outlined text-sm">edit</span>
                                     </button>
-                                    <button @click="deleteRole(role)" 
-                                            x-show="!role.is_system_role"
-                                            class="text-red-600 hover:text-red-900 p-1" 
-                                            title="Delete">
-                                        <span class="material-symbols-outlined text-sm">delete</span>
-                                    </button>
+                                    <template x-if="role.is_active && !role.is_system_role">
+                                        <button @click="deactivateRole(role)" 
+                                                class="text-red-600 hover:text-red-900 p-1" 
+                                                title="Deactivate">
+                                            <span class="material-symbols-outlined text-sm">block</span>
+                                        </button>
+                                    </template>
+                                    <template x-if="!role.is_active && !role.is_system_role">
+                                        <button @click="activateRole(role)" 
+                                                class="text-green-600 hover:text-green-900 p-1" 
+                                                title="Activate">
+                                            <span class="material-symbols-outlined text-sm">check_circle</span>
+                                        </button>
+                                    </template>
                                 </div>
                             </td>
                         </tr>
@@ -313,8 +325,8 @@ function roleManager() {
                 if (this.filterActive) params.append('is_active', this.filterActive);
 
                 const response = await fetch(`/api/v1/roles?${params}`, {
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
                         'Accept': 'application/json'
                     }
                 });
@@ -370,10 +382,11 @@ function roleManager() {
 
                 const response = await fetch(url, {
                     method: method,
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify(this.formData)
                 });
@@ -393,29 +406,75 @@ function roleManager() {
             }
         },
 
-        async deleteRole(role) {
-            if (!confirm(`Are you sure you want to delete the role "${role.role_name}"?`)) {
+        async deactivateRole(role) {
+            if (!confirm(`Are you sure you want to deactivate the role "${role.role_name}"?`)) {
                 return;
             }
 
             try {
                 const response = await fetch(`/api/v1/roles/${role.id}`, {
-                    method: 'DELETE',
+                    method: 'PUT',
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
-                        'Accept': 'application/json'
-                    }
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        role_code: role.role_code,
+                        role_name: role.role_name,
+                        description: role.description,
+                        is_active: false
+                    })
                 });
 
                 const data = await response.json();
-                if (data.success) {
-                    this.showSuccess(data.message);
-                    this.fetchRoles();
-                } else {
-                    this.showError(data.message);
+                if (!response.ok) {
+                    this.showError(data.message || 'Failed to deactivate role');
+                    return;
                 }
+                
+                this.showSuccess('Role deactivated successfully');
+                this.fetchRoles();
             } catch (error) {
-                this.showError('Failed to delete role');
+                console.error('Failed to deactivate role:', error);
+                this.showError('Failed to deactivate role');
+            }
+        },
+
+        async activateRole(role) {
+            if (!confirm(`Are you sure you want to activate the role "${role.role_name}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`/api/v1/roles/${role.id}`, {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({
+                        role_code: role.role_code,
+                        role_name: role.role_name,
+                        description: role.description,
+                        is_active: true
+                    })
+                });
+
+                const data = await response.json();
+                if (!response.ok) {
+                    this.showError(data.message || 'Failed to activate role');
+                    return;
+                }
+                
+                this.showSuccess('Role activated successfully');
+                this.fetchRoles();
+            } catch (error) {
+                console.error('Failed to activate role:', error);
+                this.showError('Failed to activate role');
             }
         },
 
@@ -426,8 +485,8 @@ function roleManager() {
 
             try {
                 const response = await fetch(`/api/v1/roles/${role.id}/permissions`, {
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
                         'Accept': 'application/json'
                     }
                 });
@@ -476,10 +535,11 @@ function roleManager() {
             try {
                 const response = await fetch(`/api/v1/roles/${this.selectedRole.id}/permissions`, {
                     method: 'PUT',
+                    credentials: 'same-origin',
                     headers: {
-                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
                         'Content-Type': 'application/json',
-                        'Accept': 'application/json'
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
                     body: JSON.stringify({ permissions: this.permissions })
                 });

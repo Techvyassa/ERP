@@ -116,12 +116,22 @@
                                         <i class="fas fa-edit mr-1"></i>
                                         Edit
                                     </button>
-                                    <button @click="deleteItem(item)" 
-                                            class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
-                                            title="Deactivate">
-                                        <i class="fas fa-ban mr-1"></i>
-                                        Delete
-                                    </button>
+                                    <template x-if="item.is_active">
+                                        <button @click="deactivateItem(item)" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
+                                                title="Deactivate">
+                                            <i class="fas fa-ban mr-1"></i>
+                                            Deactivate
+                                        </button>
+                                    </template>
+                                    <template x-if="!item.is_active">
+                                        <button @click="activateItem(item)" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors" 
+                                                title="Activate">
+                                            <i class="fas fa-check mr-1"></i>
+                                            Activate
+                                        </button>
+                                    </template>
                                 </div>
                             </td>
                         </tr>
@@ -137,7 +147,7 @@ function contactData() {
     return {
         items: [],
         loading: false,
-        filters: { vendor_id: '', contact_type: '', is_active: '1' }, // Default to active only
+        filters: { vendor_id: '', contact_type: '', is_active: '' }, // Show all statuses by default
         
         async loadData() {
             this.loading = true;
@@ -168,7 +178,7 @@ function contactData() {
         },
         
         resetFilters() {
-            this.filters = { vendor_id: '', contact_type: '', is_active: '1' }; // Reset to active only
+            this.filters = { vendor_id: '', contact_type: '', is_active: '' }; // Reset to show all statuses
             this.loadData();
         },
         
@@ -177,33 +187,90 @@ function contactData() {
             window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to deactivate contact: ' + item.contact_name + '?\n\nThis will set the contact as inactive.')) {
+        async deactivateItem(item) {
+            if (confirm('Are you sure you want to deactivate contact: ' + item.contact_name + '?')) {
                 try {
                     const response = await fetch(`/api/v1/vendor-contacts/${item.id}`, {
-                        method: 'DELETE',
+                        method: 'PUT',
                         credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        },
+                        body: JSON.stringify({
+                            ...item,
+                            is_active: false
+                        })
                     });
-                    const data = await response.json();
-
-                    if (!response.ok || !data || data.success !== true) {
-                        throw new Error((data && data.message) ? data.message : 'Failed to deactivate contact');
-                    }
-
-                    // Remove item from display immediately
-                    this.items = this.items.filter(i => i.id !== item.id);
                     
-                    alert('Contact deactivated successfully');
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to deactivate contact', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('Contact deactivated successfully', 'success');
+                    this.loadData(); // Refresh the list
                 } catch (error) {
                     console.error('Failed to deactivate contact:', error);
-                    alert(error.message || 'Failed to deactivate contact. Please try again.');
+                    this.showNotification('Network error. Please try again.', 'error');
                 }
             }
+        },
+
+        async activateItem(item) {
+            if (confirm('Are you sure you want to activate contact: ' + item.contact_name + '?')) {
+                try {
+                    const response = await fetch(`/api/v1/vendor-contacts/${item.id}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            ...item,
+                            is_active: true
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to activate contact', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('Contact activated successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to activate contact:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
+            }
+        },
+
+        showNotification(message, type = 'info') {
+            const notification = document.createElement('div');
+            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
+                type === 'success' ? 'bg-green-500 text-white' : 
+                type === 'error' ? 'bg-red-500 text-white' : 
+                'bg-blue-500 text-white'
+            }`;
+            notification.innerHTML = `
+                <div class="flex items-center">
+                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                    <span>${message}</span>
+                </div>
+            `;
+            document.body.appendChild(notification);
+            
+            setTimeout(() => {
+                notification.remove();
+            }, 3000);
         }
     }
 }

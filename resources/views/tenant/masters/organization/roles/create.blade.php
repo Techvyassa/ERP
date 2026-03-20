@@ -30,26 +30,39 @@
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Role Information</h3>
                 <div class="space-y-6">
-                    <!-- Role Code -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Role Code <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" x-model="form.role_code" required maxlength="30"
-                               placeholder="ADMIN, BUYER, QC_INSP"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">e.g. ADMIN, BUYER, QC_INSP (max 30 chars)</p>
-                    </div>
-
                     <!-- Role Name -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Role Name <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" x-model="form.role_name" required maxlength="100"
+                        <input type="text" x-model="form.role_name" @input="generateRoleCode" required maxlength="100"
                                placeholder="Administrator"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Human-readable label (max 100 chars)</p>
+                    </div>
+
+                    <!-- Role Code -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Role Code <span class="text-red-500">*</span>
+                        </label>
+                        
+                        <!-- Auto-generate checkbox -->
+                        <div class="mb-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="autoGenerate" @change="toggleAutoGenerate"
+                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                <span class="ml-2 text-sm text-gray-600">Auto-generate code from role name</span>
+                            </label>
+                        </div>
+
+                        <input type="text" x-model="form.role_code" required maxlength="30"
+                               :readonly="autoGenerate"
+                               :class="autoGenerate ? 'bg-gray-50 text-gray-700' : ''"
+                               placeholder="ADMIN, BUYER, QC_INSP"
+                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <p class="text-xs text-gray-500 mt-1" x-show="!autoGenerate">e.g. ADMIN, BUYER, QC_INSP (max 30 chars)</p>
+                        <p class="text-xs text-gray-500 mt-1" x-show="autoGenerate">Auto-generated from role name (uncheck to edit manually)</p>
                     </div>
 
                     <!-- Description -->
@@ -106,11 +119,55 @@
 function roleForm() {
     return {
         loading: false,
+        autoGenerate: true, // Default to auto-generate enabled
         form: {
             role_code: '',
             role_name: '',
             description: '',
             is_active: true
+        },
+        
+        toggleAutoGenerate() {
+            if (this.autoGenerate) {
+                this.generateRoleCode();
+            }
+        },
+        
+        generateRoleCode() {
+            if (this.autoGenerate && this.form.role_name) {
+                // Convert role name to abbreviated uppercase code format
+                let words = this.form.role_name
+                    .trim()
+                    .toUpperCase()
+                    .replace(/[^A-Z0-9\s]/g, '') // Remove special characters
+                    .split(/\s+/); // Split by spaces
+                
+                let code = '';
+                
+                if (words.length === 1) {
+                    // Single word: take first 4 characters
+                    code = words[0].substring(0, 4);
+                } else if (words.length === 2) {
+                    // Two words: IT Head -> ITHD (IT + HD from Head)
+                    let firstWord = words[0];
+                    let secondWord = words[1];
+                    
+                    if (firstWord.length <= 2) {
+                        // First word is short, take all + first 2 from second
+                        code = firstWord + secondWord.substring(0, 2);
+                    } else {
+                        // Both words longer, take 2 from each
+                        code = firstWord.substring(0, 2) + secondWord.substring(0, 2);
+                    }
+                } else {
+                    // Multiple words: take 1-2 chars from each word
+                    code = words.map(word => {
+                        return word.length <= 2 ? word : word.substring(0, 2);
+                    }).join('').substring(0, 6);
+                }
+                
+                this.form.role_code = code;
+            }
         },
         
         async submitForm() {
