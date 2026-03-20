@@ -173,7 +173,7 @@
                         
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Currency *</label>
-                            <input type="text" :value="form.currency_id ? 'Currency ID: ' + form.currency_id : 'Auto-filled from vendor'" readonly 
+                            <input type="text" :value="getCurrencyDisplay()" readonly 
                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50"
                                    :class="{'border-red-300': !form.currency_id && form.vendor_id}">
                             <p class="text-xs text-red-600 mt-1" x-show="!form.currency_id && form.vendor_id">
@@ -210,11 +210,53 @@
                             <input type="number" x-model="form.credit_days" readonly 
                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
                         </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Delivery Terms</label>
+                            <select x-model="form.delivery_terms" 
+                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <option value="">Select Terms</option>
+                                <option value="EXW">EXW - Ex Works</option>
+                                <option value="FOB">FOB - Free on Board</option>
+                                <option value="CIF">CIF - Cost, Insurance & Freight</option>
+                                <option value="CFR">CFR - Cost and Freight</option>
+                                <option value="DDP">DDP - Delivered Duty Paid</option>
+                                <option value="DAP">DAP - Delivered at Place</option>
+                                <option value="FCA">FCA - Free Carrier</option>
+                                <option value="CPT">CPT - Carriage Paid To</option>
+                            </select>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">PO Valid Until</label>
+                            <input type="date" x-model="form.valid_until" 
+                                   class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        </div>
+                    </div>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Billing Address</label>
+                            <textarea x-model="form.billing_address" rows="2" placeholder="Invoice-to address"
+                                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+                        </div>
+                        
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Ship To / Delivery Address</label>
+                            <textarea x-model="form.ship_to_address" rows="2" placeholder="Delivery / plant address"
+                                      class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+                        </div>
                     </div>
                     
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-2">Notes</label>
-                        <textarea x-model="form.notes" rows="3" 
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Internal Notes</label>
+                        <textarea x-model="form.notes" rows="2" 
+                                  class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+                    </div>
+                    
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Terms & Conditions</label>
+                        <textarea x-model="form.terms_conditions" rows="3" placeholder="Legal terms and conditions for this PO..."
                                   class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
                     </div>
                     
@@ -225,6 +267,17 @@
                             <button type="button" @click="addLineItem()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                                 Add Item
                             </button>
+                        </div>
+                        
+                        <!-- Column Headers -->
+                        <div class="grid grid-cols-12 gap-3 px-3 mb-2">
+                            <div class="col-span-3 text-xs font-semibold text-gray-500 uppercase">Material</div>
+                            <div class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Type</div>
+                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase">Qty</div>
+                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase">UOM</div>
+                            <div class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Unit Price</div>
+                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase">Total</div>
+                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase text-right">Action</div>
                         </div>
                         
                         <div class="space-y-3">
@@ -238,6 +291,7 @@
                             </template>
                             
                             <template x-for="(item, index) in form.line_items" :key="index">
+                                <!-- Main row: Material, Type, Qty, UOM, Unit Price, Total, Action -->
                                 <div class="grid grid-cols-12 gap-3 items-start p-3 bg-gray-50 rounded-lg">
                                     <div class="col-span-3">
                                         <select x-model="item.material_id" @change="onMaterialSelect(index)" required 
@@ -256,7 +310,7 @@
                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100">
                                     </div>
                                     <div class="col-span-1">
-                                        <input type="number" x-model="item.ordered_qty" placeholder="Qty" required min="1" 
+                                        <input type="number" x-model="item.ordered_qty" @input="calculateItemTotal(index)" placeholder="Qty" required min="1" 
                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
                                     </div>
                                     <div class="col-span-1">
@@ -264,17 +318,56 @@
                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100">
                                     </div>
                                     <div class="col-span-2">
-                                        <input type="number" x-model="item.unit_price" placeholder="Unit Price" required min="0" step="0.01" 
-                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                        <input type="number" x-model="item.unit_price" @input="calculateItemTotal(index)" placeholder="Unit Price" required min="0" step="0.01" 
+                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
+                                               :title="item.material_id && item.unit_price > 0 ? 'Auto-filled from Standard Cost' : 'Enter unit price'">
+                                        <p class="text-xs text-green-600 mt-0.5" 
+                                           x-show="item.material_id && item.unit_price > 0">
+                                            Standard cost
+                                        </p>
                                     </div>
-                                    <div class="col-span-2">
-                                        <input type="text" :value="(item.ordered_qty * item.unit_price).toFixed(2)" readonly 
+                                    <div class="col-span-1">
+                                        <input type="text" :value="getItemTotal(index).toFixed(2)" readonly 
                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100 font-semibold">
                                     </div>
-                                    <div class="col-span-1 flex justify-end">
-                                        <button type="button" @click="removeLineItem(index)" class="text-red-600 hover:text-red-800">
+                                    <div class="col-span-1 flex justify-end items-center">
+                                        <button type="button" @click="removeLineItem(index)" class="text-red-600 hover:text-red-800" title="Remove">
                                             <span class="material-symbols-outlined">delete</span>
                                         </button>
+                                    </div>
+                                </div>
+                                
+                                <!-- Extra row: Discount, Tax, Scheduled Delivery, Tolerance -->
+                                <div class="grid grid-cols-12 gap-3 items-start px-3 pb-3 -mt-3">
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Discount %</label>
+                                        <input type="number" x-model="item.discount_pct" @input="calculateItemTotal(index)" min="0" max="100" step="0.01" placeholder="0"
+                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
+                                    </div>
+                                    <div class="col-span-3">
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">GST Tax</label>
+                                        <select x-model="item.gst_tax_id" @change="calculateItemTotal(index)" 
+                                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
+                                            <option value="">Select Tax</option>
+                                            <template x-for="tax in gstTaxes" :key="tax.id">
+                                                <option :value="tax.id" x-text="tax.tax_code + ' - ' + tax.total_tax_rate + '%'"></option>
+                                            </template>
+                                        </select>
+                                    </div>
+                                    <div class="col-span-3">
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Scheduled Delivery</label>
+                                        <input type="date" x-model="item.scheduled_delivery" 
+                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Under Tol. %</label>
+                                        <input type="number" x-model="item.under_delivery_tolerance" min="0" max="100" step="0.01" placeholder="3"
+                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
+                                    </div>
+                                    <div class="col-span-2">
+                                        <label class="block text-xs font-medium text-gray-500 mb-1">Over Tol. %</label>
+                                        <input type="number" x-model="item.over_delivery_tolerance" min="0" max="100" step="0.01" placeholder="5"
+                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
                                     </div>
                                 </div>
                             </template>
@@ -309,6 +402,8 @@ function purchaseOrdersData() {
         purchaseOrders: [],
         vendors: [],
         materials: [],
+        currencies: [],
+        gstTaxes: [],
         loading: false,
         saving: false,
         showModal: false,
@@ -340,9 +435,61 @@ function purchaseOrdersData() {
         },
         
         async init() {
+            await this.loadCurrencies();
             await this.loadVendors();
             await this.loadMaterials();
+            await this.loadGstTaxes();
             await this.loadPurchaseOrders();
+        },
+        
+        async loadGstTaxes() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/v1/gst-taxes?is_active=true', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                console.log('GST Taxes API response:', data);
+                
+                if (data.success && data.data && data.data.gst_taxes) {
+                    this.gstTaxes = data.data.gst_taxes;
+                    console.log('Loaded GST taxes:', this.gstTaxes.length);
+                } else {
+                    console.warn('No GST taxes found in response');
+                    this.gstTaxes = [];
+                }
+            } catch (error) {
+                console.error('Error loading GST taxes:', error);
+                this.gstTaxes = [];
+            }
+        },
+        
+        async loadCurrencies() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/v1/currencies?per_page=100', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
+                const data = await response.json();
+                console.log('Currencies API response:', data);
+                
+                if (data.success && data.data && data.data.currencies) {
+                    this.currencies = data.data.currencies;
+                    console.log('Loaded currencies:', this.currencies.length);
+                } else {
+                    console.warn('No currencies found in response');
+                    this.currencies = [];
+                }
+            } catch (error) {
+                console.error('Error loading currencies:', error);
+                this.currencies = [];
+            }
         },
         
         async loadVendors() {
@@ -456,7 +603,12 @@ function purchaseOrdersData() {
                 expected_delivery_date: '',
                 payment_terms: '',
                 credit_days: '',
+                delivery_terms: '',
+                valid_until: '',
+                billing_address: '',
+                ship_to_address: '',
                 notes: '',
+                terms_conditions: '',
                 line_items: [{ 
                     material_id: '', 
                     material_name: '', 
@@ -465,7 +617,12 @@ function purchaseOrdersData() {
                     ordered_qty: 1, 
                     uom: '', 
                     uom_id: null,
-                    unit_price: 0 
+                    unit_price: 0,
+                    discount_pct: 0,
+                    gst_tax_id: '',
+                    scheduled_delivery: '',
+                    under_delivery_tolerance: 3,
+                    over_delivery_tolerance: 5
                 }]
             };
             this.showModal = true;
@@ -506,7 +663,12 @@ function purchaseOrdersData() {
                 ordered_qty: 1, 
                 uom: '', 
                 uom_id: null,
-                unit_price: 0 
+                unit_price: 0,
+                discount_pct: 0,
+                gst_tax_id: '',
+                scheduled_delivery: '',
+                under_delivery_tolerance: 3,
+                over_delivery_tolerance: 5
             });
         },
         
@@ -537,14 +699,67 @@ function purchaseOrdersData() {
                     this.form.line_items[index].uom_id = null;
                 }
                 
+                // Auto-fill unit_price from material's standard_cost if available and > 0
+                const standardCost = parseFloat(material.standard_cost || 0);
+                if (standardCost > 0) {
+                    this.form.line_items[index].unit_price = standardCost;
+                    console.log('Auto-filled unit price from standard_cost:', standardCost);
+                }
+                
+                // Auto-fill GST tax from material's HSN code default_gst_id
+                if (material.hsn_code && material.hsn_code.default_gst_id) {
+                    const defaultGstId = parseInt(material.hsn_code.default_gst_id);
+                    // Verify the tax exists in loaded gstTaxes list
+                    const exists = this.gstTaxes.find(t => t.id === defaultGstId);
+                    if (exists) {
+                        this.form.line_items[index].gst_tax_id = defaultGstId;
+                        console.log('Auto-filled GST tax from HSN:', defaultGstId);
+                    } else {
+                        this.form.line_items[index].gst_tax_id = '';
+                    }
+                } else {
+                    this.form.line_items[index].gst_tax_id = '';
+                }
+                
+                this.calculateItemTotal(index);
                 console.log('Line item after material select:', this.form.line_items[index]);
             }
         },
         
         calculateTotal() {
             return this.form.line_items.reduce((sum, item) => {
-                return sum + (parseFloat(item.ordered_qty || 0) * parseFloat(item.unit_price || 0));
+                return sum + this.getItemTotalByItem(item);
             }, 0);
+        },
+        
+        getItemTotalByItem(item) {
+            const qty = parseFloat(item.ordered_qty || 0);
+            const price = parseFloat(item.unit_price || 0);
+            const discount = parseFloat(item.discount_pct || 0);
+            return qty * price * (1 - discount / 100);
+        },
+        
+        getItemTotal(index) {
+            const item = this.form.line_items[index];
+            return this.getItemTotalByItem(item);
+        },
+        
+        calculateItemTotal(index) {
+            // Trigger Alpine reactivity by reassigning the item
+            const item = this.form.line_items[index];
+            // Force update by touching the item
+            item._updated = Date.now();
+        },
+        
+        getCurrencyDisplay() {
+            if (!this.form.currency_id) {
+                return 'Auto-filled from vendor';
+            }
+            const currency = this.currencies.find(c => c.id == this.form.currency_id);
+            if (currency) {
+                return currency.currency_code + ' - ' + currency.currency_name;
+            }
+            return 'Currency ID: ' + this.form.currency_id;
         },
         
         async savePO() {
@@ -604,13 +819,23 @@ function purchaseOrdersData() {
                     expected_delivery: this.form.expected_delivery_date || null,
                     payment_terms: this.form.payment_terms || null,
                     credit_days: this.form.credit_days ? parseInt(this.form.credit_days) : null,
+                    delivery_terms: this.form.delivery_terms || null,
+                    valid_until: this.form.valid_until || null,
+                    billing_address: this.form.billing_address || null,
+                    ship_to_address: this.form.ship_to_address || null,
                     remarks: this.form.notes || null,
-                    line_items: this.form.line_items.map(item => ({
+                    terms_conditions: this.form.terms_conditions || null,
+                    line_items: this.form.line_items.map((item, idx) => ({
                         material_id: parseInt(item.material_id),
                         ordered_qty: parseFloat(item.ordered_qty),
                         uom_id: parseInt(item.uom_id),
                         unit_price: parseFloat(item.unit_price),
-                        material_description: item.material_name || null
+                        material_description: item.material_name || null,
+                        discount_pct: parseFloat(item.discount_pct) || 0,
+                        gst_tax_id: item.gst_tax_id ? parseInt(item.gst_tax_id) : null,
+                        scheduled_delivery: item.scheduled_delivery || null,
+                        under_delivery_tolerance: parseFloat(item.under_delivery_tolerance) || 3,
+                        over_delivery_tolerance: parseFloat(item.over_delivery_tolerance) || 5
                     }))
                 };
                 
@@ -810,7 +1035,12 @@ function purchaseOrdersData() {
                         expected_delivery_date: formatDateForInput(po.expected_delivery),
                         payment_terms: po.payment_terms || '',
                         credit_days: po.credit_days || '',
+                        delivery_terms: po.delivery_terms || '',
+                        valid_until: formatDateForInput(po.valid_until),
+                        billing_address: po.billing_address || '',
+                        ship_to_address: po.ship_to_address || '',
                         notes: po.remarks || '',
+                        terms_conditions: po.terms_conditions || '',
                         line_items: []
                     };
                     
@@ -825,7 +1055,12 @@ function purchaseOrdersData() {
                             ordered_qty: parseFloat(item.ordered_qty) || 1,
                             uom: (item.uom && item.uom.uom_code) ? item.uom.uom_code : '',
                             uom_id: item.uom_id || null,
-                            unit_price: parseFloat(item.unit_price) || 0
+                            unit_price: parseFloat(item.unit_price) || 0,
+                            discount_pct: parseFloat(item.discount_pct) || 0,
+                            gst_tax_id: item.gst_tax_id || '',
+                            scheduled_delivery: item.scheduled_delivery ? formatDateForInput(item.scheduled_delivery) : '',
+                            under_delivery_tolerance: parseFloat(item.under_delivery_tolerance) || 3,
+                            over_delivery_tolerance: parseFloat(item.over_delivery_tolerance) || 5
                         }));
                     } else {
                         this.form.line_items = [{ 
@@ -836,7 +1071,12 @@ function purchaseOrdersData() {
                             ordered_qty: 1, 
                             uom: '', 
                             uom_id: null,
-                            unit_price: 0 
+                            unit_price: 0,
+                            discount_pct: 0,
+                            gst_tax_id: '',
+                            scheduled_delivery: '',
+                            under_delivery_tolerance: 3,
+                            over_delivery_tolerance: 5
                         }];
                     }
                     

@@ -208,8 +208,16 @@
                                 <p class="text-sm font-semibold text-gray-900" x-text="formatDate(selectedPO.po_date)"></p>
                             </div>
                             <div class="bg-gray-50 rounded-lg p-3">
-                                <p class="text-xs text-gray-500 mb-1">Delivery Date</p>
-                                <p class="text-sm font-semibold text-gray-900" x-text="formatDate(selectedPO.delivery_date)"></p>
+                                <p class="text-xs text-gray-500 mb-1">Expected Delivery</p>
+                                <p class="text-sm font-semibold text-gray-900" x-text="formatDate(selectedPO.expected_delivery)"></p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 mb-1">Currency</p>
+                                <p class="text-sm font-semibold text-gray-900" x-text="selectedPO.currency ? selectedPO.currency.currency_code : '—'"></p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 mb-1">Payment Terms</p>
+                                <p class="text-sm font-semibold text-gray-900" x-text="selectedPO.payment_terms || '—'"></p>
                             </div>
                             <div class="bg-gray-50 rounded-lg p-3">
                                 <p class="text-xs text-gray-500 mb-1">Created By</p>
@@ -217,10 +225,32 @@
                                    x-text="selectedPO.created_by ? selectedPO.created_by.first_name + ' ' + selectedPO.created_by.last_name : '—'"></p>
                             </div>
                             <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 mb-1">Subtotal</p>
+                                <p class="text-sm font-semibold text-gray-900" x-text="formatCurrency(selectedPO.subtotal)"></p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
+                                <p class="text-xs text-gray-500 mb-1">Tax Amount</p>
+                                <p class="text-sm font-semibold text-gray-900" x-text="formatCurrency(selectedPO.tax_amount)"></p>
+                            </div>
+                            <div class="bg-gray-50 rounded-lg p-3">
                                 <p class="text-xs text-gray-500 mb-1">Grand Total</p>
                                 <p class="text-sm font-bold text-gray-900" x-text="formatCurrency(selectedPO.grand_total)"></p>
                             </div>
                         </div>
+                        
+                        <!-- Addresses -->
+                        <template x-if="selectedPO.billing_address || selectedPO.ship_to_address">
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">Billing Address</p>
+                                    <p class="text-sm text-gray-700" x-text="selectedPO.billing_address || '—'"></p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">Ship To Address</p>
+                                    <p class="text-sm text-gray-700" x-text="selectedPO.ship_to_address || '—'"></p>
+                                </div>
+                            </div>
+                        </template>
 
                         <!-- Line Items -->
                         <div>
@@ -233,6 +263,8 @@
                                             <th class="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase">Material</th>
                                             <th class="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase">Qty</th>
                                             <th class="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase">Unit Price</th>
+                                            <th class="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase">Disc %</th>
+                                            <th class="text-left py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase">Tax</th>
                                             <th class="text-right py-2.5 px-4 text-xs font-semibold text-gray-500 uppercase">Total</th>
                                         </tr>
                                     </thead>
@@ -240,15 +272,20 @@
                                         <template x-for="(item, idx) in (selectedPO.line_items || [])" :key="idx">
                                             <tr>
                                                 <td class="py-2.5 px-4 text-gray-500" x-text="idx + 1"></td>
-                                                <td class="py-2.5 px-4 text-gray-900" x-text="item.material ? item.material.material_name : '—'"></td>
-                                                <td class="py-2.5 px-4 text-gray-700" x-text="item.quantity + ' ' + (item.uom ? item.uom.uom_code : '')"></td>
+                                                <td class="py-2.5 px-4">
+                                                    <div class="text-gray-900" x-text="item.material ? item.material.material_name : '—'"></div>
+                                                    <div class="text-xs text-gray-400" x-text="item.material ? item.material.material_code : ''"></div>
+                                                </td>
+                                                <td class="py-2.5 px-4 text-gray-700" x-text="(item.ordered_qty || 0) + ' ' + (item.uom ? item.uom.uom_code : '')"></td>
                                                 <td class="py-2.5 px-4 text-gray-700" x-text="formatCurrency(item.unit_price)"></td>
-                                                <td class="py-2.5 px-4 text-right font-semibold text-gray-900" x-text="formatCurrency(item.total_price)"></td>
+                                                <td class="py-2.5 px-4 text-gray-500" x-text="item.discount_pct ? item.discount_pct + '%' : '—'"></td>
+                                                <td class="py-2.5 px-4 text-gray-500" x-text="item.gst_tax ? item.gst_tax.tax_code : '—'"></td>
+                                                <td class="py-2.5 px-4 text-right font-semibold text-gray-900" x-text="formatCurrency(item.line_total)"></td>
                                             </tr>
                                         </template>
                                         <template x-if="!selectedPO.line_items || selectedPO.line_items.length === 0">
                                             <tr>
-                                                <td colspan="5" class="py-6 text-center text-sm text-gray-400">No line items</td>
+                                                <td colspan="7" class="py-6 text-center text-sm text-gray-400">No line items</td>
                                             </tr>
                                         </template>
                                     </tbody>
