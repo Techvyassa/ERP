@@ -278,7 +278,7 @@ function procurementVendorsData() {
         async loadVendors(page = 1) {
             this.loading = true;
             try {
-                const token = localStorage.getItem('access_token');
+                const token = localStorage.getItem('auth_token') || localStorage.getItem('access_token');
                 const params = new URLSearchParams({ page, per_page: 15, blacklisted: '0' });
                 if (this.filters.search) params.append('search', this.filters.search);
                 if (this.filters.vendor_type) params.append('vendor_type', this.filters.vendor_type);
@@ -292,13 +292,13 @@ function procurementVendorsData() {
                 if (data.success && data.data && data.data.vendors) {
                     // Enrich vendors with PO summary
                     this.vendors = await this.enrichWithPOSummary(data.data.vendors, token);
-                    const p = data.data.pagination;
+                    const p = data.data.pagination || {};
                     this.pagination = {
-                        current_page: p.current_page,
-                        last_page: p.last_page,
-                        from: p.total > 0 ? ((p.current_page - 1) * p.per_page) + 1 : 0,
-                        to: Math.min(p.current_page * p.per_page, p.total),
-                        total: p.total
+                        current_page: p.current_page || 1,
+                        last_page: p.last_page || 1,
+                        from: (p.total || 0) > 0 ? ((p.current_page || 1) - 1) * (p.per_page || 15) + 1 : 0,
+                        to: Math.min((p.current_page || 1) * (p.per_page || 15), p.total || 0),
+                        total: p.total || 0
                     };
                 } else {
                     this.vendors = [];
@@ -319,7 +319,10 @@ function procurementVendorsData() {
                         headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
                     });
                     const data = await res.json();
-                    const pos = data.success && data.data && data.data.data ? data.data.data : [];
+                    // Handle both paginated response (data.data.data) and direct array (data.data)
+                    const pos = data.success && data.data 
+                        ? (Array.isArray(data.data) ? data.data : (data.data.data || []))
+                        : [];
 
                     const totalValue = pos.reduce((sum, po) => sum + parseFloat(po.grand_total || 0), 0);
                     const openPOs = pos.filter(po => ['OPEN', 'PARTIAL', 'PENDING_APPROVAL', 'APPROVED'].includes(po.status)).length;
@@ -332,6 +335,7 @@ function procurementVendorsData() {
                         last_po_date: dates[0] || null
                     };
                 } catch (e) {
+                    console.error('Error fetching PO summary for vendor', vendor.id, e);
                     vendor.po_summary = { total_pos: 0, total_value: 0, open_pos: 0, last_po_date: null };
                 }
                 return vendor;
@@ -346,12 +350,15 @@ function procurementVendorsData() {
             this.loadingPOs = true;
 
             try {
-                const token = localStorage.getItem('access_token');
+                const token = localStorage.getItem('auth_token') || localStorage.getItem('access_token');
                 const res = await fetch(`/api/v1/purchase-orders?vendor_id=${vendor.id}&per_page=50`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
                 });
                 const data = await res.json();
-                this.vendorPOs = data.success && data.data && data.data.data ? data.data.data : [];
+                // Handle both paginated response (data.data.data) and direct array (data.data)
+                this.vendorPOs = data.success && data.data 
+                    ? (Array.isArray(data.data) ? data.data : (data.data.data || []))
+                    : [];
             } catch (e) {
                 console.error('Error loading vendor POs:', e);
                 this.vendorPOs = [];
