@@ -108,7 +108,15 @@ class MaterialReceipt extends Model
      */
     public function canEdit(): bool
     {
-        return in_array($this->status, ['IN_PROGRESS', 'COMPLETED']);
+        return in_array($this->status, ['PENDING', 'IN_PROGRESS', 'COMPLETED']);
+    }
+
+    /**
+     * Check if MR can start unloading
+     */
+    public function canStartUnloading(): bool
+    {
+        return $this->status === 'PENDING';
     }
 
     /**
@@ -117,6 +125,14 @@ class MaterialReceipt extends Model
     public function canComplete(): bool
     {
         return $this->status === 'IN_PROGRESS';
+    }
+
+    /**
+     * Scope: Pending MRs
+     */
+    public function scopePending($query)
+    {
+        return $query->where('status', 'PENDING');
     }
 
     /**

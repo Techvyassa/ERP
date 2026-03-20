@@ -31,8 +31,8 @@ class MaterialReceiptService
                 'ge_id' => $data['ge_id'],
                 'po_id' => $data['po_id'],
                 'vendor_id' => $data['vendor_id'],
-                'unloading_started_at' => $data['unloading_started_at'] ?? now(),
-                'status' => 'IN_PROGRESS',
+                'unloading_started_at' => null,
+                'status' => 'PENDING',
                 'remarks' => $data['remarks'] ?? null,
                 'created_by' => $userId,
             ]);
@@ -103,8 +103,13 @@ class MaterialReceiptService
     {
         $mr = MaterialReceipt::findOrFail($id);
         
+        if (!$mr->canStartUnloading()) {
+            throw new \Exception('Material Receipt cannot start unloading in current status: ' . $mr->status);
+        }
+        
         $mr->update([
             'unloading_started_at' => now(),
+            'status' => 'IN_PROGRESS',
             'updated_by' => $userId,
         ]);
         

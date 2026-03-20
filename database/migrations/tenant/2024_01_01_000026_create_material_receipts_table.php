@@ -31,11 +31,12 @@ return new class extends Migration
 
             // --- Overall Status ---
             $table->enum('status', [
+                'PENDING',
                 'IN_PROGRESS',
                 'COMPLETED',
                 'PENDING_GRN',
                 'GRN_POSTED',
-            ])->default('IN_PROGRESS')->comment('MR lifecycle status');
+            ])->default('PENDING')->comment('MR lifecycle status');
 
             // --- Audit ---
             $table->text('remarks')->nullable()->comment('Storekeeper unloading notes');

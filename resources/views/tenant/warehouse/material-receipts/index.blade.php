@@ -111,12 +111,12 @@
                                     <button @click="viewReceipt(mr)" title="View" class="text-primary hover:text-primary/70">
                                         <span class="material-symbols-outlined text-lg">visibility</span>
                                     </button>
-                                    <button x-show="mr.status === 'IN_PROGRESS' && !mr.unloading_started_at"
+                                    <button x-show="mr.status === 'PENDING'"
                                         @click="startUnloading(mr.id)" title="Start Unloading"
                                         class="text-amber-600 hover:text-amber-800">
                                         <span class="material-symbols-outlined text-lg">play_circle</span>
                                     </button>
-                                    <button x-show="mr.status === 'IN_PROGRESS' && mr.unloading_started_at && !mr.unloading_completed_at"
+                                    <button x-show="mr.status === 'IN_PROGRESS' && !mr.unloading_completed_at"
                                         @click="openCompleteModal(mr)" title="Complete Unloading"
                                         class="text-green-600 hover:text-green-800">
                                         <span class="material-symbols-outlined text-lg">check_circle</span>
@@ -458,7 +458,7 @@ function mrData() {
         async loadMaterials() {
             const res = await fetch('/api/v1/materials?per_page=200&is_active=true', { headers: headers() });
             const data = await res.json();
-            this.materials = data.success ? (data.data?.materials ?? []) : [];
+            this.materials = data.success ? (data.data ?? []) : [];
         },
 
         openCreateModal() {
