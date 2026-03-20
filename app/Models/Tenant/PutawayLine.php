@@ -30,4 +30,12 @@ class PutawayLine extends Model
     {
         return $this->belongsTo(PutawayTask::class, 'putaway_task_id');
     }
+
+    /**
+     * Get UOM
+     */
+    public function uom()
+    {
+        return $this->belongsTo(UOM::class, 'uom_id');
+    }
 }

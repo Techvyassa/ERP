@@ -209,6 +209,33 @@ class PutawayController extends Controller
     }
 
     /**
+     * Scan bin during putaway
+     */
+    public function scanBin(int $id, Request $request): JsonResponse
+    {
+        $request->validate([
+            'bin_code' => 'required|string|max:50',
+            'remarks' => 'nullable|string|max:500',
+        ]);
+        
+        try {
+            $userId = $request->input('auth_user_id');
+            $task = $this->putawayService->scanBin($id, $request->bin_code, $userId, $request->remarks);
+            
+            return response()->json([
+                'success' => true,
+                'message' => 'Bin scanned successfully',
+                'data' => $task,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to scan bin: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
      * Get pending putaway tasks
      */
     public function pending(): JsonResponse

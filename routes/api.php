@@ -445,6 +445,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/start', [App\Http\Controllers\PutawayController::class, 'start']);
                 Route::patch('/{id}/complete', [App\Http\Controllers\PutawayController::class, 'complete']);
                 Route::patch('/{id}/cancel', [App\Http\Controllers\PutawayController::class, 'cancel']);
+                Route::post('/{id}/scan-bin', [App\Http\Controllers\PutawayController::class, 'scanBin']);
             });
         });
 

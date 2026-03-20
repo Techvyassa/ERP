@@ -148,4 +148,45 @@ class PutawayService
 
         return $task;
     }
+
+    /**
+     * Scan bin during putaway
+     */
+    public function scanBin(int $taskId, string $binCode, int $userId, ?string $remarks = null): PutawayTask
+    {
+        $task = PutawayTask::with(['destinationBin'])->findOrFail($taskId);
+
+        // Find bin by code
+        $bin = \App\Models\Tenant\BinLocation::where('bin_code', $binCode)->first();
+        
+        if (!$bin) {
+            throw new \Exception("Bin not found with code: {$binCode}");
+        }
+
+        // Validate bin is active
+        if (!$bin->is_active) {
+            throw new \Exception("Bin is not active: {$binCode}");
+        }
+
+        // Validate bin type matches material type if configured
+        if ($bin->bin_type && $task->material->material_type && $bin->bin_type !== $task->material->material_type) {
+            throw new \Exception("Bin type '{$bin->bin_type}' does not match material type '{$task->material->material_type}'");
+        }
+
+        // Update task with scanned bin
+        $task->update([
+            'destination_bin_id' => $bin->id,
+            'bin_scan_confirmed' => $binCode,
+        ]);
+
+        Log::info('Bin scanned during putaway', [
+            'task_id' => $task->id,
+            'bin_code' => $binCode,
+            'bin_id' => $bin->id,
+            'scanned_by' => $userId,
+            'remarks' => $remarks,
+        ]);
+
+        return $task->load(['destinationBin']);
+    }
 }
