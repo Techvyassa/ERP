@@ -288,7 +288,8 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // ASN (Advance Shipping Notice) Endpoints
+        // ------currently not using (START) -------------------------
+        // ASN (Advance Shipping Notice) Endpoints 
         // Roles: PROC_EXE/PROC_MGR (create/edit), STOREKEEPER/STORE_MGR (view/receive), ADMIN (all)
         // Status Flow: DRAFT → SENT → IN_TRANSIT → ARRIVED → RECEIVED/CANCELLED
         Route::middleware(['check.module.permission:ASN'])->group(function () {
@@ -313,6 +314,8 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/arrived', [App\Http\Controllers\ASNController::class, 'markArrived']); // IN_TRANSIT → ARRIVED
             });
         });
+
+        // ------currently not using (END) -------------------------
 
         // Gate Entry Management Endpoints
         // Roles:Security Department(create/verify), ADMIN (all)
@@ -354,7 +357,7 @@ Route::prefix('v1')->group(function () {
 
                 // Status transitions
                 Route::patch('/{id}/start-unloading', [App\Http\Controllers\MaterialReceiptController::class, 'startUnloading']); // Start unloading timer
-                
+
                 Route::patch('/{id}/complete', [App\Http\Controllers\MaterialReceiptController::class, 'completeUnloading']); // IN_PROGRESS → COMPLETED
             });
 

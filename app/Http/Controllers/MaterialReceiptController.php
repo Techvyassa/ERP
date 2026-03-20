@@ -76,6 +76,7 @@ class MaterialReceiptController extends Controller
             'lineItems.material',
             'lineItems.uom',
             'lineItems.provisionalBin',
+            'lineItems.poLineItem',
             'creator',
             'updater'
         ])->findOrFail($id);

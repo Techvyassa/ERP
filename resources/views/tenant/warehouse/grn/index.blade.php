@@ -485,7 +485,7 @@ function grnData() {
                 received_qty: l.received_qty,
                 accepted_qty: l.received_qty,
                 uom_id: l.uom_id,
-                unit_price: l.unit_price || 0,
+                unit_price: l.po_line_item?.unit_price || 0,
                 batch_number: l.batch_number || '',
                 warehouse_bin: '',
             }));

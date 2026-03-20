@@ -64,6 +64,12 @@ class GRNService
                 'grn_number' => $grn->grn_number,
                 'mr_id' => $mr->id,
                 'created_by' => $userId,
+                'mr_data' => $mr->toArray(),
+                'po_data' => $mr->purchaseOrder->toArray(),
+                'line_items' => $data['line_items'],
+                'total_value' => $totalValue,
+                'total_tax' => $totalTax,
+                'grand_total' => $totalValue + $totalTax,
             ]);
             
             return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
@@ -216,14 +222,28 @@ class GRNService
         // Load GRN line items with their MR line items
         $grn->load('lineItems.mrLineItem');
 
+        Log::info('Updating PO line quantities for GRN', [
+            'grn_id' => $grn->id,
+            'grn_number' => $grn->grn_number,
+            'line_items_count' => $grn->lineItems->count(),
+        ]);
+
         foreach ($grn->lineItems as $grnLine) {
             $mrLine = $grnLine->mrLineItem;
             if (!$mrLine || !$mrLine->po_line_id) {
+                Log::warning('MR line or PO line ID missing', [
+                    'grn_line_id' => $grnLine->id,
+                    'mr_line_id' => $mrLine?->id,
+                    'po_line_id' => $mrLine?->po_line_id,
+                ]);
                 continue;
             }
 
             $poLine = PoLineItem::find($mrLine->po_line_id);
             if (!$poLine) {
+                Log::warning('PO line not found', [
+                    'po_line_id' => $mrLine->po_line_id,
+                ]);
                 continue;
             }
 
@@ -234,10 +254,19 @@ class GRNService
             // Determine receipt status
             $receiptStatus = 'OPEN';
             if ($newPendingQty <= 0) {
-                $receiptStatus = 'FULLY_RECEIVED';
+                $receiptStatus = 'COMPLETE';
             } elseif ($newReceivedQty > 0) {
                 $receiptStatus = 'PARTIAL';
             }
+
+            Log::info('Updating PO line', [
+                'po_line_id' => $poLine->id,
+                'old_received_qty' => $poLine->received_qty,
+                'grn_accepted_qty' => $grnLine->accepted_qty,
+                'new_received_qty' => $newReceivedQty,
+                'new_pending_qty' => $newPendingQty,
+                'receipt_status' => $receiptStatus,
+            ]);
 
             $poLine->update([
                 'received_qty' => $newReceivedQty,
@@ -249,8 +278,15 @@ class GRNService
         $po = $grn->purchaseOrder;
         if ($po) {
             $allLines = $po->lineItems;
-            $allFullyReceived = $allLines->every(fn($l) => $l->fresh()->receipt_status === 'FULLY_RECEIVED');
+            $allFullyReceived = $allLines->every(fn($l) => $l->fresh()->receipt_status === 'COMPLETE');
             $anyReceived = $allLines->some(fn($l) => $l->fresh()->received_qty > 0);
+
+            Log::info('Updating PO status', [
+                'po_id' => $po->id,
+                'po_number' => $po->po_number,
+                'all_fully_received' => $allFullyReceived,
+                'any_received' => $anyReceived,
+            ]);
 
             if ($allFullyReceived) {
                 $po->update(['status' => 'FULLY_RECEIVED']);
@@ -278,6 +314,20 @@ class GRNService
         
         $lineValue = round($acceptedQty * $unitPrice, 2);
         $taxAmount = round($lineValue * ($taxRate / 100), 2);
+        
+        Log::info('GRN Line Item created', [
+            'grn_id' => $grnId,
+            'mr_line_id' => $mrLineItem->id,
+            'po_line_id' => $poLineItem->id,
+            'material_id' => $item['material_id'],
+            'accepted_qty' => $acceptedQty,
+            'unit_price' => $unitPrice,
+            'tax_rate' => $taxRate,
+            'line_value' => $lineValue,
+            'tax_amount' => $taxAmount,
+            'batch_number' => $item['batch_number'] ?? null,
+            'warehouse_bin_id' => $item['warehouse_bin_id'] ?? null,
+        ]);
         
         return GRNLineItem::create([
             'grn_id' => $grnId,

@@ -8,6 +8,7 @@ use App\Models\Tenant\GRN;
 use App\Services\GRNService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 
 class GRNController extends Controller
 {
@@ -91,7 +92,18 @@ class GRNController extends Controller
     {
         try {
             $userId = $request->input('auth_user_id');
-            $grn = $this->grnService->createGRN($request->validated(), $userId);
+            $validated = $request->validated();
+            
+            Log::info('GRN creation request', [
+                'user_id' => $userId,
+                'mr_id' => $validated['mr_id'] ?? null,
+                'grn_date' => $validated['grn_date'] ?? null,
+                'posting_date' => $validated['posting_date'] ?? null,
+                'line_items_count' => count($validated['line_items'] ?? []),
+                'line_items' => $validated['line_items'] ?? [],
+            ]);
+            
+            $grn = $this->grnService->createGRN($validated, $userId);
             
             return response()->json([
                 'success' => true,
@@ -99,6 +111,11 @@ class GRNController extends Controller
                 'data' => $grn,
             ], 201);
         } catch (\Exception $e) {
+            Log::error('GRN creation failed', [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+            
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to create GRN: ' . $e->getMessage(),
