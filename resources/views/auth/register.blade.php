@@ -299,7 +299,7 @@
                 }
             });
 
-            // Email/Password Registration with Firebase
+            // Email/Password Registration - Direct API call (no Firebase)
             document.getElementById('registerForm').addEventListener('submit', async function(e) {
                 e.preventDefault();
                 
@@ -316,25 +316,19 @@
                 
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
+                const firstName = document.getElementById('first_name').value;
+                const lastName = document.getElementById('last_name').value;
+                const orgName = document.getElementById('org_name').value;
                 
                 try {
-                    // Create user in Firebase
-                    const userCredential = await window.firebaseCreateUserWithEmailAndPassword(window.firebaseAuth, email, password);
-                    const user = userCredential.user;
-                    
-                    // Get Firebase ID token
-                    const idToken = await user.getIdToken();
-                    
-                    // Send to backend for registration
+                    // Send directly to backend for registration (no Firebase)
                     const formData = {
-                        first_name: document.getElementById('first_name').value,
-                        last_name: document.getElementById('last_name').value,
-                        org_name: document.getElementById('org_name').value,
-                        org_slug: document.getElementById('org_name').value.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
+                        first_name: firstName,
+                        last_name: lastName,
+                        org_name: orgName,
+                        org_slug: orgName.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-+|-+$/g, ''),
                         primary_email: email,
-                        firebase_uid: user.uid,
-                        firebase_token: idToken,
-                        provider: 'email',
+                        password: password,
                         country_code: 'US',
                         selected_plan: selectedPlan
                     };
@@ -353,12 +347,8 @@
                     
                     if (response.ok && data.success) {
                         localStorage.setItem('org_data', JSON.stringify(data.data));
-                        localStorage.setItem('firebase_uid', user.uid);
                         window.location.href = '/login?registered=true';
                     } else {
-                        // If backend registration fails, delete Firebase user
-                        await user.delete();
-                        
                         // Display validation errors if available
                         if (data.error && data.error.details) {
                             const errors = data.error.details;
@@ -384,13 +374,7 @@
                     console.error('Registration Error:', error);
                     let errorMsg = 'Registration failed. Please try again.';
                     
-                    if (error.code === 'auth/email-already-in-use') {
-                        errorMsg = 'An account with this email already exists.';
-                    } else if (error.code === 'auth/invalid-email') {
-                        errorMsg = 'Invalid email address.';
-                    } else if (error.code === 'auth/weak-password') {
-                        errorMsg = 'Password should be at least 6 characters.';
-                    } else if (error.message) {
+                    if (error.message) {
                         errorMsg = error.message;
                     }
                     
