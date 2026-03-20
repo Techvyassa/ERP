@@ -3,6 +3,10 @@
 @section('title', 'Create User')
 @section('page-title', 'Create New User')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="userForm()" x-init="loadDepartments();">
     <div class="max-w-4xl mx-auto">
@@ -255,16 +259,26 @@
                 try {
                     const response = await fetch('/api/v1/departments', {
                         credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
+                        headers: { 
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
                     });
                     
                     if (response.ok) {
                         const data = await response.json();
-                        // API returns data directly as array, not nested
-                        this.departments = Array.isArray(data.data) ? data.data : (data.data?.departments || []);
+                        console.log('Departments API Response:', data); // Debug log
+                        
+                        if (data.success && data.data) {
+                            this.departments = Array.isArray(data.data) ? data.data : (data.data.departments || []);
+                        } else {
+                            this.departments = [];
+                        }
+                        console.log('Loaded departments:', this.departments); // Debug log
                     }
                 } catch (error) {
                     console.error('Failed to load departments:', error);
+                    this.departments = [];
                 }
             },
 
@@ -278,17 +292,30 @@
                 this.form.role_id = '';
                 this.rolePermissions = [];
                 if (!deptId) return;
+                
                 try {
                     const response = await fetch(`/api/v1/departments/${deptId}/roles`, {
                         credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
+                        headers: { 
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
                     });
+                    
                     if (response.ok) {
                         const data = await response.json();
-                        this.roles = Array.isArray(data.data) ? data.data : (data.data?.roles || []);
+                        console.log('Department roles API Response:', data); // Debug log
+                        
+                        if (data.success && data.data && data.data.roles) {
+                            this.roles = data.data.roles;
+                        } else {
+                            this.roles = [];
+                        }
+                        console.log('Loaded roles for department:', this.roles); // Debug log
                     }
                 } catch (error) {
                     console.error('Failed to load department roles:', error);
+                    this.roles = [];
                 }
             },
 
@@ -301,12 +328,21 @@
                 try {
                     const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`, {
                         credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
+                        headers: { 
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        }
                     });
                     
                     if (response.ok) {
                         const data = await response.json();
-                        this.rolePermissions = Array.isArray(data.data) ? data.data : (data.data?.permissions || []);
+                        console.log('Role permissions API Response:', data); // Debug log
+                        
+                        if (data.success && data.data) {
+                            this.rolePermissions = data.data.permissions || [];
+                        } else {
+                            this.rolePermissions = [];
+                        }
                     }
                 } catch (error) {
                     console.error('Failed to load role permissions:', error);
