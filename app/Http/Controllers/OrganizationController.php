@@ -95,6 +95,60 @@ class OrganizationController extends Controller
     }
 
     /**
+     * List organization slugs (main/control DB) with optional search
+     * GET /api/v1/organizations/slugs
+     */
+    public function slugs(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'org_slug' => 'nullable|string|max:100',
+            'org_name' => 'nullable|string|max:255',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors(),
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        $orgSlug = $request->query('org_slug');
+        $orgName = $request->query('org_name');
+
+        $query = Organization::query();
+
+        if ($orgSlug) {
+            $query->where('org_slug', 'like', '%' . $orgSlug . '%');
+        }
+
+        if ($orgName) {
+            $query->where('org_name', 'like', '%' . $orgName . '%');
+        }
+
+        $organizations = $query
+            ->orderBy('org_slug')
+            ->get(['org_slug', 'org_name']);
+
+        return response()->json([
+            'success' => true,
+            'data' => [
+                'count' => $organizations->count(),
+                'organizations' => $organizations,
+            ],
+            'request_id' => $requestId,
+            'timestamp' => now()->toIso8601String(),
+        ], 200);
+    }
+
+    /**
      * Register a new organization
      * POST /api/v1/organizations/register
      */

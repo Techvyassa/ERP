@@ -88,6 +88,7 @@ Route::prefix('v1')->group(function () {
         Route::post('/register', [App\Http\Controllers\OrganizationController::class, 'register']);
         Route::get('/check-slug/{slug}', [App\Http\Controllers\OrganizationController::class, 'checkSlug']);
         Route::post('/suggest-slug', [App\Http\Controllers\OrganizationController::class, 'suggestSlug']);
+        Route::get('/slugs', [App\Http\Controllers\OrganizationController::class, 'slugs']);
     });
 
     // Rate limit status endpoint (excluded from rate limiting and subscription validation)
