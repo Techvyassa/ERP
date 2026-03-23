@@ -216,46 +216,40 @@
                 </div>
 
                 <div x-show="!loadingPermissions" class="space-y-4">
-                    <template x-for="module in availableModules" :key="module.code">
+                    <template x-for="department in availableDepartments" :key="department.id">
                         <div class="border border-gray-200 rounded-lg p-4">
                             <div class="flex items-center justify-between mb-3">
-                                <h4 class="font-semibold text-gray-900" x-text="module.name"></h4>
+                                <h4 class="font-semibold text-gray-900" x-text="department.dept_name"></h4>
+                                <span class="text-xs text-gray-500 bg-gray-100 px-2 py-1 rounded" x-text="department.dept_code"></span>
                             </div>
-                            <div class="grid grid-cols-5 gap-3">
+                            <div class="grid grid-cols-4 gap-3">
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" 
-                                           :checked="getPermission(module.code, 'can_view')"
-                                           @change="updatePermission(module.code, 'can_view', $event.target.checked)"
+                                           :checked="getDepartmentPermission(department.id, 'can_view')"
+                                           @change="updateDepartmentPermission(department.id, 'can_view', $event.target.checked)"
                                            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
                                     <span class="text-sm text-gray-700">View</span>
                                 </label>
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" 
-                                           :checked="getPermission(module.code, 'can_create')"
-                                           @change="updatePermission(module.code, 'can_create', $event.target.checked)"
+                                           :checked="getDepartmentPermission(department.id, 'can_create')"
+                                           @change="updateDepartmentPermission(department.id, 'can_create', $event.target.checked)"
                                            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
                                     <span class="text-sm text-gray-700">Create</span>
                                 </label>
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" 
-                                           :checked="getPermission(module.code, 'can_edit')"
-                                           @change="updatePermission(module.code, 'can_edit', $event.target.checked)"
+                                           :checked="getDepartmentPermission(department.id, 'can_edit')"
+                                           @change="updateDepartmentPermission(department.id, 'can_edit', $event.target.checked)"
                                            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
                                     <span class="text-sm text-gray-700">Edit</span>
                                 </label>
                                 <label class="flex items-center space-x-2 cursor-pointer">
                                     <input type="checkbox" 
-                                           :checked="getPermission(module.code, 'can_approve')"
-                                           @change="updatePermission(module.code, 'can_approve', $event.target.checked)"
+                                           :checked="getDepartmentPermission(department.id, 'can_approve')"
+                                           @change="updateDepartmentPermission(department.id, 'can_approve', $event.target.checked)"
                                            class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
                                     <span class="text-sm text-gray-700">Approve</span>
-                                </label>
-                                <label class="flex items-center space-x-2 cursor-pointer">
-                                    <input type="checkbox" 
-                                           :checked="getPermission(module.code, 'can_delete')"
-                                           @change="updatePermission(module.code, 'can_delete', $event.target.checked)"
-                                           class="w-4 h-4 text-purple-600 border-gray-300 rounded focus:ring-purple-500">
-                                    <span class="text-sm text-gray-700">Delete</span>
                                 </label>
                             </div>
                         </div>
@@ -302,6 +296,7 @@ function roleManager() {
         permissions: [],
         loadingPermissions: false,
         savingPermissions: false,
+        availableDepartments: [],
         availableModules: [
             { code: 'SETTINGS', name: 'Settings' },
             { code: 'PROCUREMENT', name: 'Procurement' },
@@ -484,19 +479,31 @@ function roleManager() {
             this.loadingPermissions = true;
 
             try {
-                const response = await fetch(`/api/v1/roles/${role.id}/permissions`, {
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
+                // Load departments and permissions in parallel
+                const [departmentsResponse, permissionsResponse] = await Promise.all([
+                    fetch('/api/v1/departments?is_active=true', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    }),
+                    fetch(`/api/v1/roles/${role.id}/permissions`, {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    })
+                ]);
 
-                const data = await response.json();
-                if (data.success) {
-                    this.permissions = data.data.permissions || [];
+                // Handle departments response
+                if (departmentsResponse.ok) {
+                    const departmentsData = await departmentsResponse.json();
+                    this.availableDepartments = departmentsData.data?.departments || [];
+                }
+
+                // Handle permissions response
+                if (permissionsResponse.ok) {
+                    const permissionsData = await permissionsResponse.json();
+                    this.permissions = permissionsData.data?.permissions || [];
                 }
             } catch (error) {
-                this.showError('Failed to load permissions');
+                this.showError('Failed to load permissions data');
             } finally {
                 this.loadingPermissions = false;
             }
@@ -506,6 +513,37 @@ function roleManager() {
             this.showPermissionsModal = false;
             this.selectedRole = null;
             this.permissions = [];
+            this.availableDepartments = [];
+        },
+
+        getDepartmentPermission(departmentId, permissionType) {
+            // Find department to get its code
+            const department = this.availableDepartments.find(d => d.id === departmentId);
+            if (!department) return false;
+            
+            const perm = this.permissions.find(p => p.module_code === department.dept_code);
+            return perm ? perm[permissionType] : false;
+        },
+
+        updateDepartmentPermission(departmentId, permissionType, value) {
+            // Find department to get its code
+            const department = this.availableDepartments.find(d => d.id === departmentId);
+            if (!department) return;
+            
+            const existingIndex = this.permissions.findIndex(p => p.module_code === department.dept_code);
+            
+            if (existingIndex >= 0) {
+                this.permissions[existingIndex][permissionType] = value;
+            } else {
+                this.permissions.push({
+                    module_code: department.dept_code,
+                    can_view: permissionType === 'can_view' ? value : false,
+                    can_create: permissionType === 'can_create' ? value : false,
+                    can_edit: permissionType === 'can_edit' ? value : false,
+                    can_approve: permissionType === 'can_approve' ? value : false,
+                    can_delete: false // Always false as requested
+                });
+            }
         },
 
         getPermission(moduleCode, permissionType) {
@@ -533,6 +571,11 @@ function roleManager() {
         async savePermissions() {
             this.savingPermissions = true;
             try {
+                // Filter out permissions that have no actions enabled
+                const activePermissions = this.permissions.filter(perm => 
+                    perm.can_view || perm.can_create || perm.can_edit || perm.can_approve
+                );
+
                 const response = await fetch(`/api/v1/roles/${this.selectedRole.id}/permissions`, {
                     method: 'PUT',
                     credentials: 'same-origin',
@@ -541,7 +584,16 @@ function roleManager() {
                         'Accept': 'application/json',
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     },
-                    body: JSON.stringify({ permissions: this.permissions })
+                    body: JSON.stringify({ 
+                        permissions: activePermissions.map(perm => ({
+                            module_code: perm.module_code,
+                            can_view: perm.can_view || false,
+                            can_create: perm.can_create || false,
+                            can_edit: perm.can_edit || false,
+                            can_approve: perm.can_approve || false,
+                            can_delete: false // Always false as requested
+                        }))
+                    })
                 });
 
                 const data = await response.json();
@@ -550,9 +602,11 @@ function roleManager() {
                     this.closePermissionsModal();
                     this.fetchRoles();
                 } else {
-                    this.showError(data.message);
+                    console.error('API Error:', data);
+                    this.showError(data.message || 'Failed to save permissions');
                 }
             } catch (error) {
+                console.error('Network Error:', error);
                 this.showError('Failed to save permissions');
             } finally {
                 this.savingPermissions = false;
