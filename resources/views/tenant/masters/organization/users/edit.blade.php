@@ -3,6 +3,10 @@
 @section('title', 'Edit User')
 @section('page-title', 'Edit User')
 
+@push('head')
+<meta name="csrf-token" content="{{ csrf_token() }}">
+@endpush
+
 @section('content')
 <div x-data="userEditForm()" x-init="loadUser(); loadDepartments(); loadRoles();">
     <div class="max-w-4xl mx-auto">
@@ -61,7 +65,7 @@
                             Full Name <span class="text-red-500">*</span>
                         </label>
                         <input type="text" x-model="form.full_name" required
-                               placeholder="John Doe"
+                               placeholder="Full Name"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Display name</p>
                     </div>
@@ -72,7 +76,7 @@
                             Phone
                         </label>
                         <input type="text" x-model="form.phone"
-                               placeholder="+91 9876543210"
+                               placeholder="+91 0000000000"
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Contact number</p>
                     </div>
@@ -88,7 +92,9 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Department <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.dept_id" required
+                        <select x-model="form.dept_id" 
+                                @change="loadDepartmentRoles(form.dept_id)"
+                                required
                                 class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select Department</option>
                             <template x-for="dept in departments" :key="dept.id">
@@ -105,18 +111,19 @@
                         </label>
                         <select x-model="form.role_id" required
                                 @change="loadRolePermissions()"
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select Role</option>
-                            <template x-for="role in roles" :key="role.id">
-                                <option :value="role.id" x-text="role.role_name"></option>
+                                :disabled="!form.dept_id"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:cursor-not-allowed">
+                            <option value="" x-text="form.dept_id ? 'Select Role' : 'Select a department first'"></option>
+                            <template x-for="role in roles" :key="role.role_id || role.id">
+                                <option :value="role.role_id || role.id" x-text="role.role_name"></option>
                             </template>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">→ role_master(role_id)</p>
+                        <p class="text-xs text-gray-500 mt-1">Roles filtered by selected department</p>
                     </div>
                 </div>
 
                 <!-- Role Permissions Preview -->
-                <!-- <div x-show="form.role_id && rolePermissions.length > 0" x-transition class="mt-6">
+                <div x-show="form.role_id && rolePermissions.length > 0" x-transition class="mt-6">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
                         <h4 class="text-sm font-semibold text-blue-900 mb-3 flex items-center">
                             <i class="fas fa-shield-alt mr-2"></i>
@@ -153,7 +160,7 @@
                             </template>
                         </div>
                     </div>
-                </div> -->
+                </div>
             </div>
 
             <!-- Password Change (Optional) -->
@@ -223,7 +230,7 @@ function userEditForm() {
         departments: [],
         roles: [],
         rolePermissions: [],
-        userId: {{ $userId }},
+        userId: null,
         form: {
             employee_code: '',
             email: '',
@@ -237,60 +244,154 @@ function userEditForm() {
         },
         
         async loadUser() {
+            // Get user ID from URL
+            const urlParts = window.location.pathname.split('/');
+            this.userId = urlParts[urlParts.length - 2]; // Get ID before /edit
+            
+            if (!this.userId || isNaN(this.userId)) {
+                console.error('Invalid user ID:', this.userId);
+                alert('Invalid user ID');
+                this.initialLoading = false;
+                return;
+            }
+            
             try {
-                // TODO: Replace with actual API call
-                // const response = await fetch(`/api/v1/users/${this.userId}`);
-                // const data = await response.json();
-                // this.form = data.data;
-                
-                // Mock data for now
-                setTimeout(async () => {
-                    this.form = {
-                        employee_code: 'EMP-001',
-                        email: 'user@example.com',
-                        full_name: 'John Doe',
-                        phone: '+91 9876543210',
-                        dept_id: '',
-                        role_id: '1', // Mock role ID
-                        password: '',
-                        password_confirmation: '',
-                        is_active: true
-                    };
-                    this.initialLoading = false;
-                    
-                    // Load permissions for the current role
-                    if (this.form.role_id) {
-                        await this.loadRolePermissions();
+                const response = await fetch(`/api/v1/users/${this.userId}`, {
+                    credentials: 'same-origin',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                     }
-                }, 500);
+                });
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load user');
+                }
+                
+                const data = await response.json();
+                console.log('User API Response:', data); // Debug log
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Failed to load user');
+                }
+                
+                // Extract user from nested response structure
+                const user = data.data.user;
+                console.log('Parsed user data:', user); // Debug log
+                
+                // Build full name from first_name and last_name
+                let fullName = '';
+                if (user.first_name && user.last_name) {
+                    fullName = `${user.first_name} ${user.last_name}`.trim();
+                } else if (user.first_name) {
+                    fullName = user.first_name;
+                } else if (user.full_name) {
+                    fullName = user.full_name;
+                } else if (user.name) {
+                    fullName = user.name;
+                }
+                
+                this.form = {
+                    employee_code: user.employee_code || user.emp_code || '',
+                    email: user.email || '',
+                    full_name: fullName || '',
+                    phone: user.phone || user.mobile || '',
+                    dept_id: user.dept_id || user.department_id || (user.department ? user.department.id : ''),
+                    role_id: user.role_id || (user.role ? user.role.id : ''),
+                    password: '',
+                    password_confirmation: '',
+                    is_active: user.is_active !== undefined ? user.is_active : true
+                };
+                
+                console.log('Form data after loading:', this.form); // Debug log
+                
+                this.initialLoading = false;
+                
+                // Load department roles if department is selected
+                if (this.form.dept_id) {
+                    await this.loadDepartmentRoles(this.form.dept_id);
+                }
+                
+                // Load permissions for the current role
+                if (this.form.role_id) {
+                    await this.loadRolePermissions();
+                }
             } catch (error) {
                 console.error('Failed to load user:', error);
-                alert('Failed to load user data');
+                alert('Failed to load user data: ' + error.message);
                 this.initialLoading = false;
             }
         },
         
         async loadDepartments() {
             try {
-                // TODO: Replace with actual API call
-                // const response = await fetch('/api/v1/departments');
-                // const data = await response.json();
-                // this.departments = data.data;
-                this.departments = [];
+                const response = await fetch('/api/v1/departments', {
+                    credentials: 'same-origin',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Departments API Response:', data); // Debug log
+                    
+                    if (data.success && data.data) {
+                        this.departments = Array.isArray(data.data) ? data.data : (data.data.departments || []);
+                    } else {
+                        this.departments = [];
+                    }
+                    console.log('Loaded departments:', this.departments); // Debug log
+                }
             } catch (error) {
                 console.error('Failed to load departments:', error);
+                this.departments = [];
             }
         },
         
         async loadRoles() {
+            // Roles are now loaded per-department via loadDepartmentRoles
+            // This is kept for compatibility but does nothing on init
+        },
+
+        async loadDepartmentRoles(deptId) {
+            this.roles = [];
+            if (!deptId) {
+                this.form.role_id = '';
+                this.rolePermissions = [];
+                return;
+            }
+            
             try {
-                // TODO: Replace with actual API call
-                // const response = await fetch('/api/v1/roles');
-                // const data = await response.json();
-                // this.roles = data.data;
-                this.roles = [];
+                const response = await fetch(`/api/v1/departments/${deptId}/roles`, {
+                    credentials: 'same-origin',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
+                
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Department roles API Response:', data); // Debug log
+                    
+                    if (data.success && data.data && data.data.roles) {
+                        this.roles = data.data.roles;
+                    } else {
+                        this.roles = [];
+                    }
+                    console.log('Loaded roles for department:', this.roles); // Debug log
+                    
+                    // If current role_id is not in the new roles list, clear it
+                    if (this.form.role_id && !this.roles.find(r => (r.role_id || r.id) == this.form.role_id)) {
+                        this.form.role_id = '';
+                        this.rolePermissions = [];
+                    }
+                }
             } catch (error) {
-                console.error('Failed to load roles:', error);
+                console.error('Failed to load department roles:', error);
+                this.roles = [];
             }
         },
         
@@ -301,19 +402,24 @@ function userEditForm() {
             }
             
             try {
-                // TODO: Replace with actual API call
-                // const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`);
-                // const data = await response.json();
-                // this.rolePermissions = data.data.permissions;
+                const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`, {
+                    credentials: 'same-origin',
+                    headers: { 
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    }
+                });
                 
-                // Mock data for demonstration
-                this.rolePermissions = [
-                    { module_code: 'PR', can_view: true, can_create: true, can_edit: true, can_approve: false, can_delete: false },
-                    { module_code: 'PO', can_view: true, can_create: true, can_edit: true, can_approve: true, can_delete: false },
-                    { module_code: 'GRN', can_view: true, can_create: false, can_edit: false, can_approve: false, can_delete: false },
-                    { module_code: 'INVENTORY', can_view: true, can_create: true, can_edit: true, can_approve: false, can_delete: true },
-                    { module_code: 'USER_MGMT', can_view: true, can_create: false, can_edit: false, can_approve: false, can_delete: false },
-                ];
+                if (response.ok) {
+                    const data = await response.json();
+                    console.log('Role permissions API Response:', data); // Debug log
+                    
+                    if (data.success && data.data) {
+                        this.rolePermissions = data.data.permissions || [];
+                    } else {
+                        this.rolePermissions = [];
+                    }
+                }
             } catch (error) {
                 console.error('Failed to load role permissions:', error);
                 this.rolePermissions = [];
@@ -329,24 +435,63 @@ function userEditForm() {
             
             this.loading = true;
             try {
-                // Prepare form data
-                const formData = { ...this.form };
+                // Split full name into first and last name
+                const nameParts = this.form.full_name.trim().split(' ');
+                const firstName = nameParts[0] || this.form.full_name;
+                const lastName = nameParts.slice(1).join(' ') || '';
                 
-                // Remove password fields if not changing password
-                if (!formData.password) {
-                    delete formData.password;
-                    delete formData.password_confirmation;
+                // Prepare form data
+                const formData = {
+                    employee_code: this.form.employee_code,
+                    email: this.form.email,
+                    first_name: firstName,
+                    last_name: lastName,
+                    phone: this.form.phone || null,
+                    dept_id: parseInt(this.form.dept_id),
+                    role_id: parseInt(this.form.role_id),
+                    is_active: this.form.is_active
+                };
+                
+                // Add password fields if changing password
+                if (this.form.password) {
+                    formData.password = this.form.password;
+                    formData.password_confirmation = this.form.password_confirmation;
                 }
                 
-                // TODO: Replace with actual API call
-                // const response = await fetch(`/api/v1/users/${this.userId}`, {
-                //     method: 'PUT',
-                //     headers: { 'Content-Type': 'application/json' },
-                //     body: JSON.stringify(formData)
-                // });
+                console.log('Submitting form data:', formData); // Debug log
                 
-                alert('User update - Coming soon\n\nData to be submitted:\n' + JSON.stringify(formData, null, 2));
-                // window.location.href = '/users';
+                const response = await fetch(`/api/v1/users/${this.userId}`, {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify(formData)
+                });
+                
+                const data = await response.json();
+                console.log('Update response:', data); // Debug log
+                
+                if (!response.ok) {
+                    if (data.error && data.error.details) {
+                        const errors = Object.entries(data.error.details)
+                            .map(([field, messages]) => `${field}: ${Array.isArray(messages) ? messages.join(', ') : messages}`)
+                            .join('\n');
+                        alert('Validation failed:\n\n' + errors);
+                    } else {
+                        alert(data.message || 'Failed to update user');
+                    }
+                    return;
+                }
+                
+                if (data.success) {
+                    alert(data.message || 'User updated successfully!');
+                    window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/users" : "/org/" . $organization->org_slug . "/users") }}';
+                } else {
+                    alert(data.message || 'Failed to update user');
+                }
             } catch (error) {
                 console.error('Failed to update user:', error);
                 alert('Failed to update user. Please try again.');

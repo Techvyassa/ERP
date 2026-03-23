@@ -8,7 +8,7 @@
 @endpush
 
 @section('content')
-<div x-data="departmentEditForm()" x-init="loadDepartment(); loadParentDepartments()">
+<div x-data="departmentEditForm()" x-init="loadDepartment(); loadDropdowns()">
     <div class="max-w-3xl mx-auto">
         <!-- Header -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
@@ -74,6 +74,21 @@
                         <p class="text-xs text-gray-500 mt-1">Self-ref → department_master(dept_id) for hierarchical support</p>
                     </div>
 
+                    <!-- Role -->
+                    <div>
+                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                            Role <span class="text-red-500">*</span>
+                        </label>
+                        <select x-model="form.role_id" required
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <option value="">Select Role</option>
+                            <template x-for="role in roles" :key="role.id">
+                                <option :value="role.id" x-text="role.role_code + ' - ' + role.role_name"></option>
+                            </template>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">→ role_master(role_id) for department role assignment</p>
+                    </div>
+
                     <!-- Cost Center Code -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
@@ -118,11 +133,13 @@
             loading: false,
             initialLoading: true,
             parentDepartments: [],
+            roles: [],
             departmentId: null,
             form: {
                 dept_code: '',
                 dept_name: '',
                 parent_dept_id: '',
+                role_id: '',
                 cost_center_code: '',
                 is_active: true
             },
@@ -156,9 +173,13 @@
                         dept_code: dept.dept_code || '',
                         dept_name: dept.dept_name || '',
                         parent_dept_id: dept.parent_dept_id || '',
+                        role_id: '',
                         cost_center_code: dept.cost_center_code || '',
                         is_active: dept.is_active !== undefined ? dept.is_active : true
                     };
+
+                    // Load current role mapping
+                    await this.loadCurrentRole();
                     
                     this.initialLoading = false;
                 } catch (error) {
@@ -168,28 +189,69 @@
                 }
             },
 
-            async loadParentDepartments() {
+            async loadCurrentRole() {
                 try {
-                    const response = await fetch('/api/v1/departments', {
+                    const response = await fetch(`/api/v1/departments/${this.departmentId}/roles`, {
                         credentials: 'same-origin',
                         headers: { 'Accept': 'application/json' }
                     });
                     
                     if (response.ok) {
                         const data = await response.json();
+                        const roles = data.data?.roles || [];
+                        if (roles.length > 0) {
+                            this.form.role_id = roles[0].role_id; // Set current role
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load current role:', error);
+                }
+            },
+
+            async loadDropdowns() {
+                try {
+                    // Load parent departments
+                    const deptResponse = await fetch('/api/v1/departments', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (deptResponse.ok) {
+                        const deptData = await deptResponse.json();
                         // API returns data directly as array, not nested
-                        const allDepts = Array.isArray(data.data) ? data.data : (data.data?.departments || []);
+                        const allDepts = Array.isArray(deptData.data) ? deptData.data : (deptData.data?.departments || []);
                         // Filter out current department to prevent self-reference
                         this.parentDepartments = allDepts.filter(dept => dept.id != this.departmentId);
                     }
+
+                    // Load roles
+                    const roleResponse = await fetch('/api/v1/roles', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    
+                    if (roleResponse.ok) {
+                        const roleData = await roleResponse.json();
+                        this.roles = roleData.data?.roles || [];
+                    }
                 } catch (error) {
-                    console.error('Failed to load parent departments:', error);
+                    console.error('Failed to load dropdowns:', error);
                 }
             },
 
             async submitForm() {
                 this.loading = true;
                 try {
+                    // Prepare form data
+                    const formData = {
+                        dept_code: this.form.dept_code,
+                        dept_name: this.form.dept_name,
+                        parent_dept_id: this.form.parent_dept_id || null,
+                        role_id: parseInt(this.form.role_id),
+                        cost_center_code: this.form.cost_center_code,
+                        is_active: this.form.is_active
+                    };
+
                     const response = await fetch(`/api/v1/departments/${this.departmentId}`, {
                         method: 'PUT',
                         credentials: 'same-origin',
@@ -198,7 +260,7 @@
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
                         },
-                        body: JSON.stringify(this.form)
+                        body: JSON.stringify(formData)
                     });
                     
                     const data = await response.json();

@@ -152,9 +152,19 @@
                                     <i class="fas fa-edit mr-1"></i>
                                     Edit
                                 </button>
-                                <button @click="deleteItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Delete">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Delete
+                                <button @click="deactivateItem(item)" 
+                                        x-show="item.is_active"
+                                        class="inline-flex items-center px-3 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded transition-colors ml-2" 
+                                        title="Deactivate">
+                                    <i class="fas fa-ban mr-1"></i>
+                                    Deactive
+                                </button>
+                                <button @click="activateItem(item)" 
+                                        x-show="!item.is_active"
+                                        class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors ml-2" 
+                                        title="Activate">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Activate
                                 </button>
                                 <button @click="showBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded transition-colors ml-2" title="Barcode">
                                     <i class="fas fa-barcode mr-1"></i>
@@ -192,11 +202,15 @@ function binData() {
                 if (this.filters.warehouse_id) params.append('warehouse_id', this.filters.warehouse_id);
                 if (this.filters.is_active) params.append('is_active', this.filters.is_active);
                 
-                const response = await fetch(`/api/v1/bin-locations?${params}`);
+                const response = await fetch(`/api/v1/bin-locations?${params}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
                 if (!response.ok) throw new Error('Failed to load bin locations');
                 
                 const data = await response.json();
-                this.items = data.data?.bin_locations || [];
+                // API returns data directly as array, not nested
+                this.items = Array.isArray(data.data) ? data.data : (data.data?.bin_locations || []);
                 
                 // Update pagination (simplified since API might not return pagination)
                 this.pagination = {
@@ -299,29 +313,77 @@ function binData() {
             printWindow.print();
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to delete bin location: ' + item.bin_code + '?')) {
+        async deactivateItem(item) {
+            if (confirm('Are you sure you want to deactivate bin location: ' + item.bin_code + '?')) {
                 try {
                     const response = await fetch(`/api/v1/bin-locations/${item.id}`, {
-                        method: 'DELETE',
+                        method: 'PUT',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        },
+                        body: JSON.stringify({ 
+                            bin_code: item.bin_code,
+                            warehouse_id: item.warehouse_id,
+                            aisle: item.aisle,
+                            rack: item.rack,
+                            shelf: item.shelf,
+                            max_weight_kg: item.max_weight_kg,
+                            is_active: false 
+                        })
                     });
                     
                     const data = await response.json();
                     
                     if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to delete bin location', 'error');
+                        this.showNotification(data.message || 'Failed to deactivate bin location', 'error');
                         return;
                     }
                     
-                    this.showNotification('Bin location deleted successfully', 'success');
+                    this.showNotification('Bin location deactivated successfully', 'success');
                     this.loadData(); // Refresh the list
                 } catch (error) {
-                    console.error('Failed to delete bin location:', error);
+                    console.error('Failed to deactivate bin location:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
+            }
+        },
+        
+        async activateItem(item) {
+            if (confirm('Are you sure you want to activate bin location: ' + item.bin_code + '?')) {
+                try {
+                    const response = await fetch(`/api/v1/bin-locations/${item.id}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ 
+                            bin_code: item.bin_code,
+                            warehouse_id: item.warehouse_id,
+                            aisle: item.aisle,
+                            rack: item.rack,
+                            shelf: item.shelf,
+                            max_weight_kg: item.max_weight_kg,
+                            is_active: true 
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to activate bin location', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('Bin location activated successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to activate bin location:', error);
                     this.showNotification('Network error. Please try again.', 'error');
                 }
             }

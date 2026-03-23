@@ -4,15 +4,15 @@
     import { getAuth, signInWithPopup, GoogleAuthProvider, createUserWithEmailAndPassword, signInWithEmailAndPassword, signOut } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-auth.js";
     import { getAnalytics } from "https://www.gstatic.com/firebasejs/12.10.0/firebase-analytics.js";
 
-    // Firebase configuration from environment
+    // Firebase configuration from config (env values are loaded in config/firebase.php)
     const firebaseConfig = {
-        apiKey: "{{ env('FIREBASE_API_KEY') }}",
-        authDomain: "{{ env('FIREBASE_AUTH_DOMAIN') }}",
-        projectId: "{{ env('FIREBASE_PROJECT_ID') }}",
-        storageBucket: "{{ env('FIREBASE_STORAGE_BUCKET') }}",
-        messagingSenderId: "{{ env('FIREBASE_MESSAGING_SENDER_ID') }}",
-        appId: "{{ env('FIREBASE_APP_ID') }}",
-        measurementId: "{{ env('FIREBASE_MEASUREMENT_ID') }}"
+        apiKey: "{{ config('firebase.api_key') }}",
+        authDomain: "{{ config('firebase.auth_domain') }}",
+        projectId: "{{ config('firebase.project_id') }}",
+        storageBucket: "{{ config('firebase.storage_bucket') }}",
+        messagingSenderId: "{{ config('firebase.messaging_sender_id') }}",
+        appId: "{{ config('firebase.app_id') }}",
+        measurementId: "{{ config('firebase.measurement_id') }}"
     };
 
     console.log('Firebase Config:', firebaseConfig);

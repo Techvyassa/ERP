@@ -6,6 +6,7 @@ use App\Models\Tenant\Department;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class DepartmentController extends Controller
@@ -105,6 +106,7 @@ class DepartmentController extends Controller
             'dept_code' => 'required|string|max:50|unique:tenant.department_master,dept_code',
             'dept_name' => 'required|string|max:100',
             'parent_dept_id' => 'nullable|integer|exists:tenant.department_master,id',
+            'role_id' => 'required|integer|exists:tenant.role_master,id',
             'cost_center_code' => 'nullable|string|max:50',
         ]);
 
@@ -122,6 +124,7 @@ class DepartmentController extends Controller
         }
 
         try {
+            // Create department
             $department = Department::create([
                 'dept_code' => $request->input('dept_code'),
                 'dept_name' => $request->input('dept_name'),
@@ -129,6 +132,14 @@ class DepartmentController extends Controller
                 'cost_center_code' => $request->input('cost_center_code'),
                 'is_active' => true,
                 'created_by' => $request->input('auth_user_id'),
+            ]);
+
+            // Insert department-role mapping
+            DB::connection('tenant')->table('dept_role_map')->insert([
+                'dept_id' => $department->id,
+                'role_id' => $request->input('role_id'),
+                'created_by' => $request->input('auth_user_id'),
+                'created_at' => now(),
             ]);
 
             return response()->json([
@@ -166,6 +177,7 @@ class DepartmentController extends Controller
             'dept_code' => 'sometimes|string|max:50|unique:tenant.department_master,dept_code,' . $id . ',id',
             'dept_name' => 'sometimes|string|max:100',
             'parent_dept_id' => 'nullable|integer|exists:tenant.department_master,id',
+            'role_id' => 'sometimes|integer|exists:tenant.role_master,id',
             'cost_center_code' => 'nullable|string|max:50',
             'is_active' => 'sometimes|boolean',
         ]);
@@ -203,6 +215,22 @@ class DepartmentController extends Controller
             }
 
             $department->save();
+
+            // Update role mapping if role_id is provided
+            if ($request->has('role_id')) {
+                // Delete existing role mapping
+                DB::connection('tenant')->table('dept_role_map')
+                    ->where('dept_id', $id)
+                    ->delete();
+
+                // Insert new role mapping
+                DB::connection('tenant')->table('dept_role_map')->insert([
+                    'dept_id' => $id,
+                    'role_id' => $request->input('role_id'),
+                    'created_by' => $request->input('auth_user_id'),
+                    'created_at' => now(),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -273,7 +301,7 @@ class DepartmentController extends Controller
             $department = Department::findOrFail($id);
             
             // Get roles mapped to this department
-            $roles = \DB::connection('tenant')
+            $roles = DB::connection('tenant')
                 ->table('dept_role_map')
                 ->join('role_master', 'dept_role_map.role_id', '=', 'role_master.id')
                 ->where('dept_role_map.dept_id', $id)

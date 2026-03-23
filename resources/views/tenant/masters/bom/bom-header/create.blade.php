@@ -35,13 +35,59 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             BOM Code <span class="text-red-500">*</span>
                         </label>
-                        <input type="text" 
-                               x-model="form.bom_code"
-                               required
-                               maxlength="30"
-                               placeholder="BOM-FG001-V1"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Unique BOM identifier (max 30 chars)</p>
+                        
+                        <!-- Auto-generate checkbox -->
+                        <div class="mb-3">
+                            <label class="flex items-center">
+                                <input type="checkbox" x-model="autoGenerate" @change="toggleAutoGenerate"
+                                       class="rounded border-gray-300 text-blue-600 shadow-sm focus:border-blue-300 focus:ring focus:ring-blue-200 focus:ring-opacity-50">
+                                <span class="ml-2 text-sm text-gray-600">Auto-generate code</span>
+                            </label>
+                        </div>
+
+                        <!-- Manual input (when auto-generate is off) -->
+                        <div x-show="!autoGenerate">
+                            <input type="text" 
+                                   x-model="form.bom_code"
+                                   required
+                                   maxlength="30"
+                                   placeholder="BOM-FG001-V1"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            <p class="text-xs text-gray-500 mt-1">Unique BOM identifier (max 30 chars)</p>
+                        </div>
+
+                        <!-- Auto-generate fields (when auto-generate is on) -->
+                        <div x-show="autoGenerate" class="space-y-3">
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Prefix</label>
+                                    <input type="text" 
+                                           x-model="codeGeneration.prefix"
+                                           @input="generateCode"
+                                           maxlength="10"
+                                           placeholder="BOM"
+                                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Number</label>
+                                    <input type="text" 
+                                           x-model="codeGeneration.number"
+                                           @input="generateCode"
+                                           maxlength="10"
+                                           placeholder="0001"
+                                           class="w-full px-3 py-2 text-sm border border-gray-300 rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                </div>
+                            </div>
+                            
+                            <!-- Generated code display -->
+                            <div>
+                                <input type="text" 
+                                       x-model="form.bom_code"
+                                       readonly
+                                       class="w-full px-4 py-2 bg-gray-50 border border-gray-300 rounded-lg text-gray-700">
+                                <p class="text-xs text-gray-500 mt-1">Generated BOM code (auto-updates from prefix and number)</p>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- Product -->
@@ -178,6 +224,11 @@ function bomForm() {
         loading: false,
         products: [],
         uoms: [],
+        autoGenerate: false,
+        codeGeneration: {
+            prefix: 'BOM',
+            number: '0001'
+        },
         form: {
             bom_code: '',
             product_id: '',
@@ -188,6 +239,22 @@ function bomForm() {
             output_uom_id: '',
             bom_status: 'DRAFT',
             remarks: ''
+        },
+        
+        toggleAutoGenerate() {
+            if (this.autoGenerate) {
+                this.generateCode();
+            } else {
+                this.form.bom_code = '';
+            }
+        },
+        
+        generateCode() {
+            if (this.autoGenerate) {
+                const prefix = this.codeGeneration.prefix || 'BOM';
+                const number = this.codeGeneration.number || '0001';
+                this.form.bom_code = `${prefix}-${number}`;
+            }
         },
         
         async loadDropdowns() {
