@@ -66,13 +66,14 @@
                         <span class="text-xs font-semibold text-gray-400 uppercase">Warehouse</span>
                     </li>
                     
-                    <li>
+                    {{-- Material Receipts removed — new flow: Gate Entry → GRN auto-created --}}
+                    {{-- <li>
                         <a href="{{ url("/org/{$organization->org_slug}/warehouse/receipts") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouse.receipts') ? 'bg-amber-50 text-warehouse font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">receipt_long</span>
                             <span x-show="sidebarOpen" class="font-medium">Material Receipts</span>
                         </a>
-                    </li>
+                    </li> --}}
 
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/warehouse/grn") }}" 

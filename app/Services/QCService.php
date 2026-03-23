@@ -12,7 +12,52 @@ use Illuminate\Support\Facades\Log;
 class QCService
 {
     /**
-     * Create inspection lot from GRN
+     * Create inspection lot for a specific GRN line item (new flow: one lot per GRN line).
+     * Enforces single-lot-per-line via DB unique constraint on grn_line_id.
+     */
+    public function createInspectionLotForLine(GRN $grn, \App\Models\Tenant\GRNLineItem $grnLine, int $userId): InspectionLot
+    {
+        // Guard: skip if a lot already exists for this line (unique constraint safety)
+        $existing = InspectionLot::where('grn_line_id', $grnLine->id)->first();
+        if ($existing) {
+            Log::info('[QCService] Inspection lot already exists for GRN line, skipping', [
+                'grn_line_id' => $grnLine->id,
+                'lot_id'      => $existing->id,
+            ]);
+            return $existing;
+        }
+
+        return DB::connection('tenant')->transaction(function () use ($grn, $grnLine, $userId) {
+            $sampleSize = max(1, (int) ceil($grnLine->accepted_qty * 0.1));
+            $lotNumber  = 'IL-' . now()->format('y') . '-' . str_pad(InspectionLot::count() + 1, 4, '0', STR_PAD_LEFT);
+
+            $lot = InspectionLot::create([
+                'lot_number'      => $lotNumber,
+                'grn_id'          => $grn->id,
+                'grn_line_id'     => $grnLine->id,
+                'material_id'     => $grnLine->material_id,
+                'lot_qty'         => $grnLine->accepted_qty,
+                'sample_size'     => $sampleSize,
+                'sampling_method' => 'AQL',
+                'status'          => 'PENDING',
+                'created_by'      => $userId,
+            ]);
+
+            Log::info('[QCService] Inspection lot created for GRN line', [
+                'lot_id'      => $lot->id,
+                'lot_number'  => $lotNumber,
+                'grn_id'      => $grn->id,
+                'grn_line_id' => $grnLine->id,
+                'material_id' => $grnLine->material_id,
+                'sample_size' => $sampleSize,
+            ]);
+
+            return $lot->load(['grn', 'material']);
+        });
+    }
+
+    /**
+     * Create inspection lot from GRN (legacy flow — processes first line item only)
      */
     public function createInspectionLot(GRN $grn, int $userId): InspectionLot
     {
@@ -198,20 +243,42 @@ class QCService
             $decision = QCDecision::create([
                 'lot_id' => $lot->id,
                 'decision' => $data['decision'],
+                'accepted_qty' => $data['accepted_qty'] ?? null,
+                'rejected_qty' => $data['rejected_qty'] ?? null,
                 'remarks' => $data['remarks'] ?? null,
                 'decided_by' => $userId,
                 'decided_at' => now(),
             ]);
 
+            // Apply QC decision to GRN line items (writeback + status transition)
+            try {
+                $grnService = app(\App\Services\GRNService::class);
+                $qcDecisions = [
+                    $lot->grn_line_id => [
+                        'accepted_qty' => $data['accepted_qty'] ?? 0,
+                        'rejected_qty' => $data['rejected_qty'] ?? 0,
+                        'return_qty' => $data['return_qty'] ?? 0,
+                        'return_remarks' => $data['return_remarks'] ?? null,
+                    ],
+                ];
+                $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);
+            } catch (\Exception $e) {
+                Log::warning('[QCService] applyQCDecision failed, continuing', [
+                    'lot_id' => $lot->id,
+                    'error' => $e->getMessage(),
+                ]);
+                // Don't fail the decision if writeback fails
+            }
+
             // Update lot status
             $lot->update(['status' => 'DECISION_MADE']);
 
-            // Update GRN line item stock status based on decision
+            // Legacy: Update GRN line item stock status based on decision (fallback)
             if ($decision->isAccepted()) {
                 // Release stock to UNRESTRICTED
                 $lot->grn->lineItems()->update(['stock_status' => 'UNRESTRICTED']);
                 
-                // Create putaway tasks
+                // Create putaway tasks (already done in applyQCDecision, but kept for legacy flow)
                 $this->createPutawayTasks($lot, $userId);
             } elseif ($decision->isRejected()) {
                 // Block stock

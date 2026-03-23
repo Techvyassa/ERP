@@ -554,14 +554,6 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('gate-entry');
-
-            Route::get('/gate-verification', function ($orgSlug) use ($getOrg) {
-                extract($getOrg($orgSlug));
-                return view('tenant.security.gate-verification.index', [
-                    'organization' => $org,
-                    'tenantType' => $tenantType
-                ]);
-            })->name('gate-verification');
         });
 
         // Warehouse/store Department Portal
@@ -574,13 +566,14 @@ Route::middleware(['web.jwt'])->group(function () {
                 ]);
             })->name('dashboard');
 
-            Route::get('/receipts', function ($orgSlug) use ($getOrg) {
-                extract($getOrg($orgSlug));
-                return view('tenant.warehouse.material-receipts.index', [
-                    'organization' => $org,
-                    'tenantType' => $tenantType
-                ]);
-            })->name('receipts');
+            // Material Receipts route removed — new flow: Gate Entry → GRN auto-created
+            // Route::get('/receipts', function ($orgSlug) use ($getOrg) {
+            //     extract($getOrg($orgSlug));
+            //     return view('tenant.warehouse.material-receipts.index', [
+            //         'organization' => $org,
+            //         'tenantType' => $tenantType
+            //     ]);
+            // })->name('receipts');
 
             Route::get('/grn', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
@@ -650,6 +643,15 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('reports');
+
+            // QC Masters: Test Types
+            Route::get('/qc-test-types', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.masters.qc.qc-test-types.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('qc-test-types');
         });
 
         // ====================================================================

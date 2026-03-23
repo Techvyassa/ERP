@@ -14,6 +14,7 @@ class GRN extends Model
 
     protected $fillable = [
         'grn_number',
+        'ge_id',
         'mr_id',
         'po_id',
         'vendor_id',
@@ -43,7 +44,15 @@ class GRN extends Model
     ];
 
     /**
-     * Get the material receipt
+     * Get the gate entry (new flow)
+     */
+    public function gateEntry()
+    {
+        return $this->belongsTo(GateEntry::class, 'ge_id');
+    }
+
+    /**
+     * Get the material receipt (legacy flow)
      */
     public function materialReceipt()
     {
@@ -115,7 +124,9 @@ class GRN extends Model
      */
     public function canEdit(): bool
     {
-        return in_array($this->status, ['PROVISIONAL', 'QC_PENDING']);
+        // Allow editing in PROVISIONAL, QC_PENDING, and post-QC statuses (ACCEPTED/REJECTED/PARTIALLY_ACCEPTED)
+        // Store/QC departments can adjust quantities after QC decision but before final putaway completion
+        return in_array($this->status, ['PROVISIONAL', 'QC_PENDING', 'ACCEPTED', 'REJECTED', 'PARTIALLY_ACCEPTED']);
     }
 
     /**

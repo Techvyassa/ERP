@@ -20,22 +20,14 @@
     </div>
 
     <!-- Stats Row -->
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-2 gap-4 mb-6">
         <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Pending Verification</p>
+            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Pending (GRN not yet created)</p>
             <p class="text-3xl font-bold text-amber-500" x-text="counts.pending">0</p>
         </div>
         <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Verified</p>
-            <p class="text-3xl font-bold text-green-600" x-text="counts.verified">0</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Moved to Dock</p>
-            <p class="text-3xl font-bold text-blue-600" x-text="counts.docked">0</p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Rejected</p>
-            <p class="text-3xl font-bold text-red-500" x-text="counts.rejected">0</p>
+            <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Completed (GRN auto-created)</p>
+            <p class="text-3xl font-bold text-green-600" x-text="counts.completed">0</p>
         </div>
     </div>
 
@@ -47,10 +39,8 @@
                 <select x-model="filters.status" @change="loadEntries()"
                     class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     <option value="">All</option>
-                    <option value="PENDING_VERIFICATION">Pending Verification</option>
-                    <option value="VERIFIED">Verified</option>
-                    <option value="MOVED_TO_DOCK">Moved to Dock</option>
-                    <option value="REJECTED">Rejected</option>
+                    <option value="PENDING">Pending</option>
+                    <option value="COMPLETED">Completed</option>
                 </select>
             </div>
             <div>
@@ -79,11 +69,11 @@
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200">
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">GE Number</th>
+                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">GRN Number</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Vehicle No.</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Vendor</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">PO Number</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Arrived At</th>
-                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Driver</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Status</th>
                         <th class="text-right py-3 px-5 text-xs font-bold text-gray-500 uppercase">Actions</th>
                     </tr>
@@ -100,11 +90,11 @@
                     <template x-for="entry in entries" :key="entry.id">
                         <tr class="hover:bg-gray-50 transition">
                             <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="entry.ge_number"></td>
+                            <td class="py-3 px-5 text-sm text-blue-600 font-semibold" x-text="entry.grn?.grn_number || '—'"></td>
                             <td class="py-3 px-5 text-sm text-gray-900" x-text="entry.vehicle_number"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="entry.vendor ? entry.vendor.vendor_name : '—'"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="entry.purchase_order ? entry.purchase_order.po_number : '—'"></td>
                             <td class="py-3 px-5 text-sm text-gray-600" x-text="formatDateTime(entry.arrived_at)"></td>
-                            <td class="py-3 px-5 text-sm text-gray-600" x-text="entry.driver_name || '—'"></td>
                             <td class="py-3 px-5">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold"
                                     :class="statusClass(entry.status)" x-text="entry.status?.replace(/_/g,' ')"></span>
@@ -113,11 +103,6 @@
                                 <button @click="viewEntry(entry)" title="View"
                                     class="text-primary hover:text-primary/70 mr-2">
                                     <span class="material-symbols-outlined text-lg">visibility</span>
-                                </button>
-                                <button x-show="entry.status === 'VERIFIED'"
-                                    @click="moveToDock(entry.id)" title="Move to Dock"
-                                    class="text-blue-600 hover:text-blue-800">
-                                    <span class="material-symbols-outlined text-lg">forklift</span>
                                 </button>
                             </td>
                         </tr>
@@ -137,107 +122,6 @@
         </div>
     </div>
 
-    <!-- Verify Modal -->
-    <div x-show="showVerifyModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
-        <div class="flex items-center justify-center min-h-screen px-4">
-            <div class="fixed inset-0 bg-gray-900/50" @click="showVerifyModal = false"></div>
-            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg">
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-bold text-gray-900">Verify Gate Entry</h3>
-                    <button @click="showVerifyModal = false"><span class="material-symbols-outlined text-gray-400">close</span></button>
-                </div>
-                <form @submit.prevent="submitVerification()" class="p-6 space-y-4">
-                    <div class="bg-amber-50 border border-amber-200 rounded-lg p-3 text-sm text-amber-800">
-                        Verifying: <strong x-text="selectedEntry?.ge_number"></strong> —
-                        <span x-text="selectedEntry?.vendor?.vendor_name"></span>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Approval Status *</label>
-                        <select x-model="verifyForm.approval_status" required
-                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                            <option value="">Select Status</option>
-                            <option value="APPROVED">Approved — Allow Entry</option>
-                            <option value="REJECTED">Rejected — Turn Away</option>
-                        </select>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" class="rounded border-gray-300" x-model="verifyForm.challan_verified">
-                            Challan Verified
-                        </label>
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" class="rounded border-gray-300" x-model="verifyForm.invoice_verified">
-                            Invoice Verified
-                        </label>
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" class="rounded border-gray-300" x-model="verifyForm.eway_bill_valid">
-                            E-Way Bill Valid
-                        </label>
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" class="rounded border-gray-300" x-model="verifyForm.po_status_valid">
-                            PO Status Valid
-                        </label>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" class="rounded border-gray-300" x-model="verifyForm.seal_intact">
-                            Seal Intact
-                        </label>
-                        <label class="flex items-center gap-2 text-sm">
-                            <input type="checkbox" class="rounded border-gray-300" x-model="verifyForm.external_damage">
-                            External Damage
-                        </label>
-                    </div>
-
-                    <div class="grid grid-cols-2 gap-3">
-                        <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Tare Weight (kg)</label>
-                            <input type="number" step="0.001" min="0" x-model="verifyForm.tare_weight_kg"
-                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                        </div>
-                        <label class="flex items-center gap-2 text-sm mt-7">
-                            <input type="checkbox" class="rounded border-gray-300" x-model="verifyForm.weight_variance_flag">
-                            Weight Variance Flag
-                        </label>
-                    </div>
-
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Seal Number</label>
-                        <input type="text" x-model="verifyForm.seal_number"
-                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Dock Assigned</label>
-                        <input type="text" x-model="verifyForm.dock_assigned"
-                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                    </div>
-                    <div x-show="verifyForm.approval_status === 'REJECTED'">
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Rejection Reason *</label>
-                        <textarea x-model="verifyForm.rejection_reason" rows="2"
-                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                            placeholder="Enter reason for rejection"></textarea>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Security Remarks</label>
-                        <textarea x-model="verifyForm.security_remarks" rows="2"
-                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
-                    </div>
-                    <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
-                        <button type="button" @click="showVerifyModal = false"
-                            class="px-5 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">Cancel</button>
-                        <button type="submit" :disabled="saving"
-                            class="px-5 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
-                            <span x-show="!saving">Submit Verification</span>
-                            <span x-show="saving">Saving...</span>
-                        </button>
-                    </div>
-                </form>
-            </div>
-        </div>
-    </div>
-
     <!-- View Detail Modal -->
     <div x-show="showViewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -253,6 +137,7 @@
                         <div><p class="text-xs text-gray-500">Status</p>
                             <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="statusClass(selectedEntry?.status)" x-text="selectedEntry?.status?.replace(/_/g,' ')"></span>
                         </div>
+                        <div><p class="text-xs text-gray-500">GRN Number</p><p class="font-semibold text-blue-600" x-text="selectedEntry?.grn?.grn_number || '—'"></p></div>
                         <div><p class="text-xs text-gray-500">Vehicle</p><p class="font-medium" x-text="selectedEntry?.vehicle_number"></p></div>
                         <div><p class="text-xs text-gray-500">Driver</p><p class="font-medium" x-text="selectedEntry?.driver_name || '—'"></p></div>
                         <div><p class="text-xs text-gray-500">Vendor</p><p class="font-medium" x-text="selectedEntry?.vendor?.vendor_name || '—'"></p></div>
@@ -393,29 +278,14 @@ function gateEntryData() {
     return {
         entries: [],
         loading: false, saving: false,
-        showVerifyModal: false, showViewModal: false, showCreateModal: false,
+        showViewModal: false, showCreateModal: false,
         selectedEntry: null,
         purchaseOrders: [],
         selectedPO: null,
         poLoading: false,
-        counts: { pending: 0, verified: 0, docked: 0, rejected: 0 },
+        counts: { pending: 0, completed: 0 },
         filters: { status: '', from_date: '', to_date: '' },
         pagination: { current_page: 1, last_page: 1, from: 0, to: 0, total: 0 },
-        verifyForm: {
-            challan_verified: true,
-            invoice_verified: true,
-            eway_bill_valid: true,
-            po_status_valid: true,
-            seal_number: '',
-            seal_intact: true,
-            external_damage: false,
-            tare_weight_kg: '',
-            weight_variance_flag: false,
-            dock_assigned: '',
-            approval_status: '',
-            rejection_reason: '',
-            security_remarks: '',
-        },
         createForm: {
             po_id: '',
             vendor_id: '',
@@ -456,34 +326,13 @@ function gateEntryData() {
         },
 
         computeCounts() {
-            this.counts = { pending: 0, verified: 0, docked: 0, rejected: 0 };
+            this.counts = { pending: 0, completed: 0 };
             this.entries.forEach(e => {
-                if (e.status === 'PENDING_VERIFICATION') this.counts.pending++;
-                else if (e.status === 'VERIFIED') this.counts.verified++;
-                else if (e.status === 'MOVED_TO_DOCK') this.counts.docked++;
-                else if (e.status === 'REJECTED') this.counts.rejected++;
+                if (e.status === 'PENDING') this.counts.pending++;
+                else if (e.status === 'COMPLETED') this.counts.completed++;
             });
         },
 
-        openVerifyModal(entry) {
-            this.selectedEntry = entry;
-            this.verifyForm = {
-                challan_verified: true,
-                invoice_verified: true,
-                eway_bill_valid: true,
-                po_status_valid: true,
-                seal_number: '',
-                seal_intact: true,
-                external_damage: false,
-                tare_weight_kg: '',
-                weight_variance_flag: false,
-                dock_assigned: '',
-                approval_status: '',
-                rejection_reason: '',
-                security_remarks: '',
-            };
-            this.showVerifyModal = true;
-        },
         viewEntry(entry) { this.selectedEntry = entry; this.showViewModal = true; },
 
         openCreateModal() {
@@ -585,6 +434,8 @@ function gateEntryData() {
                 if (data.success) {
                     this.showCreateModal = false;
                     await this.loadEntries();
+                    const grnNumber = data.data?.grn?.grn_number;
+                    alert(`Gate entry created successfully!${grnNumber ? '\nGRN auto-created: ' + grnNumber : ''}`);
                 } else {
                     alert(data.message || 'Gate entry creation failed');
                 }
@@ -593,50 +444,15 @@ function gateEntryData() {
             }
         },
 
-        async submitVerification() {
-            this.saving = true;
-            try {
-                if (this.verifyForm.approval_status === 'REJECTED' && !this.verifyForm.rejection_reason) {
-                    alert('Rejection reason is required');
-                    return;
-                }
+        async submitVerification() { /* removed — gate verification flow deprecated */ },
 
-                const payload = {
-                    challan_verified: !!this.verifyForm.challan_verified,
-                    invoice_verified: !!this.verifyForm.invoice_verified,
-                    eway_bill_valid: !!this.verifyForm.eway_bill_valid,
-                    po_status_valid: !!this.verifyForm.po_status_valid,
-                    seal_number: this.verifyForm.seal_number || null,
-                    seal_intact: this.verifyForm.seal_intact === '' ? null : !!this.verifyForm.seal_intact,
-                    external_damage: !!this.verifyForm.external_damage,
-                    tare_weight_kg: this.verifyForm.tare_weight_kg !== '' ? Number(this.verifyForm.tare_weight_kg) : null,
-                    weight_variance_flag: !!this.verifyForm.weight_variance_flag,
-                    dock_assigned: this.verifyForm.dock_assigned || null,
-                    approval_status: this.verifyForm.approval_status,
-                    rejection_reason: this.verifyForm.approval_status === 'REJECTED' ? this.verifyForm.rejection_reason : null,
-                    security_remarks: this.verifyForm.security_remarks || null,
-                };
-
-                const res = await fetch(`/api/v1/gate-entries/${this.selectedEntry.id}/verify`, { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
-                const data = await res.json();
-                if (data.success) { this.showVerifyModal = false; await this.loadEntries(); }
-                else alert(data.message || 'Verification failed');
-            } finally { this.saving = false; }
-        },
-
-        async moveToDock(id) {
-            if (!confirm('Move this entry to dock?')) return;
-            const res = await fetch(`/api/v1/gate-entries/${id}/move-to-dock`, { method: 'PATCH', headers: headers() });
-            const data = await res.json();
-            if (data.success) await this.loadEntries();
-            else alert(data.message || 'Failed to move to dock');
-        },
+        async moveToDock(id) { /* removed — gate dock flow deprecated */ },
 
         changePage(p) { if (p >= 1 && p <= this.pagination.last_page) this.loadEntries(p); },
         resetFilters() { this.filters = { status: '', from_date: '', to_date: '' }; this.loadEntries(); },
         formatDateTime(v) { return v ? new Date(v).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'; },
         statusClass(s) {
-            return { 'PENDING_VERIFICATION': 'bg-amber-100 text-amber-700', 'VERIFIED': 'bg-green-100 text-green-700', 'MOVED_TO_DOCK': 'bg-blue-100 text-blue-700', 'REJECTED': 'bg-red-100 text-red-700' }[s] ?? 'bg-gray-100 text-gray-600';
+            return { 'PENDING': 'bg-amber-100 text-amber-700', 'COMPLETED': 'bg-green-100 text-green-700' }[s] ?? 'bg-gray-100 text-gray-600';
         },
     };
 }

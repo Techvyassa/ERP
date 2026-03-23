@@ -83,6 +83,14 @@ class GateEntry extends Model
     }
 
     /**
+     * Get the auto-created GRN
+     */
+    public function grn()
+    {
+        return $this->hasOne(\App\Models\Tenant\GRN::class, 'ge_id');
+    }
+
+    /**
      * Generate GE number
      * Format: GE-YYMM-NNNN
      */
@@ -105,19 +113,27 @@ class GateEntry extends Model
     }
 
     /**
-     * Scope: Pending verification
+     * Scope: Pending (GRN not yet created)
      */
-    public function scopePendingVerification($query)
+    public function scopePending($query)
     {
-        return $query->where('status', 'PENDING_VERIFICATION');
+        return $query->where('status', 'PENDING');
     }
 
     /**
-     * Scope: Verified entries
+     * Scope: Pending verification (alias for backward compat)
      */
-    public function scopeVerified($query)
+    public function scopePendingVerification($query)
     {
-        return $query->where('status', 'VERIFIED');
+        return $query->where('status', 'PENDING');
+    }
+
+    /**
+     * Scope: Completed (GRN auto-created)
+     */
+    public function scopeCompleted($query)
+    {
+        return $query->where('status', 'COMPLETED');
     }
 
     /**
@@ -137,18 +153,18 @@ class GateEntry extends Model
     }
 
     /**
-     * Check if entry can be verified
+     * Check if gate entry can have a GRN created (status = PENDING)
      */
-    public function canVerify(): bool
+    public function canCreateGRN(): bool
     {
-        return $this->status === 'PENDING_VERIFICATION';
+        return $this->status === 'PENDING';
     }
 
     /**
-     * Check if entry can be moved to dock
+     * Check if gate entry can be marked complete (transitions to COMPLETED after GRN created)
      */
-    public function canMoveToDock(): bool
+    public function canComplete(): bool
     {
-        return $this->status === 'VERIFIED';
+        return $this->status === 'PENDING';
     }
 }

@@ -11,6 +11,7 @@ class QCParameter extends Model
 
     protected $fillable = [
         'material_id',
+        'test_type_id',
         'parameter_code',
         'parameter_name',
         'parameter_category',
@@ -41,6 +42,14 @@ class QCParameter extends Model
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_id');
+    }
+
+    /**
+     * Get the test type
+     */
+    public function testType()
+    {
+        return $this->belongsTo(QCTestType::class, 'test_type_id');
     }
 
     /**

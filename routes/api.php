@@ -319,12 +319,11 @@ Route::prefix('v1')->group(function () {
         // ------currently not using (END) -------------------------
 
         // Gate Entry Management Endpoints
-        // Roles:Security Department(create/verify), ADMIN (all)
-        // Status Flow: PENDING_VERIFICATION → VERIFIED → MOVED_TO_DOCK / REJECTED
+        // Roles: Security Department (create), ADMIN (all)
+        // Status Flow: PENDING → COMPLETED (after GRN auto-created)
         Route::middleware(['check.module.permission:GATE_ENTRY'])->group(function () {
             Route::prefix('gate-entries')->group(function () {
                 // Lookup endpoints
-                Route::get('/pending-verifications', [App\Http\Controllers\GateEntryController::class, 'pendingVerifications']);
                 Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GateEntryController::class, 'byVendor']);
                 Route::get('/by-po/{poId}', [App\Http\Controllers\GateEntryController::class, 'byPO']);
 
@@ -332,41 +331,27 @@ Route::prefix('v1')->group(function () {
                 Route::get('/', [App\Http\Controllers\GateEntryController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\GateEntryController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\GateEntryController::class, 'store']);
-
-                // Status transitions
-                Route::post('/{id}/verify', [App\Http\Controllers\GateEntryController::class, 'verify']); // PENDING_VERIFICATION → VERIFIED/REJECTED
-                Route::patch('/{id}/move-to-dock', [App\Http\Controllers\GateEntryController::class, 'moveToDock']); // VERIFIED → MOVED_TO_DOCK
             });
         });
 
         // Material Receipt (MR) & GRN Endpoints
         // Roles: STOREKEEPER (create/edit), STORE_MGR (approve), ADMIN (all)
-        // Status Flow: IN_PROGRESS → COMPLETED → PENDING_GRN → GRN_POSTED
         Route::middleware(['check.module.permission:MR_GRN'])->group(function () {
 
+            // ------Material Receipts: kept for backward compat (legacy flow)------
             Route::prefix('material-receipts')->group(function () {
-                // Lookup endpoints
                 Route::get('/by-ge/{geId}', [App\Http\Controllers\MaterialReceiptController::class, 'byGateEntry']);
                 Route::get('/by-po/{poId}', [App\Http\Controllers\MaterialReceiptController::class, 'byPO']);
                 Route::get('/pending-grn', [App\Http\Controllers\MaterialReceiptController::class, 'pendingGRN']);
-
-                // Resource routes
                 Route::get('/', [App\Http\Controllers\MaterialReceiptController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialReceiptController::class, 'show']);
-                Route::post('/', [App\Http\Controllers\MaterialReceiptController::class, 'store']);
-                Route::put('/{id}', [App\Http\Controllers\MaterialReceiptController::class, 'update']);
-
-                // Status transitions
-                Route::patch('/{id}/start-unloading', [App\Http\Controllers\MaterialReceiptController::class, 'startUnloading']); // Start unloading timer
-
-                Route::patch('/{id}/complete', [App\Http\Controllers\MaterialReceiptController::class, 'completeUnloading']); // IN_PROGRESS → COMPLETED
             });
 
             // GRN (Goods Receipt Note) Endpoints
             // Status Flow: PROVISIONAL → QC_PENDING → ACCEPTED/REJECTED/PARTIALLY_ACCEPTED
             Route::prefix('grn')->group(function () {
                 // Lookup endpoints
-                Route::get('/by-mr/{mrId}', [App\Http\Controllers\GRNController::class, 'byMaterialReceipt']);
+                Route::get('/by-ge/{geId}', [App\Http\Controllers\GRNController::class, 'byGateEntry']);
                 Route::get('/by-po/{poId}', [App\Http\Controllers\GRNController::class, 'byPO']);
                 Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GRNController::class, 'byVendor']);
                 Route::get('/provisional', [App\Http\Controllers\GRNController::class, 'provisional']);
@@ -381,8 +366,18 @@ Route::prefix('v1')->group(function () {
                 // Status transitions
                 Route::patch('/{id}/approve', [App\Http\Controllers\GRNController::class, 'approve']); // PROVISIONAL → QC_PENDING
                 Route::patch('/{id}/cancel', [App\Http\Controllers\GRNController::class, 'cancel']); // Any → CANCELLED
+                Route::patch('/{id}/post-qc', [App\Http\Controllers\GRNController::class, 'postQCUpdate']); // Post-QC edit by Store/QC
             });
 
+        });
+
+        // QC Test Type Master (SETTINGS permission)
+        Route::middleware(['check.module.permission:SETTINGS'])->prefix('qc-test-types')->group(function () {
+            Route::get('/', [App\Http\Controllers\QCTestTypeController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\QCTestTypeController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'destroy']);
         });
 
         // Quality Control (QC) Endpoints

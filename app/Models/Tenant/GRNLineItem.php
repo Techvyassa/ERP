@@ -12,8 +12,12 @@ class GRNLineItem extends Model
     protected $fillable = [
         'grn_id',
         'mr_line_id',
+        'po_line_id',
         'material_id',
         'accepted_qty',
+        'rejected_qty',
+        'return_qty',
+        'return_remarks',
         'uom_id',
         'batch_number',
         'manufacturing_date',

@@ -19,7 +19,7 @@
     </div>
 
     <!-- Key Metrics -->
-    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between mb-4">
                 <div class="bg-amber-100 p-3 rounded-lg">
@@ -27,8 +27,8 @@
                 </div>
                 <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded">Pending</span>
             </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.pendingVerification">0</h3>
-            <p class="text-sm text-gray-600">Pending Verification</p>
+            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.pendingGateEntries">0</h3>
+            <p class="text-sm text-gray-600">Pending Gate Entries</p>
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
@@ -38,8 +38,8 @@
                 </div>
                 <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">Today</span>
             </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.verifiedToday">0</h3>
-            <p class="text-sm text-gray-600">Verified Today</p>
+            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.completedToday">0</h3>
+            <p class="text-sm text-gray-600">GRN Created Today</p>
         </div>
 
         <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
@@ -51,17 +51,6 @@
             </div>
             <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.vehiclesOnPremise">0</h3>
             <p class="text-sm text-gray-600">Vehicles on Premise</p>
-        </div>
-
-        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
-            <div class="flex items-center justify-between mb-4">
-                <div class="bg-red-100 p-3 rounded-lg">
-                    <span class="material-symbols-outlined text-red-600 text-2xl">block</span>
-                </div>
-                <span class="text-xs font-semibold text-red-600 bg-red-50 px-2 py-1 rounded">Today</span>
-            </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.rejectedToday">0</h3>
-            <p class="text-sm text-gray-600">Rejected Today</p>
         </div>
     </div>
 
@@ -81,7 +70,7 @@
                         </div>
                         <div>
                             <p class="text-sm font-bold text-gray-900" x-text="entry.vehicle_number"></p>
-                            <p class="text-xs text-gray-500" x-text="entry.vendor_name + ' • ' + entry.ge_number"></p>
+                            <p class="text-xs text-gray-500" x-text="entry.vendor_name + ' • ' + entry.ge_number + (entry.grn_number ? ' • GRN: ' + entry.grn_number : '')"></p>
                         </div>
                     </div>
                     <span class="px-3 py-1 rounded-full text-xs font-bold"
@@ -102,7 +91,7 @@ function securityDashboard() {
     const headers = () => ({ 'Authorization': `Bearer ${token()}`, 'Accept': 'application/json', 'X-Org-Slug': orgSlug });
 
     return {
-        stats: { pendingVerification: 0, verifiedToday: 0, vehiclesOnPremise: 0, rejectedToday: 0 },
+        stats: { pendingGateEntries: 0, completedToday: 0, vehiclesOnPremise: 0 },
         recentEntries: [],
 
         async init() {
@@ -120,22 +109,21 @@ function securityDashboard() {
                         ge_number: e.ge_number,
                         vehicle_number: e.vehicle_number,
                         vendor_name: e.vendor?.vendor_name || '—',
+                        grn_number: e.grn?.grn_number || null,
                         status: e.status
                     }));
-                    this.stats.pendingVerification = entries.filter(e => e.status === 'PENDING_VERIFICATION').length;
-                    this.stats.verifiedToday = entries.filter(e => e.status === 'VERIFIED').length;
-                    this.stats.vehiclesOnPremise = entries.filter(e => e.status === 'MOVED_TO_DOCK').length;
-                    this.stats.rejectedToday = entries.filter(e => e.status === 'REJECTED').length;
+                    const today = new Date().toDateString();
+                    this.stats.pendingGateEntries = entries.filter(e => e.status === 'PENDING').length;
+                    this.stats.completedToday = entries.filter(e => e.status === 'COMPLETED' && new Date(e.updated_at).toDateString() === today).length;
+                    this.stats.vehiclesOnPremise = entries.filter(e => e.status === 'PENDING').length;
                 }
             } catch (e) { console.error(e); }
         },
 
         statusClass(s) {
             return {
-                'PENDING_VERIFICATION': 'bg-amber-100 text-amber-700',
-                'VERIFIED': 'bg-green-100 text-green-700',
-                'MOVED_TO_DOCK': 'bg-blue-100 text-blue-700',
-                'REJECTED': 'bg-red-100 text-red-700'
+                'PENDING': 'bg-amber-100 text-amber-700',
+                'COMPLETED': 'bg-green-100 text-green-700',
             }[s] ?? 'bg-gray-100 text-gray-600';
         }
     };

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Tenant\GRN;
 use App\Models\Tenant\GRNLineItem;
+use App\Models\Tenant\GateEntry;
 use App\Models\Tenant\MaterialReceipt;
 use App\Models\Tenant\MRLineItem;
 use App\Models\Tenant\PoLineItem;
@@ -14,7 +15,101 @@ use Illuminate\Support\Facades\Log;
 class GRNService
 {
     /**
-     * Create GRN from Material Receipt
+     * Auto-create GRN from Gate Entry (new inward flow).
+     * Reads PO line items directly; one GRN line per PO line.
+     * Auto-generates batch number and triggers QC inspection lot per line.
+     */
+    public function createGRNFromGateEntry(GateEntry $ge, int $userId): GRN
+    {
+        if (!$ge->canCreateGRN()) {
+            throw new \Exception('Gate entry cannot create a GRN in current status: ' . $ge->status);
+        }
+
+        return DB::connection('tenant')->transaction(function () use ($ge, $userId) {
+            $po = $ge->purchaseOrder()->with('lineItems.material', 'lineItems.uom')->firstOrFail();
+
+            // Create GRN header
+            $today = now()->toDateString();
+            $grn = GRN::create([
+                'grn_number'   => GRN::generateGRNNumber(),
+                'ge_id'        => $ge->id,
+                'mr_id'        => null,
+                'po_id'        => $po->id,
+                'vendor_id'    => $ge->vendor_id,
+                'grn_date'     => $today,
+                'posting_date' => $today,
+                'status'       => 'PROVISIONAL',
+                'created_by'   => $userId,
+            ]);
+
+            $totalValue = 0;
+            $totalTax   = 0;
+
+            foreach ($po->lineItems as $poLine) {
+                // Auto-generate batch: GE-number + material code + sequence
+                $batchNumber = strtoupper($ge->ge_number . '-' . ($poLine->material->material_code ?? $poLine->material_id));
+
+                $unitPrice = $poLine->unit_price ?? 0;
+                $taxRate   = $poLine->tax_rate   ?? 0;
+                $acceptedQty = $poLine->ordered_qty - ($poLine->received_qty ?? 0);
+                $acceptedQty = max(0, $acceptedQty);
+
+                $lineValue = round($acceptedQty * $unitPrice, 2);
+                $taxAmount = round($lineValue * ($taxRate / 100), 2);
+
+                $grnLine = GRNLineItem::create([
+                    'grn_id'       => $grn->id,
+                    'mr_line_id'   => null,
+                    'po_line_id'   => $poLine->id,
+                    'material_id'  => $poLine->material_id,
+                    'accepted_qty' => $acceptedQty,
+                    'uom_id'       => $poLine->uom_id,
+                    'batch_number' => $batchNumber,
+                    'unit_price'   => $unitPrice,
+                    'tax_rate'     => $taxRate,
+                    'line_value'   => $lineValue,
+                    'tax_amount'   => $taxAmount,
+                    'stock_status' => 'RESTRICTED',
+                ]);
+
+                $totalValue += $lineValue;
+                $totalTax   += $taxAmount;
+
+                // Auto-trigger QC inspection lot per line (one lot per GRN line enforced by DB unique)
+                try {
+                    $qcService = app(QCService::class);
+                    $qcService->createInspectionLotForLine($grn, $grnLine, $userId);
+                } catch (\Exception $e) {
+                    Log::warning('[GRNService] QC lot creation failed for line, continuing', [
+                        'grn_line_id' => $grnLine->id,
+                        'error'       => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            // Update GRN totals
+            $grn->update([
+                'total_received_value' => $totalValue,
+                'total_tax_amount'     => $totalTax,
+                'grand_total'          => $totalValue + $totalTax,
+            ]);
+
+            // Mark gate entry as COMPLETED
+            $ge->update(['status' => 'COMPLETED']);
+
+            Log::info('[GRNService] GRN auto-created from gate entry', [
+                'grn_id'     => $grn->id,
+                'grn_number' => $grn->grn_number,
+                'ge_id'      => $ge->id,
+                'lines'      => $grn->lineItems->count(),
+            ]);
+
+            return $grn->load(['lineItems', 'gateEntry', 'purchaseOrder', 'vendor']);
+        });
+    }
+
+    /**
+     * Create GRN from Material Receipt (legacy flow — kept for backward compat)
      */
     public function createGRN(array $data, int $userId): GRN
     {
@@ -212,6 +307,108 @@ class GRNService
         ]);
         
         return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
+    }
+
+    /**
+     * Apply QC decision to GRN line items.
+     * Writes back accepted_qty / rejected_qty from QC decision, transitions GRN status.
+     *
+     * @param GRN $grn The GRN header
+     * @param array $qcDecisions Array of [grn_line_id => ['accepted_qty' => x, 'rejected_qty' => y]]
+     * @param int $userId User performing the action
+     * @return GRN Updated GRN
+     */
+    public function applyQCDecision(GRN $grn, array $qcDecisions, int $userId): GRN
+    {
+        return DB::connection('tenant')->transaction(function () use ($grn, $qcDecisions, $userId) {
+            $totalAccepted = 0;
+            $totalRejected = 0;
+            $putawayService = null;
+
+            foreach ($qcDecisions as $lineId => $decision) {
+                $lineItem = GRNLineItem::findOrFail($lineId);
+                
+                $acceptedQty = (float) ($decision['accepted_qty'] ?? 0);
+                $rejectedQty = (float) ($decision['rejected_qty'] ?? 0);
+                $returnQty = (float) ($decision['return_qty'] ?? 0);
+                $returnRemarks = $decision['return_remarks'] ?? null;
+
+                // Update line item quantities and stock status
+                $updates = [
+                    'accepted_qty' => $acceptedQty,
+                    'rejected_qty' => $rejectedQty,
+                ];
+
+                // Determine stock status per line
+                if ($acceptedQty > 0 && $rejectedQty === 0) {
+                    $stockStatus = 'UNRESTRICTED';
+                    // Create putaway task only for accepted lines
+                    if (!$putawayService) {
+                        $putawayService = app(PutawayService::class);
+                    }
+                    try {
+                        $putawayService->createPutawayTask([
+                            'grn_line_id' => $lineItem->id,
+                            'material_id' => $lineItem->material_id,
+                            'source_bin_id' => $lineItem->warehouse_bin_id,
+                            'quantity' => $acceptedQty,
+                            'uom_id' => $lineItem->uom_id,
+                            'batch_number' => $lineItem->batch_number,
+                            'strategy' => 'MANUAL',
+                        ], $userId);
+                    } catch (\Exception $e) {
+                        Log::warning('[GRNService] Putaway creation failed for line', [
+                            'grn_line_id' => $lineItem->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                } elseif ($rejectedQty > 0 && $acceptedQty === 0) {
+                    $stockStatus = 'BLOCKED';
+                } else {
+                    // Mixed: partial accepted, partial rejected
+                    $stockStatus = 'RESTRICTED';
+                }
+
+                $updates['stock_status'] = $stockStatus;
+
+                // Add return fields if provided
+                if ($returnQty > 0) {
+                    $updates['return_qty'] = $returnQty;
+                    if ($returnRemarks) {
+                        $updates['return_remarks'] = $returnRemarks;
+                    }
+                }
+
+                $lineItem->update($updates);
+
+                $totalAccepted += $acceptedQty;
+                $totalRejected += $rejectedQty;
+            }
+
+            // Determine GRN header status
+            $grandTotal = $totalAccepted + $totalRejected;
+            if ($grandTotal > 0) {
+                if ($totalAccepted > 0 && $totalRejected === 0) {
+                    $grnStatus = 'ACCEPTED';
+                } elseif ($totalAccepted === 0 && $totalRejected > 0) {
+                    $grnStatus = 'REJECTED';
+                } else {
+                    $grnStatus = 'PARTIALLY_ACCEPTED';
+                }
+
+                $grn->update(['status' => $grnStatus]);
+            }
+
+            Log::info('[GRNService] QC decision applied to GRN', [
+                'grn_id' => $grn->id,
+                'grn_number' => $grn->grn_number,
+                'status' => $grnStatus,
+                'total_accepted' => $totalAccepted,
+                'total_rejected' => $totalRejected,
+            ]);
+
+            return $grn->load(['lineItems', 'purchaseOrder', 'vendor']);
+        });
     }
 
     /**

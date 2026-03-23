@@ -40,7 +40,7 @@
 
     <!-- Filters -->
     <div class="bg-white rounded-xl border border-gray-200 p-4 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="grid grid-cols-1 md:grid-cols-5 gap-4">
             <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1">Status</label>
                 <select x-model="filters.status" @change="loadGRNs()"
@@ -53,6 +53,12 @@
                     <option value="PARTIALLY_ACCEPTED">Partially Accepted</option>
                     <option value="CANCELLED">Cancelled</option>
                 </select>
+            </div>
+            <div>
+                <label class="block text-xs font-semibold text-gray-600 mb-1">Gate Entry No.</label>
+                <input type="text" x-model="filters.ge_number" @input.debounce.300ms="filterByGE()"
+                    placeholder="e.g. GE-25-0001"
+                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
             </div>
             <div>
                 <label class="block text-xs font-semibold text-gray-600 mb-1">GRN Date From</label>
@@ -81,7 +87,7 @@
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">GRN Date</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Vendor</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">PO Number</th>
-                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">MR Number</th>
+                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Gate Entry</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Posting Date</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Status</th>
                         <th class="text-right py-3 px-5 text-xs font-bold text-gray-500 uppercase">Actions</th>
@@ -102,7 +108,7 @@
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="formatDate(grn.grn_date)"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="grn.vendor?.vendor_name || '—'"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="grn.purchase_order?.po_number || '—'"></td>
-                            <td class="py-3 px-5 text-sm text-gray-700" x-text="grn.material_receipt?.mr_number || '—'"></td>
+                            <td class="py-3 px-5 text-sm text-gray-700" x-text="grn.gate_entry?.ge_number || grn.material_receipt?.mr_number || '—'"></td>
                             <td class="py-3 px-5 text-sm text-gray-600" x-text="formatDate(grn.posting_date)"></td>
                             <td class="py-3 px-5">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold"
@@ -111,6 +117,12 @@
                             <td class="py-3 px-5 text-right flex items-center justify-end gap-2">
                                 <button @click="viewGRN(grn.id)" title="View" class="text-primary hover:text-primary/70">
                                     <span class="material-symbols-outlined text-lg">visibility</span>
+                                </button>
+                                <button x-show="['ACCEPTED','REJECTED','PARTIALLY_ACCEPTED'].includes(grn.status)" 
+                                    @click="openPostQCModal(grn)" 
+                                    title="Update after QC"
+                                    class="text-blue-600 hover:text-blue-800">
+                                    <span class="material-symbols-outlined text-lg">edit_note</span>
                                 </button>
                                 <button x-show="grn.status === 'PROVISIONAL'" @click="approveGRN(grn.id)" title="Approve → QC Pending"
                                     class="text-green-600 hover:text-green-800">
@@ -150,14 +162,15 @@
                 <form @submit.prevent="saveGRN()" class="p-6 space-y-4">
                     <!-- 3-way match info banner -->
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
-                        <strong>3-Way Match:</strong> PO (what we ordered) → MR (what we received) → GRN (what we accept into books)
+                        <strong>3-Way Match:</strong> PO (what we ordered) → Gate Entry (what arrived) → GRN (what we accept into books)
+                        <br><strong>Note:</strong> In the new inward flow, GRN is auto-created when Gate Entry is submitted. Use this form only for legacy Material Receipt-based GRNs.
                     </div>
                     <div class="grid grid-cols-2 gap-4">
                         <div>
-                            <label class="block text-sm font-semibold text-gray-700 mb-1">Material Receipt *</label>
+                            <label class="block text-sm font-semibold text-gray-700 mb-1">Material Receipt (Legacy) *</label>
                             <select x-model="form.mr_id" @change="onMRSelect()" required
                                 class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                                <option value="">Select MR</option>
+                                <option value="">Select MR (if not auto-created from Gate Entry)</option>
                                 <template x-for="mr in pendingMRs" :key="mr.id">
                                     <option :value="mr.id" x-text="mr.mr_number + ' — ' + (mr.vendor?.vendor_name ?? '')"></option>
                                 </template>
@@ -261,6 +274,113 @@
         </div>
     </div>
 
+    <!-- Post-QC Update Modal -->
+    <div x-show="showPostQCModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-900/50" @click="showPostQCModal = false"></div>
+            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
+                <div class="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-900">Post-QC Update — <span x-text="postQCForm.grn_number"></span></h3>
+                    <button @click="showPostQCModal = false"><span class="material-symbols-outlined text-gray-400">close</span></button>
+                </div>
+                <form @submit.prevent="savePostQCUpdate()" class="p-6 space-y-4">
+                    <!-- Info banner -->
+                    <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                        <strong>Post-QC Adjustment:</strong> Update accepted/rejected quantities after QC decision. Return quantities can be marked for RTV.
+                    </div>
+
+                    <!-- Header info -->
+                    <div class="grid grid-cols-3 gap-4 pb-4 border-b border-gray-200">
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">GRN No</p>
+                            <p class="font-bold text-primary" x-text="postQCForm.grn_number"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Vendor</p>
+                            <p class="font-medium" x-text="postQCForm.vendor_name || '—'"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Status</p>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-bold" :class="statusClass(postQCForm.status)" x-text="postQCForm.status?.replace(/_/g,' ')"></span>
+                        </div>
+                    </div>
+
+                    <!-- Line Items Table -->
+                    <div>
+                        <p class="text-sm font-bold text-gray-800 mb-3">Line Item Adjustments</p>
+                        <div class="overflow-x-auto border border-gray-200 rounded-lg">
+                            <table class="w-full text-xs">
+                                <thead class="bg-gray-100 border-b border-gray-200">
+                                    <tr>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Material</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Current Accepted</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">New Accepted</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Rejected</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Return Qty</th>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Return Remarks</th>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Stock Status</th>
+                                    </tr>
+                                </thead>
+                                <tbody class="divide-y divide-gray-100">
+                                    <template x-for="(line, i) in postQCForm.line_items" :key="line.id">
+                                        <tr class="hover:bg-gray-50">
+                                            <td class="px-3 py-2" x-text="line.material?.material_name || '—'"></td>
+                                            <td class="px-3 py-2 text-right" x-text="line.current_accepted_qty || 0"></td>
+                                            <td class="px-3 py-2">
+                                                <input type="number" step="0.001" min="0" x-model.number="line.accepted_qty"
+                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <input type="number" step="0.001" min="0" x-model.number="line.rejected_qty"
+                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <input type="number" step="0.001" min="0" x-model.number="line.return_qty"
+                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <input type="text" x-model="line.return_remarks" maxlength="500"
+                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                                    placeholder="RTV remarks">
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <span class="px-2 py-0.5 rounded-full text-xs font-bold"
+                                                    :class="{
+                                                        'bg-green-100 text-green-700': line.accepted_qty > 0 && line.rejected_qty === 0,
+                                                        'bg-red-100 text-red-700': line.rejected_qty > 0 && line.accepted_qty === 0,
+                                                        'bg-amber-100 text-amber-700': line.accepted_qty > 0 && line.rejected_qty > 0
+                                                    }"
+                                                    x-text="line.accepted_qty > 0 && line.rejected_qty === 0 ? 'UNRESTRICTED' : (line.rejected_qty > 0 && line.accepted_qty === 0 ? 'BLOCKED' : 'RESTRICTED')">
+                                                </span>
+                                            </td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Remarks -->
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Remarks</label>
+                        <textarea x-model="postQCForm.remarks" rows="2"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            placeholder="Additional remarks (optional)"></textarea>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
+                        <button type="button" @click="showPostQCModal = false"
+                            class="px-5 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">Back</button>
+                        <button type="submit" :disabled="saving"
+                            class="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50">
+                            <span x-show="!saving">Update GRN</span><span x-show="saving">Processing...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+
     <!-- View Detail Modal -->
     <div x-show="showViewModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4">
@@ -297,6 +417,10 @@
                         <div>
                             <p class="text-xs text-gray-500 font-semibold">GRN Date</p>
                             <p class="font-medium" x-text="formatDate(selectedGRN?.grn_date)"></p>
+                        </div>
+                        <div>
+                            <p class="text-xs text-gray-500 font-semibold">Gate Entry No</p>
+                            <p class="font-medium" x-text="selectedGRN?.gate_entry?.ge_number || '—'"></p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-500 font-semibold">PO Number</p>
@@ -419,16 +543,26 @@ function grnData() {
     return {
         grns: [], pendingMRs: [],
         loading: false, saving: false,
-        showCreateModal: false, showViewModal: false, showCancelModal: false,
+        showCreateModal: false, showViewModal: false, showCancelModal: false, showPostQCModal: false,
         selectedGRN: null, selectedMR: null,
         cancelReason: '',
+        postQCForm: { grn_id: 0, grn_number: '', vendor_name: '', status: '', remarks: '', line_items: [] },
         counts: { provisional: 0, qc_pending: 0, accepted: 0, rejected: 0 },
-        filters: { status: '', grn_date_from: '', grn_date_to: '' },
+        filters: { status: '', grn_date_from: '', grn_date_to: '', ge_number: '' },
         pagination: { current_page: 1, last_page: 1, from: 0, to: 0, total: 0 },
         form: { mr_id: '', grn_date: '', posting_date: '', remarks: '', line_items: [] },
 
         async init() {
             await Promise.all([this.loadGRNs(), this.loadPendingMRs()]);
+        },
+
+        async filterByGE() {
+            if (this.filters.ge_number && this.filters.ge_number.length > 3) {
+                // Filter client-side by gate_entry.ge_number
+                await this.loadGRNs();
+            } else if (!this.filters.ge_number) {
+                await this.loadGRNs();
+            }
         },
 
         async loadGRNs(page = 1) {
@@ -441,7 +575,13 @@ function grnData() {
                 const res = await fetch(`/api/v1/grn?${p}`, { headers: headers() });
                 const data = await res.json();
                 if (data.success) {
-                    this.grns = data.data.data || [];
+                    let grns = data.data.data || [];
+                    // Client-side filter by gate entry number if specified
+                    if (this.filters.ge_number) {
+                        const needle = this.filters.ge_number.toLowerCase();
+                        grns = grns.filter(g => g.gate_entry?.ge_number?.toLowerCase().includes(needle));
+                    }
+                    this.grns = grns;
                     this.pagination = { current_page: data.data.current_page, last_page: data.data.last_page, from: data.data.from || 0, to: data.data.to || 0, total: data.data.total || 0 };
                     this.computeCounts();
                 }
@@ -528,8 +668,56 @@ function grnData() {
             } finally { this.saving = false; }
         },
 
+        openPostQCModal(grn) {
+            this.postQCForm = {
+                grn_id: grn.id,
+                grn_number: grn.grn_number,
+                vendor_name: grn.vendor?.vendor_name || '',
+                status: grn.status,
+                remarks: grn.remarks || '',
+                line_items: (grn.line_items || []).map(l => ({
+                    id: l.id,
+                    material_name: l.material?.material_name || '',
+                    current_accepted_qty: l.accepted_qty || 0,
+                    accepted_qty: l.accepted_qty || 0,
+                    rejected_qty: l.rejected_qty || 0,
+                    return_qty: l.return_qty || 0,
+                    return_remarks: l.return_remarks || '',
+                })),
+            };
+            this.showPostQCModal = true;
+        },
+
+        async savePostQCUpdate() {
+            this.saving = true;
+            try {
+                const payload = {
+                    line_items: this.postQCForm.line_items.map(l => ({
+                        id: l.id,
+                        accepted_qty: l.accepted_qty,
+                        rejected_qty: l.rejected_qty,
+                        return_qty: l.return_qty,
+                        return_remarks: l.return_remarks,
+                    })),
+                    remarks: this.postQCForm.remarks,
+                };
+                const res = await fetch(`/api/v1/grn/${this.postQCForm.grn_id}/post-qc`, { 
+                    method: 'PATCH', 
+                    headers: headers(), 
+                    body: JSON.stringify(payload) 
+                });
+                const data = await res.json();
+                if (data.success) { 
+                    this.showPostQCModal = false; 
+                    await this.loadGRNs(); 
+                    alert('GRN updated successfully after QC!');
+                }
+                else alert(data.message || 'Failed to update GRN after QC');
+            } finally { this.saving = false; }
+        },
+
         changePage(p) { if (p >= 1 && p <= this.pagination.last_page) this.loadGRNs(p); },
-        resetFilters() { this.filters = { status: '', grn_date_from: '', grn_date_to: '' }; this.loadGRNs(); },
+        resetFilters() { this.filters = { status: '', grn_date_from: '', grn_date_to: '', ge_number: '' }; this.loadGRNs(); },
         formatDate(v) { return v ? new Date(v).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '—'; },
         statusClass(s) {
             return { 'PROVISIONAL': 'bg-amber-100 text-amber-700', 'QC_PENDING': 'bg-blue-100 text-blue-700', 'ACCEPTED': 'bg-green-100 text-green-700', 'REJECTED': 'bg-red-100 text-red-700', 'PARTIALLY_ACCEPTED': 'bg-orange-100 text-orange-700', 'CANCELLED': 'bg-gray-100 text-gray-500' }[s] ?? 'bg-gray-100 text-gray-600';
