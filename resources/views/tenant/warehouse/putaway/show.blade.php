@@ -22,8 +22,8 @@
     <div class="bg-white rounded-xl border border-gray-200 p-6 mb-6" x-show="task">
         <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
             <div>
-                <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Task ID</p>
-                <p class="text-lg font-bold text-primary" x-text="'PT-' + String(task?.id).padStart(5, '0')"></p>
+                <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Task Number</p>
+                <p class="text-lg font-bold text-primary" x-text="task?.task_number || '—'"></p>
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Material</p>
@@ -31,7 +31,10 @@
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Quantity</p>
-                <p class="font-semibold text-gray-900" x-text="task?.quantity + ' ' + (task?.uom?.uom_code || 'UNT')"></p>
+                <p class="font-semibold text-gray-900">
+                    <span x-text="task?.quantity || '0.000'"></span>
+                    <span x-text="task?.uom?.uom_code || ''"></span>
+                </p>
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">GRN Number</p>
@@ -45,13 +48,17 @@
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Batch Number</p>
                 <p class="font-semibold text-gray-900" x-text="task?.batch_number || '—'"></p>
             </div>
-            <div>
+            <!-- <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Current Bin</p>
                 <p class="font-semibold text-gray-900" x-text="task?.source_bin?.bin_code || '—'"></p>
-            </div>
+            </div> -->
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Assigned To</p>
                 <p class="font-semibold text-gray-900" x-text="task?.assigned_operator?.full_name || '—'"></p>
+            </div>
+            <div>
+                <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Destination Bin</p>
+                <p class="font-semibold text-blue-600" x-text="task?.destination_bin?.bin_code || 'Not Scanned'"></p>
             </div>
         </div>
 
@@ -149,180 +156,200 @@
 </div>
 
 <script>
-function executePutawayData() {
-    const token = () => localStorage.getItem('access_token');
-    const orgSlug = '{{ $organization->org_slug }}';
-    const taskId = '{{ $taskId }}';
-    const headers = () => ({ 'Authorization': `Bearer ${token()}`, 'Accept': 'application/json', 'Content-Type': 'application/json', 'X-Org-Slug': orgSlug });
+    function executePutawayData() {
+        const token = () => localStorage.getItem('access_token');
+        const orgSlug = '{{ $organization->org_slug }}';
+        const taskId = '{{ $taskId }}';
+        const headers = () => ({
+            'Authorization': `Bearer ${token()}`,
+            'Accept': 'application/json',
+            'Content-Type': 'application/json',
+            'X-Org-Slug': orgSlug
+        });
 
-    return {
-        task: null,
-        loading: false, saving: false,
-        showBinScanModal: false, showCancelModal: false,
-        binScanInput: '', binRemarks: '',
-        cancelReason: '',
+        return {
+            task: null,
+            loading: false,
+            saving: false,
+            showBinScanModal: false,
+            showCancelModal: false,
+            binScanInput: '',
+            binRemarks: '',
+            cancelReason: '',
 
-        async init() {
-            await this.loadTask();
-        },
+            async init() {
+                await this.loadTask();
+            },
 
-        async loadTask() {
-            this.loading = true;
-            try {
-                const res = await fetch(`/api/v1/putaway-tasks/${taskId}`, { headers: headers() });
-                const data = await res.json();
-                
-                if (data.success) {
-                    this.task = data.data;
-                } else {
-                    alert(data.message || 'Failed to load task');
+            async loadTask() {
+                this.loading = true;
+                try {
+                    const res = await fetch(`/api/v1/putaway-tasks/${taskId}`, {
+                        headers: headers()
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        this.task = data.data;
+                    } else {
+                        alert(data.message || 'Failed to load task');
+                        window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                    }
+                } catch (e) {
+                    console.error('Error loading task:', e);
+                    alert('Failed to load task');
                     window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                } finally {
+                    this.loading = false;
                 }
-            } catch (e) {
-                console.error('Error loading task:', e);
-                alert('Failed to load task');
-                window.location.href = `/org/${orgSlug}/warehouse/putaway`;
-            } finally {
-                this.loading = false;
-            }
-        },
+            },
 
-        async startPutaway() {
-            if (!confirm('Start putaway execution for this task?')) return;
+            async startPutaway() {
+                if (!confirm('Start putaway execution for this task?')) return;
 
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/putaway-tasks/${taskId}/start`, {
-                    method: 'PATCH',
-                    headers: headers(),
-                    body: JSON.stringify({})
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    await this.loadTask();
-                    alert('Putaway started successfully');
-                } else {
-                    alert(data.message || 'Failed to start putaway');
+                this.saving = true;
+                try {
+                    const res = await fetch(`/api/v1/putaway-tasks/${taskId}/start`, {
+                        method: 'PATCH',
+                        headers: headers(),
+                        body: JSON.stringify({})
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        await this.loadTask();
+                        alert('Putaway started successfully');
+                    } else {
+                        alert(data.message || 'Failed to start putaway');
+                    }
+                } catch (e) {
+                    console.error('Error starting putaway:', e);
+                    alert('Failed to start putaway');
+                } finally {
+                    this.saving = false;
                 }
-            } catch (e) {
-                console.error('Error starting putaway:', e);
-                alert('Failed to start putaway');
-            } finally {
-                this.saving = false;
-            }
-        },
+            },
 
-        openBinScanModal() {
-            this.binScanInput = '';
-            this.binRemarks = '';
-            this.showBinScanModal = true;
-            setTimeout(() => document.querySelector('input[placeholder*="Scan"]')?.focus(), 100);
-        },
+            openBinScanModal() {
+                this.binScanInput = '';
+                this.binRemarks = '';
+                this.showBinScanModal = true;
+                setTimeout(() => document.querySelector('input[placeholder*="Scan"]')?.focus(), 100);
+            },
 
-        async submitBinScan() {
-            if (!this.binScanInput.trim()) {
-                alert('Please enter a bin location');
-                return;
-            }
-
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/putaway-tasks/${taskId}/scan-bin`, {
-                    method: 'POST',
-                    headers: headers(),
-                    body: JSON.stringify({
-                        bin_code: this.binScanInput,
-                        remarks: this.binRemarks
-                    })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    this.showBinScanModal = false;
-                    await this.loadTask();
-                    alert('Bin scanned successfully');
-                } else {
-                    alert(data.message || 'Failed to scan bin');
+            async submitBinScan() {
+                if (!this.binScanInput.trim()) {
+                    alert('Please enter a bin location');
+                    return;
                 }
-            } catch (e) {
-                console.error('Error scanning bin:', e);
-                alert('Failed to scan bin');
-            } finally {
-                this.saving = false;
-            }
-        },
 
-        async completePutaway() {
-            if (!confirm('Complete this putaway task? Material will be marked as available in stock.')) return;
+                this.saving = true;
+                try {
+                    const res = await fetch(`/api/v1/putaway-tasks/${taskId}/scan-bin`, {
+                        method: 'POST',
+                        headers: headers(),
+                        body: JSON.stringify({
+                            bin_code: this.binScanInput,
+                            remarks: this.binRemarks
+                        })
+                    });
+                    const data = await res.json();
 
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/putaway-tasks/${taskId}/complete`, {
-                    method: 'PATCH',
-                    headers: headers(),
-                    body: JSON.stringify({})
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    alert('Putaway completed successfully');
-                    window.location.href = `/org/${orgSlug}/warehouse/putaway`;
-                } else {
-                    alert(data.message || 'Failed to complete putaway');
+                    if (data.success) {
+                        this.showBinScanModal = false;
+                        await this.loadTask();
+                        alert('Bin scanned successfully');
+                    } else {
+                        alert(data.message || 'Failed to scan bin');
+                    }
+                } catch (e) {
+                    console.error('Error scanning bin:', e);
+                    alert('Failed to scan bin');
+                } finally {
+                    this.saving = false;
                 }
-            } catch (e) {
-                console.error('Error completing putaway:', e);
-                alert('Failed to complete putaway');
-            } finally {
-                this.saving = false;
-            }
-        },
+            },
 
-        openCancelModal() {
-            this.cancelReason = '';
-            this.showCancelModal = true;
-        },
-
-        async submitCancel() {
-            if (!this.cancelReason.trim()) {
-                alert('Please provide a reason');
-                return;
-            }
-
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/putaway-tasks/${taskId}/cancel`, {
-                    method: 'PATCH',
-                    headers: headers(),
-                    body: JSON.stringify({ reason: this.cancelReason })
-                });
-                const data = await res.json();
-                
-                if (data.success) {
-                    alert('Putaway task cancelled successfully');
-                    window.location.href = `/org/${orgSlug}/warehouse/putaway`;
-                } else {
-                    alert(data.message || 'Failed to cancel task');
+            async completePutaway() {
+                if (!this.task?.destination_bin_id) {
+                    alert('Please scan a destination bin location before completing the putaway.');
+                    this.openBinScanModal();
+                    return;
                 }
-            } catch (e) {
-                console.error('Error cancelling task:', e);
-                alert('Failed to cancel task');
-            } finally {
-                this.saving = false;
-            }
-        },
 
-        statusClass(status) {
-            const classes = {
-                'PENDING': 'bg-amber-100 text-amber-800',
-                'IN_PROGRESS': 'bg-blue-100 text-blue-800',
-                'COMPLETED': 'bg-green-100 text-green-800',
-                'CANCELLED': 'bg-red-100 text-red-800',
-            };
-            return classes[status] || 'bg-gray-100 text-gray-800';
-        }
-    };
-}
+                if (!confirm(`Complete putaway of ${this.task.quantity} ${this.task.uom?.uom_code || 'UNT'} to bin ${this.task.destination_bin?.bin_code}?`)) return;
+
+                this.saving = true;
+                try {
+                    const res = await fetch(`/api/v1/putaway-tasks/${taskId}/complete`, {
+                        method: 'PATCH',
+                        headers: headers(),
+                        body: JSON.stringify({
+                            destination_bin_id: this.task.destination_bin_id
+                        })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        alert('Putaway completed successfully');
+                        window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                    } else {
+                        alert(data.message || 'Failed to complete putaway');
+                    }
+                } catch (e) {
+                    console.error('Error completing putaway:', e);
+                    alert('Failed to complete putaway');
+                } finally {
+                    this.saving = false;
+                }
+            },
+
+            openCancelModal() {
+                this.cancelReason = '';
+                this.showCancelModal = true;
+            },
+
+            async submitCancel() {
+                if (!this.cancelReason.trim()) {
+                    alert('Please provide a reason');
+                    return;
+                }
+
+                this.saving = true;
+                try {
+                    const res = await fetch(`/api/v1/putaway-tasks/${taskId}/cancel`, {
+                        method: 'PATCH',
+                        headers: headers(),
+                        body: JSON.stringify({
+                            reason: this.cancelReason
+                        })
+                    });
+                    const data = await res.json();
+
+                    if (data.success) {
+                        alert('Putaway task cancelled successfully');
+                        window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                    } else {
+                        alert(data.message || 'Failed to cancel task');
+                    }
+                } catch (e) {
+                    console.error('Error cancelling task:', e);
+                    alert('Failed to cancel task');
+                } finally {
+                    this.saving = false;
+                }
+            },
+
+            statusClass(status) {
+                const classes = {
+                    'PENDING': 'bg-amber-100 text-amber-800',
+                    'IN_PROGRESS': 'bg-blue-100 text-blue-800',
+                    'COMPLETED': 'bg-green-100 text-green-800',
+                    'CANCELLED': 'bg-red-100 text-red-800',
+                };
+                return classes[status] || 'bg-gray-100 text-gray-800';
+            }
+        };
+    }
 </script>
 @endsection

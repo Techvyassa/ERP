@@ -332,6 +332,7 @@ class GRNService
                 $rejectedQty = (float) ($decision['rejected_qty'] ?? 0);
                 $returnQty = (float) ($decision['return_qty'] ?? 0);
                 $returnRemarks = $decision['return_remarks'] ?? null;
+                $sourceBinId = $decision['source_bin_id'] ?? $lineItem->warehouse_bin_id;
 
                 // Update line item quantities and stock status
                 $updates = [
@@ -364,7 +365,7 @@ class GRNService
                             $putawayService->createPutawayTask([
                                 'grn_line_id' => $lineItem->id,
                                 'material_id' => $lineItem->material_id,
-                                'source_bin_id' => $lineItem->warehouse_bin_id,
+                                'source_bin_id' => $sourceBinId,
                                 'quantity' => $acceptedQty,
                                 'uom_id' => $lineItem->uom_id,
                                 'batch_number' => $lineItem->batch_number,

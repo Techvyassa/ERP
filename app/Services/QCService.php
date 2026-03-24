@@ -264,6 +264,7 @@ class QCService
                         'rejected_qty' => $rejectedQty,
                         'return_qty' => $data['return_qty'] ?? 0,
                         'return_remarks' => $data['return_remarks'] ?? null,
+                        'source_bin_id' => $lot->grnLineItem?->warehouse_bin_id,
                     ],
                 ];
                 $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);

@@ -89,11 +89,15 @@ class PutawayService
             throw new \Exception('Putaway task cannot be completed in current status: ' . $task->status);
         }
 
-        return DB::connection('tenant')->transaction(function () use ($task, $data, $userId) {
-            // Update destination bin if provided
-            if (isset($data['destination_bin_id'])) {
-                $task->update(['destination_bin_id' => $data['destination_bin_id']]);
-            }
+        // Require destination bin
+        $destinationBinId = $data['destination_bin_id'] ?? $task->destination_bin_id;
+        if (!$destinationBinId) {
+            throw new \Exception('Destination bin is required to complete putaway. Please scan a bin first.');
+        }
+
+        return DB::connection('tenant')->transaction(function () use ($task, $data, $userId, $destinationBinId) {
+            // Update destination bin
+            $task->update(['destination_bin_id' => $destinationBinId]);
 
             // Update task status
             $task->update([
@@ -102,26 +106,40 @@ class PutawayService
                 'completed_at' => now(),
             ]);
 
-            // Create putaway line records
-            if (isset($data['putaway_lines'])) {
-                foreach ($data['putaway_lines'] as $line) {
+            // Create putaway line records if provided, otherwise create default line
+            if (isset($data['putaway_lines']) && count($data['putaway_lines']) > 0) {
+                foreach ($data['putaway_lines'] as $index => $line) {
                     PutawayLine::create([
                         'putaway_task_id' => $task->id,
-                        'line_number' => $line['line_number'] ?? 1,
-                        'batch_number' => $line['batch_number'] ?? null,
+                        'line_number' => $line['line_number'] ?? ($index + 1),
+                        'batch_number' => $line['batch_number'] ?? $task->batch_number,
                         'quantity' => $line['quantity'] ?? $task->quantity,
+                        'uom_id' => $task->uom_id,
                         'status' => 'COMPLETED',
                     ]);
                 }
+            } else {
+                PutawayLine::create([
+                    'putaway_task_id' => $task->id,
+                    'line_number' => 1,
+                    'batch_number' => $task->batch_number,
+                    'quantity' => $task->quantity,
+                    'uom_id' => $task->uom_id,
+                    'status' => 'COMPLETED',
+                ]);
             }
+
+            // Update GRN Line Item with final warehouse bin
+            $task->grnLineItem->update(['warehouse_bin_id' => $destinationBinId]);
 
             Log::info('Putaway completed', [
                 'task_id' => $task->id,
                 'completed_by' => $userId,
-                'destination_bin_id' => $task->destination_bin_id,
+                'destination_bin_id' => $destinationBinId,
+                'grn_line_id' => $task->grn_line_id
             ]);
 
-            return $task->load(['putawayLines']);
+            return $task->load(['putawayLines', 'destinationBin']);
         });
     }
 

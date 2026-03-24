@@ -14,6 +14,7 @@ class PutawayLine extends Model
         'line_number',
         'batch_number',
         'quantity',
+        'uom_id',
         'status',
     ];
 
