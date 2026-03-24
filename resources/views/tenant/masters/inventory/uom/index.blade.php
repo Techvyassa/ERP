@@ -179,9 +179,19 @@
                                     <i class="fas fa-edit mr-1"></i>
                                     Edit
                                 </button>
-                                <button @click="deleteItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Delete">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Delete
+                                <button @click="deactivateItem(item)" 
+                                        x-show="item.is_active"
+                                        class="inline-flex items-center px-3 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded transition-colors ml-2" 
+                                        title="Deactivate">
+                                    <i class="fas fa-ban mr-1"></i>
+                                    Deactive
+                                </button>
+                                <button @click="activateItem(item)" 
+                                        x-show="!item.is_active"
+                                        class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors ml-2" 
+                                        title="Activate">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Activate
                                 </button>
                                 <button @click="showBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded transition-colors ml-2" title="Barcode">
                                     <i class="fas fa-barcode mr-1"></i>
@@ -358,30 +368,75 @@ function uomData() {
             printWindow.print();
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to delete UOM: ' + item.uom_code + '?')) {
+        async deactivateItem(item) {
+            if (confirm('Are you sure you want to deactivate UOM: ' + item.uom_code + '?')) {
                 try {
                     const response = await fetch(`/api/v1/uoms/${item.id}`, {
-                        method: 'DELETE',
+                        method: 'PUT',
                         credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        },
+                        body: JSON.stringify({ 
+                            uom_code: item.uom_code,
+                            uom_name: item.uom_name,
+                            uom_type: item.uom_type,
+                            base_uom_id: item.base_uom_id,
+                            conversion_factor: item.conversion_factor,
+                            is_active: false 
+                        })
                     });
                     
                     const data = await response.json();
                     
                     if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to delete UOM', 'error');
+                        this.showNotification(data.message || 'Failed to deactivate UOM', 'error');
                         return;
                     }
                     
-                    this.showNotification('UOM deleted successfully', 'success');
+                    this.showNotification('UOM deactivated successfully', 'success');
                     this.loadData(); // Refresh the list
                 } catch (error) {
-                    console.error('Failed to delete UOM:', error);
+                    console.error('Failed to deactivate UOM:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
+            }
+        },
+        
+        async activateItem(item) {
+            if (confirm('Are you sure you want to activate UOM: ' + item.uom_code + '?')) {
+                try {
+                    const response = await fetch(`/api/v1/uoms/${item.id}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ 
+                            uom_code: item.uom_code,
+                            uom_name: item.uom_name,
+                            uom_type: item.uom_type,
+                            base_uom_id: item.base_uom_id,
+                            conversion_factor: item.conversion_factor,
+                            is_active: true 
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to activate UOM', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('UOM activated successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to activate UOM:', error);
                     this.showNotification('Network error. Please try again.', 'error');
                 }
             }

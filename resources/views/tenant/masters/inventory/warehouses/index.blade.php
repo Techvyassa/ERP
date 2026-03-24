@@ -189,9 +189,19 @@
                                     <i class="fas fa-edit mr-1"></i>
                                     Edit
                                 </button>
-                                <button @click="deleteItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Delete">
-                                    <i class="fas fa-trash mr-1"></i>
-                                    Delete
+                                <button @click="deactivateItem(item)" 
+                                        x-show="item.is_active"
+                                        class="inline-flex items-center px-3 py-1.5 bg-orange-50 text-orange-600 hover:bg-orange-100 rounded transition-colors ml-2" 
+                                        title="Deactivate">
+                                    <i class="fas fa-ban mr-1"></i>
+                                    Deactive
+                                </button>
+                                <button @click="activateItem(item)" 
+                                        x-show="!item.is_active"
+                                        class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors ml-2" 
+                                        title="Activate">
+                                    <i class="fas fa-check mr-1"></i>
+                                    Activate
                                 </button>
                                 <button @click="showBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded transition-colors ml-2" title="Barcode">
                                     <i class="fas fa-barcode mr-1"></i>
@@ -253,11 +263,15 @@ function warehouseData() {
                 if (this.filters.warehouse_type) params.append('warehouse_type', this.filters.warehouse_type);
                 if (this.filters.is_active) params.append('is_active', this.filters.is_active);
                 
-                const response = await fetch(`/api/v1/warehouses?${params}`);
+                const response = await fetch(`/api/v1/warehouses?${params}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
                 if (!response.ok) throw new Error('Failed to load warehouses');
                 
                 const data = await response.json();
-                this.items = data.data?.warehouses || [];
+                // API returns data directly as array, not nested
+                this.items = Array.isArray(data.data) ? data.data : (data.data?.warehouses || []);
                 
                 // Update pagination (simplified since API might not return pagination)
                 this.pagination = {
@@ -364,29 +378,85 @@ function warehouseData() {
             printWindow.print();
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to delete warehouse: ' + item.warehouse_code + '?')) {
+        async deactivateItem(item) {
+            if (confirm('Are you sure you want to deactivate warehouse: ' + item.warehouse_code + '?')) {
                 try {
                     const response = await fetch(`/api/v1/warehouses/${item.id}`, {
-                        method: 'DELETE',
+                        method: 'PUT',
+                        credentials: 'same-origin',
                         headers: {
                             'Content-Type': 'application/json',
                             'Accept': 'application/json',
                             'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        }
+                        },
+                        body: JSON.stringify({ 
+                            warehouse_code: item.warehouse_code,
+                            warehouse_name: item.warehouse_name,
+                            warehouse_type: item.warehouse_type,
+                            address: item.address,
+                            city: item.city,
+                            state: item.state,
+                            pincode: item.pincode,
+                            incharge_name: item.incharge_name,
+                            contact_number: item.contact_number,
+                            email: item.email,
+                            is_active: false 
+                        })
                     });
                     
                     const data = await response.json();
                     
                     if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to delete warehouse', 'error');
+                        this.showNotification(data.message || 'Failed to deactivate warehouse', 'error');
                         return;
                     }
                     
-                    this.showNotification('Warehouse deleted successfully', 'success');
+                    this.showNotification('Warehouse deactivated successfully', 'success');
                     this.loadData(); // Refresh the list
                 } catch (error) {
-                    console.error('Failed to delete warehouse:', error);
+                    console.error('Failed to deactivate warehouse:', error);
+                    this.showNotification('Network error. Please try again.', 'error');
+                }
+            }
+        },
+        
+        async activateItem(item) {
+            if (confirm('Are you sure you want to activate warehouse: ' + item.warehouse_code + '?')) {
+                try {
+                    const response = await fetch(`/api/v1/warehouses/${item.id}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({ 
+                            warehouse_code: item.warehouse_code,
+                            warehouse_name: item.warehouse_name,
+                            warehouse_type: item.warehouse_type,
+                            address: item.address,
+                            city: item.city,
+                            state: item.state,
+                            pincode: item.pincode,
+                            incharge_name: item.incharge_name,
+                            contact_number: item.contact_number,
+                            email: item.email,
+                            is_active: true 
+                        })
+                    });
+                    
+                    const data = await response.json();
+                    
+                    if (!response.ok) {
+                        this.showNotification(data.message || 'Failed to activate warehouse', 'error');
+                        return;
+                    }
+                    
+                    this.showNotification('Warehouse activated successfully', 'success');
+                    this.loadData(); // Refresh the list
+                } catch (error) {
+                    console.error('Failed to activate warehouse:', error);
                     this.showNotification('Network error. Please try again.', 'error');
                 }
             }

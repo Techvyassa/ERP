@@ -214,6 +214,7 @@ function productForm() {
             try {
                 // Load product data and dropdowns
                 const productResponse = await fetch(`/api/v1/products/${this.productId}`, {
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
@@ -260,18 +261,25 @@ function productForm() {
             try {
                 // Load UOMs and HSN Codes in parallel
                 const [uomsResponse, hsnResponse] = await Promise.all([
-                    fetch('/api/v1/uoms'),
-                    fetch('/api/v1/hsn-codes')
+                    fetch('/api/v1/uoms', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    }),
+                    fetch('/api/v1/hsn-codes', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    })
                 ]);
                 
                 if (uomsResponse.ok) {
                     const uomsData = await uomsResponse.json();
-                    this.uoms = uomsData.data?.uoms || [];
+                    // API returns data directly as array, not nested
+                    this.uoms = Array.isArray(uomsData.data) ? uomsData.data : (uomsData.data?.uoms || []);
                 }
                 
                 if (hsnResponse.ok) {
                     const hsnData = await hsnResponse.json();
-                    this.hsnCodes = hsnData.data?.hsn_codes || [];
+                    this.hsnCodes = Array.isArray(hsnData.data) ? hsnData.data : (hsnData.data?.hsn_codes || []);
                 }
             } catch (error) {
                 console.error('Failed to load dropdowns:', error);
@@ -287,6 +295,7 @@ function productForm() {
                 
                 const response = await fetch(`/api/v1/products/${this.productId}`, {
                     method: 'PUT',
+                    credentials: 'same-origin',
                     headers: {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
