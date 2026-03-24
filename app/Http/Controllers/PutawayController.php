@@ -26,7 +26,7 @@ class PutawayController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = PutawayTask::with(['grnLineItem', 'material', 'sourceBin', 'destinationBin', 'assignedOperator']);
+            $query = PutawayTask::with(['grnLineItem.grn', 'material', 'sourceBin', 'destinationBin', 'assignedOperator']);
             
             // Filter by status
             if ($request->has('status')) {

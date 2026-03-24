@@ -35,7 +35,7 @@
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">GRN Number</p>
-                <p class="font-semibold text-gray-900" x-text="task?.grn?.grn_number || '—'"></p>
+                <p class="font-semibold text-gray-900" x-text="task?.grn_line_item?.grn_number || '—'"></p>
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Status</p>
@@ -47,11 +47,11 @@
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Current Bin</p>
-                <p class="font-semibold text-gray-900" x-text="task?.warehouse_bin?.bin_code || '—'"></p>
+                <p class="font-semibold text-gray-900" x-text="task?.source_bin?.bin_code || '—'"></p>
             </div>
             <div>
                 <p class="text-xs text-gray-500 font-semibold uppercase mb-1">Assigned To</p>
-                <p class="font-semibold text-gray-900" x-text="task?.assigned_user?.first_name + ' ' + task?.assigned_user?.last_name || '—'"></p>
+                <p class="font-semibold text-gray-900" x-text="task?.assigned_operator?.full_name || '—'"></p>
             </div>
         </div>
 

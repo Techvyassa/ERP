@@ -116,7 +116,7 @@ class GRNService
         // Validate Material Receipt
         $mr = MaterialReceipt::findOrFail($data['mr_id']);
         $this->validateMaterialReceipt($mr);
-        
+
         return DB::connection('tenant')->transaction(function () use ($data, $mr, $userId) {
             // Create GRN header
             $grn = GRN::create([
@@ -130,24 +130,24 @@ class GRNService
                 'remarks' => $data['remarks'] ?? null,
                 'created_by' => $userId,
             ]);
-            
+
             // Create line items
             $totalValue = 0;
             $totalTax = 0;
-            
+
             foreach ($data['line_items'] as $item) {
                 $lineItem = $this->createLineItem($grn->id, $item);
                 $totalValue += $lineItem->line_value;
                 $totalTax += $lineItem->tax_amount;
             }
-            
+
             // Update GRN totals
             $grn->update([
                 'total_received_value' => $totalValue,
                 'total_tax_amount' => $totalTax,
                 'grand_total' => $totalValue + $totalTax,
             ]);
-            
+
             // Update Material Receipt status
             $mr->update(['status' => 'GRN_POSTED']);
 
@@ -166,7 +166,7 @@ class GRNService
                 'total_tax' => $totalTax,
                 'grand_total' => $totalValue + $totalTax,
             ]);
-            
+
             return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
         });
     }
@@ -177,11 +177,11 @@ class GRNService
     public function updateGRN(int $id, array $data, int $userId): GRN
     {
         $grn = GRN::findOrFail($id);
-        
+
         if (!$grn->canEdit()) {
             throw new \Exception('GRN cannot be edited in current status: ' . $grn->status);
         }
-        
+
         return DB::connection('tenant')->transaction(function () use ($grn, $data, $userId) {
             // Update header
             $grn->update([
@@ -189,12 +189,12 @@ class GRNService
                 'posting_date' => $data['posting_date'] ?? $grn->posting_date,
                 'remarks' => $data['remarks'] ?? $grn->remarks,
             ]);
-            
+
             // Update line items if provided
             if (isset($data['line_items'])) {
                 $totalValue = 0;
                 $totalTax = 0;
-                
+
                 foreach ($data['line_items'] as $item) {
                     if (isset($item['id'])) {
                         $lineItem = GRNLineItem::findOrFail($item['id']);
@@ -202,11 +202,11 @@ class GRNService
                     } else {
                         $lineItem = $this->createLineItem($grn->id, $item);
                     }
-                    
+
                     $totalValue += $lineItem->line_value;
                     $totalTax += $lineItem->tax_amount;
                 }
-                
+
                 // Update totals
                 $grn->update([
                     'total_received_value' => $totalValue,
@@ -214,13 +214,13 @@ class GRNService
                     'grand_total' => $totalValue + $totalTax,
                 ]);
             }
-            
+
             Log::info('GRN updated', [
                 'grn_id' => $grn->id,
                 'grn_number' => $grn->grn_number,
                 'updated_by' => $userId,
             ]);
-            
+
             return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
         });
     }
@@ -231,15 +231,15 @@ class GRNService
     public function approveGRN(int $id, int $userId): GRN
     {
         Log::debug('[GRNService] Starting approveGRN', ['grn_id' => $id, 'user_id' => $userId]);
-        
+
         $grn = GRN::findOrFail($id);
         Log::debug('[GRNService] GRN found', ['grn_id' => $grn->id, 'grn_number' => $grn->grn_number, 'status' => $grn->status]);
-        
+
         if (!$grn->canApprove()) {
             Log::warning('[GRNService] GRN cannot be approved', ['grn_id' => $grn->id, 'status' => $grn->status]);
             throw new \Exception('GRN cannot be approved in current status: ' . $grn->status);
         }
-        
+
         // Update GRN status
         $grn->update([
             'status' => 'QC_PENDING',
@@ -255,12 +255,12 @@ class GRNService
         // Auto-create inspection lot for Quality department
         try {
             Log::debug('[GRNService] Attempting to create inspection lot', ['grn_id' => $grn->id]);
-            
+
             $qcService = app(QCService::class);
             Log::debug('[GRNService] QCService instantiated', ['grn_id' => $grn->id]);
-            
+
             $inspectionLot = $qcService->createInspectionLot($grn, $userId);
-            
+
             Log::info('[GRNService] GRN approved and inspection lot created', [
                 'grn_id' => $grn->id,
                 'grn_number' => $grn->grn_number,
@@ -276,7 +276,7 @@ class GRNService
             // Don't fail the approval if inspection lot creation fails
             // Quality team can manually create it if needed
         }
-        
+
         return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
     }
 
@@ -286,26 +286,26 @@ class GRNService
     public function cancelGRN(int $id, string $reason, int $userId): GRN
     {
         $grn = GRN::findOrFail($id);
-        
+
         if (!$grn->canCancel()) {
             throw new \Exception('GRN cannot be cancelled in current status: ' . $grn->status);
         }
-        
+
         $grn->update([
             'status' => 'CANCELLED',
             'remarks' => ($grn->remarks ?? '') . "\nCancellation Reason: " . $reason,
         ]);
-        
+
         // Revert Material Receipt status
         $grn->materialReceipt->update(['status' => 'COMPLETED']);
-        
+
         Log::info('GRN cancelled', [
             'grn_id' => $grn->id,
             'grn_number' => $grn->grn_number,
             'reason' => $reason,
             'cancelled_by' => $userId,
         ]);
-        
+
         return $grn->load(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor']);
     }
 
@@ -327,7 +327,7 @@ class GRNService
 
             foreach ($qcDecisions as $lineId => $decision) {
                 $lineItem = GRNLineItem::findOrFail($lineId);
-                
+
                 $acceptedQty = (float) ($decision['accepted_qty'] ?? 0);
                 $rejectedQty = (float) ($decision['rejected_qty'] ?? 0);
                 $returnQty = (float) ($decision['return_qty'] ?? 0);
@@ -342,34 +342,47 @@ class GRNService
                 // Determine stock status per line
                 if ($acceptedQty > 0 && $rejectedQty === 0) {
                     $stockStatus = 'UNRESTRICTED';
-                    // Create putaway task only for accepted lines
-                    if (!$putawayService) {
-                        $putawayService = app(PutawayService::class);
-                    }
+                } elseif ($rejectedQty > 0 && $acceptedQty === 0) {
+                    $stockStatus = 'BLOCKED';
+                } else {
+                    $stockStatus = 'RESTRICTED'; // Mixed or pending
+                }
+
+                $updates['stock_status'] = $stockStatus;
+
+                // Create putaway task for any accepted quantity, avoiding duplicates
+                if ($acceptedQty > 0) {
                     try {
-                        $putawayService->createPutawayTask([
-                            'grn_line_id' => $lineItem->id,
-                            'material_id' => $lineItem->material_id,
-                            'source_bin_id' => $lineItem->warehouse_bin_id,
-                            'quantity' => $acceptedQty,
-                            'uom_id' => $lineItem->uom_id,
-                            'batch_number' => $lineItem->batch_number,
-                            'strategy' => 'MANUAL',
-                        ], $userId);
+                        $putawayService = app(PutawayService::class);
+
+                        // Check if a PENDING putaway task already exists for this GRN line
+                        $existingTask = \App\Models\Tenant\PutawayTask::where('grn_line_id', $lineItem->id)
+                            ->whereIn('status', ['PENDING', 'IN_PROGRESS'])
+                            ->first();
+
+                        if (!$existingTask) {
+                            $putawayService->createPutawayTask([
+                                'grn_line_id' => $lineItem->id,
+                                'material_id' => $lineItem->material_id,
+                                'source_bin_id' => $lineItem->warehouse_bin_id,
+                                'quantity' => $acceptedQty,
+                                'uom_id' => $lineItem->uom_id,
+                                'batch_number' => $lineItem->batch_number,
+                                'strategy' => 'MANUAL',
+                            ], $userId);
+                        } else {
+                            // Update the existing task's quantity if it's still pending
+                            if ($existingTask->status === 'PENDING') {
+                                $existingTask->update(['quantity' => $acceptedQty]);
+                            }
+                        }
                     } catch (\Exception $e) {
-                        Log::warning('[GRNService] Putaway creation failed for line', [
+                        Log::warning('[GRNService] Putaway task handling failed for line', [
                             'grn_line_id' => $lineItem->id,
                             'error' => $e->getMessage(),
                         ]);
                     }
-                } elseif ($rejectedQty > 0 && $acceptedQty === 0) {
-                    $stockStatus = 'BLOCKED';
-                } else {
-                    // Mixed: partial accepted, partial rejected
-                    $stockStatus = 'RESTRICTED';
                 }
-
-                $updates['stock_status'] = $stockStatus;
 
                 // Add return fields if provided
                 if ($returnQty > 0) {
@@ -500,18 +513,18 @@ class GRNService
     {
         // Get MR line item for reference
         $mrLineItem = MRLineItem::findOrFail($item['mr_line_id']);
-        
+
         // Get PO line item for pricing
         $poLineItem = PoLineItem::findOrFail($mrLineItem->po_line_id);
-        
+
         // Calculate line value and tax
         $acceptedQty = $item['accepted_qty'];
         $unitPrice = $item['unit_price'];
         $taxRate = $item['tax_rate'] ?? 0;
-        
+
         $lineValue = round($acceptedQty * $unitPrice, 2);
         $taxAmount = round($lineValue * ($taxRate / 100), 2);
-        
+
         Log::info('GRN Line Item created', [
             'grn_id' => $grnId,
             'mr_line_id' => $mrLineItem->id,
@@ -525,7 +538,7 @@ class GRNService
             'batch_number' => $item['batch_number'] ?? null,
             'warehouse_bin_id' => $item['warehouse_bin_id'] ?? null,
         ]);
-        
+
         return GRNLineItem::create([
             'grn_id' => $grnId,
             'mr_line_id' => $item['mr_line_id'],
@@ -552,19 +565,19 @@ class GRNService
         $acceptedQty = $item['accepted_qty'] ?? $lineItem->accepted_qty;
         $unitPrice = $lineItem->unit_price;
         $taxRate = $lineItem->tax_rate;
-        
+
         // Recalculate if quantity changed
         if (isset($item['accepted_qty'])) {
             $lineValue = round($acceptedQty * $unitPrice, 2);
             $taxAmount = round($lineValue * ($taxRate / 100), 2);
-            
+
             $lineItem->update([
                 'accepted_qty' => $acceptedQty,
                 'line_value' => $lineValue,
                 'tax_amount' => $taxAmount,
             ]);
         }
-        
+
         // Update other fields
         $lineItem->update([
             'batch_number' => $item['batch_number'] ?? $lineItem->batch_number,
@@ -572,7 +585,7 @@ class GRNService
             'expiry_date' => $item['expiry_date'] ?? $lineItem->expiry_date,
             'warehouse_bin_id' => $item['warehouse_bin_id'] ?? $lineItem->warehouse_bin_id,
         ]);
-        
+
         return $lineItem;
     }
 
