@@ -119,7 +119,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             $steps[] = 'Created trial subscription';
             
             // Step 12: Send welcome email
-            $this->sendWelcomeEmail($organization, $tempPassword);
+            $this->sendWelcomeEmail($organization, $tempPassword, $userData['first_name'] ?? null);
             $steps[] = 'Sent welcome email';
             
             Log::info("Tenant provisioning completed successfully for org_id: {$orgId}");
@@ -503,18 +503,15 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     /**
      * Send welcome email with credentials
      */
-    private function sendWelcomeEmail(Organization $organization, string $tempPassword): void
+    private function sendWelcomeEmail(Organization $organization, string $tempPassword, ?string $firstName = null): void
     {
         try {
-            // Extract first name from email
-            $emailParts = explode('@', $organization->primary_email);
-            $firstName = ucfirst($emailParts[0]);
-            
-            // Send welcome email
+            $recipientFirstName = $firstName ?: ucfirst(explode('@', $organization->primary_email)[0]);
+
             Mail::to($organization->primary_email)->send(
                 new \App\Mail\WelcomeEmail(
                     $organization,
-                    $firstName,
+                    $recipientFirstName,
                     $organization->primary_email,
                     $tempPassword
                 )

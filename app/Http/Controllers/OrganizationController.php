@@ -4,11 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Control\Organization;
 use App\Jobs\ProvisionTenantJob;
+use App\Mail\RegistrationQueuedEmail;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 
 class OrganizationController extends Controller
 {
@@ -243,23 +246,32 @@ class OrganizationController extends Controller
 
             DB::connection('control')->commit();
 
-            // Provision tenant immediately (synchronous) for better error handling
-            $provisioningService = app(\App\Contracts\TenantProvisioningService::class);
-            $result = $provisioningService->provisionTenant(
-                $organization->org_id,
-                [
-                    'first_name' => $request->input('first_name'),
-                    'last_name' => $request->input('last_name'),
-                    'email' => $request->input('primary_email'),
-                    'password' => $request->input('password'),
-                    'firebase_uid' => $request->input('firebase_uid'),
-                    'provider' => $request->input('provider', 'email'),
-                    'photo_url' => $request->input('photo_url'),
-                ]
-            );
-            
-            if (!$result->success) {
-                throw new \Exception("Provisioning failed: " . $result->errorMessage);
+            $userData = [
+                'first_name' => $request->input('first_name'),
+                'last_name' => $request->input('last_name'),
+                'email' => $request->input('primary_email'),
+                'password' => $request->input('password'),
+                'firebase_uid' => $request->input('firebase_uid'),
+                'provider' => $request->input('provider', 'email'),
+                'photo_url' => $request->input('photo_url'),
+            ];
+
+            ProvisionTenantJob::dispatchAfterResponse($organization->org_id, $userData);
+
+            try {
+                Mail::to($organization->primary_email)->send(
+                    new RegistrationQueuedEmail(
+                        organization: $organization,
+                        firstName: $request->input('first_name'),
+                        email: $organization->primary_email
+                    )
+                );
+            } catch (\Throwable $mailException) {
+                Log::warning('Failed to send registration acknowledgement email', [
+                    'org_id' => $organization->org_id,
+                    'email' => $organization->primary_email,
+                    'error' => $mailException->getMessage(),
+                ]);
             }
 
             return response()->json([
@@ -268,12 +280,13 @@ class OrganizationController extends Controller
                     'org_id' => $organization->org_id,
                     'org_slug' => $organization->org_slug,
                     'org_name' => $organization->org_name,
-                    'registration_status' => 'ACTIVE', // Now ACTIVE after successful provisioning
+                    'registration_status' => 'PENDING',
+                    'provisioning_status' => 'QUEUED',
                     'tenant_db_name' => $organization->tenant_db_name,
                     'primary_email' => $organization->primary_email,
                     'organization_url' => url('/' . $organization->org_slug),
                 ],
-                'message' => 'Organization registered and provisioned successfully. You can now login.',
+                'message' => 'Registration received. We are setting up your workspace in the background and will email you when it is ready.',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 201);
@@ -283,7 +296,7 @@ class OrganizationController extends Controller
                 DB::connection('control')->rollBack();
             }
             
-            \Log::error('Organization registration failed', [
+            Log::error('Organization registration failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);

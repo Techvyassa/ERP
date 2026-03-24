@@ -164,6 +164,13 @@
                     </div>
                 </div>
 
+                <div id="successMessage" class="hidden bg-green-50 border border-green-200 text-green-800 px-4 py-4 rounded-lg">
+                    <div class="flex items-start">
+                        <span class="material-symbols-outlined mr-2 mt-0.5">check_circle</span>
+                        <div id="successText"></div>
+                    </div>
+                </div>
+
                 <!-- Submit Button -->
                 <button type="submit" id="submitBtn"
                     class="w-full px-6 py-3 bg-primary text-white font-bold rounded-lg hover:bg-primary/90 transition-colors shadow-lg shadow-primary/20">
@@ -215,6 +222,26 @@
                 passwordInput.type = 'password';
                 toggleIcon.textContent = 'visibility';
             }
+        }
+
+        function showProvisioningSuccess(data) {
+            const successMessage = document.getElementById('successMessage');
+            const successText = document.getElementById('successText');
+            const errorMessage = document.getElementById('errorMessage');
+            const registerForm = document.getElementById('registerForm');
+            const googleButton = document.getElementById('googleSignUpBtn');
+
+            errorMessage.classList.add('hidden');
+
+            successText.innerHTML = `
+                <p class="font-semibold">Registration complete. Workspace setup has started.</p>
+                <p class="mt-1 text-sm">We are creating your organization in the background. A confirmation email has been sent to <strong>${data.primary_email}</strong>, and we will send another email when login is ready.</p>
+                <p class="mt-2 text-sm">Organization URL: <strong>${data.organization_url}</strong></p>
+            `;
+
+            successMessage.classList.remove('hidden');
+            registerForm.classList.add('hidden');
+            googleButton.classList.add('hidden');
         }
 
         // Wait for Firebase to load before initializing
@@ -276,7 +303,7 @@
                     if (response.ok && data.success) {
                         localStorage.setItem('org_data', JSON.stringify(data.data));
                         localStorage.setItem('firebase_uid', user.uid);
-                        window.location.href = '/login?registered=true';
+                        showProvisioningSuccess(data.data);
                     } else {
                         // Display validation errors if available
                         if (data.error && data.error.details) {
@@ -347,7 +374,7 @@
                     
                     if (response.ok && data.success) {
                         localStorage.setItem('org_data', JSON.stringify(data.data));
-                        window.location.href = '/login?registered=true';
+                        showProvisioningSuccess(data.data);
                     } else {
                         // Display validation errors if available
                         if (data.error && data.error.details) {
@@ -381,8 +408,10 @@
                     document.getElementById('errorText').textContent = errorMsg;
                     errorMessage.classList.remove('hidden');
                 } finally {
-                    submitBtn.disabled = false;
-                    submitBtn.innerHTML = 'Create Account & Continue';
+                    if (document.getElementById('successMessage').classList.contains('hidden')) {
+                        submitBtn.disabled = false;
+                        submitBtn.innerHTML = 'Create Account & Continue';
+                    }
                 }
             });
         }
