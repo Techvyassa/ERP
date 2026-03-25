@@ -25,7 +25,7 @@ class GRNController extends Controller
     public function index(Request $request): JsonResponse
     {
         try {
-            $query = GRN::with(['gateEntry', 'purchaseOrder', 'vendor', 'lineItems']);
+            $query = GRN::with(['gateEntry', 'purchaseOrder', 'vendor', 'lineItems.material']);
 
             if ($request->has('status')) {
                 $query->where('status', $request->status);
@@ -160,7 +160,7 @@ class GRNController extends Controller
     public function byGateEntry(int $geId): JsonResponse
     {
         try {
-            $grns = GRN::with(['lineItems', 'gateEntry', 'purchaseOrder', 'vendor'])
+            $grns = GRN::with(['lineItems.material', 'gateEntry', 'purchaseOrder', 'vendor'])
                 ->where('ge_id', $geId)
                 ->get();
 
@@ -182,7 +182,7 @@ class GRNController extends Controller
     public function byMaterialReceipt(int $mrId): JsonResponse
     {
         try {
-            $grns = GRN::with(['lineItems', 'purchaseOrder', 'vendor'])
+            $grns = GRN::with(['lineItems.material', 'purchaseOrder', 'vendor'])
                 ->byMR($mrId)
                 ->get();
             
@@ -204,7 +204,7 @@ class GRNController extends Controller
     public function byPO(int $poId): JsonResponse
     {
         try {
-            $grns = GRN::with(['lineItems', 'materialReceipt', 'vendor'])
+            $grns = GRN::with(['lineItems.material', 'materialReceipt', 'vendor'])
                 ->byPO($poId)
                 ->get();
             
@@ -226,7 +226,7 @@ class GRNController extends Controller
     public function byVendor(int $vendorId): JsonResponse
     {
         try {
-            $grns = GRN::with(['lineItems', 'materialReceipt', 'purchaseOrder'])
+            $grns = GRN::with(['lineItems.material', 'materialReceipt', 'purchaseOrder'])
                 ->byVendor($vendorId)
                 ->get();
             
@@ -248,7 +248,7 @@ class GRNController extends Controller
     public function provisional(): JsonResponse
     {
         try {
-            $grns = GRN::with(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor'])
+            $grns = GRN::with(['lineItems.material', 'materialReceipt', 'purchaseOrder', 'vendor'])
                 ->provisional()
                 ->get();
             
@@ -270,7 +270,7 @@ class GRNController extends Controller
     public function qcPending(): JsonResponse
     {
         try {
-            $grns = GRN::with(['lineItems', 'materialReceipt', 'purchaseOrder', 'vendor'])
+            $grns = GRN::with(['lineItems.material', 'materialReceipt', 'purchaseOrder', 'vendor'])
                 ->qcPending()
                 ->get();
             
@@ -350,7 +350,7 @@ class GRNController extends Controller
 
             $validated = $request->validate([
                 'line_items' => 'required|array|min:1',
-                'line_items.*.id' => 'required|integer|exists:grn_line_items,id',
+                'line_items.*.id' => 'required|integer|exists:tenant.grn_line_items,id',
                 'line_items.*.accepted_qty' => 'nullable|numeric|gte:0',
                 'line_items.*.rejected_qty' => 'nullable|numeric|gte:0',
                 'line_items.*.return_qty' => 'nullable|numeric|gte:0',

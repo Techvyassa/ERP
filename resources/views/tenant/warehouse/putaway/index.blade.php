@@ -101,8 +101,8 @@
                             <td class="py-3 px-5 text-sm text-gray-700">
                                 <span x-text="task.quantity"></span> <span x-text="task.uom?.uom_code || 'UNT'"></span>
                             </td>
-                            <td class="py-3 px-5 text-sm text-gray-700" x-text="task.grn?.grn_number || '—'"></td>
-                            <td class="py-3 px-5 text-sm text-gray-700" x-text="task.assigned_user?.first_name + ' ' + task.assigned_user?.last_name || '—'"></td>
+                            <td class="py-3 px-5 text-sm text-gray-700" x-text="task.grn_line_item?.grn_number || '—'"></td>
+                            <td class="py-3 px-5 text-sm text-gray-700" x-text="task.assigned_operator?.full_name || '—'"></td>
                             <td class="py-3 px-5">
                                 <span class="px-2.5 py-1 rounded-full text-xs font-bold"
                                     :class="statusClass(task.status)" x-text="task.status?.replace(/_/g,' ')"></span>

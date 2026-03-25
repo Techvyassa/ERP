@@ -66,16 +66,16 @@ class QCService
             'grn_number' => $grn->grn_number,
             'user_id' => $userId
         ]);
-        
+
         return DB::connection('tenant')->transaction(function () use ($grn, $userId) {
             // Get first line item to determine material and sample size
             $firstLineItem = $grn->lineItems->first();
-            
+
             Log::debug('[QCService] First line item', [
                 'grn_id' => $grn->id,
                 'line_item' => $firstLineItem ? $firstLineItem->toArray() : null
             ]);
-            
+
             if (!$firstLineItem) {
                 Log::warning('[QCService] GRN has no line items', ['grn_id' => $grn->id]);
                 throw new \Exception('GRN has no line items');
@@ -83,7 +83,7 @@ class QCService
 
             // Calculate sample size (10% of accepted qty, minimum 1)
             $sampleSize = max(1, ceil($firstLineItem->accepted_qty * 0.1));
-            
+
             Log::debug('[QCService] Sample size calculated', [
                 'grn_id' => $grn->id,
                 'accepted_qty' => $firstLineItem->accepted_qty,
@@ -183,10 +183,10 @@ class QCService
         if (!isset($data['observed_value'])) {
             return null;
         }
-        
+
         $observed = (float) $data['observed_value'];
         $toleranceType = $data['tolerance_type'] ?? 'RANGE';
-        
+
         if ($toleranceType === 'RANGE' && isset($data['standard_min'], $data['standard_max'])) {
             $min = (float) $data['standard_min'];
             $max = (float) $data['standard_max'];
@@ -200,7 +200,7 @@ class QCService
         } elseif ($toleranceType === 'EXACT' && isset($data['standard_value'])) {
             return (string) $observed === (string) $data['standard_value'];
         }
-        
+
         return null;
     }
 
@@ -239,12 +239,17 @@ class QCService
         }
 
         return DB::connection('tenant')->transaction(function () use ($lot, $data, $userId) {
+
+            // Auto-calculate quantities if they are not specifically provided
+            $acceptedQty = $data['accepted_qty'] ?? ($data['decision'] === 'ACCEPTED' ? $lot->lot_qty : 0);
+            $rejectedQty = $data['rejected_qty'] ?? ($data['decision'] === 'REJECTED' ? $lot->lot_qty : 0);
+
             // Create decision
             $decision = QCDecision::create([
                 'lot_id' => $lot->id,
                 'decision' => $data['decision'],
-                'accepted_qty' => $data['accepted_qty'] ?? null,
-                'rejected_qty' => $data['rejected_qty'] ?? null,
+                'accepted_qty' => $acceptedQty,
+                'rejected_qty' => $rejectedQty,
                 'remarks' => $data['remarks'] ?? null,
                 'decided_by' => $userId,
                 'decided_at' => now(),
@@ -255,10 +260,11 @@ class QCService
                 $grnService = app(\App\Services\GRNService::class);
                 $qcDecisions = [
                     $lot->grn_line_id => [
-                        'accepted_qty' => $data['accepted_qty'] ?? 0,
-                        'rejected_qty' => $data['rejected_qty'] ?? 0,
+                        'accepted_qty' => $acceptedQty,
+                        'rejected_qty' => $rejectedQty,
                         'return_qty' => $data['return_qty'] ?? 0,
                         'return_remarks' => $data['return_remarks'] ?? null,
+                        'source_bin_id' => $lot->grnLineItem?->warehouse_bin_id,
                     ],
                 ];
                 $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);
@@ -272,22 +278,6 @@ class QCService
 
             // Update lot status
             $lot->update(['status' => 'DECISION_MADE']);
-
-            // Legacy: Update GRN line item stock status based on decision (fallback)
-            if ($decision->isAccepted()) {
-                // Release stock to UNRESTRICTED
-                $lot->grn->lineItems()->update(['stock_status' => 'UNRESTRICTED']);
-                
-                // Create putaway tasks (already done in applyQCDecision, but kept for legacy flow)
-                $this->createPutawayTasks($lot, $userId);
-            } elseif ($decision->isRejected()) {
-                // Block stock
-                $lot->grn->lineItems()->update(['stock_status' => 'BLOCKED']);
-                // TODO: Trigger RTV workflow
-            } elseif ($decision->isConditional()) {
-                // Keep as RESTRICTED until approval override
-                // TODO: Trigger approval override workflow
-            }
 
             Log::info('QC decision made', [
                 'decision_id' => $decision->id,
@@ -306,7 +296,7 @@ class QCService
     private function createPutawayTasks(InspectionLot $lot, int $userId): void
     {
         $putawayService = app(PutawayService::class);
-        
+
         foreach ($lot->grn->lineItems as $lineItem) {
             $putawayService->createPutawayTask([
                 'grn_line_id' => $lineItem->id,

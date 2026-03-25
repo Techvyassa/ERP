@@ -40,6 +40,7 @@ class PutawayTaskResource extends JsonResource
                 return [
                     'id' => $this->grnLineItem?->id,
                     'grn_id' => $this->grnLineItem?->grn_id,
+                    'grn_number' => $this->grnLineItem?->grn?->grn_number,
                     'line_number' => $this->grnLineItem?->line_number,
                 ];
             }),
