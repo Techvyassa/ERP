@@ -9,6 +9,7 @@ use App\Models\Tenant\MaterialReceipt;
 use App\Models\Tenant\MRLineItem;
 use App\Models\Tenant\PoLineItem;
 use App\Services\QCService;
+use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -69,11 +70,46 @@ class GRNService
                     'tax_rate'     => $taxRate,
                     'line_value'   => $lineValue,
                     'tax_amount'   => $taxAmount,
-                    'stock_status' => 'RESTRICTED',
+                    'stock_status' => 'QC_HOLD', // Awaiting inspection — not yet available
                 ]);
 
                 $totalValue += $lineValue;
                 $totalTax   += $taxAmount;
+
+                // --- LEDGER: Post GRN_RECEIPT → QC_HOLD ---
+                // Stock physically sits at the receiving dock; NOT available until QC passes + putaway.
+                if ($acceptedQty > 0 && $poLine->material) {
+                    try {
+                        $warehouse = $ge->purchaseOrder?->warehouse_id
+                                     ?? $ge->vendor?->default_warehouse_id
+                                     ?? null;
+                        if ($warehouse) {
+                            app(StockService::class)->post(
+                                [
+                                    'material_id'  => $poLine->material_id,
+                                    'uom_id'       => $poLine->uom_id,
+                                    'warehouse_id' => $warehouse,
+                                    'batch_number' => $batchNumber,
+                                ],
+                                'QC_HOLD',
+                                +$acceptedQty,
+                                'GRN_RECEIPT',
+                                'GRN',
+                                $grn->id,
+                                $grn->grn_number,
+                                $userId,
+                                null, // bin unknown — goods just arrived at dock
+                                $unitPrice,
+                                'Stock arrived at receiving dock — QC pending'
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('[GRNService] StockService::post failed for GRN_RECEIPT', [
+                            'grn_line_id' => $grnLine->id,
+                            'error'       => $e->getMessage(),
+                        ]);
+                    }
+                }
 
                 // Auto-trigger QC inspection lot per line (one lot per GRN line enforced by DB unique)
                 try {
@@ -242,15 +278,13 @@ class GRNService
 
         // Update GRN status
         $grn->update([
-            'status' => 'QC_PENDING',
+            'status'      => 'QC_PENDING',
             'approved_by' => $userId,
             'approved_at' => now(),
         ]);
-        Log::debug('[GRNService] GRN status updated to QC_PENDING', ['grn_id' => $grn->id]);
-
-        // Release stock from RESTRICTED to UNRESTRICTED
-        $grn->lineItems()->update(['stock_status' => 'UNRESTRICTED']);
-        Log::debug('[GRNService] Stock status updated', ['grn_id' => $grn->id]);
+        Log::debug('[GRNService] GRN status updated to QC_PENDING — stock remains in QC_HOLD bucket until QC decision.', ['grn_id' => $grn->id]);
+        // NOTE: We do NOT flip stock_status to UNRESTRICTED here.
+        // Stock stays in QC_HOLD and only moves to PUTAWAY_PENDING after QC passes via StockService::transfer().
 
         // Auto-create inspection lot for Quality department
         try {
@@ -334,45 +368,111 @@ class GRNService
                 $returnRemarks = $decision['return_remarks'] ?? null;
                 $sourceBinId = $decision['source_bin_id'] ?? $lineItem->warehouse_bin_id;
 
-                // Update line item quantities and stock status
-                $updates = [
-                    'accepted_qty' => $acceptedQty,
-                    'rejected_qty' => $rejectedQty,
-                ];
-
-                // Determine stock status per line
+                // Determine stock status per line (human-readable column, mirrors bucket state)
                 if ($acceptedQty > 0 && $rejectedQty === 0) {
-                    $stockStatus = 'UNRESTRICTED';
+                    $stockStatus = 'PUTAWAY_PENDING'; // Will move to AVAILABLE after putaway
                 } elseif ($rejectedQty > 0 && $acceptedQty === 0) {
                     $stockStatus = 'BLOCKED';
                 } else {
-                    $stockStatus = 'RESTRICTED'; // Mixed or pending
+                    $stockStatus = 'QC_HOLD'; // Mixed or pending
                 }
 
-                $updates['stock_status'] = $stockStatus;
+                $updates = [
+                    'accepted_qty' => $acceptedQty,
+                    'rejected_qty' => $rejectedQty,
+                    'stock_status' => $stockStatus,
+                ];
+
+                // --- LEDGER: Transfer accepted qty QC_HOLD → PUTAWAY_PENDING ---
+                // Stock has passed QC but is still physically on the dock/forklift.
+                // It is NOT yet available — that only happens when putaway is confirmed.
+                if ($acceptedQty > 0 && $lineItem->material_id) {
+                    try {
+                        $warehouseId = $lineItem->grn?->purchaseOrder?->warehouse_id ?? null;
+                        if ($warehouseId) {
+                            app(StockService::class)->transfer(
+                                [
+                                    'material_id'  => $lineItem->material_id,
+                                    'uom_id'       => $lineItem->uom_id,
+                                    'warehouse_id' => $warehouseId,
+                                    'batch_number' => $lineItem->batch_number,
+                                ],
+                                'QC_HOLD',       // from
+                                'PUTAWAY_PENDING',// to
+                                $acceptedQty,
+                                'QC_PASS',
+                                'GRN',
+                                $lineItem->grn_id,
+                                $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
+                                $userId,
+                                null,            // from bin: receiving dock (virtual, no specific bin)
+                                null,            // to bin: staging (will be set when putaway starts)
+                                $lineItem->unit_price,
+                                "QC passed — moved to putaway queue"
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('[GRNService] StockService transfer QC_HOLD→PUTAWAY_PENDING failed', [
+                            'grn_line_id' => $lineItem->id,
+                            'error'       => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                // --- LEDGER: Transfer rejected qty QC_HOLD → BLOCKED ---
+                if ($rejectedQty > 0 && $lineItem->material_id) {
+                    try {
+                        $warehouseId = $lineItem->grn?->purchaseOrder?->warehouse_id ?? null;
+                        if ($warehouseId) {
+                            app(StockService::class)->transfer(
+                                [
+                                    'material_id'  => $lineItem->material_id,
+                                    'uom_id'       => $lineItem->uom_id,
+                                    'warehouse_id' => $warehouseId,
+                                    'batch_number' => $lineItem->batch_number,
+                                ],
+                                'QC_HOLD',
+                                'BLOCKED',
+                                $rejectedQty,
+                                'QC_REJECT',
+                                'GRN',
+                                $lineItem->grn_id,
+                                $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
+                                $userId,
+                                null,
+                                null,
+                                null,
+                                "QC rejected — stock quarantined"
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('[GRNService] StockService transfer QC_HOLD→BLOCKED failed', [
+                            'grn_line_id' => $lineItem->id,
+                            'error'       => $e->getMessage(),
+                        ]);
+                    }
+                }
 
                 // Create putaway task for any accepted quantity, avoiding duplicates
                 if ($acceptedQty > 0) {
                     try {
                         $putawayService = app(PutawayService::class);
 
-                        // Check if a PENDING putaway task already exists for this GRN line
                         $existingTask = \App\Models\Tenant\PutawayTask::where('grn_line_id', $lineItem->id)
                             ->whereIn('status', ['PENDING', 'IN_PROGRESS'])
                             ->first();
 
                         if (!$existingTask) {
                             $putawayService->createPutawayTask([
-                                'grn_line_id' => $lineItem->id,
-                                'material_id' => $lineItem->material_id,
+                                'grn_line_id'   => $lineItem->id,
+                                'material_id'   => $lineItem->material_id,
                                 'source_bin_id' => $sourceBinId,
-                                'quantity' => $acceptedQty,
-                                'uom_id' => $lineItem->uom_id,
-                                'batch_number' => $lineItem->batch_number,
-                                'strategy' => 'MANUAL',
+                                'quantity'      => $acceptedQty,
+                                'uom_id'        => $lineItem->uom_id,
+                                'batch_number'  => $lineItem->batch_number,
+                                'strategy'      => 'MANUAL',
                             ], $userId);
                         } else {
-                            // Update the existing task's quantity if it's still pending
                             if ($existingTask->status === 'PENDING') {
                                 $existingTask->update(['quantity' => $acceptedQty]);
                             }
@@ -380,7 +480,7 @@ class GRNService
                     } catch (\Exception $e) {
                         Log::warning('[GRNService] Putaway task handling failed for line', [
                             'grn_line_id' => $lineItem->id,
-                            'error' => $e->getMessage(),
+                            'error'       => $e->getMessage(),
                         ]);
                     }
                 }

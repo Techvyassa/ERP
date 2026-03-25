@@ -443,6 +443,26 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/cancel', [App\Http\Controllers\PutawayController::class, 'cancel']);
                 Route::post('/{id}/scan-bin', [App\Http\Controllers\PutawayController::class, 'scanBin']);
             });
+
+            // ── Stock Query API ─────────────────────────────────────────────────
+            // Read-only endpoints. All mutations go via domain controllers above.
+            // Buckets: QC_HOLD | PUTAWAY_PENDING | AVAILABLE | RESERVED | BLOCKED | CONSUMED | SHIPPED
+            Route::prefix('stock')->group(function () {
+                // ATP check: net available qty = on_hand - reserved (AVAILABLE bucket only)
+                Route::get('/available/{materialId}', [App\Http\Controllers\StockController::class, 'available']);
+
+                // Full snapshot: all buckets + by_bin breakdown for a material
+                Route::get('/snapshot/{materialId}', [App\Http\Controllers\StockController::class, 'snapshot']);
+
+                // Audit trail: every inventory_transaction for a material (most recent first)
+                Route::get('/history/{materialId}', [App\Http\Controllers\StockController::class, 'history']);
+
+                // Warehouse dashboard: all materials with stock in a warehouse, grouped by bucket
+                Route::get('/warehouse/{warehouseId}', [App\Http\Controllers\StockController::class, 'warehouseSummary']);
+
+                // Bucket drill-down: all balance rows for a material in one bucket
+                Route::get('/bucket/{materialId}/{bucket}', [App\Http\Controllers\StockController::class, 'byBucket']);
+            });
         });
 
         // BOM (Bill of Materials) Endpoints

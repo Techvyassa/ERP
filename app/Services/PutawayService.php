@@ -6,6 +6,7 @@ use App\Models\Tenant\PutawayTask;
 use App\Models\Tenant\PutawayLine;
 use App\Models\Tenant\GRN;
 use App\Models\Tenant\GRNLineItem;
+use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -101,7 +102,7 @@ class PutawayService
 
             // Update task status
             $task->update([
-                'status' => 'COMPLETED',
+                'status'       => 'COMPLETED',
                 'completed_by' => $userId,
                 'completed_at' => now(),
             ]);
@@ -111,32 +112,74 @@ class PutawayService
                 foreach ($data['putaway_lines'] as $index => $line) {
                     PutawayLine::create([
                         'putaway_task_id' => $task->id,
-                        'line_number' => $line['line_number'] ?? ($index + 1),
-                        'batch_number' => $line['batch_number'] ?? $task->batch_number,
-                        'quantity' => $line['quantity'] ?? $task->quantity,
-                        'uom_id' => $task->uom_id,
-                        'status' => 'COMPLETED',
+                        'line_number'     => $line['line_number'] ?? ($index + 1),
+                        'batch_number'    => $line['batch_number'] ?? $task->batch_number,
+                        'quantity'        => $line['quantity'] ?? $task->quantity,
+                        'uom_id'          => $task->uom_id,
+                        'status'          => 'COMPLETED',
                     ]);
                 }
             } else {
                 PutawayLine::create([
                     'putaway_task_id' => $task->id,
-                    'line_number' => 1,
-                    'batch_number' => $task->batch_number,
-                    'quantity' => $task->quantity,
-                    'uom_id' => $task->uom_id,
-                    'status' => 'COMPLETED',
+                    'line_number'     => 1,
+                    'batch_number'    => $task->batch_number,
+                    'quantity'        => $task->quantity,
+                    'uom_id'          => $task->uom_id,
+                    'status'          => 'COMPLETED',
                 ]);
             }
 
-            // Update GRN Line Item with final warehouse bin
-            $task->grnLineItem->update(['warehouse_bin_id' => $destinationBinId]);
+            // Update GRN Line Item with final warehouse bin AND mark stock as AVAILABLE
+            $grnLine = $task->grnLineItem;
+            if ($grnLine) {
+                $grnLine->update([
+                    'warehouse_bin_id' => $destinationBinId,
+                    'stock_status'     => 'AVAILABLE', // ← Stock is now physically on the shelf
+                ]);
 
-            Log::info('Putaway completed', [
-                'task_id' => $task->id,
-                'completed_by' => $userId,
-                'destination_bin_id' => $destinationBinId,
-                'grn_line_id' => $task->grn_line_id
+                // --- LEDGER: Transfer PUTAWAY_PENDING → AVAILABLE ---
+                // This is the definitive moment stock becomes usable by production / sales.
+                // The destination bin is now confirmed — we record the exact bin in the ledger.
+                if ($grnLine->material_id) {
+                    try {
+                        $warehouseId = $grnLine->grn?->purchaseOrder?->warehouse_id ?? null;
+                        if ($warehouseId) {
+                            app(StockService::class)->transfer(
+                                [
+                                    'material_id'  => $grnLine->material_id,
+                                    'uom_id'       => $grnLine->uom_id,
+                                    'warehouse_id' => $warehouseId,
+                                    'batch_number' => $grnLine->batch_number,
+                                ],
+                                'PUTAWAY_PENDING',  // from (staging area / warehouse-level)
+                                'AVAILABLE',         // to (confirmed shelf bin)
+                                (float) $task->quantity,
+                                'PUTAWAY_COMPLETE',
+                                'PutawayTask',
+                                $task->id,
+                                $task->task_number,
+                                $userId,
+                                null,               // from bin: staging (no specific bin tracked yet)
+                                $destinationBinId,  // to bin: the exact shelf bin scanned by operator
+                                $grnLine->unit_price,
+                                "Putaway confirmed — stock now on shelf bin #{$destinationBinId}"
+                            );
+                        }
+                    } catch (\Exception $e) {
+                        Log::warning('[PutawayService] StockService transfer PUTAWAY_PENDING→AVAILABLE failed', [
+                            'task_id' => $task->id,
+                            'error'   => $e->getMessage(),
+                        ]);
+                    }
+                }
+            }
+
+            Log::info('[PutawayService] Putaway completed — stock now AVAILABLE', [
+                'task_id'           => $task->id,
+                'completed_by'      => $userId,
+                'destination_bin_id'=> $destinationBinId,
+                'grn_line_id'       => $task->grn_line_id,
             ]);
 
             return $task->load(['putawayLines', 'destinationBin']);
