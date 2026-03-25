@@ -82,10 +82,14 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handle model not found exceptions
-        $exceptions->renderable(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
-            return \App\Helpers\ResponseFormatter::notFound(
-                'Resource not found'
-            );
+        $exceptions->renderable(function (\Illuminate\Database\Eloquent\ModelNotFoundException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return \App\Helpers\ResponseFormatter::notFound(
+                    'Resource not found'
+                );
+            }
+
+            return response()->view('404', [], 404);
         });
 
         // Handle method not allowed exceptions
@@ -99,10 +103,14 @@ return Application::configure(basePath: dirname(__DIR__))
         });
 
         // Handle not found exceptions (404)
-        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e) {
-            return \App\Helpers\ResponseFormatter::notFound(
-                'The requested resource was not found'
-            );
+        $exceptions->renderable(function (\Symfony\Component\HttpKernel\Exception\NotFoundHttpException $e, $request) {
+            if ($request->expectsJson() || $request->is('api/*')) {
+                return \App\Helpers\ResponseFormatter::notFound(
+                    'The requested resource was not found'
+                );
+            }
+
+            return response()->view('404', [], 404);
         });
 
         // Handle throttle exceptions (rate limiting)
