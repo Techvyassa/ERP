@@ -26,6 +26,49 @@
         </div>
     </div>
 
+    <div class="grid grid-cols-1 lg:grid-cols-[1.3fr_1fr] gap-6 mb-6">
+        <div class="bg-white rounded-2xl p-6 shadow-sm ring-1 ring-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Recommended Flow</h3>
+            <div class="mt-4 space-y-4">
+                <div class="flex gap-3">
+                    <div class="h-8 w-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-bold">1</div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">Create QC test types</p>
+                        <p class="text-xs text-gray-500">Standardize groups like Visual, Chemical, and Physical first.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="h-8 w-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-bold">2</div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">Add QC parameters</p>
+                        <p class="text-xs text-gray-500">Map material-specific limits, methods, and critical checks.</p>
+                    </div>
+                </div>
+                <div class="flex gap-3">
+                    <div class="h-8 w-8 rounded-full bg-sky-100 text-sky-700 flex items-center justify-center text-sm font-bold">3</div>
+                    <div>
+                        <p class="text-sm font-semibold text-gray-900">Run inspections with clean defaults</p>
+                        <p class="text-xs text-gray-500">Inspection lots will reuse this setup during QC execution.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-2xl p-6 shadow-sm ring-1 ring-gray-100">
+            <h3 class="text-lg font-semibold text-gray-900">Current Coverage</h3>
+            <div class="mt-4 grid grid-cols-2 gap-4">
+                <div class="rounded-2xl bg-sky-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-700">Types</p>
+                    <p class="mt-2 text-3xl font-bold text-sky-900" x-text="stats.testTypes">0</p>
+                </div>
+                <div class="rounded-2xl bg-cyan-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-cyan-700">Parameters</p>
+                    <p class="mt-2 text-3xl font-bold text-cyan-900" x-text="stats.parameters">0</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-sky-500 hover:shadow-xl transition-all cursor-pointer group p-6"
              @click="navigateTo('qc-test-types')">
