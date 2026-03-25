@@ -22,7 +22,7 @@ class OrganizationController extends Controller
     public function checkSlug(string $slug): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         // Validate slug format
         if (!preg_match('/^[a-z0-9-]+$/', $slug)) {
             return response()->json([
@@ -35,9 +35,9 @@ class OrganizationController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 200);
         }
-        
+
         $exists = Organization::where('org_slug', $slug)->exists();
-        
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -49,7 +49,7 @@ class OrganizationController extends Controller
             'timestamp' => now()->toIso8601String()
         ], 200);
     }
-    
+
     /**
      * Generate a suggested slug from organization name
      * POST /api/v1/organizations/suggest-slug
@@ -57,7 +57,7 @@ class OrganizationController extends Controller
     public function suggestSlug(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
             'org_name' => 'required|string|max:255',
         ]);
@@ -74,18 +74,18 @@ class OrganizationController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 422);
         }
-        
+
         $orgName = $request->input('org_name');
         $baseSlug = Str::slug($orgName);
         $slug = $baseSlug;
         $counter = 1;
-        
+
         // Find available slug
         while (Organization::where('org_slug', $slug)->exists()) {
             $slug = $baseSlug . '-' . $counter;
             $counter++;
         }
-        
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -158,7 +158,7 @@ class OrganizationController extends Controller
     public function register(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
             'org_name' => 'required|string|max:255',
             'org_slug' => 'nullable|string|max:100|regex:/^[a-z0-9-]+$/|unique:organizations,org_slug',
@@ -214,14 +214,14 @@ class OrganizationController extends Controller
             // Get max_users from selected plan or use default
             $maxUsers = $request->input('max_users');
             $selectedPlanCode = $request->input('selected_plan');
-            
+
             if (!$maxUsers && $selectedPlanCode) {
                 $plan = \App\Models\Control\SubscriptionPlan::where('plan_code', $selectedPlanCode)->active()->first();
                 if ($plan) {
                     $maxUsers = $plan->max_users;
                 }
             }
-            
+
             // Default to 10 if still not set
             $maxUsers = $maxUsers ?? 10;
 
@@ -256,10 +256,10 @@ class OrganizationController extends Controller
                 'photo_url' => $request->input('photo_url'),
             ];
 
-            ProvisionTenantJob::dispatchAfterResponse($organization->org_id, $userData);
+            ProvisionTenantJob::dispatch($organization->org_id, $userData);
 
             try {
-                Mail::to($organization->primary_email)->send(
+                Mail::to($organization->primary_email)->queue(
                     new RegistrationQueuedEmail(
                         organization: $organization,
                         firstName: $request->input('first_name'),
@@ -295,12 +295,12 @@ class OrganizationController extends Controller
             if (DB::connection('control')->transactionLevel() > 0) {
                 DB::connection('control')->rollBack();
             }
-            
+
             Log::error('Organization registration failed', [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'error' => [
