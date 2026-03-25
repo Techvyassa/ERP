@@ -198,6 +198,15 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('production-dashboard');
 
+        // Quality Dashboard
+        Route::get('/quality-dashboard', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.qc.dashboard', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('quality-dashboard');
+
         // ====================================================================
         // ORGANIZATION MASTERS
         // ====================================================================
@@ -652,6 +661,14 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('qc-test-types');
+
+            Route::get('/qc-parameters', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.masters.qc.qc-parameters.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('qc-parameters');
         });
 
         // ====================================================================

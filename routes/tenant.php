@@ -39,11 +39,35 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
     // Master Data Setup
     Route::get('/master-setup', function () {
         $org = request()->get('tenant_organization');
-        return view('tenant.master-setup', [
+        return view('tenant.masters.dashboard', [
             'organization' => $org,
             'tenantType' => request()->get('tenant_type')
         ]);
     })->name('tenant.master-setup');
+
+    Route::get('/quality-dashboard', function () {
+        $org = request()->get('tenant_organization');
+        return view('tenant.masters.qc.dashboard', [
+            'organization' => $org,
+            'tenantType' => request()->get('tenant_type')
+        ]);
+    })->name('tenant.quality-dashboard');
+
+    Route::get('/qc-test-types', function () {
+        $org = request()->get('tenant_organization');
+        return view('tenant.masters.qc.qc-test-types.index', [
+            'organization' => $org,
+            'tenantType' => request()->get('tenant_type')
+        ]);
+    })->name('tenant.qc-test-types');
+
+    Route::get('/qc-parameters', function () {
+        $org = request()->get('tenant_organization');
+        return view('tenant.masters.qc.qc-parameters.index', [
+            'organization' => $org,
+            'tenantType' => request()->get('tenant_type')
+        ]);
+    })->name('tenant.qc-parameters');
     
     // Debug Profile (for troubleshooting)
     Route::get('/debug-profile', function () {

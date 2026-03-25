@@ -1,4 +1,4 @@
-@extends('layouts.app')
+@extends('tenant.layouts.app')
 
 @section('title', 'QC Test Types - ' . $organization->org_name)
 @section('page-title', 'QC Test Type Master')
@@ -7,15 +7,23 @@
 <div x-data="qcTestTypeData()" x-init="init()">
 
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <h2 class="text-2xl font-bold text-gray-900">QC Test Types</h2>
-            <p class="text-gray-500 text-sm">Manage Quality Control test type categories used in QC parameters</p>
+    <div class="bg-white rounded-xl shadow p-6 mb-6">
+        <div class="flex items-center justify-between gap-4">
+            <div>
+                <h2 class="text-2xl font-bold text-gray-900">QC Test Types</h2>
+                <p class="text-gray-600 mt-1">Manage Quality Control test type categories used in QC parameters.</p>
+            </div>
+            <div class="flex items-center gap-3">
+                <a href="{{ url($tenantType === 'subdomain' ? '/quality-dashboard' : "/org/{$organization->org_slug}/quality-dashboard") }}"
+                   class="px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    Back
+                </a>
+                <button @click="openCreateModal()"
+                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>New Test Type
+                </button>
+            </div>
         </div>
-        <button @click="openCreateModal()"
-            class="px-4 py-2 bg-primary text-white rounded-lg text-sm font-semibold hover:bg-primary/90 transition flex items-center gap-2">
-            <span class="material-symbols-outlined text-lg">add</span> New Test Type
-        </button>
     </div>
 
     <!-- Table -->

@@ -149,7 +149,11 @@
                         
                         // BOM
                         'bom_header': `${baseUrl}/bom-header`,
-                        'bom_detail': `${baseUrl}/bom-detail`
+                        'bom_detail': `${baseUrl}/bom-detail`,
+
+                        // Quality
+                        'qc_test_types': `${baseUrl}/qc-test-types`,
+                        'qc_parameters': `${baseUrl}/qc-parameters`
                     };
                     
                     const route = routeMap[master.key];

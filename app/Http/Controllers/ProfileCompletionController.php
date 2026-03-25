@@ -469,6 +469,28 @@ class ProfileCompletionController extends Controller
                 'critical' => true,
                 'description' => 'BOM component lines per header'
             ],
+            
+            // Quality Masters
+            [
+                'key' => 'qc_test_types',
+                'name' => 'QC Test Types',
+                'table' => 'qc_test_types',
+                'group' => 'Quality',
+                'icon' => 'science',
+                'color' => 'cyan',
+                'critical' => false,
+                'description' => 'Test categories like visual, physical, and chemical'
+            ],
+            [
+                'key' => 'qc_parameters',
+                'name' => 'QC Parameters',
+                'table' => 'qc_parameters_master',
+                'group' => 'Quality',
+                'icon' => 'biotech',
+                'color' => 'sky',
+                'critical' => true,
+                'description' => 'Material-wise QC specifications and acceptance criteria'
+            ],
         ];
         
         // Only include tables that actually exist

@@ -380,6 +380,14 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'destroy']);
         });
 
+        Route::middleware(['check.module.permission:SETTINGS'])->prefix('qc-parameters')->group(function () {
+            Route::get('/', [App\Http\Controllers\QCParameterController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\QCParameterController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\QCParameterController::class, 'store']);
+            Route::put('/{id}', [App\Http\Controllers\QCParameterController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\QCParameterController::class, 'destroy']);
+        });
+
         // Quality Control (QC) Endpoints
         // Roles: QC_TECH (record tests), QC_MGR (make decisions), ADMIN (all)
         // Status Flow: PENDING → IN_PROGRESS → COMPLETED → DECISION_MADE

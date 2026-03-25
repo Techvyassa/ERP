@@ -131,6 +131,15 @@
                             <span x-show="sidebarOpen" class="font-medium">Production & BOM</span>
                         </a>
                     </li>
+
+                    <!-- Quality Dashboard -->
+                    <li>
+                        <a href="{{ url($tenantType === 'subdomain' ? '/quality-dashboard' : "/org/{$organization->org_slug}/quality-dashboard") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.quality-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">biotech</span>
+                            <span x-show="sidebarOpen" class="font-medium">Quality</span>
+                        </a>
+                    </li>
                     
                     <li class="pt-2 border-t border-gray-200"></li>
                     
@@ -229,6 +238,9 @@
                             { name: 'Currency', url: '{{ url($tenantType === 'subdomain' ? '/currency' : "/org/{$organization->org_slug}/currency") }}', icon: 'currency_exchange', category: 'Tax', keywords: ['currency', 'exchange', 'forex'] },
                             { name: 'BOM Header', url: '{{ url($tenantType === 'subdomain' ? '/bom-header' : "/org/{$organization->org_slug}/bom-header") }}', icon: 'description', category: 'BOM', keywords: ['bom', 'bill of materials', 'recipe'] },
                             { name: 'BOM Detail', url: '{{ url($tenantType === 'subdomain' ? '/bom-detail' : "/org/{$organization->org_slug}/bom-detail") }}', icon: 'list_alt', category: 'BOM', keywords: ['bom detail', 'component', 'material list'] },
+                            { name: 'QC Dashboard', url: '{{ url($tenantType === 'subdomain' ? '/quality-dashboard' : "/org/{$organization->org_slug}/quality-dashboard") }}', icon: 'biotech', category: 'Quality', keywords: ['quality', 'qc', 'inspection'] },
+                            { name: 'QC Test Types', url: '{{ url($tenantType === 'subdomain' ? '/qc-test-types' : "/org/{$organization->org_slug}/qc-test-types") }}', icon: 'science', category: 'Quality', keywords: ['qc', 'test type', 'quality master'] },
+                            { name: 'QC Parameters', url: '{{ url($tenantType === 'subdomain' ? '/qc-parameters' : "/org/{$organization->org_slug}/qc-parameters") }}', icon: 'biotech', category: 'Quality', keywords: ['qc parameter', 'specification', 'quality parameter'] },
                             { name: 'Reports', url: '{{ url($tenantType === 'subdomain' ? '/reports' : "/org/{$organization->org_slug}/reports") }}', icon: 'bar_chart', category: 'Other', keywords: ['report', 'analytics', 'dashboard'] },
                             { name: 'Settings', url: '{{ url($tenantType === 'subdomain' ? '/settings' : "/org/{$organization->org_slug}/settings") }}', icon: 'settings', category: 'Other', keywords: ['setting', 'configuration', 'preferences'] }
                         ],
