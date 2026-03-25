@@ -3,6 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant\User;
+use App\Models\Tenant\Department;
+use App\Models\Tenant\Role;
 use App\Models\Tenant\DeptRoleMap;
 use App\Models\Control\ActiveSubscription;
 use App\Models\Control\Organization;
@@ -11,6 +13,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 use Illuminate\Support\Facades\Hash;
 
@@ -421,4 +424,304 @@ class UserController extends Controller
     /**
      * Generate Code128 barcode HTML
      */
+
+    /**
+     * Download CSV template for user import
+     * GET /api/v1/users/import/template
+     */
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\BinaryFileResponse
+    {
+        $headers = [
+            'employee_code',
+            'email',
+            'first_name',
+            'last_name',
+            'phone',
+            'dept_id',
+            'role_id',
+            'password',
+            'is_active'
+        ];
+
+        // Get the first available department as default
+        $defaultDept = Department::where('is_active', true)->first();
+        $defaultDeptId = $defaultDept?->id ?? '1';
+
+        $sampleData = [
+            'EMP001',
+            'user@example.com',
+            'John',
+            'Doe',
+            '+91 9876543210',
+            $defaultDeptId, // Use actual department ID
+            '', // Leave role blank - assign via edit form  
+            'password123',
+            'true'
+        ];
+
+        $csv = implode(',', $headers) . "\n" . implode(',', $sampleData);
+
+        $fileName = 'users_import_template_' . date('Y-m-d') . '.csv';
+        $tempFile = tempnam(sys_get_temp_dir(), 'users_template');
+        file_put_contents($tempFile, $csv);
+
+        return response()->download($tempFile, $fileName, [
+            'Content-Type' => 'text/csv',
+        ])->deleteFileAfterSend(true);
+    }
+
+    /**
+     * Import users from CSV
+     * POST /api/v1/users/import
+     */
+    public function importCSV(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        \Log::info('CSV Import Started', [
+            'request_id' => $requestId,
+            'user_id' => $request->input('auth_user_id'),
+            'has_file' => $request->hasFile('file')
+        ]);
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt|max:10240', // 10MB max
+        ]);
+
+        if ($validator->fails()) {
+            \Log::error('CSV Import Validation Failed', [
+                'request_id' => $requestId,
+                'errors' => $validator->errors()->toArray()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Invalid file upload',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            $csvData = array_map('str_getcsv', file($file->getPathname()));
+            
+            \Log::info('CSV Import Debug', [
+                'request_id' => $requestId,
+                'file_name' => $file->getClientOriginalName(),
+                'file_size' => $file->getSize(),
+                'csv_rows' => count($csvData),
+                'first_few_rows' => array_slice($csvData, 0, 3)
+            ]);
+
+            if (empty($csvData)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'EMPTY_FILE', 'details' => []],
+                    'message' => 'CSV file is empty',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 400);
+            }
+
+            $headers = array_shift($csvData); // Remove header row
+            $results = [
+                'total_rows' => count($csvData),
+                'successful' => 0,
+                'failed' => 0,
+                'skipped_assignments' => 0,
+                'errors' => []
+            ];
+
+            \Log::info('CSV Processing Started', [
+                'request_id' => $requestId,
+                'total_rows' => $results['total_rows'],
+                'headers' => $headers
+            ]);
+
+            // Check user capacity limit
+            $orgId = $request->input('tenant_org_id');
+            $activeSub = ActiveSubscription::find($orgId);
+            $maxUsers = $activeSub ? $activeSub->max_users : 999999;
+            $currentActiveUsers = User::where('is_active', true)->count();
+
+            DB::beginTransaction();
+
+            foreach ($csvData as $index => $row) {
+                $rowNumber = $index + 2; // +2 because we removed header and arrays are 0-indexed
+
+                try {
+                    // Check user limit before creating each user
+                    if ($currentActiveUsers + $results['successful'] >= $maxUsers) {
+                        $results['failed']++;
+                        $results['errors'][] = [
+                            'row' => $rowNumber,
+                            'errors' => ['User limit reached for your subscription plan']
+                        ];
+                        continue;
+                    }
+
+                    // Map CSV columns to user data
+                    $userData = [
+                        'employee_code' => $row[0] ?? '',
+                        'email' => $row[1] ?? '',
+                        'first_name' => $row[2] ?? '',
+                        'last_name' => $row[3] ?? '',
+                        'phone' => !empty($row[4]) ? $row[4] : null,
+                        'dept_id' => !empty($row[5]) && is_numeric($row[5]) ? (int)$row[5] : null,
+                        'role_id' => !empty($row[6]) && is_numeric($row[6]) ? (int)$row[6] : null,
+                        'password' => $row[7] ?? 'password123',
+                        'is_active' => !empty($row[8]) ? filter_var($row[8], FILTER_VALIDATE_BOOLEAN) : true,
+                        'created_by' => $request->input('auth_user_id'),
+                    ];
+
+                    // Ensure we have a valid department ID (required by database)
+                    if (!$userData['dept_id']) {
+                        $defaultDept = Department::where('is_active', true)->first();
+                        $userData['dept_id'] = $defaultDept?->id ?? 1;
+                    }
+
+                    \Log::info('Processing Row', [
+                        'request_id' => $requestId,
+                        'row' => $rowNumber,
+                        'raw_data' => $row,
+                        'mapped_data' => array_merge($userData, ['password' => '[HIDDEN]'])
+                    ]);
+
+                    // Validate individual row
+                    $rowValidator = Validator::make($userData, [
+                        'employee_code' => 'required|string|max:50|unique:tenant.users,employee_code',
+                        'email' => 'required|email|max:255|unique:tenant.users,email',
+                        'first_name' => 'required|string|max:100',
+                        'last_name' => 'required|string|max:100',
+                        'phone' => 'nullable|string|max:20',
+                        'dept_id' => 'required|integer|exists:tenant.department_master,id',
+                        'role_id' => 'nullable|integer|exists:tenant.role_master,id',
+                        'password' => 'required|string|min:8',
+                    ]);
+
+                    \Log::info('Row validation', [
+                        'request_id' => $requestId,
+                        'row' => $rowNumber,
+                        'validation_passed' => !$rowValidator->fails(),
+                        'errors' => $rowValidator->errors()->toArray()
+                    ]);
+
+                    if ($rowValidator->fails()) {
+                        $results['failed']++;
+                        $results['errors'][] = [
+                            'row' => $rowNumber,
+                            'errors' => $rowValidator->errors()->all()
+                        ];
+                        continue;
+                    }
+
+                    // Validate role belongs to department if both are provided
+                    if ($userData['dept_id'] && $userData['role_id']) {
+                        if (!DeptRoleMap::isValidForDepartment((int)$userData['dept_id'], (int)$userData['role_id'])) {
+                            \Log::warning('Department-role mapping invalid, removing role assignment', [
+                                'request_id' => $requestId,
+                                'row' => $rowNumber,
+                                'dept_id' => $userData['dept_id'],
+                                'role_id' => $userData['role_id']
+                            ]);
+                            
+                            // Keep department, remove role assignment
+                            $userData['role_id'] = null;
+                            $results['skipped_assignments']++;
+                        }
+                    }
+
+                    // Create user
+                    $user = User::create([
+                        'employee_code' => $userData['employee_code'],
+                        'email' => $userData['email'],
+                        'password' => $userData['password'], // This will trigger the password hash mutator
+                        'first_name' => $userData['first_name'],
+                        'last_name' => $userData['last_name'],
+                        'phone' => $userData['phone'],
+                        'dept_id' => $userData['dept_id'],
+                        'role_id' => $userData['role_id'],
+                        'is_active' => $userData['is_active'],
+                        'created_by' => $userData['created_by'],
+                    ]);
+
+                    \Log::info('User created', [
+                        'request_id' => $requestId,
+                        'user_id' => $user->id,
+                        'employee_code' => $user->employee_code,
+                        'email' => $user->email
+                    ]);
+
+                    $results['successful']++;
+
+                } catch (\Exception $e) {
+                    \Log::error('User creation failed', [
+                        'request_id' => $requestId,
+                        'row' => $rowNumber,
+                        'data' => $userData ?? [],
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString()
+                    ]);
+                    
+                    $results['failed']++;
+                    $results['errors'][] = [
+                        'row' => $rowNumber,
+                        'errors' => ['Failed to create user: ' . $e->getMessage()]
+                    ];
+                }
+            }
+
+            DB::commit();
+
+            \Log::info('CSV Import completed', [
+                'request_id' => $requestId,
+                'total_rows' => $results['total_rows'],
+                'successful' => $results['successful'],
+                'failed' => $results['failed'],
+                'errors_count' => count($results['errors'])
+            ]);
+
+            $message = "Import completed. {$results['successful']} users created";
+            if ($results['failed'] > 0) {
+                $message .= ", {$results['failed']} failed";
+            }
+            if ($results['skipped_assignments'] > 0) {
+                $message .= ". {$results['skipped_assignments']} department/role assignments were skipped due to invalid mappings";
+            }
+            $message .= ". Use edit form to assign departments and roles.";
+
+            return response()->json([
+                'success' => true,
+                'data' => $results,
+                'message' => $message,
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            
+            \Log::error('CSV Import Exception', [
+                'request_id' => $requestId,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import CSV: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
 }

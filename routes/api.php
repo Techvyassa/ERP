@@ -122,6 +122,8 @@ Route::prefix('v1')->group(function () {
         // Department management endpoints (with RBAC middleware for SETTINGS module)
         Route::middleware(['check.module.permission:SETTINGS'])->prefix('departments')->group(function () {
             Route::get('/', [App\Http\Controllers\DepartmentController::class, 'index']);
+            Route::get('/import/template', [App\Http\Controllers\DepartmentController::class, 'downloadTemplate']);
+            Route::post('/import', [App\Http\Controllers\DepartmentController::class, 'importCSV']);
             Route::get('/{id}', [App\Http\Controllers\DepartmentController::class, 'show']);
             Route::post('/', [App\Http\Controllers\DepartmentController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\DepartmentController::class, 'update']);
@@ -148,6 +150,8 @@ Route::prefix('v1')->group(function () {
         // User management endpoints (with RBAC middleware for USERS module)
         Route::middleware(['check.module.permission:USERS'])->prefix('users')->group(function () {
             Route::get('/', [App\Http\Controllers\UserController::class, 'index']);
+            Route::get('/import/template', [App\Http\Controllers\UserController::class, 'downloadTemplate']);
+            Route::post('/import', [App\Http\Controllers\UserController::class, 'importCSV']);
             Route::get('/{id}', [App\Http\Controllers\UserController::class, 'show']);
             Route::post('/', [App\Http\Controllers\UserController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\UserController::class, 'update']);

@@ -23,7 +23,7 @@
                 <div class="bg-white px-6 py-4">
                     <div class="mb-6">
                         <label class="block text-sm font-medium text-gray-700 mb-2">Step 1: Download Template</label>
-                        <button @click="() => { const csv = 'employee_code,email,full_name,phone,dept_id,role_id,is_active\nEMP001,user@example.com,John Doe,1234567890,1,1,true'; const blob = new Blob([csv], { type: 'text/csv' }); const url = window.URL.createObjectURL(blob); const a = document.createElement('a'); a.href = url; a.download = 'users_import_template.csv'; a.click(); window.URL.revokeObjectURL(url); }" class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center">
+                        <button @click="downloadTemplate()" class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center">
                             <i class="fas fa-download text-blue-600 mr-2"></i><span class="text-sm text-gray-700">Download CSV Template</span>
                         </button>
                     </div>
@@ -48,10 +48,23 @@
                         <div class="flex items-center justify-between text-sm text-gray-700 mb-2"><span>Uploading...</span><span x-text="uploadProgress + '%'"></span></div>
                         <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="'width: ' + uploadProgress + '%'"></div></div>
                     </div>
+                    
+                    <!-- Validation Results -->
+                    <div x-show="validationResults && validationResults.length > 0" class="mb-4">
+                        <h4 class="text-sm font-medium text-red-700 mb-2">Import Issues:</h4>
+                        <div class="max-h-32 overflow-y-auto bg-red-50 border border-red-200 rounded p-3">
+                            <template x-for="error in validationResults" :key="error.row">
+                                <div class="text-xs text-red-600 mb-1">
+                                    <strong>Row <span x-text="error.row"></span>:</strong>
+                                    <span x-text="error.errors.join(', ')"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
                 </div>
                 <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
                     <button @click="showUploadModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">Cancel</button>
-                    <button @click="if (!selectedFile || uploading) return; uploading = true; uploadProgress = 0; const interval = setInterval(() => { if (uploadProgress < 90) uploadProgress += 10; }, 200); setTimeout(() => { uploadProgress = 100; clearInterval(interval); alert('CSV imported successfully!'); showUploadModal = false; selectedFile = null; uploading = false; uploadProgress = 0; }, 2000);" :disabled="!selectedFile || uploading" :class="!selectedFile || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'" class="px-4 py-2 bg-green-600 text-white rounded-lg transition-colors">
+                    <button @click="uploadCSV()" :disabled="!selectedFile || uploading" :class="!selectedFile || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'" class="px-4 py-2 bg-green-600 text-white rounded-lg transition-colors">
                         <i class="fas fa-upload mr-2"></i><span x-text="uploading ? 'Uploading...' : 'Import Data'"></span>
                     </button>
                 </div>
@@ -277,6 +290,7 @@
          selectedFile: null,
          uploading: false,
          uploadProgress: 0,
+         validationResults: null,
          dragOver: false,
 
          items: [],
@@ -434,16 +448,107 @@
              }
          },
 
+         downloadTemplate() {
+             // Download template from API
+             window.location.href = '/api/v1/users/import/template';
+         },
+
+         async uploadCSV() {
+             if (!this.selectedFile) return;
+             
+             console.log('Starting CSV upload...', this.selectedFile);
+             
+             this.uploading = true;
+             this.uploadProgress = 0;
+             this.validationResults = null;
+             
+             try {
+                 const formData = new FormData();
+                 formData.append('file', this.selectedFile);
+                 
+                 console.log('FormData created, making API call...');
+                 
+                 // Simulate progress
+                 const progressInterval = setInterval(() => {
+                     if (this.uploadProgress < 90) {
+                         this.uploadProgress += 10;
+                     }
+                 }, 200);
+                 
+                 const response = await fetch('/api/v1/users/import', {
+                     method: 'POST',
+                     credentials: 'same-origin',
+                     headers: {
+                         'Accept': 'application/json',
+                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                     },
+                     body: formData
+                 });
+                 
+                 clearInterval(progressInterval);
+                 this.uploadProgress = 100;
+                 
+                 console.log('Response received:', response.status, response.statusText);
+                 
+                 const data = await response.json();
+                 
+                 console.log('CSV Import Response:', data);
+                 
+                 if (!response.ok) {
+                     console.error('Import failed:', data);
+                     if (data.error && data.error.details) {
+                         this.showNotification('Validation failed: ' + JSON.stringify(data.error.details), 'error');
+                     } else {
+                         this.showNotification(data.message || 'Failed to import CSV', 'error');
+                     }
+                     return;
+                 }
+                 
+                 // Show results
+                 if (data.data && data.data.errors && data.data.errors.length > 0) {
+                     this.validationResults = data.data.errors;
+                     this.showNotification(`Import completed with issues. ${data.data.successful} successful, ${data.data.failed} failed.`, 'warning');
+                     console.log('Import errors:', data.data.errors);
+                 } else if (data.data && data.data.successful > 0) {
+                     this.showNotification(`CSV imported successfully! ${data.data.successful} users created.`, 'success');
+                     this.closeUploadModal();
+                     this.loadData(this.pagination.current_page); // Refresh the users list
+                 } else {
+                     this.showNotification('No users were created. Please check your CSV data.', 'warning');
+                     if (data.data && data.data.errors) {
+                         this.validationResults = data.data.errors;
+                     }
+                 }
+                 
+             } catch (error) {
+                 console.error('Failed to upload CSV:', error);
+                 this.showNotification('Network error. Please try again.', 'error');
+             } finally {
+                 this.uploading = false;
+                 this.uploadProgress = 0;
+             }
+         },
+
+         closeUploadModal() {
+             this.showUploadModal = false;
+             this.selectedFile = null;
+             this.uploading = false;
+             this.uploadProgress = 0;
+             this.validationResults = null;
+             this.dragOver = false;
+         },
+
          showNotification(message, type = 'info') {
              const notification = document.createElement('div');
              notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
                  type === 'success' ? 'bg-green-500 text-white' :
                  type === 'error' ? 'bg-red-500 text-white' :
+                 type === 'warning' ? 'bg-yellow-500 text-white' :
                  'bg-blue-500 text-white'
              }`;
              notification.innerHTML = `
                  <div class="flex items-center">
-                     <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
+                     <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : type === 'warning' ? 'exclamation-triangle' : 'info-circle'} mr-2"></i>
                      <span>${message}</span>
                  </div>
              `;
@@ -451,7 +556,7 @@
 
              setTimeout(() => {
                  notification.remove();
-             }, 3000);
+             }, 5000);
          }
      }
  }
