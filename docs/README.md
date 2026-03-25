@@ -7,6 +7,7 @@ Welcome to the documentation for the Laravel Multi-Tenant ERP Foundation system.
 ### For Developers
 
 📘 **[Developer Onboarding Guide](DEVELOPER_GUIDE.md)**
+
 - Project overview and architecture
 - Development environment setup
 - Multi-tenant architecture deep dive
@@ -22,6 +23,7 @@ Welcome to the documentation for the Laravel Multi-Tenant ERP Foundation system.
 ### For API Consumers
 
 📗 **[API Documentation](API_DOCUMENTATION.md)**
+
 - Complete API reference
 - Authentication flow
 - Error handling and status codes
@@ -34,6 +36,7 @@ Welcome to the documentation for the Laravel Multi-Tenant ERP Foundation system.
 ### For DevOps/Deployment
 
 📕 **[Deployment Guide](DEPLOYMENT.md)**
+
 - System requirements
 - Environment setup instructions
 - Database configuration
@@ -60,6 +63,7 @@ Welcome to the documentation for the Laravel Multi-Tenant ERP Foundation system.
 ### Architecture Documents
 
 Located in `.kiro/specs/laravel-multi-tenant-erp-foundation/`:
+
 - **[Requirements Document](../.kiro/specs/laravel-multi-tenant-erp-foundation/requirements.md)** - Detailed system requirements
 - **[Design Document](../.kiro/specs/laravel-multi-tenant-erp-foundation/design.md)** - Technical design specifications
 - **[Tasks Document](../.kiro/specs/laravel-multi-tenant-erp-foundation/tasks.md)** - Implementation task breakdown
@@ -68,11 +72,13 @@ Located in `.kiro/specs/laravel-multi-tenant-erp-foundation/`:
 
 **Multi-Tenant Architecture**: Each organization gets its own isolated database (`erp_{org_slug}`), ensuring complete data separation.
 
-**Two-Database Pattern**: 
+**Two-Database Pattern**:
+
 - **Control Database** (`ERP_saas_control`): Manages all tenants, subscriptions, billing
 - **Tenant Databases** (`erp_*`): Store each organization's ERP operational data
 
 **Middleware Stack**: Every API request flows through:
+
 1. JWT Authentication
 2. Tenant Resolution
 3. Subscription Validation
@@ -125,14 +131,17 @@ material-management/
 ## Support
 
 ### Development Support
+
 - **Slack**: #erp-dev
 - **Email**: dev-team@your-domain.com
 
 ### API Support
+
 - **Email**: api-support@your-domain.com
 - **Documentation**: [API_DOCUMENTATION.md](API_DOCUMENTATION.md)
 
 ### DevOps Support
+
 - **Email**: devops@your-domain.com
 - **Documentation**: [DEPLOYMENT.md](DEPLOYMENT.md)
 
