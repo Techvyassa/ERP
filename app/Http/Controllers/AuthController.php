@@ -105,9 +105,10 @@ class AuthController extends Controller
         $requestId = Str::uuid()->toString();
 
         $validator = Validator::make($request->all(), [
-            'email'    => 'required|email',
-            'password' => 'required|string',
-            'org_slug' => 'nullable|string',
+            'email'       => 'required|email',
+            'password'    => 'required|string',
+            'org_slug'    => 'nullable|string',
+            'remember_me' => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -127,16 +128,22 @@ class AuthController extends Controller
             $result = $this->authService->login(
                 $request->input('email'),
                 $request->input('password'),
-                $request->input('org_slug')
+                $request->input('org_slug'),
+                (bool) $request->input('remember_me', false)
             );
 
             Log::info('Login successful', [
                 'user_id'      => $result->user->id,
                 'org_slug'     => $result->organization->org_slug,
                 'token_length' => strlen($result->accessToken),
+                'remember_me'  => (bool) $request->input('remember_me', false),
             ]);
 
             $userPayload = $this->buildUserPayload($result->user);
+
+            // Cookie lifetime: 90 days if remember_me, else 24 hours
+            $rememberMe  = (bool) $request->input('remember_me', false);
+            $cookieMinutes = $rememberMe ? 60 * 24 * 90 : 60 * 24;
 
             return response()->json([
                 'success' => true,
@@ -159,7 +166,7 @@ class AuthController extends Controller
             ->cookie(
                 'auth_token',
                 $result->accessToken,
-                60 * 24,
+                $cookieMinutes,
                 '/',
                 null,
                 request()->secure(),

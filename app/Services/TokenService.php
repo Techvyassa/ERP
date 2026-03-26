@@ -11,22 +11,23 @@ use Illuminate\Support\Str;
 
 class TokenService
 {
-    private const ACCESS_TOKEN_TTL = 1440; // 24 hours in minutes
-    private const REFRESH_TOKEN_TTL = 43200; // 30 days in minutes
+    private const ACCESS_TOKEN_TTL  = 1440;  // 24 hours in minutes
+    private const REFRESH_TOKEN_TTL  = 43200; // 30 days in minutes
+    private const REMEMBER_TOKEN_TTL = 129600; // 90 days in minutes
     
     /**
      * Generate access and refresh tokens for a user
      */
-    public function generateTokens(User $user, Organization $organization, ?string $userAgent = null, ?string $ipAddress = null): array
+    public function generateTokens(User $user, Organization $organization, ?string $userAgent = null, ?string $ipAddress = null, bool $rememberMe = false): array
     {
-        $accessToken = $this->generateAccessToken($user, $organization);
-        $refreshToken = $this->generateRefreshToken($user, $organization, $userAgent, $ipAddress);
-        
+        $accessToken  = $this->generateAccessToken($user, $organization);
+        $refreshToken = $this->generateRefreshToken($user, $organization, $userAgent, $ipAddress, $rememberMe);
+
         return [
-            'access_token' => $accessToken,
+            'access_token'  => $accessToken,
             'refresh_token' => $refreshToken,
-            'expires_in' => self::ACCESS_TOKEN_TTL * 60, // Convert to seconds
-            'token_type' => 'Bearer',
+            'expires_in'    => self::ACCESS_TOKEN_TTL * 60,
+            'token_type'    => 'Bearer',
         ];
     }
     
@@ -52,19 +53,20 @@ class TokenService
     /**
      * Generate refresh token and store in database
      */
-    private function generateRefreshToken(User $user, Organization $organization, ?string $userAgent, ?string $ipAddress): string
+    private function generateRefreshToken(User $user, Organization $organization, ?string $userAgent, ?string $ipAddress, bool $rememberMe = false): string
     {
         $token = bin2hex(random_bytes(32));
-        
+        $ttl   = $rememberMe ? self::REMEMBER_TOKEN_TTL : self::REFRESH_TOKEN_TTL;
+
         RefreshToken::create([
-            'org_id' => $organization->org_id,
-            'user_id' => $user->id,
-            'token' => $token,
-            'expires_at' => now()->addMinutes(self::REFRESH_TOKEN_TTL),
+            'org_id'     => $organization->org_id,
+            'user_id'    => $user->id,
+            'token'      => $token,
+            'expires_at' => now()->addMinutes($ttl),
             'user_agent' => $userAgent,
             'ip_address' => $ipAddress,
         ]);
-        
+
         return $token;
     }
     
