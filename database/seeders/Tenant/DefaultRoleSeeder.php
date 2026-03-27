@@ -60,9 +60,9 @@ class DefaultRoleSeeder extends Seeder
                     'created_by' => null,
                 ],
                 [
-                    'role_code' => 'WAREHOUSE',
-                    'role_name' => 'Store/Warehouse',
-                    'description' => 'Warehouse and storage operations',
+                    'role_code' => 'STORE',
+                    'role_name' => 'Store',
+                    'description' => 'Warehouse and store operations',
                     'is_active' => true,
                     'is_system_role' => true,
                     'created_by' => null,

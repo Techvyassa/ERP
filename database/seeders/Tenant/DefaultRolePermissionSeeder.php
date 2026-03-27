@@ -10,32 +10,13 @@ use Illuminate\Support\Facades\DB;
 class DefaultRolePermissionSeeder extends Seeder
 {
     private const MODULES = [
-        'SETTINGS',
-        'USERS',
-        'PR',
-        'PO',
-        'ASN',
-        'GATE_ENTRY',
-        'MR_GRN',
-        'GRN',
-        'QC',
-        'STOCK',
-        'INVOICE',
-        'PAYMENT',
-        'INVENTORY',
-        'WAREHOUSE',
-        'MATERIAL',
-        'USER_MGMT',
-        'ROLE_MGMT',
-        'DEPT_MGMT',
-        'BOM',
-        'ADMINISTRATION'
+        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT'
     ];
 
     public function run(): void
     {
         DB::connection('tenant')->transaction(function () {
-            $roles = Role::whereIn('role_code', ['ADMIN', 'MANAGER', 'USER', 'PROCUREMENT', 'SECURITY', 'WAREHOUSE', 'QC'])->get();
+            $roles = Role::whereIn('role_code', ['ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT'])->get();
 
             if ($roles->isEmpty()) {
                 echo "✗ Default roles not found. Please run DefaultRoleSeeder first.\n";
@@ -79,57 +60,32 @@ class DefaultRolePermissionSeeder extends Seeder
         $scope = 'department';
         $view_cross = false;
 
-        if (in_array($roleCode, ['ADMIN'])) {
-            $scope = 'global';
-            $view_cross = true;
+        // Admin gets global full access
+        if ($roleCode === 'ADMIN') {
+            return [
+                'scope' => 'global',
+                'view_cross_department' => true,
+                'can_view' => true, 'can_create' => true, 'can_edit' => true, 'can_approve' => true, 'can_delete' => true,
+            ];
         }
 
-        switch ($roleCode) {
-            case 'ADMIN':
-                $can_view = $can_create = $can_edit = $can_approve = $can_delete = true;
-                break;
-            case 'MANAGER':
-                if ($moduleCode === 'ADMINISTRATION') {
-                    $can_view = true;
-                } else {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
+        // Roles map to their identically named modules (Departmental Roles)
+        if ($roleCode === $moduleCode) {
+            $can_view = $can_create = $can_edit = $can_approve = true;
+        } 
+        // Widespread base roles (MANAGER/USER)
+        elseif (in_array($roleCode, ['MANAGER', 'USER'])) {
+            $can_view = true;
+            // Prevent non-admins from editing administration/admin module
+            if ($moduleCode !== 'ADMIN') {
+                $can_create = $can_edit = true;
+                if ($roleCode === 'MANAGER') {
+                    $can_approve = true;
                 }
-                break;
-            case 'USER':
-                if ($moduleCode === 'ADMINISTRATION') {
-                    $can_view = true;
-                } else {
-                    $can_view = $can_create = $can_edit = true;
-                }
-                break;
-            case 'PROCUREMENT':
-                if (in_array($moduleCode, ['PR', 'PO', 'ASN', 'VENDORS'])) {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
-            case 'SECURITY':
-                if (in_array($moduleCode, ['GATE_ENTRY'])) {
-                    $can_view = $can_create = $can_edit = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
-            case 'WAREHOUSE':
-                if (in_array($moduleCode, ['INVENTORY', 'WAREHOUSE', 'MR_GRN', 'GRN', 'STOCK', 'MATERIAL'])) {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
-            case 'QC':
-                if (in_array($moduleCode, ['QC'])) {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
+            }
+        } else {
+            // View-only fallback for cross-module visibility
+            $can_view = true;
         }
 
         return [

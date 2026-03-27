@@ -25,23 +25,25 @@ use Illuminate\Support\Str;
 class TenantProvisioningServiceImpl implements TenantProvisioningService
 {
     private const MODULE_CODES = [
-        'SETTINGS', 'USERS', 'PR', 'PO', 'ASN', 'GATE_ENTRY', 'MR_GRN', 'GRN', 'QC', 'STOCK', 'INVOICE', 'PAYMENT', 'INVENTORY', 'WAREHOUSE', 'MATERIAL', 'USER_MGMT', 'ROLE_MGMT', 'DEPT_MGMT', 'BOM', 'ADMINISTRATION'
+        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT'
     ];
     
     private const DEFAULT_ROLES = [
-        ['code' => 'ADMIN', 'name' => 'Administrator', 'description' => 'Full system access'],
-        ['code' => 'MANAGER', 'name' => 'Manager', 'description' => 'Management level access'],
+        ['code' => 'ADMIN', 'name' => 'Administration', 'description' => 'Full administration access'],
         ['code' => 'USER', 'name' => 'User', 'description' => 'Standard user access'],
-        ['code' => 'VIEWER', 'name' => 'Viewer', 'description' => 'Read-only access'],
+        ['code' => 'MANAGER', 'name' => 'Manager', 'description' => 'Management level access'],
+        ['code' => 'SECURITY', 'name' => 'Security', 'description' => 'Security and gate entry access'],
+        ['code' => 'STORE', 'name' => 'Store', 'description' => 'Warehouse and store operations'],
+        ['code' => 'QC', 'name' => 'Quality Control', 'description' => 'Quality control operations'],
+        ['code' => 'PROCUREMENT', 'name' => 'Procurement', 'description' => 'Procurement department access'],
     ];
 
     private const DEFAULT_DEPARTMENTS = [
-        'Administration' => ['HR', 'Legal', 'IT Settings'],
-        'Finance' => ['Accounts Payable', 'Accounts Receivable', 'Invoicing'],
-        'Inventory & Warehouse' => ['GRN', 'Stock Movements'],
-        'Procurement' => ['Purchase Requests', 'POs'],
-        'Quality Assurance' => ['QC', 'Inspections'],
-        'Sales & Distribution' => ['Orders', 'Shipping'],
+        'Administration' => [],
+        'Security' => [],
+        'Store' => [],
+        'QC' => [],
+        'Procurement' => [],
     ];
 
     public function __construct(
@@ -371,57 +373,32 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         $scope = 'department';
         $view_cross = false;
 
-        if (in_array($roleCode, ['ADMIN'])) {
-            $scope = 'global';
-            $view_cross = true;
+        // Admin gets absolute global everything
+        if ($roleCode === 'ADMIN') {
+            return [
+                'scope' => 'global',
+                'view_cross_department' => true,
+                'can_view' => true, 'can_create' => true, 'can_edit' => true, 'can_approve' => true, 'can_delete' => true,
+            ];
         }
 
-        switch ($roleCode) {
-            case 'ADMIN':
-                $can_view = $can_create = $can_edit = $can_approve = $can_delete = true;
-                break;
-            case 'MANAGER':
-                if ($moduleCode === 'ADMINISTRATION') {
-                    $can_view = true;
-                } else {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
+        // Roles map to their identically named modules (Departmental Roles)
+        if ($roleCode === $moduleCode) {
+            $can_view = $can_create = $can_edit = $can_approve = true;
+        } 
+        // Widespread base roles (MANAGER/USER)
+        elseif (in_array($roleCode, ['MANAGER', 'USER'])) {
+            $can_view = true;
+            // Prevent non-admins from editing administration/admin module
+            if ($moduleCode !== 'ADMIN') {
+                $can_create = $can_edit = true;
+                if ($roleCode === 'MANAGER') {
+                    $can_approve = true;
                 }
-                break;
-            case 'USER':
-                if ($moduleCode === 'ADMINISTRATION') {
-                    $can_view = true;
-                } else {
-                    $can_view = $can_create = $can_edit = true;
-                }
-                break;
-            case 'PROCUREMENT':
-                if (in_array($moduleCode, ['PR', 'PO', 'ASN', 'VENDORS'])) {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
-            case 'SECURITY':
-                if (in_array($moduleCode, ['GATE_ENTRY'])) {
-                    $can_view = $can_create = $can_edit = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
-            case 'WAREHOUSE':
-                if (in_array($moduleCode, ['INVENTORY', 'WAREHOUSE', 'MR_GRN', 'GRN', 'STOCK', 'MATERIAL'])) {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
-            case 'QC':
-                if (in_array($moduleCode, ['QC'])) {
-                    $can_view = $can_create = $can_edit = $can_approve = true;
-                } else {
-                    $can_view = true;
-                }
-                break;
+            }
+        } else {
+            // View-only fallback for cross-module visibility
+            $can_view = true;
         }
 
         return [

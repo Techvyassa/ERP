@@ -120,7 +120,7 @@ Route::prefix('v1')->group(function () {
 
 
         // Department management endpoints (with RBAC middleware for ADMINISTRATION module)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('departments')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('departments')->group(function () {
             Route::get('/', [App\Http\Controllers\DepartmentController::class, 'index']);
             Route::get('/import/template', [App\Http\Controllers\DepartmentController::class, 'downloadTemplate']);
             Route::post('/import', [App\Http\Controllers\DepartmentController::class, 'importCSV']);
@@ -134,7 +134,7 @@ Route::prefix('v1')->group(function () {
 
 
         // Role management endpoints (with RBAC middleware for ADMINISTRATION module)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('roles')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('roles')->group(function () {
             Route::get('/', [App\Http\Controllers\RoleController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\RoleController::class, 'show']);
             Route::post('/', [App\Http\Controllers\RoleController::class, 'store']);
@@ -148,7 +148,7 @@ Route::prefix('v1')->group(function () {
 
 
         // User management endpoints (with RBAC middleware for ADMINISTRATION module)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('users')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('users')->group(function () {
             Route::get('/', [App\Http\Controllers\UserController::class, 'index']);
             Route::get('/import/template', [App\Http\Controllers\UserController::class, 'downloadTemplate']);
             Route::post('/import', [App\Http\Controllers\UserController::class, 'importCSV']);
@@ -160,7 +160,7 @@ Route::prefix('v1')->group(function () {
 
 
         // HSN Code management endpoints (with RBAC middleware for ADMINISTRATION module)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('hsn-codes')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('hsn-codes')->group(function () {
             Route::get('/', [App\Http\Controllers\HSNCodeController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\HSNCodeController::class, 'show']);
             Route::post('/', [App\Http\Controllers\HSNCodeController::class, 'store']);
@@ -169,7 +169,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // GST Tax management endpoints (with RBAC middleware for ADMINISTRATION module)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('gst-taxes')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('gst-taxes')->group(function () {
             Route::get('/', [App\Http\Controllers\GSTTaxController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\GSTTaxController::class, 'show']);
             Route::post('/', [App\Http\Controllers\GSTTaxController::class, 'store']);
@@ -178,7 +178,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Currency management endpoints (with RBAC middleware for ADMINISTRATION module)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('currencies')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('currencies')->group(function () {
             Route::get('/', [App\Http\Controllers\CurrencyController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\CurrencyController::class, 'show']);
             Route::post('/', [App\Http\Controllers\CurrencyController::class, 'store']);
@@ -187,7 +187,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // UOM Master management endpoints (with RBAC middleware for ADMINISTRATION module)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('uoms')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('uoms')->group(function () {
             Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
             Route::get('/barcode', [App\Http\Controllers\UOMController::class, 'barcode']);
             Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
@@ -197,7 +197,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // INVENTORY Management Endpoints (Master Data)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->group(function () {
             // Warehouse Master
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
@@ -243,7 +243,7 @@ Route::prefix('v1')->group(function () {
 
         // PROCUREMENT (Vendor Master Data) Endpoints
         // Roles: ADMIN (all)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
                 Route::get('/', [App\Http\Controllers\VendorController::class, 'index']);
@@ -275,7 +275,7 @@ Route::prefix('v1')->group(function () {
         // PO Management Endpoints
         // Roles: PROC_EXE (create/edit), PROC_MGR (approve), ADMIN (all)
         // Status Flow: DRAFT → PENDING_APPROVAL → APPROVED → OPEN → PARTIAL → CLOSED/CANCELLED
-        Route::middleware(['check.module.permission:PO'])->group(function () {
+        Route::middleware(['check.module.permission:STORE'])->group(function () {
             Route::prefix('purchase-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\PurchaseOrderController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'show']);
@@ -297,7 +297,7 @@ Route::prefix('v1')->group(function () {
         // ASN (Advance Shipping Notice) Endpoints 
         // Roles: PROC_EXE/PROC_MGR (create/edit), STOREKEEPER/STORE_MGR (view/receive), ADMIN (all)
         // Status Flow: DRAFT → SENT → IN_TRANSIT → ARRIVED → RECEIVED/CANCELLED
-        Route::middleware(['check.module.permission:ASN'])->group(function () {
+        Route::middleware(['check.module.permission:STORE'])->group(function () {
             Route::prefix('asn')->group(function () {
                 // Lookup endpoints (before resource routes to avoid conflicts)
                 Route::get('/arriving-today', [App\Http\Controllers\ASNController::class, 'arrivingToday']);
@@ -325,7 +325,7 @@ Route::prefix('v1')->group(function () {
         // Gate Entry Management Endpoints
         // Roles: Security Department (create), ADMIN (all)
         // Status Flow: PENDING → COMPLETED (after GRN auto-created)
-        Route::middleware(['check.module.permission:GATE_ENTRY'])->group(function () {
+        Route::middleware(['check.module.permission:SECURITY'])->group(function () {
             Route::prefix('gate-entries')->group(function () {
                 // Lookup endpoints
                 Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GateEntryController::class, 'byVendor']);
@@ -340,7 +340,7 @@ Route::prefix('v1')->group(function () {
 
         // Material Receipt (MR) & GRN Endpoints
         // Roles: STOREKEEPER (create/edit), STORE_MGR (approve), ADMIN (all)
-        Route::middleware(['check.module.permission:MR_GRN'])->group(function () {
+        Route::middleware(['check.module.permission:STORE'])->group(function () {
 
             // ------Material Receipts: kept for backward compat (legacy flow)------
             Route::prefix('material-receipts')->group(function () {
@@ -376,7 +376,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // QC Test Type Master (ADMINISTRATION permission)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('qc-test-types')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('qc-test-types')->group(function () {
             Route::get('/', [App\Http\Controllers\QCTestTypeController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'show']);
             Route::post('/', [App\Http\Controllers\QCTestTypeController::class, 'store']);
@@ -384,7 +384,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'destroy']);
         });
 
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('qc-parameters')->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('qc-parameters')->group(function () {
             Route::get('/', [App\Http\Controllers\QCParameterController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\QCParameterController::class, 'show']);
             Route::post('/', [App\Http\Controllers\QCParameterController::class, 'store']);
@@ -425,7 +425,7 @@ Route::prefix('v1')->group(function () {
         // Putaway & Store Posting Endpoints
         // Roles: STOREKEEPER (create/execute), STORE_MGR (approve), ADMIN (all)
         // Status Flow: PENDING → IN_PROGRESS → COMPLETED
-        Route::middleware(['check.module.permission:STOCK'])->group(function () {
+        Route::middleware(['check.module.permission:STORE'])->group(function () {
             Route::prefix('putaway')->group(function () {
                 // Lookup endpoints
                 Route::get('/pending', [App\Http\Controllers\PutawayController::class, 'pending']);
@@ -478,7 +478,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // BOM (Bill of Materials) Endpoints (Master Data)
-        Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () {
+        Route::middleware(['check.module.permission:ADMIN'])->group(function () {
             // BOM Header
             Route::prefix('bom-headers')->group(function () {
                 Route::get('/', [App\Http\Controllers\BOMHeaderController::class, 'index']);

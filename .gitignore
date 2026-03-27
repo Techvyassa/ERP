@@ -24,3 +24,5 @@ Homestead.yaml
 Thumbs.db
 .qoder/*
 local-note/*
+refactor.py
+test_*.php
