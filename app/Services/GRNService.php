@@ -654,7 +654,7 @@ class GRNService
             'line_value' => $lineValue,
             'tax_amount' => $taxAmount,
             'warehouse_bin_id' => $item['warehouse_bin_id'] ?? null,
-            'stock_status' => 'RESTRICTED', // Default: awaiting QC
+            'stock_status' => 'QC_HOLD', // Default: awaiting QC inspection
         ]);
     }
 

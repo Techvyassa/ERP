@@ -43,11 +43,12 @@ return new class extends Migration
 
             // --- Stock Status ---
             $table->enum('stock_status', [
-                'RESTRICTED',       // In-quality, awaiting QC
-                'UNRESTRICTED',     // QC approved, available for production
+                'QC_HOLD',          // Received at dock, awaiting QC inspection
+                'PUTAWAY_PENDING',  // QC passed, awaiting bin placement
+                'AVAILABLE',        // Physically in bin, ready to use
                 'BLOCKED',          // QC rejected
                 'RETURNED',         // RTV completed
-            ])->default('RESTRICTED')->comment('Stock movement status');
+            ])->default('QC_HOLD')->comment('Current stock state for this line');
 
             // --- Audit ---
             $table->timestampsTz();

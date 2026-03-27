@@ -99,19 +99,27 @@ class GRNLineItem extends Model
     }
 
     /**
-     * Check if stock is restricted
+     * Check if stock is on QC hold
      */
-    public function isRestricted(): bool
+    public function isQcHold(): bool
     {
-        return $this->stock_status === 'RESTRICTED';
+        return $this->stock_status === 'QC_HOLD';
     }
 
     /**
-     * Check if stock is unrestricted
+     * Check if stock is in putaway queue
      */
-    public function isUnrestricted(): bool
+    public function isPutawayPending(): bool
     {
-        return $this->stock_status === 'UNRESTRICTED';
+        return $this->stock_status === 'PUTAWAY_PENDING';
+    }
+
+    /**
+     * Check if stock is available
+     */
+    public function isAvailable(): bool
+    {
+        return $this->stock_status === 'AVAILABLE';
     }
 
     /**
