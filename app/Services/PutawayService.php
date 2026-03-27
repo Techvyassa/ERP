@@ -229,10 +229,8 @@ class PutawayService
             throw new \Exception("Bin is not active: {$binCode}");
         }
 
-        // Validate bin type matches material type if configured
-        if ($bin->bin_type && $task->material->material_type && $bin->bin_type !== $task->material->material_type) {
-            throw new \Exception("Bin type '{$bin->bin_type}' does not match material type '{$task->material->material_type}'");
-        }
+        // Note: Bin type (STORAGE, RECEIVING_DOCK, etc.) is independent of material type (RAW, PACKAGING, etc.)
+        // All storage bins can accept any material type unless specific restrictions are configured
 
         // Update task with scanned bin
         $task->update([
