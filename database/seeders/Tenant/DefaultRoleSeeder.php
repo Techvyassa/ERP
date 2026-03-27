@@ -94,6 +94,33 @@ class DefaultRoleSeeder extends Seeder
             }
 
             echo "✓ Default roles seeded successfully\n";
+
+            // Seed Dept-Role mappings
+            echo "Seeding department-role mappings...\n";
+            $mappings = [
+                'ADMIN'       => 'Administration',
+                'SECURITY'    => 'Security',
+                'STORE'       => 'Store',
+                'QC'          => 'Quality Control',
+                'PROCUREMENT' => 'Procurement',
+                'PRODUCTION'  => 'Production',
+            ];
+
+            foreach ($mappings as $roleCode => $deptName) {
+                $role = Role::where('role_code', '=', $roleCode)->first();
+                $deptRecord = DB::connection('tenant')->table('department_master')
+                    ->where('dept_name', '=', $deptName)
+                    ->orWhere('dept_code', '=', $roleCode)
+                    ->first();
+
+                if ($role && $deptRecord) {
+                    DB::connection('tenant')->table('dept_role_map')->updateOrInsert(
+                        ['dept_id' => $deptRecord->id, 'role_id' => $role->id],
+                        ['created_at' => now()]
+                    );
+                    echo "  - Mapped role {$roleCode} to department " . ($deptRecord->dept_name ?? $deptName) . "\n";
+                }
+            }
         });
     }
 }

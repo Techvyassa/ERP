@@ -25,9 +25,16 @@ use Illuminate\Support\Str;
 class TenantProvisioningServiceImpl implements TenantProvisioningService
 {
     private const MODULE_CODES = [
-        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION'
+        'ADMIN',
+        'USER',
+        'MANAGER',
+        'SECURITY',
+        'STORE',
+        'QC',
+        'PROCUREMENT',
+        'PRODUCTION'
     ];
-    
+
     private const DEFAULT_ROLES = [
         ['code' => 'ADMIN', 'name' => 'Administration', 'description' => 'Full administration access'],
         ['code' => 'USER', 'name' => 'User', 'description' => 'Standard user access'],
@@ -59,22 +66,22 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     {
         $steps = [];
         $tenantDbName = '';
-        
+
         try {
             // Step 1: Validate organization exists and is PENDING
             Log::info("Starting tenant provisioning for org_id: {$orgId}");
             $organization = Organization::find($orgId);
-            
+
             if (!$organization) {
                 throw new \Exception("Organization with ID {$orgId} not found");
             }
-            
+
             if ($organization->registration_status !== 'PENDING') {
                 throw new \Exception("Organization status must be PENDING, current status: {$organization->registration_status}");
             }
-            
+
             $steps[] = 'Validated organization';
-            
+
             // Log provisioning start
             AuditLogger::logProvisioningEvent(
                 $orgId,
@@ -84,38 +91,42 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 null,
                 $steps
             );
-            
+
             // Step 2: Generate tenant database name (replace hyphens with underscores)
             $tenantDbName = "erp_" . str_replace('-', '_', $organization->org_slug);
             Log::info("Generated tenant database name: {$tenantDbName}");
             $steps[] = "Generated database name: {$tenantDbName}";
-            
+
             // Step 3: Create MySQL database
             $this->createTenantDatabase($tenantDbName);
             $steps[] = 'Created tenant database';
-            
+
             // Step 4: Update organization with tenant_db_name
             $organization->tenant_db_name = $tenantDbName;
             $organization->save();
             $steps[] = 'Updated organization record';
-            
+
             // Step 5: Run tenant migrations
             $this->runTenantMigrations($tenantDbName);
             $steps[] = 'Ran tenant migrations';
-            
+
             // Step 6: Seed default roles
             $roles = $this->seedDefaultRoles($tenantDbName);
             $steps[] = 'Seeded default roles';
-            
+
             // Step 7: Seed role permissions
             $this->seedRolePermissions($tenantDbName, $roles);
             $steps[] = 'Seeded role permissions';
-            
+
             // Step 8: Create default departments hierarchy
             $rootDepartment = $this->seedDefaultDepartments($tenantDbName, $organization->org_name);
             $steps[] = 'Seeded default departments hierarchy';
-            
-            // Step 9: Create initial admin user
+
+            // Step 9: Seed department role mappings
+            $this->seedDeptRoleMappings($tenantDbName, $roles);
+            $steps[] = 'Seeded department role mappings';
+
+            // Step 10: Create initial admin user
             $tempPassword = $this->createInitialAdminUser(
                 $tenantDbName,
                 $organization->primary_email,
@@ -124,23 +135,23 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 $userData
             );
             $steps[] = 'Created initial admin user';
-            
-            // Step 10: Update organization status to ACTIVE
+
+            // Step 11: Update organization status to ACTIVE
             $organization->registration_status = 'ACTIVE';
             $organization->activated_at = now();
             $organization->save();
             $steps[] = 'Updated organization status to ACTIVE';
-            
-            // Step 11: Create trial subscription
+
+            // Step 12: Create trial subscription
             $this->createTrialSubscription($orgId);
             $steps[] = 'Created trial subscription';
-            
-            // Step 12: Send credential email after provisioning is fully complete
+
+            // Step 13: Send credential email after provisioning is fully complete
             $this->sendCredentialsEmail($organization, $tempPassword, $userData['first_name'] ?? null);
             $steps[] = 'Sent credentials email';
-            
+
             Log::info("Tenant provisioning completed successfully for org_id: {$orgId}");
-            
+
             // Log provisioning success
             AuditLogger::logProvisioningEvent(
                 $orgId,
@@ -150,21 +161,20 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 null,
                 $steps
             );
-            
+
             return new ProvisioningResult(
                 success: true,
                 tenantDbName: $tenantDbName,
                 errorMessage: null,
                 steps: $steps
             );
-            
         } catch (\Exception $e) {
             Log::error("Tenant provisioning failed for org_id: {$orgId}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString(),
                 'completed_steps' => $steps
             ]);
-            
+
             // Log provisioning failure
             $organization = Organization::find($orgId);
             if ($organization) {
@@ -179,10 +189,10 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
 
                 $this->sendProvisioningFailedEmail($organization, $e->getMessage(), $userData['first_name'] ?? null);
             }
-            
+
             // Send admin notification
             $this->sendAdminNotification($orgId, $e->getMessage());
-            
+
             return new ProvisioningResult(
                 success: false,
                 tenantDbName: $tenantDbName,
@@ -199,14 +209,14 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     {
         try {
             $organization = Organization::find($orgId);
-            
+
             if (!$organization) {
                 Log::warning("Cannot rollback: Organization {$orgId} not found");
                 return;
             }
-            
+
             $tenantDbName = $organization->tenant_db_name;
-            
+
             if ($tenantDbName) {
                 // Drop the tenant database if it exists
                 try {
@@ -216,15 +226,14 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                     Log::error("Failed to drop tenant database: {$tenantDbName}", ['error' => $e->getMessage()]);
                 }
             }
-            
+
             // Reset organization to PENDING
             $organization->registration_status = 'PENDING';
             $organization->tenant_db_name = null;
             $organization->activated_at = null;
             $organization->save();
-            
+
             Log::info("Rollback completed for org_id: {$orgId}");
-            
         } catch (\Exception $e) {
             Log::error("Rollback failed for org_id: {$orgId}", ['error' => $e->getMessage()]);
             throw $e;
@@ -237,7 +246,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     public function getProvisioningStatus(int $orgId): ProvisioningStatus
     {
         $organization = Organization::find($orgId);
-        
+
         if (!$organization) {
             return new ProvisioningStatus(
                 status: 'NOT_FOUND',
@@ -245,7 +254,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 lastError: 'Organization not found'
             );
         }
-        
+
         return new ProvisioningStatus(
             status: $organization->registration_status,
             tenantDbName: $organization->tenant_db_name,
@@ -275,16 +284,15 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         try {
             // Switch to tenant database
             $this->connectionRouter->switchToTenant($tenantDbName);
-            
+
             // Run migrations for tenant database
             Artisan::call('migrate', [
                 '--database' => 'tenant',
                 '--path' => 'database/migrations/tenant',
                 '--force' => true
             ]);
-            
+
             Log::info("Ran tenant migrations for: {$tenantDbName}");
-            
         } catch (\Exception $e) {
             throw new \Exception("Failed to run tenant migrations: {$e->getMessage()}");
         } finally {
@@ -300,9 +308,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     {
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
-            
+
             $roles = [];
-            
+
             foreach (self::DEFAULT_ROLES as $roleData) {
                 $role = Role::create([
                     'role_code' => $roleData['code'],
@@ -312,13 +320,12 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                     'is_system_role' => true,
                     'created_by' => null
                 ]);
-                
+
                 $roles[$roleData['code']] = $role;
                 Log::info("Created role: {$roleData['code']}");
             }
-            
+
             return $roles;
-            
         } catch (\Exception $e) {
             throw new \Exception("Failed to seed default roles: {$e->getMessage()}");
         } finally {
@@ -333,11 +340,11 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     {
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
-            
+
             foreach ($roles as $roleCode => $role) {
                 foreach (self::MODULE_CODES as $moduleCode) {
                     $permissions = $this->getPermissionsForRole($roleCode, $moduleCode);
-                    
+
                     RolePermission::create([
                         'role_id' => $role->id,
                         'module_code' => $moduleCode,
@@ -351,10 +358,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                         'created_by' => null
                     ]);
                 }
-                
+
                 Log::info("Created permissions for role: {$roleCode}");
             }
-            
         } catch (\Exception $e) {
             throw new \Exception("Failed to seed role permissions: {$e->getMessage()}");
         } finally {
@@ -380,14 +386,18 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             return [
                 'scope' => 'global',
                 'view_cross_department' => true,
-                'can_view' => true, 'can_create' => true, 'can_edit' => true, 'can_approve' => true, 'can_delete' => true,
+                'can_view' => true,
+                'can_create' => true,
+                'can_edit' => true,
+                'can_approve' => true,
+                'can_delete' => true,
             ];
         }
 
         // Roles map to their identically named modules (Departmental Roles)
         if ($roleCode === $moduleCode) {
             $can_view = $can_create = $can_edit = $can_approve = true;
-        } 
+        }
         // Widespread base roles (MANAGER/USER)
         elseif (in_array($roleCode, ['MANAGER', 'USER'])) {
             $can_view = true;
@@ -421,7 +431,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     {
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
-            
+
             $rootDepartment = Department::create([
                 'dept_code' => 'ROOT',
                 'dept_name' => substr($orgName, 0, 100),
@@ -429,9 +439,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 'is_active' => true,
                 'created_by' => null
             ]);
-            
+
             Log::info("Created root department: {$orgName}");
-            
+
             foreach (self::DEFAULT_DEPARTMENTS as $parentName => $children) {
                 $parentDept = Department::create([
                     'dept_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $parentName), 0, 15)),
@@ -440,7 +450,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                     'is_active' => true,
                     'created_by' => null
                 ]);
-                
+
                 foreach ($children as $childName) {
                     Department::create([
                         'dept_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $childName), 0, 15)),
@@ -451,13 +461,52 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                     ]);
                 }
             }
-            
+
             Log::info("Seeded default departments hierarchy");
-            
+
             return $rootDepartment;
-            
         } catch (\Exception $e) {
             throw new \Exception("Failed to seed default departments: {$e->getMessage()}");
+        } finally {
+            $this->connectionRouter->switchToControl();
+        }
+    }
+
+    /**
+     * Seed department role mappings
+     */
+    private function seedDeptRoleMappings(string $tenantDbName, array $roles): void
+    {
+        try {
+            $this->connectionRouter->switchToTenant($tenantDbName);
+
+            $mappings = [
+                'ADMIN'       => 'Administration',
+                'SECURITY'    => 'Security',
+                'STORE'       => 'Store',
+                'QC'          => 'Quality Control',
+                'PROCUREMENT' => 'Procurement',
+                'PRODUCTION'  => 'Production',
+            ];
+
+            foreach ($mappings as $roleCode => $deptName) {
+                if (!isset($roles[$roleCode])) continue;
+
+                $dept = DB::connection('tenant')->table('department_master')
+                    ->where('dept_name', $deptName)
+                    ->orWhere('dept_code', $roleCode) // Fallback for code-based matches
+                    ->first();
+
+                if ($dept) {
+                    DB::connection('tenant')->table('dept_role_map')->updateOrInsert(
+                        ['dept_id' => $dept->id, 'role_id' => $roles[$roleCode]->id],
+                        ['created_at' => now()]
+                    );
+                    Log::info("Mapped role {$roleCode} to department {$deptName}");
+                }
+            }
+        } catch (\Exception $e) {
+            Log::error("Failed to seed department role mappings: {$e->getMessage()}");
         } finally {
             $this->connectionRouter->switchToControl();
         }
@@ -475,16 +524,16 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     ): string {
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
-            
+
             // Use provided user data or generate defaults
             $firstName = $userData['first_name'] ?? ucfirst(explode('@', $email)[0]);
             $lastName = $userData['last_name'] ?? 'Admin';
             $password = $userData['password'] ?? null;
             $provider = $userData['provider'] ?? 'email';
-            
+
             // Generate random temporary password if not provided
             $tempPassword = $password ?? Str::random(12);
-            
+
             $user = new User([
                 'employee_code' => 'ADMIN001',
                 'email' => $email,
@@ -496,15 +545,14 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 'is_active' => true,
                 'created_by' => null
             ]);
-            
+
             // Set password using the mutator
             $user->password_hash = $tempPassword;
             $user->save();
-            
+
             Log::info("Created initial admin user: {$email} (provider: {$provider})");
-            
+
             return $tempPassword;
-            
         } catch (\Exception $e) {
             throw new \Exception("Failed to create initial admin user: {$e->getMessage()}");
         } finally {
@@ -520,19 +568,19 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         try {
             // Get the trial plan (assuming there's a plan with code 'TRIAL')
             $trialPlan = SubscriptionPlan::where('plan_code', 'TRIAL')->first();
-            
+
             if (!$trialPlan) {
                 // If no trial plan exists, get the first active plan
                 $trialPlan = SubscriptionPlan::active()->first();
             }
-            
+
             if (!$trialPlan) {
                 throw new \Exception("No subscription plan available for trial");
             }
-            
+
             $trialStartDate = now();
             $trialEndDate = now()->addDays(14);
-            
+
             OrgSubscription::create([
                 'org_id' => $orgId,
                 'plan_id' => $trialPlan->plan_id,
@@ -543,9 +591,8 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 'current_period_end' => $trialEndDate,
                 'next_billing_date' => $trialEndDate,
             ]);
-            
+
             Log::info("Created trial subscription for org_id: {$orgId}");
-            
         } catch (\Exception $e) {
             throw new \Exception("Failed to create trial subscription: {$e->getMessage()}");
         }
@@ -567,12 +614,11 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                     $tempPassword
                 )
             );
-            
+
             Log::info("Credentials email sent to: {$organization->primary_email}", [
                 'org_id' => $organization->org_id,
                 'org_name' => $organization->org_name,
             ]);
-            
         } catch (\Exception $e) {
             // Don't fail provisioning if email fails
             Log::warning("Failed to send credentials email: {$e->getMessage()}", [
@@ -593,12 +639,12 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 'org_id' => $orgId,
                 'error' => $errorMessage
             ]);
-            
+
             // Uncomment when email is configured:
             // Mail::to(config('app.admin_email'))->send(
             //     new ProvisioningFailedEmail($orgId, $errorMessage)
             // );
-            
+
         } catch (\Exception $e) {
             Log::error("Failed to send admin notification: {$e->getMessage()}");
         }
