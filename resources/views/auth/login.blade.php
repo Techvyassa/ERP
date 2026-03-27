@@ -132,7 +132,7 @@
                             <input type="checkbox" name="remember" class="w-4 h-4 text-primary border-gray-300 rounded focus:ring-primary">
                             <span class="ml-2 text-sm text-gray-700">Keep me signed in</span>
                         </label>
-                        <a href="#" class="text-sm text-primary hover:text-primary/80 font-medium">Forgot password?</a>
+                        <a href="/forgot-password" class="text-sm text-primary hover:text-primary/80 font-medium">Forgot password?</a>
                     </div>
 
                     <!-- Error Message -->
@@ -270,6 +270,7 @@
                 
                 const email = document.getElementById('email').value;
                 const password = document.getElementById('password').value;
+                const rememberMe = document.querySelector('input[name="remember"]').checked;
                 
                 try {
                     // Send to backend for authentication (org_slug will be auto-detected)
@@ -283,7 +284,8 @@
                         credentials: 'include', // Important: allows cookies to be set
                         body: JSON.stringify({
                             email: email,
-                            password: password
+                            password: password,
+                            remember_me: rememberMe
                         })
                     });
                     

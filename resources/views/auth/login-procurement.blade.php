@@ -58,7 +58,7 @@
                         <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20">
                         <span class="text-sm text-slate-600">Remember me</span>
                     </label>
-                    <a href="#" class="text-sm font-semibold text-primary hover:underline">Forgot password?</a>
+                    <a href="/forgot-password" class="text-sm font-semibold text-primary hover:underline">Forgot password?</a>
                 </div>
 
                 <button 
@@ -90,7 +90,7 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     credentials: 'include',
-                    body: JSON.stringify({ email, password })
+                    body: JSON.stringify({ email, password, org_slug: '{{ $orgSlug }}', remember_me: document.querySelector('input[type="checkbox"]')?.checked ?? false })
                 });
 
                 const data = await response.json();

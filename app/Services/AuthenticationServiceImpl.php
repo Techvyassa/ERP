@@ -50,7 +50,7 @@ class AuthenticationServiceImpl implements AuthenticationService
      * @return AuthResult Authentication result with tokens
      * @throws AuthenticationException
      */
-    public function login(string $email, string $password, ?string $orgSlug = null): AuthResult
+    public function login(string $email, string $password, ?string $orgSlug = null, bool $rememberMe = false): AuthResult
     {
         // Step 1: Switch to Control DB and find organization
         $this->connectionRouter->switchToControl();
@@ -118,7 +118,7 @@ class AuthenticationServiceImpl implements AuthenticationService
         $user->updateLastLogin();
         
         // Step 7-8: Generate and store tokens using TokenService
-        $tokens = $this->tokenService->generateTokens($user, $organization);
+        $tokens = $this->tokenService->generateTokens($user, $organization, null, null, $rememberMe);
         
         // Log successful authentication
         AuditLogger::logAuthAttempt($email, $organization->org_slug, true, null, null, $user->id);

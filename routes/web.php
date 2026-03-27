@@ -33,6 +33,8 @@ Route::get('/pricing', [PublicController::class, 'pricing'])->name('pricing');
 // Authentication Pages
 Route::get('/register', [PublicController::class, 'register'])->name('register');
 Route::get('/login', [PublicController::class, 'login'])->name('login');
+Route::get('/forgot-password', fn() => view('auth.forgot-password'))->name('password.request');
+Route::get('/reset-password', fn() => view('auth.reset-password'))->name('password.reset');
 
 // Google OAuth
 Route::get('/auth/google', function () {
