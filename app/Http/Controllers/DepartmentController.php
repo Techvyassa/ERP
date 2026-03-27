@@ -199,6 +199,20 @@ class DepartmentController extends Controller
         try {
             $department = Department::findOrFail($id);
 
+            // Prevent editing of root department
+            if ($department->dept_code === 'ROOT') {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'ROOT_DEPARTMENT_EDIT_FORBIDDEN',
+                        'details' => []
+                    ],
+                    'message' => 'Root department cannot be edited',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 403);
+            }
+
             if ($request->has('dept_code')) {
                 $department->dept_code = $request->input('dept_code');
             }
@@ -266,6 +280,21 @@ class DepartmentController extends Controller
 
         try {
             $department = Department::findOrFail($id);
+
+            // Prevent deactivation of root department
+            if ($department->dept_code === 'ROOT') {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'ROOT_DEPARTMENT_DEACTIVATE_FORBIDDEN',
+                        'details' => []
+                    ],
+                    'message' => 'Root department cannot be deactivated',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 403);
+            }
+
             $department->is_active = false;
             $department->save();
 

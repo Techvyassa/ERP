@@ -185,6 +185,20 @@ class RoleController extends Controller
         try {
             $role = Role::findOrFail($id);
 
+            // Prevent editing of system roles
+            if ($role->is_system_role) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'SYSTEM_ROLE_EDIT_FORBIDDEN',
+                        'details' => []
+                    ],
+                    'message' => 'System roles cannot be edited or deactivated',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 403);
+            }
+
             // Update fields
             if ($request->has('role_code')) {
                 $role->role_code = $request->input('role_code');

@@ -65,6 +65,10 @@ class Department extends Model
         
         // Re-assign orphaned users to ROOT department when their department is deleted
         static::deleting(function ($department) {
+            if ($department->dept_code === 'ROOT') {
+                throw new \Exception('Root department cannot be deleted');
+            }
+            
             $rootDept = self::whereNull('parent_dept_id')->first();
             if ($rootDept && $department->id !== $rootDept->id) {
                 $department->users()->update(['dept_id' => $rootDept->id]);
