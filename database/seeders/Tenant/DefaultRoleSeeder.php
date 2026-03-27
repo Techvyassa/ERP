@@ -75,6 +75,14 @@ class DefaultRoleSeeder extends Seeder
                     'is_system_role' => true,
                     'created_by' => null,
                 ],
+                [
+                    'role_code' => 'PRODUCTION',
+                    'role_name' => 'Production',
+                    'description' => 'Production department access',
+                    'is_active' => true,
+                    'is_system_role' => true,
+                    'created_by' => null,
+                ],
             ];
 
             foreach ($roles as $roleData) {

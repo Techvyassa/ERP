@@ -25,7 +25,7 @@ use Illuminate\Support\Str;
 class TenantProvisioningServiceImpl implements TenantProvisioningService
 {
     private const MODULE_CODES = [
-        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT'
+        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION'
     ];
     
     private const DEFAULT_ROLES = [
@@ -36,6 +36,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         ['code' => 'STORE', 'name' => 'Store', 'description' => 'Warehouse and store operations'],
         ['code' => 'QC', 'name' => 'Quality Control', 'description' => 'Quality control operations'],
         ['code' => 'PROCUREMENT', 'name' => 'Procurement', 'description' => 'Procurement department access'],
+        ['code' => 'PRODUCTION', 'name' => 'Production', 'description' => 'Production department access'],
     ];
 
     private const DEFAULT_DEPARTMENTS = [
@@ -44,6 +45,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         'Store' => [],
         'QC' => [],
         'Procurement' => [],
+        'Production' => [],
     ];
 
     public function __construct(

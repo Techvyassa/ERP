@@ -108,6 +108,7 @@ return [
             'INVENTORY' => 'Inventory Management',
             'WAREHOUSE' => 'Warehouse Management',
             'REPORTS' => 'Reports & Analytics',
+            'PRODUCTION' => 'Production Management',
             'SETTINGS' => 'System Settings',
         ],
         

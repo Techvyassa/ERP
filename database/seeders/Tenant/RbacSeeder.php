@@ -40,6 +40,7 @@ class RbacSeeder extends Seeder
             ['dept_code' => 'QC',    'dept_name' => 'Quality Control'],
             ['dept_code' => 'FIN',   'dept_name' => 'Finance'],
             ['dept_code' => 'PPC',   'dept_name' => 'Production Planning & Control'],
+            ['dept_code' => 'PROD',  'dept_name' => 'Production'],
             ['dept_code' => 'ADMIN', 'dept_name' => 'IT / Admin'],
         ];
 
@@ -140,6 +141,13 @@ class RbacSeeder extends Seeder
                 'description'   => 'Read-only access to stock levels and GRN data',
                 'is_system_role'=> true,
             ],
+            // Production
+            [
+                'role_code'     => 'PRODUCTION',
+                'role_name'     => 'Production',
+                'description'   => 'Production department access',
+                'is_system_role'=> true,
+            ],
             // Admin
             [
                 'role_code'     => 'ADMIN',
@@ -176,6 +184,7 @@ class RbacSeeder extends Seeder
             'QC'    => ['QC_TECH', 'QC_MGR'],
             'FIN'   => ['AP_CLERK', 'FIN_MGR', 'CFO'],
             'PPC'   => ['PPC_USER'],
+            'PROD'  => ['PRODUCTION'],
             'ADMIN' => ['ADMIN'],
         ];
 
@@ -369,6 +378,19 @@ class RbacSeeder extends Seeder
                 'REPORTS'    => [true,  false, false, false, false],
                 'BOM'        => [true,  true,  true,  false, false],
             ],
+            // ── Production ────────────────────────────────────────────────
+            'PRODUCTION' => [
+                'PO'         => [false, false, false, false, false],
+                'GATE_ENTRY' => [false, false, false, false, false],
+                'MR_GRN'     => [true,  false, false, false, false],
+                'QC'         => [false, false, false, false, false],
+                'INVOICE'    => [false, false, false, false, false],
+                'PAYMENT'    => [false, false, false, false, false],
+                'STOCK'      => [true,  false, false, false, false],
+                'REPORTS'    => [true,  false, false, false, false],
+                'BOM'        => [true,  true,  true,  false, false],
+                'PRODUCTION' => [true,  true,  true,  true,  false],
+            ],
             // ── Admin ─────────────────────────────────────────────────────
             'ADMIN' => [
                 'PO'         => [true, true, true, true, true],
@@ -380,6 +402,7 @@ class RbacSeeder extends Seeder
                 'STOCK'      => [true, true, true, true, true],
                 'REPORTS'    => [true, true, true, true, true],
                 'BOM'        => [true, true, true, true, true],
+                'PRODUCTION' => [true, true, true, true, true],
             ],
         ];
 
