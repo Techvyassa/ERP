@@ -504,6 +504,7 @@ Route::middleware(['web.jwt'])->group(function () {
         Route::get('/quality/login', [PublicController::class, 'loginQuality'])->name('quality.login');
         Route::get('/security/login', [PublicController::class, 'loginSecurity'])->name('security.login');
         Route::get('/admin/login', [PublicController::class, 'loginAdmin'])->name('admin.login');
+        Route::get('/production/login', [PublicController::class, 'loginProduction'])->name('production.login');
 
         // Procurement Portal
         Route::prefix('procurement')->name('procurement.')->group(function () use ($getOrg) {
@@ -671,6 +672,33 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('qc-parameters');
+        });
+
+        // Production Portal
+        Route::prefix('production')->name('production.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.dashboard', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('dashboard');
+
+            Route::get('/orders', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.orders.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('orders');
+
+            Route::get('/mir', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.mir.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('mir');
         });
 
         // ====================================================================

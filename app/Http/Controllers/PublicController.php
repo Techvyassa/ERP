@@ -97,4 +97,9 @@ class PublicController extends Controller
     {
         return view('auth.login-security', ['orgSlug' => $orgSlug]);
     }
+
+    public function loginProduction(string $orgSlug): View
+    {
+        return view('auth.login-production', ['orgSlug' => $orgSlug]);
+    }
 }

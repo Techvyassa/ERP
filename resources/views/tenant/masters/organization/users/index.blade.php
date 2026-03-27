@@ -429,6 +429,7 @@
              else if (name.includes('warehouse') || name.includes('store')) portal = 'warehouse';
              else if (name.includes('quality') || name.includes('qc')) portal = 'quality';
              else if (name.includes('security') || name.includes('guard')) portal = 'security';
+             else if (name.includes('production') || name.includes('manufacturing') || name.includes('bom')) portal = 'production';
              return this.baseUrl + '/' + portal + '/login';
          },
 
