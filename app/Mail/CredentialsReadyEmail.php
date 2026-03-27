@@ -9,31 +9,33 @@ use Illuminate\Mail\Mailables\Content;
 use Illuminate\Mail\Mailables\Envelope;
 use Illuminate\Queue\SerializesModels;
 
-class RegistrationQueuedEmail extends Mailable
+class CredentialsReadyEmail extends Mailable
 {
     use Queueable, SerializesModels;
 
     public function __construct(
         public Organization $organization,
         public string $firstName,
-        public string $email
+        public string $email,
+        public string $tempPassword
     ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Welcome to ' . config('app.name') . ' - workspace setup started',
+            subject: config('app.name') . ' login credentials for ' . $this->organization->org_name,
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.registration-queued',
+            view: 'emails.credentials-ready',
             with: [
                 'organizationName' => $this->organization->org_name,
                 'firstName' => $this->firstName,
                 'email' => $this->email,
+                'tempPassword' => $this->tempPassword,
                 'loginUrl' => config('app.url') . '/login',
             ],
         );

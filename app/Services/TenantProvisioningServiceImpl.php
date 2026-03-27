@@ -7,6 +7,8 @@ use App\Contracts\ProvisioningResult;
 use App\Contracts\ProvisioningStatus;
 use App\Contracts\DatabaseConnectionRouter;
 use App\Helpers\AuditLogger;
+use App\Mail\CredentialsReadyEmail;
+use App\Mail\ProvisioningFailedUserEmail;
 use App\Models\Control\Organization;
 use App\Models\Control\OrgSubscription;
 use App\Models\Control\SubscriptionPlan;
@@ -118,9 +120,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             $this->createTrialSubscription($orgId);
             $steps[] = 'Created trial subscription';
             
-            // Step 12: Send welcome email
-            $this->sendWelcomeEmail($organization, $tempPassword, $userData['first_name'] ?? null);
-            $steps[] = 'Sent welcome email';
+            // Step 12: Send credential email after provisioning is fully complete
+            $this->sendCredentialsEmail($organization, $tempPassword, $userData['first_name'] ?? null);
+            $steps[] = 'Sent credentials email';
             
             Log::info("Tenant provisioning completed successfully for org_id: {$orgId}");
             
@@ -159,6 +161,8 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                     $e->getMessage(),
                     $steps
                 );
+
+                $this->sendProvisioningFailedEmail($organization, $e->getMessage(), $userData['first_name'] ?? null);
             }
             
             // Send admin notification
@@ -501,15 +505,15 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     }
 
     /**
-     * Send welcome email with credentials
+     * Send credentials email after the workspace is fully provisioned.
      */
-    private function sendWelcomeEmail(Organization $organization, string $tempPassword, ?string $firstName = null): void
+    private function sendCredentialsEmail(Organization $organization, string $tempPassword, ?string $firstName = null): void
     {
         try {
             $recipientFirstName = $firstName ?: ucfirst(explode('@', $organization->primary_email)[0]);
 
             Mail::to($organization->primary_email)->send(
-                new \App\Mail\WelcomeEmail(
+                new CredentialsReadyEmail(
                     $organization,
                     $recipientFirstName,
                     $organization->primary_email,
@@ -517,14 +521,14 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 )
             );
             
-            Log::info("Welcome email sent to: {$organization->primary_email}", [
+            Log::info("Credentials email sent to: {$organization->primary_email}", [
                 'org_id' => $organization->org_id,
                 'org_name' => $organization->org_name,
             ]);
             
         } catch (\Exception $e) {
             // Don't fail provisioning if email fails
-            Log::warning("Failed to send welcome email: {$e->getMessage()}", [
+            Log::warning("Failed to send credentials email: {$e->getMessage()}", [
                 'org_id' => $organization->org_id,
                 'email' => $organization->primary_email,
             ]);
@@ -550,6 +554,34 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             
         } catch (\Exception $e) {
             Log::error("Failed to send admin notification: {$e->getMessage()}");
+        }
+    }
+
+    /**
+     * Notify the organization contact when workspace setup fails.
+     */
+    private function sendProvisioningFailedEmail(Organization $organization, string $errorMessage, ?string $firstName = null): void
+    {
+        try {
+            $recipientFirstName = $firstName ?: ucfirst(explode('@', $organization->primary_email)[0]);
+
+            Mail::to($organization->primary_email)->send(
+                new ProvisioningFailedUserEmail(
+                    organization: $organization,
+                    firstName: $recipientFirstName,
+                    errorMessage: $errorMessage
+                )
+            );
+
+            Log::warning("Provisioning failure email sent to organization contact", [
+                'org_id' => $organization->org_id,
+                'email' => $organization->primary_email,
+            ]);
+        } catch (\Exception $e) {
+            Log::error("Failed to send provisioning failure email: {$e->getMessage()}", [
+                'org_id' => $organization->org_id,
+                'email' => $organization->primary_email,
+            ]);
         }
     }
 }

@@ -379,10 +379,10 @@ export default {
           if (data.error && data.error.details) {
             this.errors = data.error.details;
           }
-          this.errorMessage = data.message || 'Registration failed. Please check your inputs.';
+          this.errorMessage = data.message || 'We could not complete your registration. Please check your details and try again.';
         }
       } catch (error) {
-        this.errorMessage = 'Network error. Please try again.';
+        this.errorMessage = 'Network error while submitting registration. Please try again.';
       } finally {
         this.isSubmitting = false;
       }

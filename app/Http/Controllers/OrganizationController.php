@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Control\Organization;
 use App\Jobs\ProvisionTenantJob;
 use App\Mail\RegistrationQueuedEmail;
+use App\Models\Control\SubscriptionPlan;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
@@ -216,7 +217,7 @@ class OrganizationController extends Controller
             $selectedPlanCode = $request->input('selected_plan');
 
             if (!$maxUsers && $selectedPlanCode) {
-                $plan = \App\Models\Control\SubscriptionPlan::where('plan_code', $selectedPlanCode)->active()->first();
+                $plan = SubscriptionPlan::where('plan_code', $selectedPlanCode)->active()->first();
                 if ($plan) {
                     $maxUsers = $plan->max_users;
                 }
@@ -256,23 +257,28 @@ class OrganizationController extends Controller
                 'photo_url' => $request->input('photo_url'),
             ];
 
-            ProvisionTenantJob::dispatch($organization->org_id, $userData);
+            $mailSent = false;
+            $mailWarning = null;
 
             try {
-                Mail::to($organization->primary_email)->queue(
+                Mail::to($organization->primary_email)->send(
                     new RegistrationQueuedEmail(
                         organization: $organization,
                         firstName: $request->input('first_name'),
                         email: $organization->primary_email
                     )
                 );
+                $mailSent = true;
             } catch (\Throwable $mailException) {
+                $mailWarning = 'Registration was completed, but we could not send the confirmation email. Your workspace setup has still started.';
                 Log::warning('Failed to send registration acknowledgement email', [
                     'org_id' => $organization->org_id,
                     'email' => $organization->primary_email,
                     'error' => $mailException->getMessage(),
                 ]);
             }
+
+            ProvisionTenantJob::dispatch($organization->org_id, $userData);
 
             return response()->json([
                 'success' => true,
@@ -285,8 +291,14 @@ class OrganizationController extends Controller
                     'tenant_db_name' => $organization->tenant_db_name,
                     'primary_email' => $organization->primary_email,
                     'organization_url' => url('/' . $organization->org_slug),
+                    'email_notification_status' => $mailSent ? 'SENT' : 'FAILED',
+                    'email_notification_message' => $mailSent
+                        ? 'We sent a confirmation email before starting workspace setup.'
+                        : $mailWarning,
                 ],
-                'message' => 'Registration received. We are setting up your workspace in the background and will email you when it is ready.',
+                'message' => $mailSent
+                    ? 'Registration received. We emailed your confirmation first and have now started setting up your workspace.'
+                    : 'Registration received. Workspace setup has started, but the confirmation email could not be sent.',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 201);
@@ -307,7 +319,7 @@ class OrganizationController extends Controller
                     'code' => 'REGISTRATION_FAILED',
                     'details' => []
                 ],
-                'message' => 'Failed to register organization: ' . $e->getMessage(),
+                'message' => 'We could not complete your organization registration. No workspace was created. Please try again or contact support if the issue continues.',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
             ], 500);

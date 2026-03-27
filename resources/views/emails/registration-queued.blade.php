@@ -3,7 +3,7 @@
 <head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Registration Received</title>
+    <title>Welcome to {{ config('app.name') }}</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -56,20 +56,24 @@
         </div>
         <div class="content">
             <p>Hi {{ $firstName }},</p>
-            <p>Thanks for joining us! We've received your registration for <strong>{{ $organizationName }}</strong>.</p>
+            <p>Thanks for registering <strong>{{ $organizationName }}</strong> with us. Your organization signup is successful and your ERP workspace setup has started.</p>
 
             <div class="panel">
-                <p style="margin-top: 0;"><strong>What's happening now?</strong></p>
-                <p style="margin-bottom: 0;">We are currently preparing your private workspace and setting everything up for you. This usually takes just a few minutes.</p>
+                <p style="margin-top: 0;"><strong>Welcome message</strong></p>
+                <p>Welcome to {{ config('app.name') }}, your ERP software for managing key business operations in one place.</p>
+                <p><strong>ERP software details:</strong> your account will help your team manage organization setup, users, process workflows, and day-to-day operational records from a single system.</p>
+                <p><strong>How it works:</strong> after registration, we create your dedicated tenant database, run migrations, prepare the workspace, and create your admin login.</p>
+                <p><strong>What it is for:</strong> this ERP environment is intended to centralize your organization data and support structured operations with role-based access.</p>
+                <p style="margin-bottom: 0;"><strong>Please wait until you receive the separate credentials email before trying to log in.</strong> This helps prevent login issues while tenant database creation and migration are still in progress.</p>
             </div>
 
-            <p>As soon as everything is ready, we'll send a follow-up email to <strong>{{ $email }}</strong> with your login details.</p>
+            <p>Once provisioning finishes, we will send a separate credential email to <strong>{{ $email }}</strong> with your login email and password.</p>
             
             <p>In the meantime, you can bookmark your future login page:<br>
-                <a href="{{ $organizationUrl }}">{{ $organizationUrl }}</a>
+                <a href="{{ $loginUrl }}">{{ $loginUrl }}</a>
             </p>
             
-            <p>We're excited to have you on board!</p>
+            <p class="muted">Do not try to sign in before the credentials email arrives, especially before tenant DB creation completes.</p>
         </div>
     </div>
 </body>

@@ -233,9 +233,14 @@
 
             errorMessage.classList.add('hidden');
 
+            const emailStatusText = data.email_notification_status === 'SENT'
+                ? `A confirmation email has been sent to <strong>${data.primary_email}</strong> before workspace setup started.`
+                : `We saved your registration, but we could not send the confirmation email to <strong>${data.primary_email}</strong>.`;
+
             successText.innerHTML = `
                 <p class="font-semibold">Registration complete. Workspace setup has started.</p>
-                <p class="mt-1 text-sm">We are creating your organization in the background. A confirmation email has been sent to <strong>${data.primary_email}</strong>, and we will send another email when login is ready.</p>
+                <p class="mt-1 text-sm">${emailStatusText}</p>
+                <p class="mt-1 text-sm">We are now creating your organization workspace in the background. If setup fails, we will email you with the issue details.</p>
                 <p class="mt-2 text-sm">Organization URL: <strong>${data.organization_url}</strong></p>
             `;
 
@@ -314,7 +319,7 @@
                             }
                             throw new Error(errorMsg);
                         }
-                        throw new Error(data.message || 'Registration failed');
+                        throw new Error(data.message || 'We could not complete your registration. Please review the form and try again.');
                     }
                 } catch (error) {
                     console.error('Google Sign-Up Error:', error);
@@ -395,11 +400,11 @@
                             }
                             throw new Error(errorMsg);
                         }
-                        throw new Error(data.message || 'Registration failed');
+                        throw new Error(data.message || 'We could not complete your registration. Please review the form and try again.');
                     }
                 } catch (error) {
                     console.error('Registration Error:', error);
-                    let errorMsg = 'Registration failed. Please try again.';
+                    let errorMsg = 'We could not complete your registration. Please try again.';
                     
                     if (error.message) {
                         errorMsg = error.message;
