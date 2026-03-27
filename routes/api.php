@@ -119,8 +119,8 @@ Route::prefix('v1')->group(function () {
         });
 
 
-        // Department management endpoints (with RBAC middleware for SETTINGS module)
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('departments')->group(function () {
+        // Department management endpoints (with RBAC middleware for ADMINISTRATION module)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('departments')->group(function () {
             Route::get('/', [App\Http\Controllers\DepartmentController::class, 'index']);
             Route::get('/import/template', [App\Http\Controllers\DepartmentController::class, 'downloadTemplate']);
             Route::post('/import', [App\Http\Controllers\DepartmentController::class, 'importCSV']);
@@ -133,8 +133,8 @@ Route::prefix('v1')->group(function () {
         });
 
 
-        // Role management endpoints (with RBAC middleware for SETTINGS module)
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('roles')->group(function () {
+        // Role management endpoints (with RBAC middleware for ADMINISTRATION module)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('roles')->group(function () {
             Route::get('/', [App\Http\Controllers\RoleController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\RoleController::class, 'show']);
             Route::post('/', [App\Http\Controllers\RoleController::class, 'store']);
@@ -147,8 +147,8 @@ Route::prefix('v1')->group(function () {
         });
 
 
-        // User management endpoints (with RBAC middleware for USERS module)
-        Route::middleware(['check.module.permission:USERS'])->prefix('users')->group(function () {
+        // User management endpoints (with RBAC middleware for ADMINISTRATION module)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('users')->group(function () {
             Route::get('/', [App\Http\Controllers\UserController::class, 'index']);
             Route::get('/import/template', [App\Http\Controllers\UserController::class, 'downloadTemplate']);
             Route::post('/import', [App\Http\Controllers\UserController::class, 'importCSV']);
@@ -159,8 +159,8 @@ Route::prefix('v1')->group(function () {
         });
 
 
-        // HSN Code management endpoints (with RBAC middleware for SETTINGS module)
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('hsn-codes')->group(function () {
+        // HSN Code management endpoints (with RBAC middleware for ADMINISTRATION module)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('hsn-codes')->group(function () {
             Route::get('/', [App\Http\Controllers\HSNCodeController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\HSNCodeController::class, 'show']);
             Route::post('/', [App\Http\Controllers\HSNCodeController::class, 'store']);
@@ -168,8 +168,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\HSNCodeController::class, 'destroy']);
         });
 
-        // GST Tax management endpoints (with RBAC middleware for SETTINGS module)
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('gst-taxes')->group(function () {
+        // GST Tax management endpoints (with RBAC middleware for ADMINISTRATION module)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('gst-taxes')->group(function () {
             Route::get('/', [App\Http\Controllers\GSTTaxController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\GSTTaxController::class, 'show']);
             Route::post('/', [App\Http\Controllers\GSTTaxController::class, 'store']);
@@ -177,8 +177,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\GSTTaxController::class, 'destroy']);
         });
 
-        // Currency management endpoints (with RBAC middleware for SETTINGS module)
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('currencies')->group(function () {
+        // Currency management endpoints (with RBAC middleware for ADMINISTRATION module)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('currencies')->group(function () {
             Route::get('/', [App\Http\Controllers\CurrencyController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\CurrencyController::class, 'show']);
             Route::post('/', [App\Http\Controllers\CurrencyController::class, 'store']);
@@ -186,8 +186,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\CurrencyController::class, 'destroy']);
         });
 
-        // UOM Master management endpoints (with RBAC middleware for SETTINGS module)
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('uoms')->group(function () {
+        // UOM Master management endpoints (with RBAC middleware for ADMINISTRATION module)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('uoms')->group(function () {
             Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
             Route::get('/barcode', [App\Http\Controllers\UOMController::class, 'barcode']);
             Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
@@ -196,8 +196,8 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\UOMController::class, 'destroy']);
         });
 
-        // INVENTORY Management Endpoints
-        Route::middleware(['check.module.permission:INVENTORY'])->group(function () {
+        // INVENTORY Management Endpoints (Master Data)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () {
             // Warehouse Master
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
@@ -241,9 +241,9 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // PROCUREMENT (Vendor & Procurement) Endpoints
-        // Roles: PROC_EXE (create/edit vendors), PROC_MGR (approve vendors), ADMIN (all)
-        Route::middleware(['check.module.permission:PO'])->group(function () {
+        // PROCUREMENT (Vendor Master Data) Endpoints
+        // Roles: ADMIN (all)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
                 Route::get('/', [App\Http\Controllers\VendorController::class, 'index']);
@@ -375,8 +375,8 @@ Route::prefix('v1')->group(function () {
 
         });
 
-        // QC Test Type Master (SETTINGS permission)
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('qc-test-types')->group(function () {
+        // QC Test Type Master (ADMINISTRATION permission)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('qc-test-types')->group(function () {
             Route::get('/', [App\Http\Controllers\QCTestTypeController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'show']);
             Route::post('/', [App\Http\Controllers\QCTestTypeController::class, 'store']);
@@ -384,7 +384,7 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'destroy']);
         });
 
-        Route::middleware(['check.module.permission:SETTINGS'])->prefix('qc-parameters')->group(function () {
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->prefix('qc-parameters')->group(function () {
             Route::get('/', [App\Http\Controllers\QCParameterController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\QCParameterController::class, 'show']);
             Route::post('/', [App\Http\Controllers\QCParameterController::class, 'store']);
@@ -477,8 +477,8 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // BOM (Bill of Materials) Endpoints
-        Route::middleware(['check.module.permission:BOM'])->group(function () {
+        // BOM (Bill of Materials) Endpoints (Master Data)
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () {
             // BOM Header
             Route::prefix('bom-headers')->group(function () {
                 Route::get('/', [App\Http\Controllers\BOMHeaderController::class, 'index']);

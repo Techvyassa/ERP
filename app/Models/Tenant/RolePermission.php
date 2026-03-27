@@ -13,6 +13,8 @@ class RolePermission extends Model
     protected $fillable = [
         'role_id',
         'module_code',
+        'scope',
+        'view_cross_department',
         'can_view',
         'can_create',
         'can_edit',
@@ -22,6 +24,7 @@ class RolePermission extends Model
     ];
     
     protected $casts = [
+        'view_cross_department' => 'boolean',
         'can_view' => 'boolean',
         'can_create' => 'boolean',
         'can_edit' => 'boolean',

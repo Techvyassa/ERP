@@ -9,154 +9,137 @@ use Illuminate\Support\Facades\DB;
 
 class DefaultRolePermissionSeeder extends Seeder
 {
-    /**
-     * All module codes in the system
-     */
     private const MODULES = [
-        'SETTINGS',     // Settings (Roles, Departments, HSN, GST, Currency)
-        'USERS',        // User Management
-        'PR',           // Purchase Requisition
-        'PO',           // Purchase Order
-        'ASN',          // Advance Shipping Notice
-        'GATE_ENTRY',   // Gate Entry
-        'MR_GRN',       // Material Receipt & GRN
-        'GRN',          // Goods Receipt Note
-        'QC',           // Quality Control
-        'STOCK',        // Stock/Putaway Management
-        'INVOICE',      // Invoice Management
-        'PAYMENT',      // Payment Management
-        'INVENTORY',    // Inventory Management
-        'WAREHOUSE',    // Warehouse Management
-        'MATERIAL',     // Material Management
-        'USER_MGMT',    // User Management
-        'ROLE_MGMT',    // Role Management
-        'DEPT_MGMT',    // Department Management
-        'BOM',          // Bill of Materials
+        'SETTINGS',
+        'USERS',
+        'PR',
+        'PO',
+        'ASN',
+        'GATE_ENTRY',
+        'MR_GRN',
+        'GRN',
+        'QC',
+        'STOCK',
+        'INVOICE',
+        'PAYMENT',
+        'INVENTORY',
+        'WAREHOUSE',
+        'MATERIAL',
+        'USER_MGMT',
+        'ROLE_MGMT',
+        'DEPT_MGMT',
+        'BOM',
+        'ADMINISTRATION'
     ];
 
-    /**
-     * Run the database seeds.
-     * Creates role permissions for all default roles
-     * 
-     * ADMIN: all permissions true for all modules
-     * VIEWER: only can_view true for all modules
-     * 
-     * Requirements: 17.1-17.5
-     */
     public function run(): void
     {
-        // Use Tenant database connection
         DB::connection('tenant')->transaction(function () {
-            // Get all roles
-            $adminRole = Role::where('role_code', 'ADMIN')->first();
-            $managerRole = Role::where('role_code', 'MANAGER')->first();
-            $userRole = Role::where('role_code', 'USER')->first();
-            $viewerRole = Role::where('role_code', 'VIEWER')->first();
+            $roles = Role::whereIn('role_code', ['ADMIN', 'MANAGER', 'USER', 'PROCUREMENT', 'SECURITY', 'WAREHOUSE', 'QC'])->get();
 
-            if (!$adminRole || !$managerRole || !$userRole || !$viewerRole) {
+            if ($roles->isEmpty()) {
                 echo "✗ Default roles not found. Please run DefaultRoleSeeder first.\n";
                 return;
             }
 
-            // Seed permissions for each role
-            $this->seedAdminPermissions($adminRole);
-            $this->seedManagerPermissions($managerRole);
-            $this->seedUserPermissions($userRole);
-            $this->seedViewerPermissions($viewerRole);
+            foreach ($roles as $role) {
+                foreach (self::MODULES as $moduleCode) {
+                    $permissions = $this->getPermissionsForRole($role->role_code, $moduleCode);
+
+                    RolePermission::updateOrCreate(
+                        [
+                            'role_id' => $role->id,
+                            'module_code' => $moduleCode,
+                        ],
+                        [
+                            'scope' => $permissions['scope'],
+                            'view_cross_department' => $permissions['view_cross_department'],
+                            'can_view' => $permissions['can_view'],
+                            'can_create' => $permissions['can_create'],
+                            'can_edit' => $permissions['can_edit'],
+                            'can_approve' => $permissions['can_approve'],
+                            'can_delete' => $permissions['can_delete'],
+                            'created_by' => null,
+                        ]
+                    );
+                }
+            }
 
             echo "✓ Default role permissions seeded successfully\n";
         });
     }
 
-    /**
-     * Seed ADMIN permissions - all permissions true for all modules
-     */
-    private function seedAdminPermissions(Role $role): void
+    private function getPermissionsForRole(string $roleCode, string $moduleCode): array
     {
-        foreach (self::MODULES as $moduleCode) {
-            RolePermission::updateOrCreate(
-                [
-                    'role_id' => $role->id,
-                    'module_code' => $moduleCode,
-                ],
-                [
-                    'can_view' => true,
-                    'can_create' => true,
-                    'can_edit' => true,
-                    'can_approve' => true,
-                    'can_delete' => true,
-                    'created_by' => null,
-                ]
-            );
-        }
-    }
+        $can_view = false;
+        $can_create = false;
+        $can_edit = false;
+        $can_approve = false;
+        $can_delete = false;
+        $scope = 'department';
+        $view_cross = false;
 
-    /**
-     * Seed MANAGER permissions - view, create, edit, approve for all modules
-     */
-    private function seedManagerPermissions(Role $role): void
-    {
-        foreach (self::MODULES as $moduleCode) {
-            RolePermission::updateOrCreate(
-                [
-                    'role_id' => $role->id,
-                    'module_code' => $moduleCode,
-                ],
-                [
-                    'can_view' => true,
-                    'can_create' => true,
-                    'can_edit' => true,
-                    'can_approve' => true,
-                    'can_delete' => false,
-                    'created_by' => null,
-                ]
-            );
+        if (in_array($roleCode, ['ADMIN'])) {
+            $scope = 'global';
+            $view_cross = true;
         }
-    }
 
-    /**
-     * Seed USER permissions - view, create, edit for all modules
-     */
-    private function seedUserPermissions(Role $role): void
-    {
-        foreach (self::MODULES as $moduleCode) {
-            RolePermission::updateOrCreate(
-                [
-                    'role_id' => $role->id,
-                    'module_code' => $moduleCode,
-                ],
-                [
-                    'can_view' => true,
-                    'can_create' => true,
-                    'can_edit' => true,
-                    'can_approve' => false,
-                    'can_delete' => false,
-                    'created_by' => null,
-                ]
-            );
+        switch ($roleCode) {
+            case 'ADMIN':
+                $can_view = $can_create = $can_edit = $can_approve = $can_delete = true;
+                break;
+            case 'MANAGER':
+                if ($moduleCode === 'ADMINISTRATION') {
+                    $can_view = true;
+                } else {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                }
+                break;
+            case 'USER':
+                if ($moduleCode === 'ADMINISTRATION') {
+                    $can_view = true;
+                } else {
+                    $can_view = $can_create = $can_edit = true;
+                }
+                break;
+            case 'PROCUREMENT':
+                if (in_array($moduleCode, ['PR', 'PO', 'ASN', 'VENDORS'])) {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
+            case 'SECURITY':
+                if (in_array($moduleCode, ['GATE_ENTRY'])) {
+                    $can_view = $can_create = $can_edit = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
+            case 'WAREHOUSE':
+                if (in_array($moduleCode, ['INVENTORY', 'WAREHOUSE', 'MR_GRN', 'GRN', 'STOCK', 'MATERIAL'])) {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
+            case 'QC':
+                if (in_array($moduleCode, ['QC'])) {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
         }
-    }
 
-    /**
-     * Seed VIEWER permissions - only can_view true for all modules
-     */
-    private function seedViewerPermissions(Role $role): void
-    {
-        foreach (self::MODULES as $moduleCode) {
-            RolePermission::updateOrCreate(
-                [
-                    'role_id' => $role->id,
-                    'module_code' => $moduleCode,
-                ],
-                [
-                    'can_view' => true,
-                    'can_create' => false,
-                    'can_edit' => false,
-                    'can_approve' => false,
-                    'can_delete' => false,
-                    'created_by' => null,
-                ]
-            );
-        }
+        return [
+            'scope' => $scope,
+            'view_cross_department' => $view_cross,
+            'can_view' => $can_view,
+            'can_create' => $can_create,
+            'can_edit' => $can_edit,
+            'can_approve' => $can_approve,
+            'can_delete' => $can_delete,
+        ];
     }
 }

@@ -24,13 +24,24 @@ use Illuminate\Support\Str;
 
 class TenantProvisioningServiceImpl implements TenantProvisioningService
 {
-    private const MODULE_CODES = ['PR', 'PO', 'GRN', 'QC', 'INVOICE', 'PAYMENT', 'INVENTORY', 'REPORTS', 'USERS', 'SETTINGS'];
+    private const MODULE_CODES = [
+        'SETTINGS', 'USERS', 'PR', 'PO', 'ASN', 'GATE_ENTRY', 'MR_GRN', 'GRN', 'QC', 'STOCK', 'INVOICE', 'PAYMENT', 'INVENTORY', 'WAREHOUSE', 'MATERIAL', 'USER_MGMT', 'ROLE_MGMT', 'DEPT_MGMT', 'BOM', 'ADMINISTRATION'
+    ];
     
     private const DEFAULT_ROLES = [
         ['code' => 'ADMIN', 'name' => 'Administrator', 'description' => 'Full system access'],
         ['code' => 'MANAGER', 'name' => 'Manager', 'description' => 'Management level access'],
         ['code' => 'USER', 'name' => 'User', 'description' => 'Standard user access'],
         ['code' => 'VIEWER', 'name' => 'Viewer', 'description' => 'Read-only access'],
+    ];
+
+    private const DEFAULT_DEPARTMENTS = [
+        'Administration' => ['HR', 'Legal', 'IT Settings'],
+        'Finance' => ['Accounts Payable', 'Accounts Receivable', 'Invoicing'],
+        'Inventory & Warehouse' => ['GRN', 'Stock Movements'],
+        'Procurement' => ['Purchase Requests', 'POs'],
+        'Quality Assurance' => ['QC', 'Inspections'],
+        'Sales & Distribution' => ['Orders', 'Shipping'],
     ];
 
     public function __construct(
@@ -96,9 +107,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             $this->seedRolePermissions($tenantDbName, $roles);
             $steps[] = 'Seeded role permissions';
             
-            // Step 8: Create root department
-            $rootDepartment = $this->createRootDepartment($tenantDbName);
-            $steps[] = 'Created root department';
+            // Step 8: Create default departments hierarchy
+            $rootDepartment = $this->seedDefaultDepartments($tenantDbName, $organization->org_name);
+            $steps[] = 'Seeded default departments hierarchy';
             
             // Step 9: Create initial admin user
             $tempPassword = $this->createInitialAdminUser(
@@ -321,11 +332,13 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             
             foreach ($roles as $roleCode => $role) {
                 foreach (self::MODULE_CODES as $moduleCode) {
-                    $permissions = $this->getPermissionsForRole($roleCode);
+                    $permissions = $this->getPermissionsForRole($roleCode, $moduleCode);
                     
                     RolePermission::create([
                         'role_id' => $role->id,
                         'module_code' => $moduleCode,
+                        'scope' => $permissions['scope'],
+                        'view_cross_department' => $permissions['view_cross_department'],
                         'can_view' => $permissions['can_view'],
                         'can_create' => $permissions['can_create'],
                         'can_edit' => $permissions['can_edit'],
@@ -348,69 +361,124 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     /**
      * Get permissions configuration for a role
      */
-    private function getPermissionsForRole(string $roleCode): array
+    private function getPermissionsForRole(string $roleCode, string $moduleCode): array
     {
-        return match($roleCode) {
-            'ADMIN' => [
-                'can_view' => true,
-                'can_create' => true,
-                'can_edit' => true,
-                'can_approve' => true,
-                'can_delete' => true,
-            ],
-            'MANAGER' => [
-                'can_view' => true,
-                'can_create' => true,
-                'can_edit' => true,
-                'can_approve' => true,
-                'can_delete' => false,
-            ],
-            'USER' => [
-                'can_view' => true,
-                'can_create' => true,
-                'can_edit' => true,
-                'can_approve' => false,
-                'can_delete' => false,
-            ],
-            'VIEWER' => [
-                'can_view' => true,
-                'can_create' => false,
-                'can_edit' => false,
-                'can_approve' => false,
-                'can_delete' => false,
-            ],
-            default => [
-                'can_view' => false,
-                'can_create' => false,
-                'can_edit' => false,
-                'can_approve' => false,
-                'can_delete' => false,
-            ],
-        };
+        $can_view = false;
+        $can_create = false;
+        $can_edit = false;
+        $can_approve = false;
+        $can_delete = false;
+        $scope = 'department';
+        $view_cross = false;
+
+        if (in_array($roleCode, ['ADMIN'])) {
+            $scope = 'global';
+            $view_cross = true;
+        }
+
+        switch ($roleCode) {
+            case 'ADMIN':
+                $can_view = $can_create = $can_edit = $can_approve = $can_delete = true;
+                break;
+            case 'MANAGER':
+                if ($moduleCode === 'ADMINISTRATION') {
+                    $can_view = true;
+                } else {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                }
+                break;
+            case 'USER':
+                if ($moduleCode === 'ADMINISTRATION') {
+                    $can_view = true;
+                } else {
+                    $can_view = $can_create = $can_edit = true;
+                }
+                break;
+            case 'PROCUREMENT':
+                if (in_array($moduleCode, ['PR', 'PO', 'ASN', 'VENDORS'])) {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
+            case 'SECURITY':
+                if (in_array($moduleCode, ['GATE_ENTRY'])) {
+                    $can_view = $can_create = $can_edit = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
+            case 'WAREHOUSE':
+                if (in_array($moduleCode, ['INVENTORY', 'WAREHOUSE', 'MR_GRN', 'GRN', 'STOCK', 'MATERIAL'])) {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
+            case 'QC':
+                if (in_array($moduleCode, ['QC'])) {
+                    $can_view = $can_create = $can_edit = $can_approve = true;
+                } else {
+                    $can_view = true;
+                }
+                break;
+        }
+
+        return [
+            'scope' => $scope,
+            'view_cross_department' => $view_cross,
+            'can_view' => $can_view,
+            'can_create' => $can_create,
+            'can_edit' => $can_edit,
+            'can_approve' => $can_approve,
+            'can_delete' => $can_delete,
+        ];
     }
 
     /**
-     * Create root department
+     * Create default departments hierarchy
      */
-    private function createRootDepartment(string $tenantDbName): Department
+    private function seedDefaultDepartments(string $tenantDbName, string $orgName): Department
     {
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
             
-            $department = Department::create([
+            $rootDepartment = Department::create([
                 'dept_code' => 'ROOT',
-                'dept_name' => 'Root Department',
+                'dept_name' => substr($orgName, 0, 100),
                 'parent_dept_id' => null,
                 'is_active' => true,
                 'created_by' => null
             ]);
             
-            Log::info("Created root department");
+            Log::info("Created root department: {$orgName}");
             
-            return $department;
+            foreach (self::DEFAULT_DEPARTMENTS as $parentName => $children) {
+                $parentDept = Department::create([
+                    'dept_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $parentName), 0, 15)),
+                    'dept_name' => $parentName,
+                    'parent_dept_id' => $rootDepartment->id,
+                    'is_active' => true,
+                    'created_by' => null
+                ]);
+                
+                foreach ($children as $childName) {
+                    Department::create([
+                        'dept_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $childName), 0, 15)),
+                        'dept_name' => $childName,
+                        'parent_dept_id' => $parentDept->id,
+                        'is_active' => true,
+                        'created_by' => null
+                    ]);
+                }
+            }
+            
+            Log::info("Seeded default departments hierarchy");
+            
+            return $rootDepartment;
             
         } catch (\Exception $e) {
-            throw new \Exception("Failed to create root department: {$e->getMessage()}");
+            throw new \Exception("Failed to seed default departments: {$e->getMessage()}");
         } finally {
             $this->connectionRouter->switchToControl();
         }

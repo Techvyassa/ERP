@@ -140,6 +140,11 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('profile-completion');
 
+        // ====================================================================
+        // MASTER DATA & SETUP (Requires ADMINISTRATION permission)
+        // ====================================================================
+        Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () use ($getOrg) {
+
         // Master Data Setup Dashboard
         Route::get('/master-setup', function ($orgSlug) use ($getOrg) {
             extract($getOrg($orgSlug));
@@ -492,6 +497,8 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('bom-detail.view');
 
+        }); // End of ADMINISTRATION middleware group
+
         // ====================================================================
         // DEPARTMENTAL PORTALS (Organization-specific)
         // ====================================================================
@@ -653,22 +660,24 @@ Route::middleware(['web.jwt'])->group(function () {
                 ]);
             })->name('reports');
 
-            // QC Masters: Test Types
-            Route::get('/qc-test-types', function ($orgSlug) use ($getOrg) {
-                extract($getOrg($orgSlug));
-                return view('tenant.masters.qc.qc-test-types.index', [
-                    'organization' => $org,
-                    'tenantType' => $tenantType
-                ]);
-            })->name('qc-test-types');
+            // QC Masters: Test Types (ADMINISTRATION permission)
+            Route::middleware(['check.module.permission:ADMINISTRATION'])->group(function () use ($getOrg) {
+                Route::get('/qc-test-types', function ($orgSlug) use ($getOrg) {
+                    extract($getOrg($orgSlug));
+                    return view('tenant.masters.qc.qc-test-types.index', [
+                        'organization' => $org,
+                        'tenantType' => $tenantType
+                    ]);
+                })->name('qc-test-types');
 
-            Route::get('/qc-parameters', function ($orgSlug) use ($getOrg) {
-                extract($getOrg($orgSlug));
-                return view('tenant.masters.qc.qc-parameters.index', [
-                    'organization' => $org,
-                    'tenantType' => $tenantType
-                ]);
-            })->name('qc-parameters');
+                Route::get('/qc-parameters', function ($orgSlug) use ($getOrg) {
+                    extract($getOrg($orgSlug));
+                    return view('tenant.masters.qc.qc-parameters.index', [
+                        'organization' => $org,
+                        'tenantType' => $tenantType
+                    ]);
+                })->name('qc-parameters');
+            });
         });
 
         // ====================================================================
