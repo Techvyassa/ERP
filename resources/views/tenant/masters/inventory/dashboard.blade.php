@@ -182,6 +182,16 @@
 
 <script>
 function inventoryDashboard() {
+    const token = () => localStorage.getItem('access_token');
+    const orgSlug = '{{ $organization->org_slug }}';
+    const tenantType = '{{ $tenantType ?? 'path' }}';
+    const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
+    const headers = () => ({
+        'Authorization': `Bearer ${token()}`,
+        'Accept': 'application/json',
+        'X-Org-Slug': orgSlug
+    });
+
     return {
         stats: {
             materials: 0,
@@ -196,24 +206,25 @@ function inventoryDashboard() {
         },
 
         async loadData() {
-            // TODO: Load from API
-            this.stats = {
-                materials: 45,
-                products: 23,
-                warehouses: 3,
-                binLocations: 24,
-                uom: 12
-            };
+            try {
+                const response = await fetch('/api/v1/dashboard/master-stats', { headers: headers() });
+                const data = await response.json();
+
+                if (data.success && data.data?.inventory) {
+                    this.stats = data.data.inventory;
+                }
+            } catch (error) {
+                console.error('Failed to load inventory dashboard stats:', error);
+            }
         },
 
         navigateTo(page) {
-            const orgSlug = '{{ $organization->org_slug }}';
             const routes = {
-                'materials': `/org/${orgSlug}/materials`,
-                'products': `/org/${orgSlug}/products`,
-                'warehouses': `/org/${orgSlug}/warehouses`,
-                'bin-locations': `/org/${orgSlug}/bin-locations`,
-                'uom': `/org/${orgSlug}/uom`
+                'materials': `${baseUrl}/materials`,
+                'products': `${baseUrl}/products`,
+                'warehouses': `${baseUrl}/warehouses`,
+                'bin-locations': `${baseUrl}/bin-locations`,
+                'uom': `${baseUrl}/uom`
             };
             
             if (routes[page]) {

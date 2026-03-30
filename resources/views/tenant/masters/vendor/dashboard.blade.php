@@ -138,6 +138,16 @@
 
 <script>
 function vendorDashboard() {
+    const token = () => localStorage.getItem('access_token');
+    const orgSlug = '{{ $organization->org_slug }}';
+    const tenantType = '{{ $tenantType ?? 'path' }}';
+    const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
+    const headers = () => ({
+        'Authorization': `Bearer ${token()}`,
+        'Accept': 'application/json',
+        'X-Org-Slug': orgSlug
+    });
+
     return {
         stats: {
             vendors: 0,
@@ -151,21 +161,23 @@ function vendorDashboard() {
         },
 
         async loadData() {
-            // TODO: Load from API
-            this.stats = {
-                vendors: 12,
-                contacts: 18,
-                mappings: 34,
-                purchaseOrders: 5
-            };
+            try {
+                const response = await fetch('/api/v1/dashboard/master-stats', { headers: headers() });
+                const data = await response.json();
+
+                if (data.success && data.data?.vendor) {
+                    this.stats = data.data.vendor;
+                }
+            } catch (error) {
+                console.error('Failed to load vendor dashboard stats:', error);
+            }
         },
 
         navigateTo(page) {
-            const orgSlug = '{{ $organization->org_slug }}';
             const routes = {
-                'vendors': `/org/${orgSlug}/vendors`,
-                'vendor-contacts': `/org/${orgSlug}/vendor-contacts`,
-                'vendor-material-map': `/org/${orgSlug}/vendor-material-map`
+                'vendors': `${baseUrl}/vendors`,
+                'vendor-contacts': `${baseUrl}/vendor-contacts`,
+                'vendor-material-map': `${baseUrl}/vendor-material-map`
             };
             
             if (routes[page]) {

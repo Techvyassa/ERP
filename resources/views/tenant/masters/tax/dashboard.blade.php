@@ -138,6 +138,16 @@
 
 <script>
 function taxDashboard() {
+    const token = () => localStorage.getItem('access_token');
+    const orgSlug = '{{ $organization->org_slug }}';
+    const tenantType = '{{ $tenantType ?? 'path' }}';
+    const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
+    const headers = () => ({
+        'Authorization': `Bearer ${token()}`,
+        'Accept': 'application/json',
+        'X-Org-Slug': orgSlug
+    });
+
     return {
         stats: {
             hsnCodes: 0,
@@ -152,47 +162,11 @@ function taxDashboard() {
 
         async loadData() {
             try {
-                const token = this.getToken();
-                const orgSlug = this.getOrgSlug();
-                
-                // Load HSN codes count
-                const hsnResponse = await fetch('/api/v1/hsn-codes?is_active=1', {
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'X-Org-Slug': orgSlug
-                    }
-                });
-                const hsnData = await hsnResponse.json();
-                if (hsnData.success) {
-                    this.stats.hsnCodes = hsnData.data.hsn_codes.length;
-                }
-                
-                // Load GST taxes count
-                const gstResponse = await fetch('/api/v1/gst-taxes?is_active=1', {
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'X-Org-Slug': orgSlug
-                    }
-                });
-                const gstData = await gstResponse.json();
-                if (gstData.success) {
-                    this.stats.gstTaxes = gstData.data.gst_taxes.length;
-                }
-                
-                // Load currencies count and base currency
-                const currencyResponse = await fetch('/api/v1/currencies?is_active=1', {
-                    headers: { 
-                        'Authorization': `Bearer ${token}`,
-                        'X-Org-Slug': orgSlug
-                    }
-                });
-                const currencyData = await currencyResponse.json();
-                if (currencyData.success) {
-                    this.stats.currencies = currencyData.data.currencies.length;
-                    const baseCurrency = currencyData.data.currencies.find(c => c.is_base_currency);
-                    if (baseCurrency) {
-                        this.stats.baseCurrency = baseCurrency.currency_code;
-                    }
+                const response = await fetch('/api/v1/dashboard/master-stats', { headers: headers() });
+                const data = await response.json();
+
+                if (data.success && data.data?.tax) {
+                    this.stats = data.data.tax;
                 }
             } catch (e) {
                 console.error('Failed to load tax dashboard data:', e);
@@ -200,24 +174,15 @@ function taxDashboard() {
         },
 
         navigateTo(page) {
-            const orgSlug = '{{ $organization->org_slug }}';
             const routes = {
-                'hsn-codes': `/org/${orgSlug}/hsn-codes`,
-                'gst-taxes': `/org/${orgSlug}/gst-taxes`,
-                'currency': `/org/${orgSlug}/currency`
+                'hsn-codes': `${baseUrl}/hsn-codes`,
+                'gst-taxes': `${baseUrl}/gst-taxes`,
+                'currency': `${baseUrl}/currency`
             };
             
             if (routes[page]) {
                 window.location.href = routes[page];
             }
-        },
-        
-        getToken() {
-            return localStorage.getItem('access_token') || '';
-        },
-        
-        getOrgSlug() {
-            return localStorage.getItem('org_slug') || '';
         }
     }
 }

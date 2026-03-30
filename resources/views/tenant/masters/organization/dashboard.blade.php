@@ -157,6 +157,16 @@
 
 <script>
 function organizationDashboard() {
+    const token = () => localStorage.getItem('access_token');
+    const orgSlug = '{{ $organization->org_slug }}';
+    const tenantType = '{{ $tenantType ?? 'path' }}';
+    const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
+    const headers = () => ({
+        'Authorization': `Bearer ${token()}`,
+        'Accept': 'application/json',
+        'X-Org-Slug': orgSlug
+    });
+
     return {
         stats: {
             departments: 0,
@@ -170,22 +180,24 @@ function organizationDashboard() {
         },
 
         async loadData() {
-            // TODO: Load from API
-            this.stats = {
-                departments: 5,
-                roles: 8,
-                users: 12,
-                approvalMatrix: 3
+            try {
+                const response = await fetch('/api/v1/dashboard/master-stats', { headers: headers() });
+                const data = await response.json();
+
+                if (data.success && data.data?.organization) {
+                    this.stats = data.data.organization;
+                }
+            } catch (error) {
+                console.error('Failed to load organization dashboard stats:', error);
             };
         },
 
         navigateTo(page) {
-            const orgSlug = '{{ $organization->org_slug }}';
             const routes = {
-                'departments': `/org/${orgSlug}/departments`,
-                'roles': `/org/${orgSlug}/roles`,
-                'users': `/org/${orgSlug}/users`,
-                'approval-matrix': `/org/${orgSlug}/approval-matrix`
+                'departments': `${baseUrl}/departments`,
+                'roles': `${baseUrl}/roles`,
+                'users': `${baseUrl}/users`,
+                'approval-matrix': `${baseUrl}/approval-matrix`
             };
             
             if (routes[page]) {

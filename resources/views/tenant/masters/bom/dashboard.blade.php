@@ -119,6 +119,16 @@
 
 <script>
 function productionDashboard() {
+    const token = () => localStorage.getItem('access_token');
+    const orgSlug = '{{ $organization->org_slug }}';
+    const tenantType = '{{ $tenantType ?? 'path' }}';
+    const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
+    const headers = () => ({
+        'Authorization': `Bearer ${token()}`,
+        'Accept': 'application/json',
+        'X-Org-Slug': orgSlug
+    });
+
     return {
         stats: {
             bomHeaders: 0,
@@ -132,20 +142,22 @@ function productionDashboard() {
         },
 
         async loadData() {
-            // TODO: Load from API
-            this.stats = {
-                bomHeaders: 12,
-                bomDetails: 48,
-                productionOrders: 8,
-                products: 23
-            };
+            try {
+                const response = await fetch('/api/v1/dashboard/master-stats', { headers: headers() });
+                const data = await response.json();
+
+                if (data.success && data.data?.bom) {
+                    this.stats = data.data.bom;
+                }
+            } catch (error) {
+                console.error('Failed to load BOM dashboard stats:', error);
+            }
         },
 
         navigateTo(page) {
-            const orgSlug = '{{ $organization->org_slug }}';
             const routes = {
-                'bom-header': `/org/${orgSlug}/bom-header`,
-                'bom-detail': `/org/${orgSlug}/bom-detail`
+                'bom-header': `${baseUrl}/bom-header`,
+                'bom-detail': `${baseUrl}/bom-detail`
             };
             
             if (routes[page]) {

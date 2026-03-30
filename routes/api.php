@@ -120,6 +120,10 @@ Route::prefix('v1')->group(function () {
             Route::post('/cancel', [App\Http\Controllers\SubscriptionController::class, 'cancel']);
         });
 
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('dashboard')->group(function () {
+            Route::get('/master-stats', [App\Http\Controllers\MasterDashboardController::class, 'index']);
+        });
+
 
         // Department management endpoints (with RBAC middleware for ADMINISTRATION module)
         Route::middleware(['check.module.permission:ADMIN'])->prefix('departments')->group(function () {
@@ -374,7 +378,6 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/cancel', [App\Http\Controllers\GRNController::class, 'cancel']); // Any → CANCELLED
                 Route::patch('/{id}/post-qc', [App\Http\Controllers\GRNController::class, 'postQCUpdate']); // Post-QC edit by Store/QC
             });
-
         });
 
         // QC Test Type Master (ADMINISTRATION permission)

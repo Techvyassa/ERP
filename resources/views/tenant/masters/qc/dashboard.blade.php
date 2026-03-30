@@ -126,30 +126,15 @@ function qualityMasterDashboard() {
         },
 
         async init() {
-            await Promise.all([this.loadTestTypes(), this.loadParameters()]);
-        },
-
-        async loadTestTypes() {
             try {
-                const response = await fetch('/api/v1/qc-test-types', { headers: headers() });
+                const response = await fetch('/api/v1/dashboard/master-stats', { headers: headers() });
                 const data = await response.json();
-                if (data.success) {
-                    this.stats.testTypes = data.data.length;
+
+                if (data.success && data.data?.quality) {
+                    this.stats = data.data.quality;
                 }
             } catch (error) {
-                console.error('Failed to load QC test types', error);
-            }
-        },
-
-        async loadParameters() {
-            try {
-                const response = await fetch('/api/v1/qc-parameters', { headers: headers() });
-                const data = await response.json();
-                if (data.success) {
-                    this.stats.parameters = data.data.length;
-                }
-            } catch (error) {
-                console.error('Failed to load QC parameters', error);
+                console.error('Failed to load quality dashboard stats', error);
             }
         },
 
