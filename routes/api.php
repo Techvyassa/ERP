@@ -505,6 +505,21 @@ Route::prefix('v1')->group(function () {
             });
         });
 
+        // Production Orders & Material Issue Requests
+        Route::prefix('production-orders')->group(function () {
+            Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
+            Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
+            Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
+        });
+
+        Route::prefix('material-issue-requests')->group(function () {
+            Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
+            Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
+            Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
+            Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
+            Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {

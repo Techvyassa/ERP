@@ -15,7 +15,7 @@ class LogoutController extends Controller
         $redirectTo = $request->input('redirect_to');
 
         // Only allow redirects to department login pages within /org/
-        if ($redirectTo && preg_match('#^/org/[^/]+/(procurement|warehouse|quality|security|admin)/login$#', $redirectTo)) {
+        if ($redirectTo && preg_match('#^/org/[^/]+/(procurement|warehouse|quality|security|admin|production)/login$#', $redirectTo)) {
             // Force path-based URL using APP_URL to avoid subdomain resolution issues
             $target = rtrim(config('app.url'), '/') . $redirectTo;
         } else {
