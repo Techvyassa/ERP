@@ -11,6 +11,7 @@ use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 class MaterialIssueRequestController extends Controller
@@ -145,17 +146,51 @@ class MaterialIssueRequestController extends Controller
                     'message' => 'Rejection reason is required.', 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 422);
             }
 
-            $mir = MaterialIssueRequest::findOrFail($id);
+            $mir = MaterialIssueRequest::with('lines')->findOrFail($id);
 
             if ($mir->status !== 'PENDING') {
                 return response()->json(['success' => false, 'error' => ['code' => 'INVALID_STATUS', 'details' => []],
                     'message' => 'Only PENDING MIRs can be rejected.', 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 422);
             }
 
-            $mir->update([
-                'status'           => 'REJECTED',
-                'rejection_reason' => $request->input('reason'),
-            ]);
+            DB::connection('tenant')->transaction(function () use ($mir, $request) {
+                foreach ($mir->lines as $line) {
+                    if ((float) $line->required_qty <= 0) {
+                        continue;
+                    }
+
+                    try {
+                        $this->stockService->releaseReservation(
+                            item: [
+                                'material_id' => $line->material_id,
+                                'uom_id' => $line->uom_id,
+                                'warehouse_id' => (int) ($line->warehouse_id ?? 1),
+                            ],
+                            qty: (float) $line->required_qty,
+                            referenceType: 'MaterialIssueRequest',
+                            referenceId: $mir->id,
+                            referenceNumber: $mir->mir_no,
+                            userId: (int) ($request->input('auth_user_id') ?? 0),
+                            warehouseId: $line->warehouse_id,
+                            binId: $line->bin_id,
+                            transactionType: 'CANCELLATION',
+                            remarks: "Reservation released on MIR rejection for {$mir->mir_no}"
+                        );
+                    } catch (\Exception $e) {
+                        Log::warning('[MIR] Failed to release reservation on rejection', [
+                            'mir_id' => $mir->id,
+                            'line_id' => $line->id,
+                            'material_id' => $line->material_id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
+
+                $mir->update([
+                    'status'           => 'REJECTED',
+                    'rejection_reason' => $request->input('reason'),
+                ]);
+            });
 
             return response()->json(['success' => true, 'data' => ['status' => 'REJECTED'],
                 'message' => 'MIR rejected. Production team has been notified.', 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()]);
@@ -238,23 +273,44 @@ class MaterialIssueRequestController extends Controller
             }
 
             // All validations passed — deduct stock
-            DB::connection('tenant')->transaction(function () use ($line, $bin, $material, $mir, $request) {
+            DB::connection('tenant')->transaction(function () use ($line, $bin, $material, $mir, $request, $stock) {
+                // Capture batch_number from stock_balances for traceability
+                $batchNumber = $stock?->batch_number;
+
+                $this->stockService->releaseReservation(
+                    item: [
+                        'material_id'  => $material->id,
+                        'uom_id'       => $line->uom_id,
+                        'warehouse_id' => $bin->warehouse_id,
+                        'batch_number' => $batchNumber,
+                    ],
+                    qty: (float)$line->required_qty,
+                    referenceType: 'MaterialIssueRequest',
+                    referenceId: $mir->id,
+                    referenceNumber: $mir->mir_no,
+                    userId: (int)($request->input('auth_user_id') ?? 0),
+                    warehouseId: $bin->warehouse_id,
+                    binId: $bin->id,
+                    transactionType: 'CANCELLATION',
+                    remarks: "Reservation consumed by issue for {$mir->mir_no}"
+                );
+
                 $this->stockService->post(
                     item: [
                         'material_id'  => $material->id,
                         'uom_id'       => $line->uom_id,
                         'warehouse_id' => $bin->warehouse_id,
-                        'batch_number' => null,
+                        'batch_number' => $batchNumber,
                     ],
                     bucket:          'AVAILABLE',
                     qtyChange:       -(float)$line->required_qty,
-                    transactionType: 'MATERIAL_ISSUE',
+                    transactionType: 'PRODUCTION_ISSUE',
                     referenceType:   'MaterialIssueRequest',
                     referenceId:     $mir->id,
                     referenceNumber: $mir->mir_no,
                     userId:          (int)($request->input('auth_user_id') ?? 0),
                     binId:           $bin->id,
-                    remarks:         "MIR issue for {$mir->mir_no}"
+                    remarks:         "MIR issue for {$mir->mir_no} (Batch: {$batchNumber})"
                 );
 
                 $line->update([
@@ -265,14 +321,18 @@ class MaterialIssueRequestController extends Controller
                     'warehouse_id'     => $bin->warehouse_id,
                     'scanned_at'       => now(),
                 ]);
+
+                Log::info('[MIR] Material issued with batch traceability', [
+                    'mir_id' => $mir->id,
+                    'line_id' => $line->id,
+                    'material_id' => $material->id,
+                    'batch_number' => $batchNumber,
+                    'qty' => $line->required_qty,
+                ]);
             });
 
             // Check if all lines are issued → mark MIR fully issued
             $allIssued = MIRLineItem::where('mir_id', $id)->where('scan_status', '!=', 'ISSUED')->doesntExist();
-            if ($allIssued) {
-                $mir->productionOrder?->update(['status' => 'IN_PROGRESS']);
-            }
-
             return response()->json(['success' => true, 'data' => [
                 'line_id'     => $line->id,
                 'scan_status' => 'ISSUED',

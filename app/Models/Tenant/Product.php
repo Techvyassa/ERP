@@ -18,6 +18,7 @@ class Product extends Model
         'hsn_code_id',
         'standard_cost',
         'mrp',
+        'requires_fg_qc',
         'is_active'
     ];
 
@@ -25,7 +26,8 @@ class Product extends Model
         'is_active' => 'boolean',
         'pack_size' => 'decimal:3',
         'standard_cost' => 'decimal:4',
-        'mrp' => 'decimal:2'
+        'mrp' => 'decimal:2',
+        'requires_fg_qc' => 'boolean',
     ];
 
     // Relationships

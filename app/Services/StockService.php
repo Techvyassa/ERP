@@ -64,9 +64,17 @@ class StockService
         ?string $remarks = null
     ): InventoryTransaction {
         return DB::connection('tenant')->transaction(function () use (
-            $item, $bucket, $qtyChange, $transactionType,
-            $referenceType, $referenceId, $referenceNumber,
-            $userId, $binId, $unitCost, $remarks
+            $item,
+            $bucket,
+            $qtyChange,
+            $transactionType,
+            $referenceType,
+            $referenceId,
+            $referenceNumber,
+            $userId,
+            $binId,
+            $unitCost,
+            $remarks
         ) {
             $totalCost = ($unitCost !== null && $qtyChange !== 0.0)
                 ? round(abs($qtyChange) * $unitCost, 2)
@@ -149,9 +157,19 @@ class StockService
         ?string $remarks = null
     ): array {
         return DB::connection('tenant')->transaction(function () use (
-            $item, $fromBucket, $toBucket, $qty, $transactionType,
-            $referenceType, $referenceId, $referenceNumber,
-            $userId, $fromBinId, $toBinId, $unitCost, $remarks
+            $item,
+            $fromBucket,
+            $toBucket,
+            $qty,
+            $transactionType,
+            $referenceType,
+            $referenceId,
+            $referenceNumber,
+            $userId,
+            $fromBinId,
+            $toBinId,
+            $unitCost,
+            $remarks
         ) {
             $outflow = $this->post(
                 $item,
@@ -215,7 +233,13 @@ class StockService
         ?int   $binId = null
     ): InventoryTransaction {
         return DB::connection('tenant')->transaction(function () use (
-            $item, $qty, $referenceType, $referenceId, $referenceNumber, $userId, $binId
+            $item,
+            $qty,
+            $referenceType,
+            $referenceId,
+            $referenceNumber,
+            $userId,
+            $binId
         ) {
             // Check availability before reserving
             $balanceQuery = StockBalance::forMaterial($item['material_id'] ?? 0)
@@ -241,11 +265,11 @@ class StockService
             // Increment reserved on balance (no bucket change, just reserve flag)
             $this->incrementReserved($item, $qty, $item['warehouse_id'], $binId);
 
-            // Post an informational ledger row (qty_change = 0 as it's the same bucket)
+            // Post an informational ledger row without creating a duplicate RESERVED balance row.
             return $this->post(
                 $item,
-                'RESERVED',
-                +$qty,
+                'AVAILABLE',
+                0,
                 'SALES_RESERVE',
                 $referenceType,
                 $referenceId,
@@ -254,6 +278,93 @@ class StockService
                 $binId,
                 null,
                 "Reserved for {$referenceType} #{$referenceId}"
+            );
+        });
+    }
+
+    /**
+     * Release qty_reserved from AVAILABLE balance rows without changing qty_on_hand.
+     */
+    public function releaseReservation(
+        array  $item,
+        float  $qty,
+        string $referenceType,
+        int    $referenceId,
+        string $referenceNumber,
+        int    $userId,
+        ?int   $warehouseId = null,
+        ?int   $binId = null,
+        string $transactionType = 'CANCELLATION',
+        ?string $remarks = null
+    ): InventoryTransaction {
+        return DB::connection('tenant')->transaction(function () use (
+            $item,
+            $qty,
+            $referenceType,
+            $referenceId,
+            $referenceNumber,
+            $userId,
+            $warehouseId,
+            $binId,
+            $transactionType,
+            $remarks
+        ) {
+            $remaining = $qty;
+
+            $query = StockBalance::query()
+                ->where('material_id', $item['material_id'] ?? null)
+                ->where('product_id', $item['product_id'] ?? null)
+                ->where('bucket', 'AVAILABLE')
+                ->where('qty_reserved', '>', 0)
+                ->orderByDesc('qty_reserved')
+                ->lockForUpdate();
+
+            if ($warehouseId !== null) {
+                $query->where('warehouse_id', $warehouseId);
+            }
+
+            if ($binId !== null) {
+                $query->where('bin_id', $binId);
+            }
+
+            if (!empty($item['batch_number'])) {
+                $query->where('batch_number', $item['batch_number']);
+            }
+
+            $balances = $query->get();
+
+            foreach ($balances as $balance) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $releaseQty = min($remaining, (float) $balance->qty_reserved);
+                if ($releaseQty <= 0) {
+                    continue;
+                }
+
+                $balance->decrement('qty_reserved', $releaseQty);
+                $remaining -= $releaseQty;
+            }
+
+            if ($remaining > 0.0001) {
+                throw new \Exception(
+                    "Unable to release full reservation. Requested: {$qty}, Unreleased: {$remaining}"
+                );
+            }
+
+            return $this->post(
+                $item,
+                'AVAILABLE',
+                0,
+                $transactionType,
+                $referenceType,
+                $referenceId,
+                $referenceNumber,
+                $userId,
+                $binId,
+                null,
+                $remarks ?? "Reservation released for {$referenceType} #{$referenceId}"
             );
         });
     }
@@ -289,7 +400,7 @@ class StockService
             'on_hand'        => 0.0,
             'available'      => 0.0,
             'qc_hold'        => 0.0,
-            'putaway_pending'=> 0.0,
+            'putaway_pending' => 0.0,
             'reserved'       => 0.0,
             'blocked'        => 0.0,
             'returned'       => 0.0,
@@ -300,6 +411,7 @@ class StockService
         foreach ($balances as $balance) {
             $qty = (float) $balance->qty_on_hand;
             $snapshot['on_hand'] += $qty;
+            $snapshot['reserved'] += (float) $balance->qty_reserved;
 
             match ($balance->bucket) {
                 'AVAILABLE'       => $snapshot['available']       += $balance->available_qty,
@@ -323,8 +435,8 @@ class StockService
                     'bucket'   => $balance->bucket,
                     'qty'      => $qty,
                     'reserved' => (float) $balance->qty_reserved,
-                    'available'=> $balance->available_qty,
-                    'warehouse'=> $balance->warehouse?->warehouse_name ?? "WH-{$balance->warehouse_id}",
+                    'available' => $balance->available_qty,
+                    'warehouse' => $balance->warehouse?->warehouse_name ?? "WH-{$balance->warehouse_id}",
                 ];
             }
         }
@@ -374,9 +486,9 @@ class StockService
         $key = [
             'material_id' => $item['material_id'] ?? null,
             'product_id'  => $item['product_id'] ?? null,
-            'batch_number'=> $item['batch_number'] ?? null,
+            'batch_number' => $item['batch_number'] ?? null,
             'bucket'      => $bucket,
-            'warehouse_id'=> $warehouseId,
+            'warehouse_id' => $warehouseId,
             'bin_id'      => $binId,
         ];
 
@@ -421,7 +533,7 @@ class StockService
             'material_id' => $item['material_id'] ?? null,
             'product_id'  => $item['product_id'] ?? null,
             'bucket'      => 'AVAILABLE',
-            'warehouse_id'=> $warehouseId,
+            'warehouse_id' => $warehouseId,
             'bin_id'      => $binId,
         ];
 

@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Production Orders</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: {
+        "primary": "#193261",
+        "background-light": "#f6f7f8",
+        "background-dark": "#13171f",
+      },
+      fontFamily: { "display": ["Inter"] },
+      borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+    },
+  },
+}
+</script>
+<style>
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+body { font-family: 'Inter', sans-serif; }
+.status-DRAFT      { background:#e2e8f0; color:#475569; }
+.status-IN_PROGRESS{ background:#dbeafe; color:#1d4ed8; }
+.status-COMPLETED  { background:#dcfce7; color:#15803d; }
+.status-CANCELLED  { background:#fee2e2; color:#b91c1c; }
+.dark .status-DRAFT      { background:#1e293b; color:#94a3b8; }
+.dark .status-IN_PROGRESS{ background:#1e3a5f; color:#60a5fa; }
+.dark .status-COMPLETED  { background:#14532d; color:#4ade80; }
+.dark .status-CANCELLED  { background:#450a0a; color:#f87171; }
+.mir-PENDING  { background:#fef9c3; color:#a16207; }
+.mir-APPROVED { background:#dbeafe; color:#1d4ed8; }
+.mir-REJECTED { background:#fee2e2; color:#b91c1c; }
+.dark .mir-PENDING  { background:#422006; color:#fbbf24; }
+.dark .mir-APPROVED { background:#1e3a5f; color:#60a5fa; }
+.dark .mir-REJECTED { background:#450a0a; color:#f87171; }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex flex-col min-h-screen w-full overflow-x-hidden">
+
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-4 sticky top-0 z-50">
+  <div class="flex items-center gap-4">
+    <div class="bg-primary p-2 rounded-lg text-white">
+      <span class="material-symbols-outlined block">precision_manufacturing</span>
+    </div>
+    <div>
+      <h2 class="text-lg font-bold leading-tight tracking-tight">Production Module</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400">Manufacturing Execution System</p>
+    </div>
+  </div>
+  <div class="flex gap-3">
+    <button onclick="openCreateModal()" class="flex items-center gap-2 bg-primary text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-primary/90 transition-colors">
+      <span class="material-symbols-outlined text-sm">add</span> New Order
+    </button>
+    <button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+      <span class="material-symbols-outlined">account_circle</span>
+    </button>
+  </div>
+</header>
+
+<!-- Sub-nav -->
+<nav class="bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 px-6">
+  <div class="flex gap-1 max-w-7xl mx-auto">
+    <a href="production_orders.html" class="px-4 py-3 text-sm font-semibold text-primary border-b-2 border-primary">Production Orders</a>
+    <a href="mir_management.html" class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 border-b-2 border-transparent hover:border-slate-300 transition-all">Material Issue (MIR)</a>
+    <a href="fg_confirmation.html" class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 border-b-2 border-transparent hover:border-slate-300 transition-all">FG Confirmation</a>
+    <a href="variance_report.html" class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 border-b-2 border-transparent hover:border-slate-300 transition-all">Variance Report</a>
+  </div>
+</nav>
+
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
+
+  <!-- Stats -->
+  <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Total Orders</p>
+      <p class="text-3xl font-bold" id="stat-total">—</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Draft</p>
+      <p class="text-3xl font-bold text-slate-500" id="stat-draft">—</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">In Progress</p>
+      <p class="text-3xl font-bold text-blue-600" id="stat-inprogress">—</p>
+    </div>
+    <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-5">
+      <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Completed</p>
+      <p class="text-3xl font-bold text-green-600" id="stat-completed">—</p>
+    </div>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-3">
+    <div class="relative flex-1">
+      <input id="search-input" type="text" placeholder="Search by order no, product..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-primary focus:border-transparent outline-none"/>
+      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+    </div>
+    <select id="status-filter" class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none">
+      <option value="">All Statuses</option>
+      <option value="DRAFT">Draft</option>
+      <option value="IN_PROGRESS">In Progress</option>
+      <option value="COMPLETED">Completed</option>
+      <option value="CANCELLED">Cancelled</option>
+    </select>
+    <button onclick="loadOrders()" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+      <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+    </button>
+  </div>
+
+  <!-- Table -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+    <div class="overflow-x-auto">
+      <table class="w-full text-sm">
+        <thead>
+          <tr class="border-b border-slate-200 dark:border-slate-800 bg-slate-50 dark:bg-slate-950">
+            <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Order No</th>
+            <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Product</th>
+            <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Target Qty</th>
+            <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Planned Date</th>
+            <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Status</th>
+            <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">MIR</th>
+            <th class="text-left px-5 py-3 text-xs font-bold text-slate-500 uppercase tracking-wider">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="orders-tbody">
+          <tr><td colspan="7" class="text-center py-16 text-slate-400">
+            <span class="material-symbols-outlined text-4xl block mb-2">hourglass_empty</span>
+            Loading orders...
+          </td></tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+</main>
+
+<!-- Create Order Modal -->
+<div id="create-modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeCreateModal()"></div>
+  <div class="absolute right-0 top-0 bottom-0 w-full max-w-lg bg-white dark:bg-slate-900 shadow-2xl flex flex-col">
+    <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
+      <h3 class="text-lg font-bold">Create Production Order</h3>
+      <button onclick="closeCreateModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+        <span class="material-symbols-outlined">close</span>
+      </button>
+    </div>
+    <div class="flex-1 overflow-y-auto p-6 space-y-5">
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Product ID <span class="text-red-500">*</span></label>
+        <input id="c-product-id" type="number" placeholder="Enter product ID" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">BOM ID <span class="text-red-500">*</span></label>
+        <input id="c-bom-id" type="number" placeholder="Enter BOM ID" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Target Quantity <span class="text-red-500">*</span></label>
+        <input id="c-target-qty" type="number" step="0.001" placeholder="e.g. 100" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+      </div>
+      <div>
+        <label class="block text-sm font-semibold mb-1.5">Planned Date <span class="text-red-500">*</span></label>
+        <input id="c-planned-date" type="date" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+      </div>
+      <div>
+        <div class="flex items-center justify-between mb-2">
+          <label class="text-sm font-semibold">RM Lines <span class="text-red-500">*</span></label>
+          <button onclick="addRMLine()" class="text-xs text-primary font-semibold flex items-center gap-1 hover:underline">
+            <span class="material-symbols-outlined text-sm">add</span> Add Line
+          </button>
+        </div>
+        <div id="rm-lines-container" class="space-y-2">
+          <!-- RM lines added dynamically -->
+        </div>
+      </div>
+      <div id="create-error" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-600 dark:text-red-400"></div>
+    </div>
+    <div class="p-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+      <button onclick="closeCreateModal()" class="flex-1 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+      <button onclick="submitCreateOrder()" id="create-btn" class="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+        <span class="material-symbols-outlined text-sm">send</span> Create & Send MIR
+      </button>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+  <div class="flex items-center gap-3 bg-slate-900 dark:bg-slate-100 text-white dark:text-slate-900 px-5 py-3 rounded-xl shadow-2xl text-sm font-medium">
+    <span id="toast-icon" class="material-symbols-outlined text-sm">check_circle</span>
+    <span id="toast-msg"></span>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api/v1';
+const TENANT_DB = localStorage.getItem('tenant_db_name') || '';
+const AUTH_USER = localStorage.getItem('auth_user_id') || '1';
+
+function apiHeaders() {
+  return { 'Content-Type': 'application/json', 'Accept': 'application/json' };
+}
+
+function apiBody(data) {
+  return JSON.stringify({ ...data, tenant_db_name: TENANT_DB, auth_user_id: AUTH_USER });
+}
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  document.getElementById('toast-icon').textContent = type === 'success' ? 'check_circle' : 'error';
+  t.querySelector('div').className = `flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-sm font-medium ${type === 'success' ? 'bg-green-700 text-white' : 'bg-red-700 text-white'}`;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3500);
+}
+
+function statusBadge(status) {
+  return `<span class="status-${status} text-xs font-bold px-2.5 py-1 rounded-full">${status.replace('_', ' ')}</span>`;
+}
+
+function mirBadge(status) {
+  if (!status) return '<span class="text-xs text-slate-400">—</span>';
+  return `<span class="mir-${status} text-xs font-bold px-2.5 py-1 rounded-full">${status}</span>`;
+}
+
+async function loadOrders() {
+  const search = document.getElementById('search-input').value;
+  const status = document.getElementById('status-filter').value;
+  let url = `${API_BASE}/production-orders?tenant_db_name=${TENANT_DB}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${status}`;
+
+  try {
+    const res = await fetch(url, { headers: apiHeaders() });
+    const json = await res.json();
+    const orders = json.data?.orders || [];
+
+    // Stats
+    document.getElementById('stat-total').textContent = orders.length;
+    document.getElementById('stat-draft').textContent = orders.filter(o => o.status === 'DRAFT').length;
+    document.getElementById('stat-inprogress').textContent = orders.filter(o => o.status === 'IN_PROGRESS').length;
+    document.getElementById('stat-completed').textContent = orders.filter(o => o.status === 'COMPLETED').length;
+
+    const tbody = document.getElementById('orders-tbody');
+    if (!orders.length) {
+      tbody.innerHTML = `<tr><td colspan="7" class="text-center py-16 text-slate-400">
+        <span class="material-symbols-outlined text-4xl block mb-2">inbox</span>No production orders found.</td></tr>`;
+      return;
+    }
+
+    tbody.innerHTML = orders.map(o => `
+      <tr class="border-b border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/50 transition-colors">
+        <td class="px-5 py-4 font-mono font-semibold text-primary">${o.order_no}</td>
+        <td class="px-5 py-4">
+          <p class="font-medium">${o.product_name || '—'}</p>
+          <p class="text-xs text-slate-500">${o.product_code || ''}</p>
+        </td>
+        <td class="px-5 py-4 font-medium">${o.target_qty} <span class="text-xs text-slate-500">${o.uom || ''}</span></td>
+        <td class="px-5 py-4 text-slate-600 dark:text-slate-400">${o.planned_date || '—'}</td>
+        <td class="px-5 py-4">${statusBadge(o.status)}</td>
+        <td class="px-5 py-4">${mirBadge(o.mir_status)}</td>
+        <td class="px-5 py-4">
+          <div class="flex items-center gap-2">
+            <a href="fg_confirmation.html?id=${o.id}" class="text-xs font-semibold text-primary hover:underline flex items-center gap-1">
+              <span class="material-symbols-outlined text-sm">open_in_new</span> View
+            </a>
+            ${o.status === 'DRAFT' ? `<button onclick="startOrder(${o.id})" class="text-xs font-semibold text-green-600 hover:underline flex items-center gap-1"><span class="material-symbols-outlined text-sm">play_arrow</span> Start</button>` : ''}
+          </div>
+        </td>
+      </tr>`).join('');
+  } catch (e) {
+    showToast('Failed to load orders', 'error');
+  }
+}
+
+async function startOrder(id) {
+  if (!confirm('Start this production order? All MIR lines must be issued.')) return;
+  try {
+    const res = await fetch(`${API_BASE}/production-orders/${id}/start`, {
+      method: 'POST', headers: apiHeaders(), body: apiBody({})
+    });
+    const json = await res.json();
+    if (json.success) { showToast('Production started successfully'); loadOrders(); }
+    else showToast(json.message || 'Failed to start', 'error');
+  } catch (e) { showToast('Network error', 'error'); }
+}
+
+let rmLineCount = 0;
+function addRMLine() {
+  rmLineCount++;
+  const div = document.createElement('div');
+  div.className = 'flex gap-2 items-center';
+  div.id = `rm-line-${rmLineCount}`;
+  div.innerHTML = `
+    <input type="number" placeholder="Material ID" class="flex-1 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none rm-material-id"/>
+    <input type="number" step="0.001" placeholder="Qty" class="w-24 bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-primary outline-none rm-qty"/>
+    <button onclick="document.getElementById('rm-line-${rmLineCount}').remove()" class="text-slate-400 hover:text-red-500 transition-colors">
+      <span class="material-symbols-outlined text-sm">delete</span>
+    </button>`;
+  document.getElementById('rm-lines-container').appendChild(div);
+}
+
+function openCreateModal() {
+  document.getElementById('create-modal').classList.remove('hidden');
+  document.getElementById('rm-lines-container').innerHTML = '';
+  rmLineCount = 0;
+  addRMLine();
+  document.getElementById('create-error').classList.add('hidden');
+  // Set default planned date to today
+  document.getElementById('c-planned-date').value = '2026-03-30';
+}
+
+function closeCreateModal() {
+  document.getElementById('create-modal').classList.add('hidden');
+}
+
+async function submitCreateOrder() {
+  const btn = document.getElementById('create-btn');
+  const errEl = document.getElementById('create-error');
+  errEl.classList.add('hidden');
+
+  const productId = document.getElementById('c-product-id').value;
+  const bomId = document.getElementById('c-bom-id').value;
+  const targetQty = document.getElementById('c-target-qty').value;
+  const plannedDate = document.getElementById('c-planned-date').value;
+
+  const rmLines = [];
+  document.querySelectorAll('#rm-lines-container > div').forEach(row => {
+    const matId = row.querySelector('.rm-material-id').value;
+    const qty = row.querySelector('.rm-qty').value;
+    if (matId && qty) rmLines.push({ material_id: parseInt(matId), required_qty: parseFloat(qty) });
+  });
+
+  if (!productId || !bomId || !targetQty || !plannedDate || !rmLines.length) {
+    errEl.textContent = 'Please fill all required fields and add at least one RM line.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Creating...';
+
+  try {
+    const res = await fetch(`${API_BASE}/production-orders`, {
+      method: 'POST', headers: apiHeaders(),
+      body: apiBody({ product_id: parseInt(productId), bom_id: parseInt(bomId), target_qty: parseFloat(targetQty), planned_date: plannedDate, rm_lines: rmLines })
+    });
+    const json = await res.json();
+    if (json.success) {
+      closeCreateModal();
+      showToast(`Order ${json.data?.order?.order_no} created. MIR sent to Store.`);
+      loadOrders();
+    } else {
+      const details = json.error?.details ? Object.values(json.error.details).flat().join(', ') : '';
+      errEl.textContent = json.message + (details ? ': ' + details : '');
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm">send</span> Create & Send MIR';
+  }
+}
+
+// Search on enter
+document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadOrders(); });
+document.getElementById('status-filter').addEventListener('change', loadOrders);
+
+// Init
+loadOrders();
+</script>
+</body>
+</html>
