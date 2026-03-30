@@ -5,6 +5,128 @@
 
 @section('content')
 <div x-data="productionOrders('{{ $organization->org_slug }}')" x-init="init()">
+    <!-- Confirm FG Modal -->
+    <div x-show="confirmFgModal.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-50" @click="closeConfirmFgModal()"></div>
+            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl z-10" @click.stop>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Confirm Finished Goods</h3>
+                        <p class="text-xs text-gray-500" x-text="confirmFgModal.order?.order_no || ''"></p>
+                    </div>
+                    <button @click="closeConfirmFgModal()" class="text-gray-400 hover:text-gray-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="px-6 py-5 space-y-4">
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Actual Qty</label>
+                            <input type="number" min="0.001" step="0.001" x-model="confirmFgForm.actual_qty" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Rejected Qty</label>
+                            <input type="number" min="0" step="0.001" x-model="confirmFgForm.rejected_qty" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Rework Qty</label>
+                            <input type="number" min="0" step="0.001" x-model="confirmFgForm.rework_qty" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">FG Batch Number</label>
+                            <input type="text" x-model="confirmFgForm.fg_batch_number" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Warehouse ID</label>
+                            <input type="number" min="1" step="1" x-model="confirmFgForm.fg_warehouse_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Bin ID</label>
+                            <input type="number" min="1" step="1" x-model="confirmFgForm.fg_bin_id" class="w-full px-3 py-2 border border-gray-300 rounded-lg">
+                        </div>
+                    </div>
+                    <label class="flex items-center gap-3 rounded-lg bg-orange-50 px-4 py-3 text-sm text-gray-700">
+                        <input type="checkbox" x-model="confirmFgForm.qc_required" class="rounded border-gray-300 text-orange-600 focus:ring-orange-500">
+                        Hold FG in QC after confirmation
+                    </label>
+                    <div x-show="confirmFgError" class="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg" x-text="confirmFgError"></div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                    <button @click="closeConfirmFgModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Cancel</button>
+                    <button @click="submitConfirmFg()" class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm" :class="confirmFgModal.submitting ? 'animate-spin' : ''"
+                              x-text="confirmFgModal.submitting ? 'progress_activity' : 'inventory'"></span>
+                        <span x-text="confirmFgModal.submitting ? 'Posting...' : 'Confirm FG'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Variance Modal -->
+    <div x-show="varianceModal.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-50" @click="closeVarianceModal()"></div>
+            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-4xl z-10" @click.stop>
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Yield and Variance</h3>
+                        <p class="text-xs text-gray-500" x-text="varianceModal.report?.order?.order_no || ''"></p>
+                    </div>
+                    <button @click="closeVarianceModal()" class="text-gray-400 hover:text-gray-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="px-6 py-5 max-h-[75vh] overflow-y-auto">
+                    <div x-show="varianceModal.loading" class="text-center py-8 text-gray-400">
+                        <span class="material-symbols-outlined text-3xl animate-spin block mx-auto mb-2">progress_activity</span>
+                        Loading...
+                    </div>
+                    <template x-if="!varianceModal.loading && varianceModal.report">
+                        <div class="space-y-5">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div class="bg-gray-50 rounded-lg p-3"><p class="text-xs text-gray-500">Target Qty</p><p class="font-bold text-gray-900" x-text="varianceModal.report.production?.target_qty ?? '—'"></p></div>
+                                <div class="bg-gray-50 rounded-lg p-3"><p class="text-xs text-gray-500">Actual Qty</p><p class="font-bold text-gray-900" x-text="varianceModal.report.production?.actual_qty ?? '—'"></p></div>
+                                <div class="bg-gray-50 rounded-lg p-3"><p class="text-xs text-gray-500">Rejected Qty</p><p class="font-bold text-gray-900" x-text="varianceModal.report.production?.rejected_qty ?? '—'"></p></div>
+                                <div class="bg-gray-50 rounded-lg p-3"><p class="text-xs text-gray-500">Yield %</p><p class="font-bold text-gray-900" x-text="varianceModal.report.production?.yield_percent ?? '—'"></p></div>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Material</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">BOM Effective</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Consumed</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Variance</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Variance %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <template x-for="line in varianceModal.report.rm_lines || []" :key="line.material_id">
+                                            <tr>
+                                                <td class="px-4 py-2">
+                                                    <div class="font-medium text-gray-900" x-text="line.material_name"></div>
+                                                    <div class="text-xs text-gray-400" x-text="line.material_code"></div>
+                                                </td>
+                                                <td class="px-4 py-2 text-right" x-text="line.bom_effective"></td>
+                                                <td class="px-4 py-2 text-right" x-text="line.actually_consumed"></td>
+                                                <td class="px-4 py-2 text-right font-semibold" :class="parseFloat(line.variance) > 0 ? 'text-red-600' : 'text-green-600'" x-text="line.variance"></td>
+                                                <td class="px-4 py-2 text-right" x-text="line.variance_percent + '%'"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+                    <button @click="closeVarianceModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
     <!-- View Order Modal -->
     <div x-show="viewModal.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
@@ -108,10 +230,24 @@
                         <span class="material-symbols-outlined text-base">assignment</span>
                         View all MIRs
                     </a>
-                    <button @click="viewModal.show = false"
-                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
-                        Close
-                    </button>
+                    <div class="flex items-center gap-2">
+                        <button x-show="viewModal.order?.status === 'DRAFT'" @click="startOrder(viewModal.order)"
+                                class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                            Start
+                        </button>
+                        <button x-show="viewModal.order?.status === 'IN_PROGRESS'" @click="openConfirmFgModal(viewModal.order)"
+                                class="px-3 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600">
+                            Confirm FG
+                        </button>
+                        <button x-show="viewModal.order?.status === 'COMPLETED'" @click="openVarianceModal(viewModal.order)"
+                                class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                            Variance
+                        </button>
+                        <button @click="viewModal.show = false"
+                                class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                            Close
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -360,10 +496,24 @@
                                       x-text="order.status"></span>
                             </td>
                             <td class="px-5 py-3 text-right">
-                                <button @click="viewOrder(order)"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded text-xs transition-colors">
-                                    <span class="material-symbols-outlined text-sm">visibility</span> View
-                                </button>
+                                <div class="inline-flex items-center gap-2 flex-wrap justify-end">
+                                    <button @click="viewOrder(order)"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded text-xs transition-colors">
+                                        <span class="material-symbols-outlined text-sm">visibility</span> View
+                                    </button>
+                                    <button x-show="order.status === 'DRAFT'" @click="startOrder(order)"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded text-xs transition-colors">
+                                        <span class="material-symbols-outlined text-sm">play_arrow</span> Start
+                                    </button>
+                                    <button x-show="order.status === 'IN_PROGRESS'" @click="openConfirmFgModal(order)"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-orange-500 text-white hover:bg-orange-600 rounded text-xs transition-colors">
+                                        <span class="material-symbols-outlined text-sm">inventory</span> Confirm FG
+                                    </button>
+                                    <button x-show="order.status === 'COMPLETED'" @click="openVarianceModal(order)"
+                                            class="inline-flex items-center gap-1 px-3 py-1.5 border border-gray-300 text-gray-700 hover:bg-gray-50 rounded text-xs transition-colors">
+                                        <span class="material-symbols-outlined text-sm">analytics</span> Variance
+                                    </button>
+                                </div>
                             </td>
                         </tr>
                     </template>
@@ -401,6 +551,18 @@ function productionOrders(orgSlug) {
 
         // View modal
         viewModal: { show: false, loading: false, order: null, rmLines: [] },
+        confirmFgModal: { show: false, submitting: false, order: null },
+        varianceModal: { show: false, loading: false, order: null, report: null },
+        confirmFgError: '',
+        confirmFgForm: {
+            actual_qty: '',
+            rejected_qty: 0,
+            rework_qty: 0,
+            fg_bin_id: '',
+            fg_warehouse_id: '',
+            fg_batch_number: '',
+            qc_required: false
+        },
 
         form: {
             product_id: '',
@@ -570,6 +732,93 @@ function productionOrders(orgSlug) {
             } finally {
                 this.viewModal.loading = false;
             }
+        },
+
+        async startOrder(order) {
+            const confirmed = confirm(`Start production for ${order.order_no}?`);
+            if (!confirmed) return;
+            try {
+                const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, { method: 'POST' });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start production');
+                await this.loadOrders();
+                if (this.viewModal.show && this.viewModal.order?.id === order.id) {
+                    await this.viewOrder({ ...order, status: 'IN_PROGRESS' });
+                }
+            } catch (e) {
+                alert(e.message || 'Failed to start production');
+            }
+        },
+
+        openConfirmFgModal(order) {
+            this.confirmFgError = '';
+            this.confirmFgModal = { show: true, submitting: false, order };
+            this.confirmFgForm = {
+                actual_qty: order.target_qty || '',
+                rejected_qty: 0,
+                rework_qty: 0,
+                fg_bin_id: '',
+                fg_warehouse_id: '',
+                fg_batch_number: '',
+                qc_required: false
+            };
+        },
+
+        closeConfirmFgModal() {
+            this.confirmFgModal = { show: false, submitting: false, order: null };
+            this.confirmFgError = '';
+        },
+
+        async submitConfirmFg() {
+            this.confirmFgError = '';
+            this.confirmFgModal.submitting = true;
+            try {
+                const orderId = this.confirmFgModal.order.id;
+                const payload = {
+                    actual_qty: parseFloat(this.confirmFgForm.actual_qty || 0),
+                    rejected_qty: parseFloat(this.confirmFgForm.rejected_qty || 0),
+                    rework_qty: parseFloat(this.confirmFgForm.rework_qty || 0),
+                    fg_batch_number: this.confirmFgForm.fg_batch_number || null,
+                    qc_required: !!this.confirmFgForm.qc_required
+                };
+                if (this.confirmFgForm.fg_warehouse_id) payload.fg_warehouse_id = parseInt(this.confirmFgForm.fg_warehouse_id);
+                if (this.confirmFgForm.fg_bin_id) payload.fg_bin_id = parseInt(this.confirmFgForm.fg_bin_id);
+
+                const res = await this._fetch(`/api/v1/production-orders/${orderId}/confirm-fg`, {
+                    method: 'POST',
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to confirm FG');
+                this.closeConfirmFgModal();
+                await this.loadOrders();
+                if (this.viewModal.show && this.viewModal.order?.id === orderId) {
+                    this.viewModal.show = false;
+                }
+            } catch (e) {
+                this.confirmFgError = e.message || 'Failed to confirm FG';
+            } finally {
+                this.confirmFgModal.submitting = false;
+            }
+        },
+
+        async openVarianceModal(order) {
+            this.varianceModal = { show: true, loading: true, order, report: null };
+            try {
+                const res = await this._fetch(`/api/v1/production-orders/${order.id}/variance`);
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load variance report');
+                this.varianceModal.report = data.data;
+            } catch (e) {
+                alert(e.message || 'Failed to load variance report');
+                this.closeVarianceModal();
+            } finally {
+                this.varianceModal.loading = false;
+            }
+        },
+
+        closeVarianceModal() {
+            this.varianceModal = { show: false, loading: false, order: null, report: null };
         },
 
         openModal() {

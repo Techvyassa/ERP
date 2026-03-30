@@ -54,7 +54,7 @@
                 <ul class="space-y-2">
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/quality/dashboard") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg bg-sky-50 text-qc transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.quality.dashboard') ? 'bg-sky-50 text-qc font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">home</span>
                             <span x-show="sidebarOpen" class="font-medium">Dashboard</span>
                         </a>
@@ -68,7 +68,7 @@
                     
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/quality/inspections") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.quality.inspections') || request()->routeIs('tenant.quality.inspections.show') ? 'bg-sky-50 text-qc font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">fact_check</span>
                             <span x-show="sidebarOpen" class="font-medium">Inspections</span>
                         </a>
@@ -76,7 +76,7 @@
                     
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/quality/decisions") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.quality.decisions') ? 'bg-sky-50 text-qc font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">rule</span>
                             <span x-show="sidebarOpen" class="font-medium">Usage Decisions</span>
                         </a>
@@ -84,7 +84,7 @@
                     
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/quality/reports") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.quality.reports') ? 'bg-sky-50 text-qc font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">lab_profile</span>
                             <span x-show="sidebarOpen" class="font-medium">Quality Reports</span>
                         </a>

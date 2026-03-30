@@ -66,7 +66,7 @@
     </div>
 
     <!-- Module Cards -->
-    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+    <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-orange-500 hover:shadow-xl transition-all cursor-pointer group p-6"
              @click="window.location.href = '/org/{{ $organization->org_slug }}/production/orders'">
             <div class="flex items-center gap-3 mb-4">
@@ -100,6 +100,24 @@
             <div class="flex items-center justify-between">
                 <span class="text-sm font-bold text-yellow-600" x-text="stats.pendingMIR + ' Pending'">0 Pending</span>
                 <span class="material-symbols-outlined text-yellow-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </div>
+        </div>
+
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-indigo-500 hover:shadow-xl transition-all cursor-pointer group p-6"
+             @click="window.location.href = '/org/{{ $organization->org_slug }}/production/packing'">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-indigo-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-indigo-600 text-3xl">inventory_2</span>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 text-lg">Packing Orders</h4>
+                    <p class="text-xs text-gray-600">Cartons, scans, and seal workflow</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Pack finished goods into cartons and complete packing after QC clearance.</p>
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-indigo-600">Open Packing Workspace</span>
+                <span class="material-symbols-outlined text-indigo-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
             </div>
         </div>
     </div>

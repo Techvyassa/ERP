@@ -81,6 +81,14 @@
                             <span x-show="sidebarOpen" class="font-medium">Material Issue Requests</span>
                         </a>
                     </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/packing") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.packing') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">inventory_2</span>
+                            <span x-show="sidebarOpen" class="font-medium">Packing Orders</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
 
