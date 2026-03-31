@@ -240,10 +240,8 @@ class MaterialIssueRequestController extends Controller
                     'message' => "Bin '{$binBarcode}' not found or inactive.", 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 422);
             }
 
-            // Validate material barcode → resolve material
-            $material = Material::where(function ($q) use ($materialBarcode) {
-                $q->where('material_code', $materialBarcode)->orWhere('barcode', $materialBarcode);
-            })->first();
+            // Validate material barcode → resolve material by material_code
+            $material = Material::where('material_code', $materialBarcode)->first();
 
             if (!$material) {
                 return response()->json(['success' => false, 'error' => ['code' => 'MATERIAL_NOT_FOUND', 'details' => []],

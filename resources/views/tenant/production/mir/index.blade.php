@@ -37,15 +37,15 @@
     </div>
 
     <!-- Scan Modal -->
-    <div x-show="scanModal.show" x-cloak class="fixed inset-0 z-50 flex items-center justify-center px-4" style="display:none;">
-        <div class="fixed inset-0 bg-gray-900 bg-opacity-50" @click="scanModal.show=false"></div>
+    <div x-show="scanModal.show" x-cloak class="fixed inset-0 z-[60] flex items-center justify-center px-4" style="display:none;">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50" @click="closeScan()"></div>
         <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg z-10" @click.stop>
             <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
                 <div>
                     <h3 class="text-lg font-semibold text-gray-900">Scan & Issue Material</h3>
                     <p class="text-xs text-gray-500 mt-0.5" x-text="scanModal.line?.material_name + ' — Required: ' + scanModal.line?.required_qty + ' ' + (scanModal.line?.uom||'')"></p>
                 </div>
-                <button @click="scanModal.show=false" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
+                <button @click="closeScan()" class="text-gray-400 hover:text-gray-600"><span class="material-symbols-outlined">close</span></button>
             </div>
             <div class="px-6 py-5 space-y-4">
                 <div class="bg-blue-50 border border-blue-200 rounded-lg px-4 py-3 text-sm text-blue-700 flex items-start gap-2">
@@ -89,7 +89,7 @@
                 </div>
             </div>
             <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                <button @click="scanModal.show=false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm">Close</button>
+                <button @click="closeScan()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors text-sm">Close</button>
                 <button @click="submitScan()"
                         :disabled="scanModal.submitting || !scanModal.binBarcode || !scanModal.materialBarcode"
                         :class="(!scanModal.submitting && scanModal.binBarcode && scanModal.materialBarcode) ? 'hover:bg-orange-600' : 'opacity-50 cursor-not-allowed'"
@@ -393,8 +393,15 @@ function mirList(orgSlug) {
 
         // ── Scan ────────────────────────────────────────────────────────
         openScan(mir, line) {
+            this.viewModal.show = false;
             this.scanModal = { show: true, mir, line, binBarcode: '', materialBarcode: '', error: '', success: '', submitting: false };
             this.$nextTick(() => this.$refs.binInput?.focus());
+        },
+
+        closeScan() {
+            const mir = this.scanModal.mir;
+            this.scanModal.show = false;
+            if (mir) this.openView(mir);
         },
 
         async submitScan() {
@@ -417,13 +424,14 @@ function mirList(orgSlug) {
                 this.scanModal.binBarcode = '';
                 this.scanModal.materialBarcode = '';
 
-                // Refresh MIR list and view modal
                 await this.loadMIRs();
-                if (this.viewModal.show) await this.openView(this.scanModal.mir);
 
                 if (data.data?.all_issued) {
                     this.scanModal.success += ' All lines issued — Production Order updated to IN PROGRESS.';
                 }
+
+                // Auto-close scan modal and reopen view after short delay
+                setTimeout(() => this.closeScan(), 1500);
             } catch(e) {
                 this.scanModal.error = e.message;
             } finally { this.scanModal.submitting = false; }
