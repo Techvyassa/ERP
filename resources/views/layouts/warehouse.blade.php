@@ -90,6 +90,14 @@
                             <span x-show="sidebarOpen" class="font-medium">Putaway</span>
                         </a>
                     </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/warehouse/mir") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouse.mir.index') || request()->routeIs('tenant.warehouse.mir.show') ? 'bg-amber-50 text-warehouse font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">outbox</span>
+                            <span x-show="sidebarOpen" class="font-medium">Material Issues</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
 

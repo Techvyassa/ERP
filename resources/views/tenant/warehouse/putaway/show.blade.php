@@ -72,7 +72,7 @@
                 class="px-5 py-2.5 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition flex items-center gap-2">
                 <span class="material-symbols-outlined">qr_code_2</span> Scan Bin
             </button>
-            <button x-show="task?.status === 'IN_PROGRESS'" @click="completePutaway()"
+            <button x-show="task?.status === 'IN_PROGRESS'" @click="openCompleteModal()"
                 class="px-5 py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 transition flex items-center gap-2">
                 <span class="material-symbols-outlined">check_circle</span> Complete Putaway
             </button>
@@ -80,6 +80,81 @@
                 class="px-5 py-2.5 bg-red-600 text-white font-semibold rounded-lg hover:bg-red-700 transition flex items-center gap-2">
                 <span class="material-symbols-outlined">cancel</span> Cancel Task
             </button>
+        </div>
+    </div>
+
+    <!-- Complete Modal -->
+    <div x-show="showCompleteModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-900/50" @click="showCompleteModal = false"></div>
+            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-lg font-bold text-gray-900">Complete Putaway</h3>
+                    <button @click="showCompleteModal = false"><span class="material-symbols-outlined text-gray-400">close</span></button>
+                </div>
+                <form @submit.prevent="completePutaway()" class="p-6 space-y-5">
+                    <div class="bg-green-50 border border-green-200 rounded-lg p-3 text-sm text-green-800">
+                        Review the task details and confirm the quantity before completing the putaway.
+                    </div>
+
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Putaway Qty *</label>
+                        <input type="number" step="0.001" min="0.001" x-model="completeQty" required
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                            :max="task?.quantity || null"
+                            placeholder="Enter quantity to put away">
+                        <p class="text-xs text-gray-500 mt-1">
+                            Maximum: <span x-text="formatQty(task?.quantity)"></span>
+                            <span x-text="task?.uom?.uom_code || ''"></span>
+                        </p>
+                    </div>
+
+                    <div class="bg-gray-50 rounded-xl border border-gray-200 p-4">
+                        <h4 class="text-sm font-bold text-gray-900 mb-3">Review Details</h4>
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-3 text-sm">
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Task Number</p>
+                                <p class="font-semibold text-gray-900" x-text="task?.task_number || '-'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Material</p>
+                                <p class="font-semibold text-gray-900" x-text="task?.material?.material_name || '-'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Batch Number</p>
+                                <p class="font-semibold text-gray-900" x-text="task?.batch_number || '-'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Destination Bin</p>
+                                <p class="font-semibold text-blue-600" x-text="task?.destination_bin?.bin_code || '-'"></p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Task Quantity</p>
+                                <p class="font-semibold text-gray-900">
+                                    <span x-text="formatQty(task?.quantity)"></span>
+                                    <span x-text="task?.uom?.uom_code || ''"></span>
+                                </p>
+                            </div>
+                            <div>
+                                <p class="text-xs font-semibold text-gray-500 uppercase mb-1">Entered Quantity</p>
+                                <p class="font-semibold text-gray-900">
+                                    <span x-text="formatQty(completeQty)"></span>
+                                    <span x-text="task?.uom?.uom_code || ''"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="flex justify-end gap-3 pt-2 border-t border-gray-100">
+                        <button type="button" @click="showCompleteModal = false"
+                            class="px-5 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">Back</button>
+                        <button type="submit" :disabled="saving"
+                            class="px-5 py-2 bg-green-600 text-white rounded-lg text-sm hover:bg-green-700 disabled:opacity-50">
+                            <span x-show="!saving">Confirm Complete</span><span x-show="saving">Processing...</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
         </div>
     </div>
 
@@ -172,9 +247,11 @@
             loading: false,
             saving: false,
             showBinScanModal: false,
+            showCompleteModal: false,
             showCancelModal: false,
             binScanInput: '',
             binRemarks: '',
+            completeQty: '',
             cancelReason: '',
 
             async init() {
@@ -237,6 +314,17 @@
                 setTimeout(() => document.querySelector('input[placeholder*="Scan"]')?.focus(), 100);
             },
 
+            openCompleteModal() {
+                if (!this.task?.destination_bin_id) {
+                    alert('Please scan a destination bin location before completing the putaway.');
+                    this.openBinScanModal();
+                    return;
+                }
+
+                this.completeQty = this.formatQty(this.task?.quantity);
+                this.showCompleteModal = true;
+            },
+
             async submitBinScan() {
                 if (!this.binScanInput.trim()) {
                     alert('Please enter a bin location');
@@ -277,7 +365,17 @@
                     return;
                 }
 
-                if (!confirm(`Complete putaway of ${this.task.quantity} ${this.task.uom?.uom_code || 'UNT'} to bin ${this.task.destination_bin?.bin_code}?`)) return;
+                const taskQty = parseFloat(this.task?.quantity) || 0;
+                const enteredQty = parseFloat(this.completeQty);
+                if (!Number.isFinite(enteredQty) || enteredQty <= 0) {
+                    alert('Please enter a valid putaway quantity.');
+                    return;
+                }
+
+                if (enteredQty > taskQty) {
+                    alert(`Putaway quantity cannot exceed task quantity of ${this.formatQty(taskQty)} ${this.task.uom?.uom_code || 'UNT'}.`);
+                    return;
+                }
 
                 this.saving = true;
                 try {
@@ -285,12 +383,20 @@
                         method: 'PATCH',
                         headers: headers(),
                         body: JSON.stringify({
-                            destination_bin_id: this.task.destination_bin_id
+                            destination_bin_id: this.task.destination_bin_id,
+                            putaway_lines: [
+                                {
+                                    line_number: 1,
+                                    batch_number: this.task.batch_number,
+                                    quantity: enteredQty
+                                }
+                            ]
                         })
                     });
                     const data = await res.json();
 
                     if (data.success) {
+                        this.showCompleteModal = false;
                         alert('Putaway completed successfully');
                         window.location.href = `/org/${orgSlug}/warehouse/putaway`;
                     } else {
@@ -348,6 +454,11 @@
                     'CANCELLED': 'bg-red-100 text-red-800',
                 };
                 return classes[status] || 'bg-gray-100 text-gray-800';
+            },
+
+            formatQty(value) {
+                const qty = parseFloat(value);
+                return Number.isFinite(qty) ? qty.toFixed(3) : '0.000';
             }
         };
     }

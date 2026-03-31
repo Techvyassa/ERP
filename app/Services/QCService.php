@@ -354,25 +354,17 @@ class QCService
                 }
             } else {
                 // Apply QC decision to GRN line items (writeback + status transition)
-                try {
-                    $grnService = app(\App\Services\GRNService::class);
-                    $qcDecisions = [
-                        $lot->grn_line_id => [
-                            'accepted_qty' => $acceptedQty,
-                            'rejected_qty' => $rejectedQty,
-                            'return_qty' => $data['return_qty'] ?? 0,
-                            'return_remarks' => $data['return_remarks'] ?? null,
-                            'source_bin_id' => $lot->grnLineItem?->warehouse_bin_id,
-                        ],
-                    ];
-                    $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);
-                } catch (\Exception $e) {
-                    Log::warning('[QCService] applyQCDecision failed, continuing', [
-                        'lot_id' => $lot->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                    // Don't fail the decision if writeback fails
-                }
+                $grnService = app(\App\Services\GRNService::class);
+                $qcDecisions = [
+                    $lot->grn_line_id => [
+                        'accepted_qty' => $acceptedQty,
+                        'rejected_qty' => $rejectedQty,
+                        'return_qty' => $data['return_qty'] ?? 0,
+                        'return_remarks' => $data['return_remarks'] ?? null,
+                        'source_bin_id' => $lot->grnLineItem?->warehouse_bin_id,
+                    ],
+                ];
+                $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);
             }
 
             // Update lot status

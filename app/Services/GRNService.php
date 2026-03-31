@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Models\Tenant\GRN;
 use App\Models\Tenant\GRNLineItem;
 use App\Models\Tenant\GateEntry;
+use App\Models\Tenant\InventoryTransaction;
 use App\Models\Tenant\MaterialReceipt;
 use App\Models\Tenant\MRLineItem;
 use App\Models\Tenant\PoLineItem;
+use App\Models\Tenant\StockBalance;
 use App\Services\QCService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
@@ -79,36 +81,37 @@ class GRNService
                 // --- LEDGER: Post GRN_RECEIPT → QC_HOLD ---
                 // Stock physically sits at the receiving dock; NOT available until QC passes + putaway.
                 if ($acceptedQty > 0 && $poLine->material) {
-                    try {
-                        $warehouse = $ge->purchaseOrder?->warehouse_id
-                                     ?? $ge->vendor?->default_warehouse_id
-                                     ?? null;
-                        if ($warehouse) {
-                            app(StockService::class)->post(
-                                [
-                                    'material_id'  => $poLine->material_id,
-                                    'uom_id'       => $poLine->uom_id,
-                                    'warehouse_id' => $warehouse,
-                                    'batch_number' => $batchNumber,
-                                ],
-                                'QC_HOLD',
-                                +$acceptedQty,
-                                'GRN_RECEIPT',
-                                'GRN',
-                                $grn->id,
-                                $grn->grn_number,
-                                $userId,
-                                null, // bin unknown — goods just arrived at dock
-                                $unitPrice,
-                                'Stock arrived at receiving dock — QC pending'
-                            );
-                        }
-                    } catch (\Exception $e) {
-                        Log::warning('[GRNService] StockService::post failed for GRN_RECEIPT', [
-                            'grn_line_id' => $grnLine->id,
-                            'error'       => $e->getMessage(),
+                    $warehouse = $ge->purchaseOrder?->warehouse_id
+                                 ?? $ge->vendor?->default_warehouse_id
+                                 ?? $poLine->material->default_warehouse_id
+                                 ?? null;
+                    
+                    if (!$warehouse) {
+                        Log::error('[GRNService] Warehouse could not be resolved for GRN line', [
+                            'grn_id' => $grn->id,
+                            'material_id' => $poLine->material_id
                         ]);
+                        throw new \Exception("Cannot auto-create GRN: warehouse could not be determined for material {$poLine->material_id}. Set a default warehouse in Material Master or Vendor Master.");
                     }
+
+                    app(StockService::class)->post(
+                        [
+                            'material_id'  => $poLine->material_id,
+                            'uom_id'       => $poLine->uom_id,
+                            'warehouse_id' => $warehouse,
+                            'batch_number' => $batchNumber,
+                        ],
+                        'QC_HOLD',
+                        +$acceptedQty,
+                        'GRN_RECEIPT',
+                        'GRN',
+                        $grn->id,
+                        $grn->grn_number,
+                        $userId,
+                        null, // bin unknown — goods just arrived at dock
+                        $unitPrice,
+                        'Stock arrived at receiving dock — QC pending'
+                    );
                 }
 
                 // Auto-trigger QC inspection lot per line (one lot per GRN line enforced by DB unique)
@@ -383,105 +386,182 @@ class GRNService
                     'stock_status' => $stockStatus,
                 ];
 
+                $warehouseId = $this->resolveWarehouseIdForGrnLine($lineItem);
+                if (($acceptedQty > 0 || $rejectedQty > 0) && !$warehouseId) {
+                    throw new \Exception(
+                        "Cannot post QC stock for GRN line {$lineItem->id}: warehouse could not be resolved. " .
+                        'Set the purchase order warehouse or line bin warehouse before making the QC decision.'
+                    );
+                }
+
+                // Validate QC_HOLD stock only for initial QC decision, not for post-QC edits
+                // Check if this is a post-QC edit by seeing if quantities were previously set
+                $isPostQCEdit = ($lineItem->accepted_qty > 0 || $lineItem->rejected_qty > 0);
+                
+                if (!$isPostQCEdit && ($acceptedQty > 0 || $rejectedQty > 0)) {
+                    $requiredQcHoldQty = round($acceptedQty + $rejectedQty, 3);
+                    $qcHoldQty = $this->getMaterialBucketQty($lineItem, $warehouseId, 'QC_HOLD');
+
+                    if ($qcHoldQty < $requiredQcHoldQty) {
+                        throw new \Exception(
+                            "Cannot post QC decision for GRN line {$lineItem->id}: QC_HOLD stock is {$qcHoldQty} but {$requiredQcHoldQty} is required. " .
+                            'This GRN likely predates the stock ledger feature and needs stock backfill before QC can proceed.'
+                        );
+                    }
+                }
+
+                // For post-QC edits, reverse previous stock movements first
+                if ($isPostQCEdit) {
+                    $oldAcceptedQty = (float) $lineItem->accepted_qty;
+                    $oldRejectedQty = (float) $lineItem->rejected_qty;
+                    
+                    // Reverse previous accepted qty movement (PUTAWAY_PENDING → QC_HOLD)
+                    if ($oldAcceptedQty > 0 && $lineItem->material_id) {
+                        try {
+                            app(StockService::class)->transfer(
+                                [
+                                    'material_id'  => $lineItem->material_id,
+                                    'uom_id'       => $lineItem->uom_id,
+                                    'warehouse_id' => $warehouseId,
+                                    'batch_number' => $lineItem->batch_number,
+                                ],
+                                'PUTAWAY_PENDING', // from
+                                'QC_HOLD',          // to
+                                $oldAcceptedQty,
+                                'STOCK_ADJUSTMENT', // Use existing ENUM value
+                                'GRN',
+                                $lineItem->grn_id,
+                                $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
+                                $userId,
+                                null,
+                                null,
+                                $lineItem->unit_price,
+                                "Reversing previous QC pass for post-QC edit"
+                            );
+                        } catch (\Exception $e) {
+                            Log::error('[GRNService] Failed to reverse previous QC pass', [
+                                'grn_line_id' => $lineItem->id,
+                                'material_id' => $lineItem->material_id,
+                                'qty' => $oldAcceptedQty,
+                                'error' => $e->getMessage(),
+                            ]);
+                            throw new \Exception(
+                                "Failed to reverse previous QC acceptance for line {$lineItem->id}: " . $e->getMessage()
+                            );
+                        }
+                    }
+                    
+                    // Reverse previous rejected qty movement (BLOCKED → QC_HOLD)
+                    if ($oldRejectedQty > 0 && $lineItem->material_id) {
+                        try {
+                            app(StockService::class)->transfer(
+                                [
+                                    'material_id'  => $lineItem->material_id,
+                                    'uom_id'       => $lineItem->uom_id,
+                                    'warehouse_id' => $warehouseId,
+                                    'batch_number' => $lineItem->batch_number,
+                                ],
+                                'BLOCKED',         // from
+                                'QC_HOLD',         // to
+                                $oldRejectedQty,
+                                'STOCK_ADJUSTMENT', // Use existing ENUM value
+                                'GRN',
+                                $lineItem->grn_id,
+                                $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
+                                $userId,
+                                null,
+                                null,
+                                null,
+                                "Reversing previous QC reject for post-QC edit"
+                            );
+                        } catch (\Exception $e) {
+                            Log::error('[GRNService] Failed to reverse previous QC reject', [
+                                'grn_line_id' => $lineItem->id,
+                                'material_id' => $lineItem->material_id,
+                                'qty' => $oldRejectedQty,
+                                'error' => $e->getMessage(),
+                            ]);
+                            throw new \Exception(
+                                "Failed to reverse previous QC rejection for line {$lineItem->id}: " . $e->getMessage()
+                            );
+                        }
+                    }
+                }
+
                 // --- LEDGER: Transfer accepted qty QC_HOLD → PUTAWAY_PENDING ---
                 // Stock has passed QC but is still physically on the dock/forklift.
                 // It is NOT yet available — that only happens when putaway is confirmed.
                 if ($acceptedQty > 0 && $lineItem->material_id) {
-                    try {
-                        $warehouseId = $lineItem->grn?->purchaseOrder?->warehouse_id ?? null;
-                        if ($warehouseId) {
-                            app(StockService::class)->transfer(
-                                [
-                                    'material_id'  => $lineItem->material_id,
-                                    'uom_id'       => $lineItem->uom_id,
-                                    'warehouse_id' => $warehouseId,
-                                    'batch_number' => $lineItem->batch_number,
-                                ],
-                                'QC_HOLD',       // from
-                                'PUTAWAY_PENDING',// to
-                                $acceptedQty,
-                                'QC_PASS',
-                                'GRN',
-                                $lineItem->grn_id,
-                                $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
-                                $userId,
-                                null,            // from bin: receiving dock (virtual, no specific bin)
-                                null,            // to bin: staging (will be set when putaway starts)
-                                $lineItem->unit_price,
-                                "QC passed — moved to putaway queue"
-                            );
-                        }
-                    } catch (\Exception $e) {
-                        Log::warning('[GRNService] StockService transfer QC_HOLD→PUTAWAY_PENDING failed', [
-                            'grn_line_id' => $lineItem->id,
-                            'error'       => $e->getMessage(),
-                        ]);
-                    }
+                    // Use already-resolved $warehouseId from line 388 (already validated)
+                    app(StockService::class)->transfer(
+                        [
+                            'material_id'  => $lineItem->material_id,
+                            'uom_id'       => $lineItem->uom_id,
+                            'warehouse_id' => $warehouseId,
+                            'batch_number' => $lineItem->batch_number,
+                        ],
+                        'QC_HOLD',       // from
+                        'PUTAWAY_PENDING',// to
+                        $acceptedQty,
+                        'QC_PASS',
+                        'GRN',
+                        $lineItem->grn_id,
+                        $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
+                        $userId,
+                        null,            // from bin: receiving dock (virtual, no specific bin)
+                        null,            // to bin: staging (will be set when putaway starts)
+                        $lineItem->unit_price,
+                        "QC passed — moved to putaway queue"
+                    );
                 }
 
                 // --- LEDGER: Transfer rejected qty QC_HOLD → BLOCKED ---
                 if ($rejectedQty > 0 && $lineItem->material_id) {
-                    try {
-                        $warehouseId = $lineItem->grn?->purchaseOrder?->warehouse_id ?? null;
-                        if ($warehouseId) {
-                            app(StockService::class)->transfer(
-                                [
-                                    'material_id'  => $lineItem->material_id,
-                                    'uom_id'       => $lineItem->uom_id,
-                                    'warehouse_id' => $warehouseId,
-                                    'batch_number' => $lineItem->batch_number,
-                                ],
-                                'QC_HOLD',
-                                'BLOCKED',
-                                $rejectedQty,
-                                'QC_REJECT',
-                                'GRN',
-                                $lineItem->grn_id,
-                                $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
-                                $userId,
-                                null,
-                                null,
-                                null,
-                                "QC rejected — stock quarantined"
-                            );
-                        }
-                    } catch (\Exception $e) {
-                        Log::warning('[GRNService] StockService transfer QC_HOLD→BLOCKED failed', [
-                            'grn_line_id' => $lineItem->id,
-                            'error'       => $e->getMessage(),
-                        ]);
-                    }
+                    // Use already-resolved $warehouseId from line 388 (already validated)
+                    app(StockService::class)->transfer(
+                        [
+                            'material_id'  => $lineItem->material_id,
+                            'uom_id'       => $lineItem->uom_id,
+                            'warehouse_id' => $warehouseId,
+                            'batch_number' => $lineItem->batch_number,
+                        ],
+                        'QC_HOLD',
+                        'BLOCKED',
+                        $rejectedQty,
+                        'QC_REJECT',
+                        'GRN',
+                        $lineItem->grn_id,
+                        $lineItem->grn?->grn_number ?? "GRN-{$lineItem->grn_id}",
+                        $userId,
+                        null,
+                        null,
+                        null,
+                        "QC rejected — stock quarantined"
+                    );
                 }
 
                 // Create putaway task for any accepted quantity, avoiding duplicates
                 if ($acceptedQty > 0) {
-                    try {
-                        $putawayService = app(PutawayService::class);
+                    $putawayService = app(PutawayService::class);
 
-                        $existingTask = \App\Models\Tenant\PutawayTask::where('grn_line_id', $lineItem->id)
-                            ->whereIn('status', ['PENDING', 'IN_PROGRESS'])
-                            ->first();
+                    $existingTask = \App\Models\Tenant\PutawayTask::where('grn_line_id', $lineItem->id)
+                        ->whereIn('status', ['PENDING', 'IN_PROGRESS'])
+                        ->first();
 
-                        if (!$existingTask) {
-                            $putawayService->createPutawayTask([
-                                'grn_line_id'   => $lineItem->id,
-                                'material_id'   => $lineItem->material_id,
-                                'source_bin_id' => $sourceBinId,
-                                'quantity'      => $acceptedQty,
-                                'uom_id'        => $lineItem->uom_id,
-                                'batch_number'  => $lineItem->batch_number,
-                                'strategy'      => 'MANUAL',
-                            ], $userId);
-                        } else {
-                            if ($existingTask->status === 'PENDING') {
-                                $existingTask->update(['quantity' => $acceptedQty]);
-                            }
+                    if (!$existingTask) {
+                        $putawayService->createPutawayTask([
+                            'grn_line_id'   => $lineItem->id,
+                            'material_id'   => $lineItem->material_id,
+                            'source_bin_id' => $sourceBinId,
+                            'quantity'      => $acceptedQty,
+                            'uom_id'        => $lineItem->uom_id,
+                            'batch_number'  => $lineItem->batch_number,
+                            'strategy'      => 'MANUAL',
+                        ], $userId);
+                    } else {
+                        if ($existingTask->status === 'PENDING') {
+                            $existingTask->update(['quantity' => $acceptedQty]);
                         }
-                    } catch (\Exception $e) {
-                        Log::warning('[GRNService] Putaway task handling failed for line', [
-                            'grn_line_id' => $lineItem->id,
-                            'error'       => $e->getMessage(),
-                        ]);
                     }
                 }
 
@@ -499,15 +579,15 @@ class GRNService
                 $totalRejected += $rejectedQty;
             }
 
-            // Determine GRN header status
+            // Determine GRN header status based on operational completion
             $grandTotal = $totalAccepted + $totalRejected;
             if ($grandTotal > 0) {
                 if ($totalAccepted > 0 && $totalRejected === 0) {
-                    $grnStatus = 'ACCEPTED';
-                } elseif ($totalAccepted === 0 && $totalRejected > 0) {
-                    $grnStatus = 'REJECTED';
+                    $grnStatus = 'PUTAWAY_IN_PROGRESS';  // Awaiting putaway completion
+                } elseif ($totalRejected > 0 && $totalAccepted === 0) {
+                    $grnStatus = 'REJECTED';  // Fully rejected - no putaway needed
                 } else {
-                    $grnStatus = 'PARTIALLY_ACCEPTED';
+                    $grnStatus = 'PARTIALLY_ACCEPTED';  // Mixed - some lines need putaway
                 }
 
                 $grn->update(['status' => $grnStatus]);
@@ -688,6 +768,32 @@ class GRNService
         ]);
 
         return $lineItem;
+    }
+
+    private function resolveWarehouseIdForGrnLine(GRNLineItem $lineItem): ?int
+    {
+        return $lineItem->warehouseBin?->warehouse_id
+            ?? $lineItem->material?->default_warehouse_id
+            ?? InventoryTransaction::query()
+                ->where('material_id', $lineItem->material_id)
+                ->where('reference_type', 'GRN')
+                ->where('reference_id', $lineItem->grn_id)
+                ->where('batch_number', $lineItem->batch_number)
+                ->value('warehouse_id')
+            ?? StockBalance::query()
+                ->where('material_id', $lineItem->material_id)
+                ->where('batch_number', $lineItem->batch_number)
+                ->value('warehouse_id');
+    }
+
+    private function getMaterialBucketQty(GRNLineItem $lineItem, int $warehouseId, string $bucket): float
+    {
+        return (float) StockBalance::query()
+            ->where('material_id', $lineItem->material_id)
+            ->where('batch_number', $lineItem->batch_number)
+            ->where('warehouse_id', $warehouseId)
+            ->where('bucket', $bucket)
+            ->sum('qty_on_hand');
     }
 
     /**
