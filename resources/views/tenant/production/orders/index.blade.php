@@ -377,6 +377,14 @@
                                 </tbody>
                             </table>
                         </div>
+                        <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                            <p class="font-semibold mb-1">How this is calculated:</p>
+                            <ul class="space-y-1 ml-4 list-disc">
+                                <li><strong>Effective Qty</strong> = Base Qty + (Base Qty × Scrap %)</li>
+                                <li><strong>Required Qty</strong> = Effective Qty × (Target Qty ÷ Batch Size)</li>
+                                <li>Example: 5.10 × (10 ÷ 100) = 0.510 KG</li>
+                            </ul>
+                        </div>
                         <p class="text-xs text-gray-500 mt-2 flex items-center gap-1">
                             <span class="material-symbols-outlined text-xs">info</span>
                             A Material Issue Request (MIR) will be sent to Store for approval on submission.
