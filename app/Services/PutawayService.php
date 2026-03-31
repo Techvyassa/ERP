@@ -6,6 +6,8 @@ use App\Models\Tenant\PutawayTask;
 use App\Models\Tenant\PutawayLine;
 use App\Models\Tenant\GRN;
 use App\Models\Tenant\GRNLineItem;
+use App\Models\Tenant\InventoryTransaction;
+use App\Models\Tenant\StockBalance;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -20,12 +22,50 @@ class PutawayService
         return DB::connection('tenant')->transaction(function () use ($data, $userId) {
             // Validate grn_line_id exists
             $grnLineItem = \App\Models\Tenant\GRNLineItem::findOrFail($data['grn_line_id']);
+            $batchNumber = $data['batch_number'] ?? $grnLineItem->batch_number;
+            $materialId = $data['material_id'] ?? $grnLineItem->material_id;
+
+            $existingTask = PutawayTask::query()
+                ->where('grn_line_id', $data['grn_line_id'])
+                ->where('material_id', $materialId)
+                ->where('batch_number', $batchNumber)
+                ->where('status', '!=', 'CANCELLED')
+                ->orderByDesc('id')
+                ->first();
+
+            if ($existingTask) {
+                if ($existingTask->status === 'COMPLETED') {
+                    throw new \Exception(
+                        "Putaway already completed for GRN line {$data['grn_line_id']} and batch {$batchNumber} " .
+                        "under task {$existingTask->task_number}."
+                    );
+                }
+
+                $existingTask->update([
+                    'quantity' => $data['quantity'] ?? $existingTask->quantity,
+                    'uom_id' => $data['uom_id'] ?? $existingTask->uom_id,
+                    'source_bin_id' => $data['source_bin_id'] ?? $existingTask->source_bin_id,
+                    'destination_bin_id' => $data['destination_bin_id'] ?? $existingTask->destination_bin_id,
+                    'strategy' => $data['strategy'] ?? $existingTask->strategy,
+                    'assigned_to' => $existingTask->assigned_to ?? $userId,
+                ]);
+
+                Log::info('Reused existing putaway task', [
+                    'task_id' => $existingTask->id,
+                    'task_number' => $existingTask->task_number,
+                    'grn_line_id' => $data['grn_line_id'],
+                    'material_id' => $materialId,
+                    'batch_number' => $batchNumber,
+                ]);
+
+                return $existingTask->load(['material', 'sourceBin', 'destinationBin']);
+            }
 
             $task = PutawayTask::create([
                 'task_number' => $this->generateTaskNumber(),
                 'grn_line_id' => $data['grn_line_id'],
-                'material_id' => $data['material_id'],
-                'batch_number' => $data['batch_number'] ?? $grnLineItem->batch_number,
+                'material_id' => $materialId,
+                'batch_number' => $batchNumber,
                 'quantity' => $data['quantity'],
                 'uom_id' => $data['uom_id'] ?? $grnLineItem->uom_id,
                 'source_bin_id' => $data['source_bin_id'] ?? null,
@@ -96,7 +136,38 @@ class PutawayService
             throw new \Exception('Destination bin is required to complete putaway. Please scan a bin first.');
         }
 
-        return DB::connection('tenant')->transaction(function () use ($task, $data, $userId, $destinationBinId) {
+        $putawayQty = isset($data['putaway_lines']) && count($data['putaway_lines']) > 0
+            ? (float) collect($data['putaway_lines'])->sum(fn ($line) => (float) ($line['quantity'] ?? 0))
+            : (float) $task->quantity;
+
+        if ($putawayQty <= 0) {
+            throw new \Exception('Putaway quantity must be greater than zero.');
+        }
+
+        if ($putawayQty > (float) $task->quantity) {
+            throw new \Exception('Putaway quantity cannot exceed task quantity.');
+        }
+
+        $grnLine = $task->grnLineItem;
+        $warehouseId = $grnLine ? $this->resolveWarehouseIdForPutaway($grnLine, $destinationBinId) : null;
+        if ($grnLine && $grnLine->material_id && !$warehouseId) {
+            throw new \Exception(
+                "Cannot complete putaway task {$task->id}: warehouse could not be resolved. " .
+                'Set the purchase order warehouse or ensure the selected bin belongs to a warehouse.'
+            );
+        }
+
+        if ($grnLine && $grnLine->material_id) {
+            $putawayPendingQty = $this->getMaterialBucketQty($grnLine, $warehouseId, 'PUTAWAY_PENDING');
+            if ($putawayPendingQty < $putawayQty) {
+                throw new \Exception(
+                    "Cannot complete putaway task {$task->id}: PUTAWAY_PENDING stock is {$putawayPendingQty} but {$putawayQty} is required. " .
+                    'This GRN likely predates the stock ledger feature and needs stock backfill before putaway can proceed.'
+                );
+            }
+        }
+
+        return DB::connection('tenant')->transaction(function () use ($task, $data, $userId, $destinationBinId, $putawayQty, $warehouseId) {
             // Update destination bin
             $task->update(['destination_bin_id' => $destinationBinId]);
 
@@ -143,9 +214,7 @@ class PutawayService
                 // The destination bin is now confirmed — we record the exact bin in the ledger.
                 if ($grnLine->material_id) {
                     try {
-                        $warehouseId = $grnLine->grn?->purchaseOrder?->warehouse_id ?? null;
-                        if ($warehouseId) {
-                            app(StockService::class)->transfer(
+                        app(StockService::class)->transfer(
                                 [
                                     'material_id'  => $grnLine->material_id,
                                     'uom_id'       => $grnLine->uom_id,
@@ -154,7 +223,7 @@ class PutawayService
                                 ],
                                 'PUTAWAY_PENDING',  // from (staging area / warehouse-level)
                                 'AVAILABLE',         // to (confirmed shelf bin)
-                                (float) $task->quantity,
+                                $putawayQty,
                                 'PUTAWAY_COMPLETE',
                                 'PutawayTask',
                                 $task->id,
@@ -165,8 +234,11 @@ class PutawayService
                                 $grnLine->unit_price,
                                 "Putaway confirmed — stock now on shelf bin #{$destinationBinId}"
                             );
-                        }
                     } catch (\Exception $e) {
+                        throw new \Exception(
+                            "Failed to move putaway task {$task->id} from PUTAWAY_PENDING to AVAILABLE: {$e->getMessage()}",
+                            previous: $e
+                        );
                         Log::warning('[PutawayService] StockService transfer PUTAWAY_PENDING→AVAILABLE failed', [
                             'task_id' => $task->id,
                             'error'   => $e->getMessage(),
@@ -181,6 +253,23 @@ class PutawayService
                 'destination_bin_id'=> $destinationBinId,
                 'grn_line_id'       => $task->grn_line_id,
             ]);
+
+            if ($grnLine && $grnLine->material_id) {
+                $ledgerPosted = InventoryTransaction::query()
+                    ->where('reference_type', 'PutawayTask')
+                    ->where('reference_id', $task->id)
+                    ->where('transaction_type', 'PUTAWAY_COMPLETE')
+                    ->where('material_id', $grnLine->material_id)
+                    ->where('batch_number', $grnLine->batch_number)
+                    ->exists();
+
+                if (!$ledgerPosted) {
+                    throw new \Exception(
+                        "Putaway task {$task->id} was not posted to inventory_transactions. " .
+                        'The task was rolled back so stock and document status stay consistent.'
+                    );
+                }
+            }
 
             return $task->load(['putawayLines', 'destinationBin']);
         });
@@ -247,5 +336,32 @@ class PutawayService
         ]);
 
         return $task->load(['destinationBin']);
+    }
+
+    private function resolveWarehouseIdForPutaway(GRNLineItem $grnLine, int $destinationBinId): ?int
+    {
+        return $grnLine->grn?->purchaseOrder?->warehouse_id
+            ?? \App\Models\Tenant\BinLocation::query()->whereKey($destinationBinId)->value('warehouse_id')
+            ?? $grnLine->warehouseBin?->warehouse_id
+            ?? InventoryTransaction::query()
+                ->where('material_id', $grnLine->material_id)
+                ->where('reference_type', 'GRN')
+                ->where('reference_id', $grnLine->grn_id)
+                ->where('batch_number', $grnLine->batch_number)
+                ->value('warehouse_id')
+            ?? StockBalance::query()
+                ->where('material_id', $grnLine->material_id)
+                ->where('batch_number', $grnLine->batch_number)
+                ->value('warehouse_id');
+    }
+
+    private function getMaterialBucketQty(GRNLineItem $grnLine, int $warehouseId, string $bucket): float
+    {
+        return (float) StockBalance::query()
+            ->where('material_id', $grnLine->material_id)
+            ->where('batch_number', $grnLine->batch_number)
+            ->where('warehouse_id', $warehouseId)
+            ->where('bucket', $bucket)
+            ->sum('qty_on_hand');
     }
 }

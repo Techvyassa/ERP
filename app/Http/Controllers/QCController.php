@@ -257,8 +257,8 @@ class QCController extends Controller
             // Validate manually
             $validator = \Validator::make($jsonData, [
                 'decision' => 'required|in:ACCEPTED,REJECTED,CONDITIONALLY_ACCEPTED,REWORK_REQUIRED',
-                'accepted_qty' => 'nullable|numeric|gt:0',
-                'rejected_qty' => 'nullable|numeric|gt:0',
+                'accepted_qty' => 'nullable|numeric|gte:0',
+                'rejected_qty' => 'nullable|numeric|gte:0',
                 'override_approved_by' => 'nullable|integer',
                 'override_reason' => 'nullable|string|max:500',
                 'coa_file_path' => 'nullable|string|max:500',

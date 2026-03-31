@@ -611,6 +611,23 @@ Route::middleware(['web.jwt'])->group(function () {
                     'taskId' => $id
                 ]);
             })->name('putaway.show');
+
+            Route::get('/mir', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.mir.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('mir.index');
+
+            Route::get('/mir/{id}', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.mir.show', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'mirId' => $id
+                ]);
+            })->name('mir.show');
         });
 
         // Quality Portal

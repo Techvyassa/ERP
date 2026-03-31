@@ -5,9 +5,11 @@ namespace App\Services;
 use App\Models\Tenant\GRN;
 use App\Models\Tenant\GRNLineItem;
 use App\Models\Tenant\GateEntry;
+use App\Models\Tenant\InventoryTransaction;
 use App\Models\Tenant\MaterialReceipt;
 use App\Models\Tenant\MRLineItem;
 use App\Models\Tenant\PoLineItem;
+use App\Models\Tenant\StockBalance;
 use App\Services\QCService;
 use App\Services\StockService;
 use Illuminate\Support\Facades\DB;
@@ -383,6 +385,26 @@ class GRNService
                     'stock_status' => $stockStatus,
                 ];
 
+                $warehouseId = $this->resolveWarehouseIdForGrnLine($lineItem);
+                if (($acceptedQty > 0 || $rejectedQty > 0) && !$warehouseId) {
+                    throw new \Exception(
+                        "Cannot post QC stock for GRN line {$lineItem->id}: warehouse could not be resolved. " .
+                        'Set the purchase order warehouse or line bin warehouse before making the QC decision.'
+                    );
+                }
+
+                if ($acceptedQty > 0 || $rejectedQty > 0) {
+                    $requiredQcHoldQty = round($acceptedQty + $rejectedQty, 3);
+                    $qcHoldQty = $this->getMaterialBucketQty($lineItem, $warehouseId, 'QC_HOLD');
+
+                    if ($qcHoldQty < $requiredQcHoldQty) {
+                        throw new \Exception(
+                            "Cannot post QC decision for GRN line {$lineItem->id}: QC_HOLD stock is {$qcHoldQty} but {$requiredQcHoldQty} is required. " .
+                            'This GRN likely predates the stock ledger feature and needs stock backfill before QC can proceed.'
+                        );
+                    }
+                }
+
                 // --- LEDGER: Transfer accepted qty QC_HOLD → PUTAWAY_PENDING ---
                 // Stock has passed QC but is still physically on the dock/forklift.
                 // It is NOT yet available — that only happens when putaway is confirmed.
@@ -688,6 +710,32 @@ class GRNService
         ]);
 
         return $lineItem;
+    }
+
+    private function resolveWarehouseIdForGrnLine(GRNLineItem $lineItem): ?int
+    {
+        return $lineItem->grn?->purchaseOrder?->warehouse_id
+            ?? $lineItem->warehouseBin?->warehouse_id
+            ?? InventoryTransaction::query()
+                ->where('material_id', $lineItem->material_id)
+                ->where('reference_type', 'GRN')
+                ->where('reference_id', $lineItem->grn_id)
+                ->where('batch_number', $lineItem->batch_number)
+                ->value('warehouse_id')
+            ?? StockBalance::query()
+                ->where('material_id', $lineItem->material_id)
+                ->where('batch_number', $lineItem->batch_number)
+                ->value('warehouse_id');
+    }
+
+    private function getMaterialBucketQty(GRNLineItem $lineItem, int $warehouseId, string $bucket): float
+    {
+        return (float) StockBalance::query()
+            ->where('material_id', $lineItem->material_id)
+            ->where('batch_number', $lineItem->batch_number)
+            ->where('warehouse_id', $warehouseId)
+            ->where('bucket', $bucket)
+            ->sum('qty_on_hand');
     }
 
     /**

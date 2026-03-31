@@ -7,6 +7,10 @@
 <div x-data="qcInspectionDetail()" x-init="init()">
     <div class="flex items-center justify-between mb-6">
         <div>
+            <button type="button" onclick="window.history.back()" class="inline-flex items-center gap-2 mb-3 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                <span class="material-symbols-outlined text-base">arrow_back</span>
+                Back
+            </button>
             <h2 class="text-2xl font-bold text-gray-900">Inspection Lot <span x-text="'LOT-' + (lot.id || '')"></span></h2>
             <p class="text-sm text-gray-500">Record test results and submit the final QC decision.</p>
         </div>
@@ -232,7 +236,7 @@
                             <!-- Decision Type -->
                             <div>
                                 <label class="block text-sm font-semibold text-gray-700 mb-2">Decision <span class="text-red-500">*</span></label>
-                                <select x-model="decision.decision" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <select x-model="decision.decision" @change="applyDecisionDefaults()" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
                                     <option value="">Select decision</option>
                                     <option value="ACCEPTED">✅ Accepted - Stock released to unrestricted use</option>
                                     <option value="REJECTED">❌ Rejected - Stock blocked, RTV initiated</option>
@@ -245,12 +249,12 @@
                             <div class="grid grid-cols-2 gap-4">
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">Accepted Qty <span class="text-red-500">*</span></label>
-                                    <input type="number" step="0.001" min="0" x-model="decision.accepted_qty" required placeholder="e.g., 100.000" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <input type="number" step="0.001" min="0" x-model="decision.accepted_qty" @input="syncDecisionQty('accepted')" @blur="normalizeDecisionQty('accepted')" required placeholder="e.g., 100.000" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
                                     <p class="text-xs text-gray-500 mt-1">Quantity approved for use</p>
                                 </div>
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">Rejected Qty <span class="text-red-500">*</span></label>
-                                    <input type="number" step="0.001" min="0" x-model="decision.rejected_qty" required placeholder="e.g., 0.000" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <input type="number" step="0.001" min="0" x-model="decision.rejected_qty" @input="syncDecisionQty('rejected')" @blur="normalizeDecisionQty('rejected')" required placeholder="e.g., 0.000" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
                                     <p class="text-xs text-gray-500 mt-1">Quantity to be returned</p>
                                 </div>
                             </div>
@@ -502,50 +506,128 @@ function qcInspectionDetail() {
         },
 
         calculateDefaultQuantities() {
-            if (!this.qcResults || this.qcResults.length === 0) {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            if (lotQty <= 0) {
                 return;
             }
             
-            // Calculate total observed quantity (sum of all test results)
-            const totalObserved = this.qcResults.reduce((sum, result) => {
-                return sum + (parseFloat(result.observed_value) || 0);
-            }, 0);
-            
-            // Count PASS and FAIL results
             const passCount = this.qcResults.filter(r => r.is_pass === true).length;
             const failCount = this.qcResults.filter(r => r.is_pass === false).length;
             const totalCount = this.qcResults.length;
             
             // If all results PASS → Set as accepted
             if (passCount === totalCount && passCount > 0) {
-                this.decision.accepted_qty = totalObserved.toFixed(3);
-                this.decision.rejected_qty = '0.000';
                 this.decision.decision = 'ACCEPTED';
+                this.decision.accepted_qty = lotQty.toFixed(3);
+                this.decision.rejected_qty = '0.000';
             }
             // If all results FAIL → Set as rejected
             else if (failCount === totalCount && failCount > 0) {
-                this.decision.accepted_qty = '0.000';
-                this.decision.rejected_qty = totalObserved.toFixed(3);
                 this.decision.decision = 'REJECTED';
+                this.decision.accepted_qty = '0.000';
+                this.decision.rejected_qty = lotQty.toFixed(3);
             }
             // Mixed results → Split based on pass/fail ratio
             else {
-                const passedQty = this.qcResults
-                    .filter(r => r.is_pass === true)
-                    .reduce((sum, result) => sum + (parseFloat(result.observed_value) || 0), 0);
-                
-                const failedQty = this.qcResults
-                    .filter(r => r.is_pass === false)
-                    .reduce((sum, result) => sum + (parseFloat(result.observed_value) || 0), 0);
-                
-                this.decision.accepted_qty = passedQty.toFixed(3);
-                this.decision.rejected_qty = failedQty.toFixed(3);
-                
-                // Suggest conditional acceptance for mixed results
-                if (passedQty > 0 && failedQty > 0) {
-                    this.decision.decision = 'CONDITIONALLY_ACCEPTED';
-                }
+                this.decision.decision = totalCount > 0 ? 'CONDITIONALLY_ACCEPTED' : 'ACCEPTED';
+                this.decision.accepted_qty = lotQty.toFixed(3);
+                this.decision.rejected_qty = '0.000';
             }
+            this.applyDecisionDefaults();
+        },
+
+        applyDecisionDefaults() {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            const currentRemarks = (this.decision.remarks || '').trim();
+            const hasManualRemarks = currentRemarks !== '' && !this.isAutoDecisionRemark(currentRemarks);
+
+            if (this.decision.decision === 'ACCEPTED') {
+                this.decision.accepted_qty = lotQty.toFixed(3);
+                this.decision.rejected_qty = '0.000';
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('ACCEPTED');
+            } else if (this.decision.decision === 'REJECTED') {
+                this.decision.accepted_qty = '0.000';
+                this.decision.rejected_qty = lotQty.toFixed(3);
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REJECTED');
+            } else if (this.decision.decision === 'CONDITIONALLY_ACCEPTED') {
+                if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                    this.decision.accepted_qty = lotQty.toFixed(3);
+                    this.decision.rejected_qty = '0.000';
+                }
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('CONDITIONALLY_ACCEPTED');
+            } else if (this.decision.decision === 'REWORK_REQUIRED') {
+                if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                    this.decision.accepted_qty = '0.000';
+                    this.decision.rejected_qty = lotQty.toFixed(3);
+                }
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REWORK_REQUIRED');
+            }
+        },
+
+        getDefaultDecisionRemark(decision) {
+            return {
+                ACCEPTED: 'Accepted after QC inspection.',
+                REJECTED: 'Rejected after QC inspection.',
+                CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
+                REWORK_REQUIRED: 'Rework required based on QC inspection.'
+            }[decision] || '';
+        },
+
+        isAutoDecisionRemark(remarks) {
+            return Object.values({
+                ACCEPTED: 'Accepted after QC inspection.',
+                REJECTED: 'Rejected after QC inspection.',
+                CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
+                REWORK_REQUIRED: 'Rework required based on QC inspection.'
+            }).includes(remarks);
+        },
+
+        syncDecisionQty(changedField) {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            if (lotQty <= 0) {
+                return;
+            }
+
+            if (changedField === 'rejected') {
+                let rejectedQty = parseFloat(this.decision.rejected_qty);
+                if (!Number.isFinite(rejectedQty)) {
+                    this.decision.accepted_qty = lotQty.toFixed(3);
+                    return;
+                }
+                rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
+                this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
+                return;
+            }
+
+            let acceptedQty = parseFloat(this.decision.accepted_qty);
+            if (!Number.isFinite(acceptedQty)) {
+                this.decision.rejected_qty = lotQty.toFixed(3);
+                return;
+            }
+            acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
+            this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
+        },
+
+        normalizeDecisionQty(changedField) {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            if (lotQty <= 0) {
+                return;
+            }
+
+            if (changedField === 'rejected') {
+                let rejectedQty = parseFloat(this.decision.rejected_qty);
+                rejectedQty = Number.isFinite(rejectedQty) ? rejectedQty : 0;
+                rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
+                this.decision.rejected_qty = rejectedQty.toFixed(3);
+                this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
+                return;
+            }
+
+            let acceptedQty = parseFloat(this.decision.accepted_qty);
+            acceptedQty = Number.isFinite(acceptedQty) ? acceptedQty : 0;
+            acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
+            this.decision.accepted_qty = acceptedQty.toFixed(3);
+            this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
         },
 
         formatTolerance(result) {
