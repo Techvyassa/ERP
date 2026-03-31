@@ -213,37 +213,26 @@ class PutawayService
                 // This is the definitive moment stock becomes usable by production / sales.
                 // The destination bin is now confirmed — we record the exact bin in the ledger.
                 if ($grnLine->material_id) {
-                    try {
-                        app(StockService::class)->transfer(
-                                [
-                                    'material_id'  => $grnLine->material_id,
-                                    'uom_id'       => $grnLine->uom_id,
-                                    'warehouse_id' => $warehouseId,
-                                    'batch_number' => $grnLine->batch_number,
-                                ],
-                                'PUTAWAY_PENDING',  // from (staging area / warehouse-level)
-                                'AVAILABLE',         // to (confirmed shelf bin)
-                                $putawayQty,
-                                'PUTAWAY_COMPLETE',
-                                'PutawayTask',
-                                $task->id,
-                                $task->task_number,
-                                $userId,
-                                null,               // from bin: staging (no specific bin tracked yet)
-                                $destinationBinId,  // to bin: the exact shelf bin scanned by operator
-                                $grnLine->unit_price,
-                                "Putaway confirmed — stock now on shelf bin #{$destinationBinId}"
-                            );
-                    } catch (\Exception $e) {
-                        throw new \Exception(
-                            "Failed to move putaway task {$task->id} from PUTAWAY_PENDING to AVAILABLE: {$e->getMessage()}",
-                            previous: $e
+                    app(StockService::class)->transfer(
+                            [
+                                'material_id'  => $grnLine->material_id,
+                                'uom_id'       => $grnLine->uom_id,
+                                'warehouse_id' => $warehouseId,
+                                'batch_number' => $grnLine->batch_number,
+                            ],
+                            'PUTAWAY_PENDING',  // from (staging area / warehouse-level)
+                            'AVAILABLE',         // to (confirmed shelf bin)
+                            $putawayQty,
+                            'PUTAWAY_COMPLETE',
+                            'PutawayTask',
+                            $task->id,
+                            $task->task_number,
+                            $userId,
+                            null,               // from bin: staging (no specific bin tracked yet)
+                            $destinationBinId,  // to bin: the exact shelf bin scanned by operator
+                            $grnLine->unit_price,
+                            "Putaway confirmed — stock now on shelf bin #{$destinationBinId}"
                         );
-                        Log::warning('[PutawayService] StockService transfer PUTAWAY_PENDING→AVAILABLE failed', [
-                            'task_id' => $task->id,
-                            'error'   => $e->getMessage(),
-                        ]);
-                    }
                 }
             }
 
@@ -270,6 +259,9 @@ class PutawayService
                     );
                 }
             }
+
+            // Update GRN header status based on all line items' putaway completion
+            $this->updateGRNHeaderStatus($grnLine);
 
             return $task->load(['putawayLines', 'destinationBin']);
         });
@@ -340,9 +332,9 @@ class PutawayService
 
     private function resolveWarehouseIdForPutaway(GRNLineItem $grnLine, int $destinationBinId): ?int
     {
-        return $grnLine->grn?->purchaseOrder?->warehouse_id
-            ?? \App\Models\Tenant\BinLocation::query()->whereKey($destinationBinId)->value('warehouse_id')
+        return \App\Models\Tenant\BinLocation::query()->whereKey($destinationBinId)->value('warehouse_id')
             ?? $grnLine->warehouseBin?->warehouse_id
+            ?? $grnLine->material?->default_warehouse_id
             ?? InventoryTransaction::query()
                 ->where('material_id', $grnLine->material_id)
                 ->where('reference_type', 'GRN')
@@ -363,5 +355,65 @@ class PutawayService
             ->where('warehouse_id', $warehouseId)
             ->where('bucket', $bucket)
             ->sum('qty_on_hand');
+    }
+
+    /**
+     * Update GRN header status based on all line items' putaway completion status.
+     * Called after each putaway task completes to keep GRN status in sync.
+     */
+    private function updateGRNHeaderStatus(GRNLineItem $completedLine): void
+    {
+        $grn = $completedLine->grn;
+        if (!$grn) {
+            return;
+        }
+
+        // Check all line items for this GRN
+        $allLines = GRNLineItem::where('grn_id', $grn->id)->get();
+        
+        if ($allLines->isEmpty()) {
+            return;
+        }
+
+        $totalLines = $allLines->count();
+        $availableLines = $allLines->filter(fn($line) => $line->stock_status === 'AVAILABLE')->count();
+        $blockedLines = $allLines->filter(fn($line) => $line->stock_status === 'BLOCKED')->count();
+        $putawayPendingLines = $allLines->filter(fn($line) => $line->stock_status === 'PUTAWAY_PENDING')->count();
+
+        // Determine new GRN status based on line completion
+        $newStatus = null;
+        
+        if ($availableLines === $totalLines) {
+            // All lines are now available (fully put away)
+            $newStatus = 'ACCEPTED';
+        } elseif ($blockedLines === $totalLines) {
+            // All lines were rejected
+            $newStatus = 'REJECTED';
+        } elseif ($availableLines > 0 && ($availableLines + $blockedLines) === $totalLines) {
+            // Some accepted and put away, some rejected - no pending putaway
+            $newStatus = 'PARTIALLY_ACCEPTED';
+        } elseif ($putawayPendingLines > 0) {
+            // Still has lines awaiting putaway - keep as PUTAWAY_IN_PROGRESS
+            // Only update if not already PUTAWAY_IN_PROGRESS to avoid unnecessary writes
+            if ($grn->status !== 'PUTAWAY_IN_PROGRESS') {
+                $newStatus = 'PUTAWAY_IN_PROGRESS';
+            }
+        }
+
+        // Update GRN header status if changed
+        if ($newStatus && $grn->status !== $newStatus) {
+            $grn->update(['status' => $newStatus]);
+            
+            Log::info('[PutawayService] GRN header status updated after putaway completion', [
+                'grn_id' => $grn->id,
+                'grn_number' => $grn->grn_number,
+                'old_status' => $grn->status,
+                'new_status' => $newStatus,
+                'total_lines' => $totalLines,
+                'available_lines' => $availableLines,
+                'blocked_lines' => $blockedLines,
+                'putaway_pending_lines' => $putawayPendingLines,
+            ]);
+        }
     }
 }
