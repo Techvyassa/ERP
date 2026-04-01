@@ -32,7 +32,10 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         'STORE',
         'QC',
         'PROCUREMENT',
-        'PRODUCTION'
+        'PRODUCTION',
+        'SALES',
+        'CUSTOMER',
+        'MAINTENANCE'
     ];
 
     private const DEFAULT_ROLES = [
@@ -44,6 +47,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         ['code' => 'QC', 'name' => 'Quality Control', 'description' => 'Quality control operations'],
         ['code' => 'PROCUREMENT', 'name' => 'Procurement', 'description' => 'Procurement department access'],
         ['code' => 'PRODUCTION', 'name' => 'Production', 'description' => 'Production department access'],
+        ['code' => 'SALES', 'name' => 'Sales', 'description' => 'Sales and order management'],
+        ['code' => 'CUSTOMER', 'name' => 'Customer', 'description' => 'Customer portal access'],
+        ['code' => 'MAINTENANCE', 'name' => 'Maintenance', 'description' => 'Maintenance and repairs department'],
     ];
 
     private const DEFAULT_DEPARTMENTS = [
@@ -53,6 +59,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         'QC' => [],
         'Procurement' => [],
         'Production' => [],
+        'Sales' => [],
+        'Customer' => [],
+        'Maintenance' => [],
     ];
 
     public function __construct(
@@ -487,6 +496,9 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                 'QC'          => 'Quality Control',
                 'PROCUREMENT' => 'Procurement',
                 'PRODUCTION'  => 'Production',
+                'SALES'       => 'Sales',
+                'CUSTOMER'    => 'Customer',
+                'MAINTENANCE' => 'Maintenance',
             ];
 
             foreach ($mappings as $roleCode => $deptName) {

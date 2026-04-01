@@ -10,13 +10,13 @@ use Illuminate\Support\Facades\DB;
 class DefaultRolePermissionSeeder extends Seeder
 {
     private const MODULES = [
-        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION'
+        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION', 'SALES', 'CUSTOMER', 'MAINTENANCE'
     ];
 
     public function run(): void
     {
         DB::connection('tenant')->transaction(function () {
-            $roles = Role::whereIn('role_code', ['ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION'])->get();
+            $roles = Role::whereIn('role_code', ['ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION', 'SALES', 'CUSTOMER', 'MAINTENANCE'])->get();
 
             if ($roles->isEmpty()) {
                 echo "✗ Default roles not found. Please run DefaultRoleSeeder first.\n";
