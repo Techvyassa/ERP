@@ -60,7 +60,7 @@
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Lot</th>
+                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Lot ID</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Source</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Item</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Reference</th>

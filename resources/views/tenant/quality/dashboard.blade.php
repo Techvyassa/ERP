@@ -112,7 +112,7 @@
                 <tbody class="divide-y divide-gray-100" x-show="filteredRecentLots.length > 0">
                     <template x-for="lot in filteredRecentLots" :key="lot.id">
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="'LOT-' + lot.id"></td>
+                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="lot.batch_number || lot.lot_number || ('QC-' + lot.id)"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="lot.product?.product_name || lot.material?.material_name || '-'"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="lot.production_order?.order_no || lot.grn?.grn_number || '-'"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="lot.sample_size"></td>

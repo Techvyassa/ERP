@@ -59,7 +59,7 @@
             <table class="w-full">
                 <thead>
                     <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Lot</th>
+                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Lot ID</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Source</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Item</th>
                         <th class="text-left py-3 px-5 text-xs font-bold text-gray-500 uppercase">Reference</th>
@@ -73,11 +73,11 @@
                         <tr><td colspan="7" class="py-12 text-center text-gray-400">Loading...</td></tr>
                     </template>
                     <template x-if="!loading && filteredLots.length === 0">
-                        <tr><td colspan="7" class="py-12 text-center text-gray-400">No inspection lots found.</td></tr>
+                        <tr><td colspan="7" class="py-12 text-center text-gray-400">No inspection batches found.</td></tr>
                     </template>
                     <template x-for="lot in filteredLots" :key="lot.id">
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="'LOT-' + lot.id"></td>
+                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="lot.batch_number || lot.lot_number || ('QC-' + lot.id)"></td>
                             <td class="py-3 px-5 text-sm text-gray-600" x-text="sourceLabel(lot.source_type || 'GRN')"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="lot.product?.product_name || lot.material?.material_name || '-'"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="lot.production_order?.order_no || lot.grn?.grn_number || '-'"></td>
