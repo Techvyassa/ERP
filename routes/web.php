@@ -742,13 +742,6 @@ Route::middleware(['web.jwt'])->group(function () {
                 ]);
             })->name('orders');
 
-            Route::get('/mir', function ($orgSlug) use ($getOrg) {
-                extract($getOrg($orgSlug));
-                return view('tenant.production.mir.index', [
-                    'organization' => $org,
-                    'tenantType' => $tenantType
-                ]);
-            })->name('mir');
 
             Route::get('/packing', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));

@@ -1,0 +1,2488 @@
+{
+  "info": {
+    "_postman_id": "erp-api-collection-v1",
+    "name": "ERP API Collection",
+    "description": "Complete API collection for the ERP system covering Authentication, Master Data, Procurement, Inventory, Quality Control, and Production modules",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health & Status",
+      "item": [
+        {
+          "name": "Health Check",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/health",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "health"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Rate Limit Status",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/rate-limit/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "rate-limit", "status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Authentication",
+      "item": [
+        {
+          "name": "Login",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const jsonData = pm.response.json();",
+                  "    pm.environment.set('access_token', jsonData.data.access_token);",
+                  "    pm.environment.set('refresh_token', jsonData.data.refresh_token);",
+                  "}"
+                ],
+                "type": "text/javascript"
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\",\n  \"password\": \"password\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Refresh Token",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"refresh_token\": \"{{refresh_token}}\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/refresh",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "refresh"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Logout",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/logout",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "logout"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Forgot Password",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"user@example.com\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/forgot-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "forgot-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reset Password",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"token\": \"reset_token\",\n  \"email\": \"user@example.com\",\n  \"password\": \"newpassword\",\n  \"password_confirmation\": \"newpassword\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/reset-password",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "reset-password"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Firebase Login",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firebase_token\": \"firebase_token_from_client\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/firebase-login",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "firebase-login"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Current User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/auth/me",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "auth", "me"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Debug My Permissions",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/debug/my-permissions?auth_user_id=1&tenant_db_name=tenant_db",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "debug", "my-permissions"],
+              "query": [
+                {"key": "auth_user_id", "value": "1"},
+                {"key": "tenant_db_name", "value": "tenant_db"}
+              ]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Organizations",
+      "item": [
+        {
+          "name": "Register Organization",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"org_name\": \"Acme Corp\",\n  \"org_slug\": \"acme-corp\",\n  \"email\": \"admin@acme.com\",\n  \"password\": \"password123\",\n  \"subscription_plan\": \"basic\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/register",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "organizations", "register"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Slug Availability",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/check-slug/acme-corp",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "organizations", "check-slug", "acme-corp"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Suggest Slug",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"org_name\": \"Acme Corporation\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/suggest-slug",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "organizations", "suggest-slug"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Slugs",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/organizations/slugs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "organizations", "slugs"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subscription Plans",
+      "item": [
+        {
+          "name": "List All Plans",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscription-plans"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Plan By Code",
+          "request": {
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscription-plans/basic",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscription-plans", "basic"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Profile Completion",
+      "item": [
+        {
+          "name": "Get Profile Status",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/profile-completion/status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "profile-completion", "status"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Organization Profile",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"company_name\": \"Acme Corp\",\n  \"address\": \"123 Main St\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"postal_code\": \"400001\",\n  \"phone\": \"+91 9876543210\",\n  \"gst_number\": \"27ABCDE1234F1Z5\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/profile-completion/organization",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "profile-completion", "organization"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Master Data Status",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/profile-completion/master-data-status",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "profile-completion", "master-data-status"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Subscriptions",
+      "item": [
+        {
+          "name": "Get Current Subscription",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/current",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "current"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Available Plans",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/plans",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "plans"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upgrade Subscription",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"plan_code\": \"professional\",\n  \"payment_method\": \"razorpay\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/upgrade",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "upgrade"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Cancel Subscription",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"cancellation_reason\": \"No longer needed\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/subscriptions/cancel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "subscriptions", "cancel"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Master Dashboard",
+      "item": [
+        {
+          "name": "Get Master Stats",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/dashboard/master-stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "dashboard", "master-stats"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Departments",
+      "item": [
+        {
+          "name": "List Departments",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Template",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments/import/template",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments", "import", "template"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Import CSV",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{"key": "csv_file", "type": "file", "src": ""}]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments/import",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments", "import"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Department",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Department",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"department_name\": \"Production\",\n  \"department_code\": \"PROD\",\n  \"description\": \"Production department\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Department",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"department_name\": \"Production Updated\",\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Department",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Department Roles",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/departments/1/roles",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "departments", "1", "roles"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Roles",
+      "item": [
+        {
+          "name": "List Roles",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Role",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Role",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_name\": \"Store Manager\",\n  \"role_code\": \"STORE_MGR\",\n  \"department_id\": 1,\n  \"description\": \"Manages store operations\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Role",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"role_name\": \"Senior Store Manager\",\n  \"description\": \"Senior role\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Role",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Role Permissions",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles/1/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles", "1", "permissions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Role Permissions",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"permissions\": [\n    {\n      \"module_code\": \"ADMINISTRATION\",\n      \"can_view\": true,\n      \"can_create\": true,\n      \"can_edit\": true,\n      \"can_approve\": false,\n      \"can_delete\": false\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/roles/1/permissions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "roles", "1", "permissions"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Users",
+      "item": [
+        {
+          "name": "List Users",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Download Template",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/import/template",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "import", "template"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Import CSV",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{"key": "csv_file", "type": "file", "src": ""}]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/import",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "import"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"email\": \"john@example.com\",\n  \"name\": \"John Doe\",\n  \"role_id\": 1,\n  \"department_id\": 1,\n  \"password\": \"password123\",\n  \"password_confirmation\": \"password123\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"name\": \"John Smith\",\n  \"role_id\": 2\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate User",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/users/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "users", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "HSN Codes",
+      "item": [
+        {
+          "name": "List HSN Codes",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hsn-codes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hsn-codes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get HSN Code",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hsn-codes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hsn-codes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create HSN Code",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"hsn_code\": \"8517\",\n  \"description\": \"Telephone sets\",\n  \"gst_rate\": 18.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hsn-codes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hsn-codes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update HSN Code",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/hsn-codes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hsn-codes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete HSN Code",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/hsn-codes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "hsn-codes", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "GST Taxes",
+      "item": [
+        {
+          "name": "List GST Taxes",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/gst-taxes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "gst-taxes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get GST Tax",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/gst-taxes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "gst-taxes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create GST Tax",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tax_name\": \"CGST\",\n  \"tax_rate\": 9.00,\n  \"tax_type\": \"intra_state\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/gst-taxes",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "gst-taxes"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update GST Tax",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"tax_rate\": 10.00\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/gst-taxes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "gst-taxes", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete GST Tax",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/gst-taxes/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "gst-taxes", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Currencies",
+      "item": [
+        {
+          "name": "List Currencies",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/currencies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "currencies"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Currency",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/currencies/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "currencies", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Currency",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency_code\": \"USD\",\n  \"currency_name\": \"US Dollar\",\n  \"symbol\": \"$\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/currencies",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "currencies"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Currency",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"currency_name\": \"United States Dollar\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/currencies/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "currencies", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Currency",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/currencies/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "currencies", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "UOMs",
+      "item": [
+        {
+          "name": "List UOMs",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/uoms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "uoms"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get UOM Barcode",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/uoms/barcode",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "uoms", "barcode"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get UOM",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/uoms/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "uoms", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create UOM",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"uom_code\": \"PCS\",\n  \"uom_name\": \"Pieces\",\n  \"description\": \"Individual pieces\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/uoms",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "uoms"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update UOM",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"description\": \"Updated description\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/uoms/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "uoms", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete UOM",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/uoms/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "uoms", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Warehouses",
+      "item": [
+        {
+          "name": "List Warehouses",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Warehouse Barcode",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses/barcode",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses", "barcode"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Warehouse",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Warehouse",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_code\": \"WH001\",\n  \"warehouse_name\": \"Main Warehouse\",\n  \"address\": \"123 Storage St\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"postal_code\": \"400001\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Warehouse",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"warehouse_name\": \"Updated Warehouse\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Warehouse",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Bin Locations",
+      "item": [
+        {
+          "name": "List Bin Locations",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bin-locations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bin-locations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Bin Location Barcode",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bin-locations/barcode",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bin-locations", "barcode"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Bin Location",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bin-locations/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bin-locations", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Bin Location",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bin_code\": \"BIN-001\",\n  \"warehouse_id\": 1,\n  \"aisle\": \"A\",\n  \"rack\": \"R1\",\n  \"shelf\": \"S1\",\n  \"level\": \"L1\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/bin-locations",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bin-locations"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Bin Location",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"level\": \"L2\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/bin-locations/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bin-locations", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Bin Location",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bin-locations/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bin-locations", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Materials",
+      "item": [
+        {
+          "name": "List Materials",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Material Barcode",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/barcode",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "barcode"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search By Barcode",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/search/barcode?barcode=1234567890",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "search", "barcode"],
+              "query": [{"key": "barcode", "value": "1234567890"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Search Materials",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/search?query=steel",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "search"],
+              "query": [{"key": "query", "value": "steel"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Material",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Material",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"material_code\": \"MAT001\",\n  \"material_name\": \"Steel Rod\",\n  \"material_type\": \"Raw Material\",\n  \"uom_id\": 1,\n  \"hsn_code_id\": 1,\n  \"gst_tax_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Material",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"material_name\": \"Updated Steel Rod\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Material",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Products",
+      "item": [
+        {
+          "name": "List Products",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product Barcode",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/barcode",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "barcode"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Product",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Product",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_code\": \"PROD001\",\n  \"product_name\": \"Finished Good A\",\n  \"uom_id\": 1,\n  \"hsn_code_id\": 1,\n  \"gst_tax_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/products",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Product",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_name\": \"Updated Product\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Deactivate Product",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/products/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "products", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vendors",
+      "item": [
+        {
+          "name": "List Vendors",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendors",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendors"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Vendor",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendors/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendors", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Vendor",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor_code\": \"VEN001\",\n  \"vendor_name\": \"ABC Suppliers\",\n  \"email\": \"contact@abc.com\",\n  \"phone\": \"+91 9876543210\",\n  \"address\": \"123 Market St\",\n  \"city\": \"Mumbai\",\n  \"state\": \"Maharashtra\",\n  \"country\": \"India\",\n  \"postal_code\": \"400001\",\n  \"gst_number\": \"27ABCDE1234F1Z5\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendors",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendors"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Vendor",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor_name\": \"Updated Suppliers\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendors/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendors", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Blacklist Vendor",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendors/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendors", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vendor Contacts",
+      "item": [
+        {
+          "name": "List Vendor Contacts",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-contacts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-contacts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Vendor Contact",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-contacts/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-contacts", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Vendor Contact",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor_id\": 1,\n  \"contact_name\": \"John Smith\",\n  \"email\": \"john@abc.com\",\n  \"phone\": \"+91 9876543210\",\n  \"designation\": \"Sales Manager\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-contacts",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-contacts"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Vendor Contact",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"designation\": \"Senior Sales Manager\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-contacts/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-contacts", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Vendor Contact",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-contacts/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-contacts", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Vendor Material Map (AVL)",
+      "item": [
+        {
+          "name": "List Approved Vendor List",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-material-map",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-material-map"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Vendor Material Map",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-material-map/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-material-map", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Vendor Material Map",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor_id\": 1,\n  \"material_id\": 1,\n  \"vendor_material_code\": \"ABC-STEEL-001\",\n  \"lead_time_days\": 7,\n  \"minimum_order_qty\": 100\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-material-map",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-material-map"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Vendor Material Map",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"lead_time_days\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-material-map/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-material-map", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Vendor Material Map",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/vendor-material-map/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "vendor-material-map", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stock",
+      "item": [
+        {
+          "name": "Get Available Stock",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock/available/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "stock", "available", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock Snapshot",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock/snapshot/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "stock", "snapshot", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock History",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock/history/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "stock", "history", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Warehouse Stock Summary",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock/warehouse/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "stock", "warehouse", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Stock by Bucket",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock/bucket/1/AVAILABLE",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "stock", "bucket", "1", "AVAILABLE"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "BOM Headers",
+      "item": [
+        {
+          "name": "List BOM Headers",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-headers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-headers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get BOM Header",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-headers/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-headers", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create BOM Header",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": 1,\n  \"bom_code\": \"BOM-001\",\n  \"bom_name\": \"Product A BOM\",\n  \"revision\": \"A\",\n  \"effective_date\": \"2024-01-01\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-headers",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-headers"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update BOM Header",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"revision\": \"B\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-headers/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-headers", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete BOM Header",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-headers/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-headers", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "BOM Details",
+      "item": [
+        {
+          "name": "List BOM Details",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-details",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-details"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get BOM Detail",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-details/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-details", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create BOM Detail",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bom_header_id\": 1,\n  \"material_id\": 1,\n  \"quantity\": 5,\n  \"uom_id\": 1,\n  \"scrap_percentage\": 2.0\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-details",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-details"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update BOM Detail",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"quantity\": 6\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-details/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-details", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete BOM Detail",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/bom-details/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "bom-details", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Production Orders",
+      "item": [
+        {
+          "name": "List Production Orders",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Production Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Production Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"product_id\": 1,\n  \"planned_qty\": 100,\n  \"planned_start_date\": \"2024-01-20\",\n  \"warehouse_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Production",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Finished Goods",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"actual_qty\": 98,\n  \"warehouse_id\": 1\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1/confirm-fg",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1", "confirm-fg"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get FG Sessions",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1/fg-sessions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1", "fg-sessions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Variance",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1/variance",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1", "variance"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Material Issue Requests",
+      "item": [
+        {
+          "name": "List MIR",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/material-issue-requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "material-issue-requests"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get MIR",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/material-issue-requests/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "material-issue-requests", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve MIR",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/material-issue-requests/1/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "material-issue-requests", "1", "approve"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Reject MIR",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/material-issue-requests/1/reject",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "material-issue-requests", "1", "reject"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scan Material",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bin_code\": \"BIN-001\",\n  \"issued_qty\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/material-issue-requests/1/lines/1/scan",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "material-issue-requests", "1", "lines", "1", "scan"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Packing Orders",
+      "item": [
+        {
+          "name": "List Packing Orders",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/packing-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "packing-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Packing Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/packing-orders/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "packing-orders", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Packing Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"production_order_id\": 1,\n  \"packing_instructions\": \"Pack in boxes of 10\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/packing-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "packing-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Carton",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"carton_code\": \"CARTON-001\",\n  \"target_qty\": 10\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/packing-orders/1/cartons",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "packing-orders", "1", "cartons"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Scan Into Carton",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"barcode\": \"1234567890\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/packing-orders/1/cartons/1/scan",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "packing-orders", "1", "cartons", "1", "scan"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Seal Carton",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"seal_remarks\": \"Sealed and ready\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/packing-orders/1/cartons/1/seal",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "packing-orders", "1", "cartons", "1", "seal"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Complete Packing Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/packing-orders/1/complete",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "packing-orders", "1", "complete"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Feature Controls",
+      "item": [
+        {
+          "name": "List Feature Controls",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/feature-controls",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "feature-controls"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Feature Control",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/feature-controls/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "feature-controls", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Feature Control",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"feature_key\": \"ADVANCED_REPORTS\",\n  \"feature_name\": \"Advanced Reports\",\n  \"is_enabled\": true,\n  \"description\": \"Enable advanced reporting features\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/feature-controls",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "feature-controls"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Update Feature Control",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PUT",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"is_enabled\": false\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/feature-controls/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "feature-controls", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Delete Feature Control",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "DELETE",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/admin/feature-controls/1",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "admin", "feature-controls", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Webhooks",
+      "item": [
+        {
+          "name": "Razorpay Webhook",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"event\": \"payment.captured\",\n  \"payload\": {}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/webhooks/razorpay",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "webhooks", "razorpay"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Stripe Webhook",
+          "request": {
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"type\": \"payment_intent.succeeded\",\n  \"data\": {}\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/webhooks/stripe",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "webhooks", "stripe"]
+            }
+          },
+          "response": []
+        }
+      ]
+    }
+  ],
+  "variable": [
+    {
+      "key": "base_url",
+      "value": "http://localhost:8000",
+      "type": "string"
+    },
+    {
+      "key": "access_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "refresh_token",
+      "value": "",
+      "type": "string"
+    }
+  ]
+}

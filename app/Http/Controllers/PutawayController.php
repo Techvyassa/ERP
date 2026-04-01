@@ -27,25 +27,25 @@ class PutawayController extends Controller
     {
         try {
             $query = PutawayTask::with(['grnLineItem.grn', 'material', 'sourceBin', 'destinationBin', 'assignedOperator']);
-            
+
             // Filter by status
             if ($request->has('status')) {
                 $query->where('status', $request->status);
             }
-            
+
             // Filter by operator
             if ($request->has('assigned_to')) {
                 $query->where('assigned_to', $request->assigned_to);
             }
-            
+
             // Filter by material
             if ($request->has('material_id')) {
                 $query->where('material_id', $request->material_id);
             }
-            
+
             $perPage = $request->input('per_page', 15);
             $tasks = $query->orderBy('created_at', 'desc')->paginate($perPage);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -81,7 +81,7 @@ class PutawayController extends Controller
                 'assignedOperator',
                 'completedByOperator'
             ])->findOrFail($id);
-            
+
             return response()->json([
                 'success' => true,
                 'data' => new PutawayTaskResource($task),
@@ -102,7 +102,7 @@ class PutawayController extends Controller
         try {
             $userId = $request->input('auth_user_id');
             $task = $this->putawayService->createPutawayTask($request->validated(), $userId);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Putaway task created successfully',
@@ -124,7 +124,7 @@ class PutawayController extends Controller
         try {
             $userId = $request->input('auth_user_id');
             $task = $this->putawayService->updatePutawayTask($id, $request->validated(), $userId);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Putaway task updated successfully',
@@ -146,7 +146,7 @@ class PutawayController extends Controller
         try {
             $userId = $request->input('auth_user_id');
             $task = $this->putawayService->startPutaway($id, $userId);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Putaway started successfully',
@@ -168,7 +168,7 @@ class PutawayController extends Controller
         try {
             $userId = $request->input('auth_user_id');
             $task = $this->putawayService->completePutaway($id, $request->validated(), $userId);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Putaway completed successfully',
@@ -190,11 +190,11 @@ class PutawayController extends Controller
         $request->validate([
             'reason' => 'required|string|max:500',
         ]);
-        
+
         try {
             $userId = $request->input('auth_user_id');
             $task = $this->putawayService->cancelPutaway($id, $request->reason, $userId);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Putaway cancelled successfully',
@@ -217,11 +217,11 @@ class PutawayController extends Controller
             'bin_code' => 'required|string|max:50',
             'remarks' => 'nullable|string|max:500',
         ]);
-        
+
         try {
             $userId = $request->input('auth_user_id');
             $task = $this->putawayService->scanBin($id, $request->bin_code, $userId, $request->remarks);
-            
+
             return response()->json([
                 'success' => true,
                 'message' => 'Bin scanned successfully',
@@ -244,7 +244,7 @@ class PutawayController extends Controller
             $tasks = PutawayTask::with(['grnLineItem', 'material', 'destinationBin'])
                 ->pending()
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => PutawayTaskResource::collection($tasks),
@@ -266,7 +266,7 @@ class PutawayController extends Controller
             $tasks = PutawayTask::with(['grnLineItem', 'material', 'destinationBin', 'assignedOperator'])
                 ->inProgress()
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => PutawayTaskResource::collection($tasks),
@@ -288,7 +288,7 @@ class PutawayController extends Controller
             $tasks = PutawayTask::with(['grnLineItem', 'material', 'destinationBin', 'completedByOperator'])
                 ->completed()
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => PutawayTaskResource::collection($tasks),

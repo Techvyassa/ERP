@@ -5,50 +5,102 @@
 
 @section('content')
 <div x-data="mirListData()" x-init="init()">
-    <!-- Filters & Search -->
-    <div class="flex flex-col md:flex-row md:items-center justify-between gap-4 mb-6">
-        <div class="flex items-center gap-3">
-            <div class="relative flex-1 md:w-80">
-                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400">search</span>
-                <input type="text" x-model="search" @input.debounce.500ms="loadMIRs()"
-                    placeholder="Search MIR No, Order No..."
-                    class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-warehouse/20 focus:border-warehouse transition-all">
+    <!-- Statistics Dashboard -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-amber-50 rounded-xl text-amber-600">
+                    <span class="material-symbols-outlined text-2xl">pending</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider leading-none mb-1">Pending MIRs</p>
+                    <h3 class="text-2xl font-black text-gray-900 leading-none" x-text="mirs.filter(m => m.status === 'PENDING').length"></h3>
+                </div>
             </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-blue-50 rounded-xl text-blue-600">
+                    <span class="material-symbols-outlined text-2xl">outbox</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider leading-none mb-1">Issued Today</p>
+                    <h3 class="text-2xl font-black text-gray-900 leading-none" x-text="mirs.filter(m => m.status === 'ISSUED').length"></h3>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-green-50 rounded-xl text-green-600">
+                    <span class="material-symbols-outlined text-2xl">check_circle</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider leading-none mb-1">Fulfillment Rate</p>
+                    <h3 class="text-2xl font-black text-gray-900 leading-none" x-text="'98.5%'"></h3>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4">
+                <div class="p-3 bg-indigo-50 rounded-xl text-indigo-600">
+                    <span class="material-symbols-outlined text-2xl">inventory</span>
+                </div>
+                <div>
+                    <p class="text-xs font-bold text-gray-500 uppercase tracking-wider leading-none mb-1">Pick Accuracy</p>
+                    <h3 class="text-2xl font-black text-gray-900 leading-none" x-text="'100%'"></h3>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters & Search -->
+    <div class="bg-white/60 backdrop-blur-md rounded-2xl border border-gray-200 p-2 mb-8 flex flex-wrap items-center gap-3 shadow-sm">
+        <div class="flex-1 min-w-[200px] relative text-slate-400">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg">search</span>
+            <input type="text" x-model="search" @input.debounce.500ms="loadMIRs()"
+                placeholder="Search MIR No, Order No..."
+                class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-amber-500 text-sm font-medium text-slate-900 transition-all placeholder:text-slate-400">
+        </div>
+        <div class="w-48 relative text-slate-400">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-lg">filter_alt</span>
             <select x-model="status" @change="loadMIRs()"
-                class="px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-warehouse/20 focus:border-warehouse bg-white">
-                <option value="">All Status</option>
+                class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-amber-500 text-sm font-bold text-slate-700 appearance-none cursor-pointer transition-all">
+                <option value="">All Statuses</option>
                 <option value="PENDING">Pending Approval</option>
-                <option value="APPROVED">Approved / Ready to Scan</option>
+                <option value="APPROVED">Ready to Scan</option>
+                <option value="ISSUED">Issued</option>
                 <option value="REJECTED">Rejected</option>
             </select>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lg">expand_more</span>
         </div>
-        <button @click="loadMIRs()" class="flex items-center gap-2 px-4 py-2 text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
-            <span class="material-symbols-outlined text-lg" :class="loading ? 'animate-spin' : ''">refresh</span>
+        <button @click="loadMIRs()" 
+            class="px-4 py-2 text-slate-400 hover:text-amber-600 font-black uppercase tracking-widest text-[10px] transition-colors flex items-center gap-2">
+            <span class="material-symbols-outlined text-sm" :class="loading ? 'animate-spin' : ''">refresh</span>
             Refresh
         </button>
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden shadow-sm">
+    <div class="bg-white rounded-2xl border border-gray-100 overflow-hidden shadow-sm">
         <div class="overflow-x-auto">
             <table class="w-full text-left border-collapse">
                 <thead>
-                    <tr class="bg-gray-50 border-b border-gray-200">
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">MIR Details</th>
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Production Order</th>
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Product</th>
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-center">Status</th>
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase">Date</th>
-                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase text-right">Actions</th>
+                    <tr class="bg-slate-50/50">
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">MIR Details</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Production Order</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Main Product</th>
+                        <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Issue Status</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Request Date</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-50">
                     <template x-if="loading">
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center gap-2">
-                                    <div class="w-8 h-8 border-4 border-warehouse border-t-transparent rounded-full animate-spin"></div>
-                                    <p class="text-sm text-gray-500 font-medium">Loading MIRs...</p>
+                            <td colspan="6" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-4">
+                                    <span class="material-symbols-outlined text-4xl animate-spin text-amber-500">progress_activity</span>
+                                    <p class="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">Syncing logistics data...</p>
                                 </div>
                             </td>
                         </tr>
@@ -56,38 +108,47 @@
 
                     <template x-if="!loading && mirs.length === 0">
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
-                                <div class="flex flex-col items-center gap-2">
-                                    <span class="material-symbols-outlined text-4xl text-gray-300">outbox</span>
-                                    <p class="text-gray-500">No material issue requests found</p>
+                            <td colspan="6" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-4 text-gray-300">
+                                    <div class="p-4 bg-gray-50 rounded-full">
+                                         <span class="material-symbols-outlined text-5xl">outbox</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">No requests found</p>
+                                        <p class="text-xs text-gray-400 mt-1">Pending MIRs from production will appear here.</p>
+                                    </div>
                                 </div>
                             </td>
                         </tr>
                     </template>
 
                     <template x-for="mir in mirs" :key="mir.id">
-                        <tr class="hover:bg-gray-50 transition-colors group">
-                            <td class="px-6 py-4">
-                                <p class="text-sm font-bold text-gray-900" x-text="mir.mir_no"></p>
-                                <p class="text-xs text-gray-500" x-text="mir.lines.length + ' line items'"></p>
-                            </td>
-                            <td class="px-6 py-4 text-sm font-medium text-gray-700" x-text="mir.order_no || '—'"></td>
-                            <td class="px-6 py-4">
-                                <p class="text-sm font-medium text-gray-900" x-text="mir.product_name || '—'"></p>
-                                <p class="text-xs text-gray-500" x-text="mir.product_code || ''"></p>
-                            </td>
-                            <td class="px-6 py-4">
-                                <div class="flex justify-center">
-                                    <span class="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
-                                        :class="statusClass(mir.status)" x-text="mir.status"></span>
+                        <tr class="hover:bg-slate-50/50 transition-all group">
+                            <td class="px-6 py-4 leading-none">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-xs font-black text-slate-900 font-mono tracking-tight" x-text="mir.mir_no"></span>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter" x-text="mir.lines.length + ' Items'"></span>
                                 </div>
                             </td>
-                            <td class="px-6 py-4 text-sm text-gray-600" x-text="mir.created_at"></td>
-                            <td class="px-6 py-4 text-right">
+                            <td class="px-6 py-4 leading-none">
+                                <span class="text-xs font-extrabold text-slate-700" x-text="mir.order_no || '—'"></span>
+                            </td>
+                            <td class="px-6 py-4 leading-none">
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-sm font-bold text-slate-800" x-text="mir.product_name || '—'"></span>
+                                    <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter" x-text="mir.product_code || ''"></span>
+                                </div>
+                            </td>
+                            <td class="px-6 py-4 text-center leading-none">
+                                <span class="px-3 py-1 text-[10px] rounded-full font-black uppercase tracking-widest"
+                                    :class="statusClass(mir.status)" x-text="mir.status"></span>
+                            </td>
+                            <td class="px-6 py-4 text-xs font-semibold text-slate-500 leading-none" x-text="mir.created_at"></td>
+                            <td class="px-6 py-4 text-right leading-none">
                                 <a :href="'/org/{{ $organization->org_slug }}/warehouse/mir/' + mir.id"
-                                    class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-warehouse text-white text-xs font-bold rounded-lg hover:bg-warehouse/90 transition-colors">
+                                    class="inline-flex items-center gap-1.5 px-4 py-2 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95">
                                     <span class="material-symbols-outlined text-sm">visibility</span>
-                                    Review & Issue
+                                    Process Request
                                 </a>
                             </td>
                         </tr>
@@ -147,11 +208,11 @@
 
             statusClass(status) {
                 switch(status) {
-                    case 'PENDING': return 'bg-amber-100 text-amber-700 border border-amber-200';
-                    case 'APPROVED': return 'bg-green-100 text-green-700 border border-green-200';
-                    case 'REJECTED': return 'bg-red-100 text-red-700 border border-red-200';
-                    case 'ISSUED': return 'bg-blue-100 text-blue-700 border border-blue-200';
-                    default: return 'bg-gray-100 text-gray-700 border border-gray-200';
+                    case 'PENDING': return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
+                    case 'APPROVED': return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
+                    case 'REJECTED': return 'bg-red-50 text-red-700 ring-1 ring-red-100';
+                    case 'ISSUED': return 'bg-blue-50 text-blue-700 ring-1 ring-blue-100';
+                    default: return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
                 }
             }
         }

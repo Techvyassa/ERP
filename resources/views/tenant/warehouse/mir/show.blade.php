@@ -6,41 +6,45 @@
 @section('content')
 <div x-data="mirShowData()" x-init="init()">
     <!-- Header -->
-    <div class="flex items-center justify-between mb-6">
-        <div class="flex items-center gap-3">
-            <a href="/org/{{ $organization->org_slug }}/warehouse/mir" class="p-2 bg-white border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors">
-                <span class="material-symbols-outlined text-gray-600">arrow_back</span>
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <a href="/org/{{ $organization->org_slug }}/warehouse/mir" 
+               class="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all shadow-sm active:scale-95">
+                <span class="material-symbols-outlined">arrow_back</span>
             </a>
             <div>
-                <h2 class="text-2xl font-bold text-gray-900" x-text="'MIR: ' + (mir?.mir_no || '...')"></h2>
-                <p class="text-sm text-gray-500">Review request and scan materials for production</p>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase tracking-widest">Logistic Request</span>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-[10px] font-bold text-slate-400 font-mono" x-text="mir?.created_at_human"></span>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight" x-text="'MIR: ' + (mir?.mir_no || '...')"></h2>
             </div>
         </div>
-        <div class="flex items-center gap-2">
+        <div class="flex items-center gap-3">
             <template x-if="mir?.status === 'PENDING'">
-                <div class="flex gap-2">
-                    <button @click="approveMIR()" :disabled="processing"
-                        class="px-5 py-2.5 bg-green-600 text-white font-bold rounded-lg hover:bg-green-700 transition flex items-center gap-2 disabled:opacity-50">
-                        <span class="material-symbols-outlined">check_circle</span>
-                        Approve MIR
-                    </button>
+                <div class="flex items-center gap-3">
                     <button @click="openRejectModal()" :disabled="processing"
-                        class="px-5 py-2.5 bg-red-600 text-white font-bold rounded-lg hover:bg-red-700 transition flex items-center gap-2 disabled:opacity-50">
-                        <span class="material-symbols-outlined">cancel</span>
-                        Reject
+                        class="px-5 py-2.5 bg-white border border-red-200 text-red-600 font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-red-50 transition-all shadow-sm active:scale-95 disabled:opacity-50">
+                        Reject Request
+                    </button>
+                    <button @click="approveMIR()" :disabled="processing"
+                        class="px-6 py-2.5 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center gap-2 disabled:opacity-50">
+                        <span class="material-symbols-outlined text-sm">check_circle</span>
+                        Approve For Picking
                     </button>
                 </div>
             </template>
             <template x-if="mir?.status === 'APPROVED'">
-                <span class="px-3 py-1.5 bg-green-100 text-green-700 border border-green-200 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-sm">check_circle</span>
-                    Approved & Ready to Issue
+                <span class="px-4 py-2 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-sm">verified</span>
+                    Ready for fulfillment
                 </span>
             </template>
             <template x-if="mir?.status === 'REJECTED'">
-                <span class="px-3 py-1.5 bg-red-100 text-red-700 border border-red-200 rounded-full text-xs font-bold uppercase tracking-wider flex items-center gap-1.5">
-                    <span class="material-symbols-outlined text-sm">cancel</span>
-                    Rejected
+                <span class="px-4 py-2 bg-red-50 text-red-700 ring-1 ring-red-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-sm">block</span>
+                    Request Rejected
                 </span>
             </template>
         </div>
@@ -50,94 +54,98 @@
         <!-- Main Details (Left/Center) -->
         <div class="lg:col-span-2 space-y-6">
             <!-- Production Order Info Card -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                    <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-gray-400">precision_manufacturing</span>
-                        Production Order Details
-                    </h3>
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 bg-slate-50/50 border-b border-gray-100 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-slate-400 text-xl">precision_manufacturing</span>
+                    <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Origin Reference</h3>
                 </div>
-                <div class="p-6 grid grid-cols-2 md:grid-cols-3 gap-6">
+                <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Order Number</p>
-                        <p class="text-sm font-bold text-primary" x-text="mir?.order_no || '—'"></p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Order No</p>
+                        <p class="text-sm font-black text-slate-900 font-mono" x-text="mir?.order_no || '—'"></p>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Target Product</p>
-                        <p class="text-sm font-bold text-gray-900" x-text="mir?.product_name || '—'"></p>
-                        <p class="text-xs text-gray-500" x-text="mir?.product_code || ''"></p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Final Product</p>
+                        <p class="text-sm font-bold text-slate-800" x-text="mir?.product_name || '—'"></p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase" x-text="mir?.product_code || ''"></p>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Target Qty</p>
-                        <p class="text-sm font-bold text-gray-900">
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Batch Target</p>
+                        <p class="text-sm font-black text-slate-900">
                             <span x-text="mir?.target_qty || '0'"></span>
-                            <span class="text-xs text-gray-500 font-medium" x-text="mir?.uom"></span>
+                            <span class="text-[10px] text-slate-400 uppercase ml-1" x-text="mir?.uom"></span>
                         </p>
                     </div>
                     <div>
-                        <p class="text-[10px] font-bold text-gray-400 uppercase tracking-wider mb-1">Requested Date</p>
-                        <p class="text-sm text-gray-700 font-medium" x-text="mir?.created_at || '—'"></p>
-                    </div>
-                    <div x-show="mir?.rejection_reason">
-                        <p class="text-[10px] font-bold text-red-400 uppercase tracking-wider mb-1">Rejection Reason</p>
-                        <p class="text-sm text-red-600 font-medium" x-text="mir?.rejection_reason"></p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Department</p>
+                        <p class="text-sm font-bold text-slate-800">Production</p>
                     </div>
                 </div>
+                <template x-if="mir?.rejection_reason">
+                    <div class="px-6 py-4 bg-red-50 border-t border-red-100 flex items-start gap-3">
+                        <span class="material-symbols-outlined text-red-500 mt-0.5">report</span>
+                        <div>
+                            <p class="text-[10px] font-black text-red-600 uppercase tracking-widest mb-1">Rejection Basis</p>
+                            <p class="text-sm font-semibold text-red-800" x-text="mir?.rejection_reason"></p>
+                        </div>
+                    </div>
+                </template>
             </div>
 
             <!-- Material Lines Card -->
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden">
-                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
-                    <h3 class="font-bold text-gray-900 flex items-center gap-2">
-                        <span class="material-symbols-outlined text-gray-400">inventory_2</span>
-                        Requested Raw Materials
-                    </h3>
-                    <span class="px-2 py-1 bg-gray-100 text-gray-600 rounded text-[10px] font-bold uppercase" x-text="mir?.lines?.length + ' Materials'"></span>
+            <div class="bg-white rounded-2xl border border-gray-100 shadow-sm overflow-hidden">
+                <div class="px-6 py-4 bg-slate-50/50 border-b border-gray-100 flex items-center justify-between">
+                    <div class="flex items-center gap-2">
+                        <span class="material-symbols-outlined text-slate-400 text-xl">inventory_2</span>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Bill of Materials</h3>
+                    </div>
+                    <span class="px-2 py-1 bg-slate-200 text-slate-600 rounded text-[10px] font-black uppercase tracking-widest" x-text="mir?.lines?.length + ' Components'"></span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
                         <thead>
-                            <tr class="bg-gray-50 border-b border-gray-200">
-                                <th class="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider">Material</th>
-                                <th class="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Required</th>
-                                <th class="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Issued</th>
-                                <th class="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-center">Status</th>
-                                <th class="px-6 py-3 text-[10px] font-bold text-gray-500 uppercase tracking-wider text-right">Action</th>
+                            <tr class="bg-slate-50/20 border-b border-gray-50">
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Component</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Required</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Fitted</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Operation</th>
                             </tr>
                         </thead>
-                        <tbody class="divide-y divide-gray-100">
+                        <tbody class="divide-y divide-gray-50">
                             <template x-for="line in mir?.lines" :key="line.id">
-                                <tr class="hover:bg-gray-50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <p class="text-sm font-bold text-gray-900" x-text="line.material_name"></p>
-                                        <p class="text-xs text-gray-500 font-mono" x-text="line.material_code"></p>
+                                <tr class="hover:bg-slate-50/30 transition-all group">
+                                    <td class="px-6 py-4 leading-none">
+                                        <div class="flex flex-col gap-1">
+                                            <span class="text-sm font-bold text-slate-800" x-text="line.material_name"></span>
+                                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter" x-text="line.material_code"></span>
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <p class="text-sm font-bold text-gray-700">
-                                            <span x-text="line.required_qty"></span>
-                                            <span class="text-[10px] text-gray-400" x-text="line.uom"></span>
-                                        </p>
+                                    <td class="px-6 py-4 text-center leading-none">
+                                        <span class="text-sm font-black text-slate-700" x-text="line.required_qty"></span>
+                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom"></span>
                                     </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <p class="text-sm font-bold text-green-600">
-                                            <span x-text="line.issued_qty"></span>
-                                            <span class="text-[10px] text-gray-400" x-text="line.uom"></span>
-                                        </p>
+                                    <td class="px-6 py-4 text-center leading-none">
+                                        <span class="text-sm font-black text-emerald-600" x-text="line.issued_qty"></span>
+                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom"></span>
                                     </td>
-                                    <td class="px-6 py-4 text-center">
-                                        <span class="px-2 py-0.5 rounded-full text-[10px] font-bold uppercase"
+                                    <td class="px-6 py-4 text-center leading-none">
+                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"
                                             :class="scanStatusClass(line.scan_status)" x-text="line.scan_status"></span>
                                     </td>
-                                    <td class="px-6 py-4 text-right">
+                                    <td class="px-6 py-4 text-right leading-none">
                                         <button x-show="mir?.status === 'APPROVED' && line.scan_status !== 'ISSUED'"
                                             @click="openScanModal(line)"
-                                            class="inline-flex items-center gap-1 px-3 py-1.5 bg-primary text-white text-[10px] font-bold rounded-lg hover:bg-primary/90 transition-colors">
+                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95">
                                             <span class="material-symbols-outlined text-sm">qr_code_scanner</span>
-                                            SCAN & ISSUE
+                                            SCAN
                                         </button>
-                                        <div x-show="line.scan_status === 'ISSUED'" class="flex flex-col items-end">
-                                            <p class="text-[10px] text-gray-400 font-medium italic" x-text="'Bin: ' + line.bin_barcode"></p>
-                                            <p class="text-[10px] text-gray-400 font-medium italic" x-text="line.scanned_at"></p>
+                                        <div x-show="line.scan_status === 'ISSUED'" class="flex flex-col items-end gap-1">
+                                            <div class="flex items-center gap-1.5">
+                                                <span class="material-symbols-outlined text-xs text-emerald-500">shelves</span>
+                                                <span class="text-[10px] text-slate-900 font-mono font-black" x-text="line.bin_barcode"></span>
+                                            </div>
+                                            <span class="text-[9px] text-slate-400 font-medium" x-text="line.scanned_at"></span>
                                         </div>
                                     </td>
                                 </tr>
@@ -192,86 +200,112 @@
     <!-- Scan Modal -->
     <div x-show="showScanModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4 py-8">
-            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="showScanModal = false"></div>
-            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100">
-                <!-- Modal Header -->
-                <div class="px-6 py-4 bg-gray-50 border-b border-gray-100 flex items-center justify-between">
-                    <div>
-                        <h3 class="text-lg font-bold text-gray-900">Scan & Issue Material</h3>
-                        <p class="text-xs text-gray-500" x-text="selectedLine?.material_name"></p>
+            <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
+                 x-show="showScanModal"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0"
+                 x-transition:enter-end="opacity-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100"
+                 x-transition:leave-end="opacity-0"
+                 @click="showScanModal = false"></div>
+            
+            <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100"
+                 x-show="showScanModal"
+                 x-transition:enter="ease-out duration-300"
+                 x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave="ease-in duration-200"
+                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                 x-transition:leave-end="opacity-0 translate-y-4 scale-95">
+                
+                {{-- Modal Header --}}
+                <div class="px-8 py-6 bg-gradient-to-r from-slate-800 to-slate-900 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 bg-white/10 rounded-xl text-emerald-400">
+                                <span class="material-symbols-outlined">qr_code_scanner</span>
+                            </div>
+                            <div>
+                                <h3 class="text-lg font-black text-white tracking-tight">Material Allocation</h3>
+                                <p class="text-[10px] text-slate-300 font-bold uppercase tracking-widest" x-text="selectedLine?.material_name"></p>
+                            </div>
+                        </div>
+                        <button @click="showScanModal = false" class="text-white/60 hover:text-white transition-colors">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
                     </div>
-                    <button @click="showScanModal = false" class="text-gray-400 hover:text-gray-600">
-                        <span class="material-symbols-outlined">close</span>
-                    </button>
                 </div>
 
-                <div class="p-6 space-y-5">
+                <div class="p-8 space-y-6">
                     <!-- Progress Info -->
-                    <div class="bg-blue-50 border border-blue-100 rounded-xl p-4 grid grid-cols-2 gap-4">
-                        <div>
-                            <p class="text-[10px] font-bold text-blue-500 uppercase mb-1">Requested</p>
-                            <p class="text-sm font-bold text-blue-900" x-text="selectedLine?.required_qty + ' ' + selectedLine?.uom"></p>
+                    <div class="grid grid-cols-2 gap-4">
+                        <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Entitlement</p>
+                            <p class="text-base font-black text-slate-900" x-text="selectedLine?.required_qty + ' ' + selectedLine?.uom"></p>
                         </div>
-                        <div>
-                            <p class="text-[10px] font-bold text-blue-500 uppercase mb-1">Remaining</p>
-                            <p class="text-sm font-bold text-blue-900" x-text="selectedLine?.remaining_qty + ' ' + selectedLine?.uom"></p>
+                        <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
+                            <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Shortfall</p>
+                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + selectedLine?.uom"></p>
                         </div>
                     </div>
 
-                    <form @submit.prevent="submitScan()" class="space-y-4">
-                        <!-- Bin Barcode -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">shelves</span>
-                                Step 1: Scan Bin Barcode *
-                            </label>
-                            <input type="text" x-model="scanForm.bin_barcode" required autofocus
-                                placeholder="Scan or enter bin code..."
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono">
-                        </div>
-
-                        <!-- Material Barcode -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">barcode_scanner</span>
-                                Step 2: Scan Material Barcode *
-                            </label>
-                            <input type="text" x-model="scanForm.material_barcode" required
-                                placeholder="Scan or enter material code..."
-                                class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-mono">
-                        </div>
-
-                        <!-- Issue Quantity -->
-                        <div>
-                            <label class="block text-xs font-bold text-gray-700 uppercase tracking-wider mb-1.5 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">numbers</span>
-                                Issue Quantity
-                            </label>
-                            <div class="relative">
-                                <input type="number" x-model="scanForm.quantity" step="0.001" required
-                                    class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-bold">
-                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-bold text-gray-400" x-text="selectedLine?.uom"></span>
+                    <form @submit.prevent="submitScan()" class="space-y-5">
+                        <div class="space-y-4">
+                            <!-- Bin Barcode -->
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-xs">shelves</span>
+                                    Verify Storage Bin
+                                </label>
+                                <input type="text" x-model="scanForm.bin_barcode" required autofocus
+                                    placeholder="Enter physical bin label..."
+                                    class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all font-mono placeholder:text-slate-300">
                             </div>
-                            <p class="mt-1 text-[10px] text-gray-500 italic">Enter full remaining qty or partial amount.</p>
+
+                            <!-- Material Barcode -->
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-xs">barcode_scanner</span>
+                                    Verify Component Tag
+                                </label>
+                                <input type="text" x-model="scanForm.material_barcode" required
+                                    placeholder="Scan material identifier..."
+                                    class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all font-mono placeholder:text-slate-300">
+                            </div>
+
+                            <!-- Issue Quantity -->
+                            <div>
+                                <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
+                                    <span class="material-symbols-outlined text-xs">numbers</span>
+                                    Allocation Quantity
+                                </label>
+                                <div class="relative">
+                                    <input type="number" x-model="scanForm.quantity" step="0.001" required
+                                        class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom"></span>
+                                </div>
+                            </div>
                         </div>
 
                         <!-- Error Message -->
-                        <div x-show="scanError" x-text="scanError" class="p-3 bg-red-50 text-red-600 text-xs rounded-lg font-medium border border-red-100"></div>
+                        <template x-if="scanError">
+                            <div class="px-4 py-3 bg-red-50 text-red-600 text-xs rounded-xl font-bold flex items-center gap-2 border border-red-100">
+                                <span class="material-symbols-outlined text-sm">error</span>
+                                <span x-text="scanError"></span>
+                            </div>
+                        </template>
 
-                        <div class="pt-4 border-t border-gray-100 flex gap-3">
-                            <button type="button" @click="showScanModal = false"
-                                class="flex-1 py-3 px-4 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition-colors">
-                                Cancel
-                            </button>
+                        <div class="pt-2 flex gap-3">
                             <button type="submit" :disabled="processing"
-                                class="flex-[2] py-3 px-4 bg-primary text-white text-sm font-bold rounded-xl hover:bg-primary/90 transition-colors flex items-center justify-center gap-2 disabled:opacity-50">
+                                class="flex-1 py-4 px-6 bg-slate-900 text-white text-xs font-black uppercase tracking-widest rounded-2xl hover:bg-slate-800 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-lg active:scale-95 shadow-slate-200">
                                 <span x-show="!processing" class="flex items-center gap-2">
                                     <span class="material-symbols-outlined text-lg">check_circle</span>
-                                    CONFIRM ISSUE
+                                    Commit Allocation
                                 </span>
                                 <span x-show="processing" class="flex items-center gap-2">
                                     <div class="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin"></div>
-                                    Processing...
+                                    Synchronizing...
                                 </span>
                             </button>
                         </div>
@@ -476,10 +510,10 @@
 
             scanStatusClass(status) {
                 switch(status) {
-                    case 'PENDING': return 'bg-amber-100 text-amber-700';
-                    case 'PARTIAL': return 'bg-orange-100 text-orange-700';
-                    case 'ISSUED': return 'bg-green-100 text-green-700';
-                    default: return 'bg-gray-100 text-gray-700';
+                    case 'PENDING': return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
+                    case 'PARTIAL': return 'bg-orange-50 text-orange-700 ring-1 ring-orange-100';
+                    case 'ISSUED': return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
+                    default: return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
                 }
             }
         }
