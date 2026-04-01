@@ -724,6 +724,14 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('packing');
+
+            Route::get('/fg-confirmation', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.fg-confirmation.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('fg-confirmation');
         });
 
         // ====================================================================

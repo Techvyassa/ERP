@@ -516,6 +516,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
             Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
             Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);
+            Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
             Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
         });
 
