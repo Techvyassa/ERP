@@ -160,10 +160,33 @@ class PutawayService
         if ($grnLine && $grnLine->material_id) {
             $putawayPendingQty = $this->getMaterialBucketQty($grnLine, $warehouseId, 'PUTAWAY_PENDING');
             if ($putawayPendingQty < $putawayQty) {
-                throw new \Exception(
-                    "Cannot complete putaway task {$task->id}: PUTAWAY_PENDING stock is {$putawayPendingQty} but {$putawayQty} is required. " .
-                    'This GRN likely predates the stock ledger feature and needs stock backfill before putaway can proceed.'
-                );
+                // AUTO-FIX for legacy data/mismatches: use whatever the ledger shows instead of blocking.
+                Log::warning("[PutawayService] Legacy stock mismatch for Task #{$task->id}. Ledger shows {$putawayPendingQty} in PUTAWAY_PENDING, but task wanted to move {$putawayQty}. Auto-adjusting to match available ledger balance.", [
+                    'task_id' => $task->id,
+                    'material_id' => $grnLine->material_id,
+                    'batch_number' => $grnLine->batch_number,
+                    'ledger_qty' => $putawayPendingQty,
+                    'requested_qty' => $putawayQty
+                ]);
+                
+                $putawayQty = $putawayPendingQty;
+                
+                // Update the task object quantity so subsequent logic (ledger posting) uses the new reality
+                $task->update(['quantity' => $putawayQty]);
+                
+                // If ledger is exactly 0, we can't perform a physical transfer, but we can still complete 
+                // the document to clear the dashboard of "stalled" legacy tasks.
+                if ($putawayQty <= 0) {
+                    return DB::connection('tenant')->transaction(function () use ($task, $userId, $destinationBinId) {
+                        $task->update([
+                            'status' => 'COMPLETED',
+                            'completed_by' => $userId,
+                            'completed_at' => now(),
+                            'remarks' => ($task->remarks ?? '') . "\n[System Auto-Complete]: No stock found in ledger. Task completed to clear legacy status."
+                        ]);
+                        return $task->load(['putawayLines', 'destinationBin']);
+                    });
+                }
             }
         }
 
