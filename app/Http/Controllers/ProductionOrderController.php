@@ -10,6 +10,7 @@ use App\Models\Tenant\BOMDetail;
 use App\Models\Tenant\StockBalance;
 use App\Models\Tenant\InventoryTransaction;
 use App\Models\Tenant\InspectionLot;
+use App\Models\Tenant\FGConfirmationSession;
 use App\Services\StockService;
 use App\Services\QCService;
 use Illuminate\Http\Request;
@@ -71,6 +72,9 @@ class ProductionOrderController extends Controller
                 'status' => $o->status,
                 'mir_status' => $o->mir?->status,
                 'mir_id' => $o->mir?->id,
+                'confirmed_qty_total' => $o->confirmed_qty_total ?? 0,
+                'rejected_qty_total'  => $o->rejected_qty_total ?? 0,
+                'remaining_qty' => max(0, (float)$o->target_qty - (float)($o->confirmed_qty_total ?? 0)),
                 'created_at' => $o->created_at?->format('Y-m-d H:i'),
             ]);
 
@@ -389,7 +393,8 @@ class ProductionOrderController extends Controller
 
     /**
      * POST /api/v1/production-orders/{id}/confirm-fg
-     * Confirm finished goods quantity, post PRODUCTION_RECEIPT stock transaction.
+     * Confirm finished goods for a session. Supports partial completion (batch stays open)
+     * or full completion (batch closed). Records variance between BOM expected FG and actual.
      */
     public function confirmFG(Request $request, int $id): JsonResponse
     {
@@ -398,12 +403,17 @@ class ProductionOrderController extends Controller
             $this->switchTenantDb($request);
 
             $validator = Validator::make($request->all(), [
-                'actual_qty' => 'required|numeric|min:0.001',
-                'rejected_qty' => 'nullable|numeric|min:0|default:0',
-                'rework_qty' => 'nullable|numeric|min:0|default:0',
-                'fg_bin_id' => 'nullable|integer',
-                'fg_warehouse_id' => 'nullable|integer',
-                'fg_batch_number' => 'nullable|string|max:50',
+                'confirmed_qty'         => 'required|numeric|min:0.001',
+                'rejected_qty'          => 'nullable|numeric|min:0',
+                'rejection_reason_code' => 'nullable|string|max:100',
+                'completion_status'     => 'required|in:PARTIALLY_COMPLETED,COMPLETED',
+                'fg_bin_id'             => 'nullable|integer',
+                'fg_warehouse_id'       => 'nullable|integer',
+                'fg_batch_number'       => 'nullable|string|max:50',
+                'qc_required'           => 'nullable|boolean',
+                // Legacy field aliases kept for backward compat
+                'actual_qty'            => 'nullable|numeric|min:0.001',
+                'rework_qty'            => 'nullable|numeric|min:0',
             ]);
 
             if ($validator->fails()) {
@@ -428,50 +438,61 @@ class ProductionOrderController extends Controller
                 ], 422);
             }
 
-            $actualQty = (float) $request->input('actual_qty');
-            $rejectedQty = (float) $request->input('rejected_qty', 0);
-            $reworkQty = (float) $request->input('rework_qty', 0);
-            $targetQty = (float) $order->target_qty;
+            // Support both new field name and legacy alias
+            $confirmedQty   = (float) ($request->input('confirmed_qty') ?? $request->input('actual_qty', 0));
+            $rejectedQty    = (float) $request->input('rejected_qty', 0);
+            $reworkQty      = (float) $request->input('rework_qty', 0);
+            $completionStatus = $request->input('completion_status', 'COMPLETED');
+            $targetQty      = (float) $order->target_qty;
+            $alreadyConfirmed = (float) ($order->confirmed_qty_total ?? 0);
+            $remaining      = max(0, $targetQty - $alreadyConfirmed);
 
-            // Validate total doesn't exceed target (with small tolerance)
-            $totalConfirmed = $actualQty + $rejectedQty + $reworkQty;
-            if ($totalConfirmed > $targetQty * 1.01) { // 1% tolerance
+            // Validate session qty doesn't exceed remaining (with 1% tolerance)
+            $sessionTotal = $confirmedQty + $rejectedQty;
+            if ($sessionTotal > $remaining * 1.01) {
                 return response()->json([
                     'success' => false,
-                    'error' => ['code' => 'QTY_EXCEEDS_TARGET', 'details' => [
-                        'total' => $totalConfirmed,
-                        'target' => $targetQty,
-                        'tolerance' => '1%',
+                    'error' => ['code' => 'QTY_EXCEEDS_REMAINING', 'details' => [
+                        'session_total' => $sessionTotal,
+                        'remaining'     => $remaining,
+                        'tolerance'     => '1%',
                     ]],
-                    'message' => "Total confirmed qty ({$totalConfirmed}) exceeds target ({$targetQty}) by more than 1%.",
+                    'message' => "Session qty ({$sessionTotal}) exceeds remaining ({$remaining}) by more than 1%.",
                     'request_id' => $requestId,
                     'timestamp' => now()->toIso8601String(),
                 ], 422);
             }
 
-            $userId = (int) $request->input('auth_user_id', 0);
+            $userId      = (int) $request->input('auth_user_id', 0);
             $warehouseId = $request->input('fg_warehouse_id', $order->mir?->lines->first()?->warehouse_id ?? 1);
-            $binId = $request->input('fg_bin_id');
+            $binId       = $request->input('fg_bin_id');
             $batchNumber = $request->input('fg_batch_number', 'FG-' . now()->format('ymd') . '-' . str_pad($order->id, 4, '0', STR_PAD_LEFT));
-            $qcRequired = (bool) ($order->product?->requires_fg_qc ?? false) || $request->boolean('qc_required');
-            $fgBucket = $qcRequired ? 'QC_HOLD' : 'AVAILABLE';
+            $qcRequired  = (bool) ($order->product?->requires_fg_qc ?? false) || $request->boolean('qc_required');
+            $fgBucket    = $qcRequired ? 'QC_HOLD' : 'AVAILABLE';
 
-            // Calculate yield percentage
-            $yieldPercent = $targetQty > 0 ? round(($actualQty / $targetQty) * 100, 2) : 0;
+            $newConfirmedTotal = $alreadyConfirmed + $confirmedQty;
+            $newRejectedTotal  = (float) ($order->rejected_qty_total ?? 0) + $rejectedQty;
+            $yieldPercent      = $targetQty > 0 ? round(($newConfirmedTotal / $targetQty) * 100, 2) : 0;
+            $variance          = $newConfirmedTotal - $targetQty; // negative = under, positive = over
 
             $inspectionLot = null;
 
-            DB::connection('tenant')->transaction(function () use ($order, $actualQty, $rejectedQty, $reworkQty, $yieldPercent, $warehouseId, $binId, $batchNumber, $userId, $qcRequired, $fgBucket, &$inspectionLot) {
+            DB::connection('tenant')->transaction(function () use (
+                $order, $confirmedQty, $rejectedQty, $reworkQty, $completionStatus,
+                $newConfirmedTotal, $newRejectedTotal, $yieldPercent, $variance,
+                $warehouseId, $binId, $batchNumber, $userId, $qcRequired, $fgBucket,
+                $request, &$inspectionLot
+            ) {
                 // 1. Post FG to stock (PRODUCTION_RECEIPT)
                 $this->stockService->post(
                     item: [
-                        'product_id' => $order->product_id,
-                        'uom_id' => $order->bom?->output_uom_id,
-                        'warehouse_id' => $warehouseId,
-                        'batch_number' => $batchNumber,
+                        'product_id'  => $order->product_id,
+                        'uom_id'      => $order->bom?->output_uom_id,
+                        'warehouse_id'=> $warehouseId,
+                        'batch_number'=> $batchNumber,
                     ],
                     bucket: $fgBucket,
-                    qtyChange: +$actualQty,
+                    qtyChange: +$confirmedQty,
                     transactionType: 'PRODUCTION_RECEIPT',
                     referenceType: 'ProductionOrder',
                     referenceId: $order->id,
@@ -481,14 +502,14 @@ class ProductionOrderController extends Controller
                     remarks: "FG receipt for {$order->order_no}"
                 );
 
-                // 2. Post scrap to BLOCKED bucket if rejected_qty > 0
+                // 2. Post scrap to BLOCKED bucket
                 if ($rejectedQty > 0) {
                     $this->stockService->post(
                         item: [
-                            'product_id' => $order->product_id,
-                            'uom_id' => $order->bom?->output_uom_id,
-                            'warehouse_id' => $warehouseId,
-                            'batch_number' => $batchNumber,
+                            'product_id'  => $order->product_id,
+                            'uom_id'      => $order->bom?->output_uom_id,
+                            'warehouse_id'=> $warehouseId,
+                            'batch_number'=> $batchNumber,
                         ],
                         bucket: 'BLOCKED',
                         qtyChange: +$rejectedQty,
@@ -502,56 +523,139 @@ class ProductionOrderController extends Controller
                     );
                 }
 
-                // 3. Update production order
+                // 3. Record this confirmation session
+                FGConfirmationSession::create([
+                    'production_order_id'   => $order->id,
+                    'confirmed_qty'         => $confirmedQty,
+                    'rejected_qty'          => $rejectedQty,
+                    'rejection_reason_code' => $request->input('rejection_reason_code'),
+                    'fg_batch_number'       => $batchNumber,
+                    'fg_warehouse_id'       => $warehouseId,
+                    'fg_bin_id'             => $binId,
+                    'completion_status'     => $completionStatus,
+                    'confirmed_by'          => $userId,
+                ]);
+
+                // 4. Update production order — keep IN_PROGRESS if partial, close if completed
+                $newStatus = $completionStatus === 'COMPLETED' ? 'COMPLETED' : 'IN_PROGRESS';
                 $order->update([
-                    'status' => 'COMPLETED',
-                    'actual_end_at' => now(),
-                    'actual_qty' => $actualQty,
-                    'rejected_qty' => $rejectedQty,
-                    'rework_qty' => $reworkQty,
-                    'yield_percent' => $yieldPercent,
-                    'fg_bin_id' => $binId,
-                    'fg_warehouse_id' => $warehouseId,
-                    'fg_batch_number' => $batchNumber,
-                    'confirmed_by' => $userId,
-                    'confirmed_at' => now(),
+                    'status'               => $newStatus,
+                    'actual_end_at'        => $newStatus === 'COMPLETED' ? now() : null,
+                    'actual_qty'           => $newConfirmedTotal,
+                    'rejected_qty'         => $newRejectedTotal,
+                    'rework_qty'           => (float) ($order->rework_qty ?? 0) + $reworkQty,
+                    'yield_percent'        => $yieldPercent,
+                    'confirmed_qty_total'  => $newConfirmedTotal,
+                    'rejected_qty_total'   => $newRejectedTotal,
+                    'fg_bin_id'            => $binId,
+                    'fg_warehouse_id'      => $warehouseId,
+                    'fg_batch_number'      => $batchNumber,
+                    'confirmed_by'         => $userId,
+                    'confirmed_at'         => now(),
                 ]);
 
-                Log::info('[ProductionOrder] FG confirmed', [
-                    'order_id' => $order->id,
-                    'order_no' => $order->order_no,
-                    'actual_qty' => $actualQty,
-                    'rejected_qty' => $rejectedQty,
-                    'yield_percent' => $yieldPercent,
-                    'qc_required' => $qcRequired,
+                Log::info('[ProductionOrder] FG session confirmed', [
+                    'order_id'          => $order->id,
+                    'order_no'          => $order->order_no,
+                    'confirmed_qty'     => $confirmedQty,
+                    'rejected_qty'      => $rejectedQty,
+                    'completion_status' => $completionStatus,
+                    'yield_percent'     => $yieldPercent,
+                    'qc_required'       => $qcRequired,
                 ]);
 
-                if ($qcRequired && $actualQty > 0) {
-                    $inspectionLot = app(QCService::class)->createInspectionLotForProduction($order->fresh(['bom']), $actualQty, $userId);
+                if ($qcRequired && $confirmedQty > 0) {
+                    $inspectionLot = app(QCService::class)->createInspectionLotForProduction($order->fresh(['bom']), $confirmedQty, $userId);
                 }
             });
+
+            $order->refresh();
+            $remaining = max(0, $targetQty - $newConfirmedTotal);
 
             return response()->json([
                 'success' => true,
                 'data' => [
                     'order' => [
-                        'id' => $order->id,
-                        'order_no' => $order->order_no,
-                        'status' => $order->status,
-                        'actual_qty' => $actualQty,
-                        'rejected_qty' => $rejectedQty,
-                        'rework_qty' => $reworkQty,
-                        'yield_percent' => $yieldPercent,
-                        'fg_batch_number' => $batchNumber,
-                        'fg_bucket' => $fgBucket,
-                        'qc_required' => $qcRequired,
-                        'inspection_lot_id' => $inspectionLot?->id,
-                        'confirmed_at' => now()->toIso8601String(),
+                        'id'                   => $order->id,
+                        'order_no'             => $order->order_no,
+                        'status'               => $order->status,
+                        'target_qty'           => $targetQty,
+                        'confirmed_qty_total'  => $newConfirmedTotal,
+                        'rejected_qty_total'   => $newRejectedTotal,
+                        'remaining_qty'        => $remaining,
+                        'yield_percent'        => $yieldPercent,
+                        'variance'             => round($variance, 3),
+                        'fg_batch_number'      => $batchNumber,
+                        'fg_bucket'            => $fgBucket,
+                        'qc_required'          => $qcRequired,
+                        'inspection_lot_id'    => $inspectionLot?->id,
+                        'completion_status'    => $completionStatus,
+                        'confirmed_at'         => now()->toIso8601String(),
                     ],
                 ],
-                'message' => $qcRequired
-                    ? 'FG confirmed, moved to QC hold, and inspection lot created successfully.'
-                    : 'FG confirmed and stock posted successfully.',
+                'message' => $completionStatus === 'COMPLETED'
+                    ? 'Batch completed. FG confirmed and stock posted.'
+                    : 'Partial confirmation recorded. Batch remains open.',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return $this->error($requestId, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * GET /api/v1/production-orders/{id}/fg-sessions
+     * List all FG confirmation sessions for an order.
+     */
+    public function fgSessions(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $this->switchTenantDb($request);
+            $order = ProductionOrder::with(['product', 'bom'])->findOrFail($id);
+            $sessions = FGConfirmationSession::where('production_order_id', $id)
+                ->with('confirmer')
+                ->orderBy('created_at')
+                ->get()
+                ->map(fn($s) => [
+                    'id'                    => $s->id,
+                    'confirmed_qty'         => $s->confirmed_qty,
+                    'rejected_qty'          => $s->rejected_qty,
+                    'rejection_reason_code' => $s->rejection_reason_code,
+                    'fg_batch_number'       => $s->fg_batch_number,
+                    'completion_status'     => $s->completion_status,
+                    'confirmed_by_name'     => $s->confirmer ? ($s->confirmer->first_name . ' ' . $s->confirmer->last_name) : null,
+                    'created_at'            => $s->created_at?->toIso8601String(),
+                ]);
+
+            $targetQty        = (float) $order->target_qty;
+            $confirmedTotal   = (float) ($order->confirmed_qty_total ?? 0);
+            $rejectedTotal    = (float) ($order->rejected_qty_total ?? 0);
+            $remaining        = max(0, $targetQty - $confirmedTotal);
+            $yieldPercent     = $targetQty > 0 ? round(($confirmedTotal / $targetQty) * 100, 2) : 0;
+            $variance         = round($confirmedTotal - $targetQty, 3);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order' => [
+                        'id'                  => $order->id,
+                        'order_no'            => $order->order_no,
+                        'product_name'        => $order->product?->product_name,
+                        'product_code'        => $order->product?->product_code,
+                        'target_qty'          => $targetQty,
+                        'uom'                 => $order->bom?->outputUom?->uom_code,
+                        'status'              => $order->status,
+                        'confirmed_qty_total' => $confirmedTotal,
+                        'rejected_qty_total'  => $rejectedTotal,
+                        'remaining_qty'       => $remaining,
+                        'yield_percent'       => $yieldPercent,
+                        'variance'            => $variance,
+                    ],
+                    'sessions' => $sessions,
+                ],
+                'message' => 'FG confirmation sessions retrieved.',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);

@@ -120,6 +120,24 @@
                 <span class="material-symbols-outlined text-indigo-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
             </div>
         </div>
+
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-xl transition-all cursor-pointer group p-6"
+             @click="window.location.href = '/org/{{ $organization->org_slug }}/production/fg-confirmation'">
+            <div class="flex items-center gap-3 mb-4">
+                <div class="bg-green-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
+                    <span class="material-symbols-outlined text-green-600 text-3xl">task_alt</span>
+                </div>
+                <div>
+                    <h4 class="font-bold text-gray-900 text-lg">FG Confirmation</h4>
+                    <p class="text-xs text-gray-600">Confirm output against open batches</p>
+                </div>
+            </div>
+            <p class="text-sm text-gray-600 mb-4">Record confirmed qty, rejected qty, and reason codes. Partially complete or close batches with variance tracking.</p>
+            <div class="flex items-center justify-between">
+                <span class="text-sm font-bold text-green-600">Open FG Confirmation</span>
+                <span class="material-symbols-outlined text-green-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
+            </div>
+        </div>
     </div>
 </div>
 

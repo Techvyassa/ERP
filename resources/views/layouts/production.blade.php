@@ -89,6 +89,14 @@
                             <span x-show="sidebarOpen" class="font-medium">Packing Orders</span>
                         </a>
                     </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/fg-confirmation") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('production.fg-confirmation') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">task_alt</span>
+                            <span x-show="sidebarOpen" class="font-medium">FG Confirmation</span>
+                        </a>
+                    </li>
                 </ul>
             </nav>
 

@@ -18,18 +18,22 @@ class ProductionOrder extends Model
         'yield_percent',
         'fg_bin_id', 'fg_warehouse_id', 'fg_batch_number',
         'confirmed_by', 'confirmed_at',
+        // Cumulative session totals
+        'confirmed_qty_total', 'rejected_qty_total',
     ];
 
     protected $casts = [
-        'target_qty'   => 'decimal:3',
-        'planned_date' => 'date',
-        'actual_qty'   => 'decimal:3',
-        'rejected_qty' => 'decimal:3',
-        'rework_qty'   => 'decimal:3',
-        'yield_percent'=> 'decimal:2',
-        'actual_start_at' => 'datetime',
-        'actual_end_at'   => 'datetime',
-        'confirmed_at'    => 'datetime',
+        'target_qty'          => 'decimal:3',
+        'planned_date'        => 'date',
+        'actual_qty'          => 'decimal:3',
+        'rejected_qty'        => 'decimal:3',
+        'rework_qty'          => 'decimal:3',
+        'yield_percent'       => 'decimal:2',
+        'confirmed_qty_total' => 'decimal:3',
+        'rejected_qty_total'  => 'decimal:3',
+        'actual_start_at'     => 'datetime',
+        'actual_end_at'       => 'datetime',
+        'confirmed_at'        => 'datetime',
     ];
 
     public function product()
@@ -65,6 +69,11 @@ class ProductionOrder extends Model
     public function inspectionLots()
     {
         return $this->hasMany(InspectionLot::class, 'production_order_id');
+    }
+
+    public function fgSessions()
+    {
+        return $this->hasMany(FGConfirmationSession::class, 'production_order_id');
     }
 
     /**
