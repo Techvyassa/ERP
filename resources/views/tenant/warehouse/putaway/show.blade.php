@@ -98,9 +98,9 @@
                     </div>
 
                     <div>
-                        <label class="block text-sm font-semibold text-gray-700 mb-1">Putaway Qty *</label>
-                        <input type="number" step="0.001" min="0.001" x-model="completeQty" required
-                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                        <label class="block text-sm font-semibold text-gray-700 mb-1">Putaway Qty</label>
+                        <input type="number" step="0.001" min="0.001" x-model="completeQty" readonly
+                            class="w-full px-3 py-2 border border-gray-200 bg-gray-100 rounded-lg text-sm text-gray-500 cursor-not-allowed focus:outline-none"
                             :max="task?.quantity || null"
                             placeholder="Enter quantity to put away">
                         <p class="text-xs text-gray-500 mt-1">
