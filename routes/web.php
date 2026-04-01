@@ -505,6 +505,9 @@ Route::middleware(['web.jwt'])->group(function () {
         Route::get('/security/login', [PublicController::class, 'loginSecurity'])->name('security.login');
         Route::get('/admin/login', [PublicController::class, 'loginAdmin'])->name('admin.login');
         Route::get('/production/login', [PublicController::class, 'loginProduction'])->name('production.login');
+        Route::get('/sales/login', [PublicController::class, 'loginSales'])->name('sales.login');
+        Route::get('/customer/login', [PublicController::class, 'loginCustomer'])->name('customer.login');
+        Route::get('/maintenance/login', [PublicController::class, 'loginMaintenance'])->name('maintenance.login');
 
         // Procurement Portal
         Route::prefix('procurement')->name('procurement.')->group(function () use ($getOrg) {
@@ -628,6 +631,11 @@ Route::middleware(['web.jwt'])->group(function () {
                     'mirId' => $id
                 ]);
             })->name('mir.show');
+
+            Route::get('/sales-orders', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return redirect()->route('tenant.sales.orders', $orgSlug);
+            })->name('sales-orders');
         });
 
         // Quality Portal
@@ -732,6 +740,96 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('fg-confirmation');
+        });
+
+        // ====================================================================
+        // SALES PORTAL
+        // ====================================================================
+        Route::prefix('sales')->name('sales.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.sales.dashboard', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('dashboard');
+
+            Route::get('/orders', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.sales.orders.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('orders');
+
+            Route::get('/customers', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.sales.customers.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('customers');
+
+            Route::get('/invoices', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.sales.invoices.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('invoices');
+
+            Route::get('/dispatch', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.sales.dispatch.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('dispatch');
+        });
+
+        // ====================================================================
+        // CUSTOMER PORTAL
+        // ====================================================================
+        Route::prefix('customer')->name('customer.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.customer.dashboard', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('dashboard');
+
+            Route::get('/list', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.customer.list', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('list');
+
+            Route::get('/orders', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.customer.orders', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('orders');
+
+            Route::get('/complaints', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.customer.complaints', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('complaints');
+
+            Route::get('/ledger', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.customer.ledger', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('ledger');
+        });
+
+        // ====================================================================
+        // MAINTENANCE PORTAL
+        // ====================================================================
+        Route::prefix('maintenance')->name('maintenance.')->group(function () use ($getOrg) {
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.maintenance.dashboard', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('dashboard');
+
+            Route::get('/work-orders', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.maintenance.work-orders.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('work-orders');
+
+            Route::get('/assets', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.maintenance.assets.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('assets');
+
+            Route::get('/schedule', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.maintenance.schedule.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('schedule');
+
+            Route::get('/spare-parts', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.maintenance.spare-parts.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('spare-parts');
         });
 
         // ====================================================================

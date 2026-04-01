@@ -1,0 +1,1 @@
+'Bin: '.(\$bin ? \$bin- '.\$bin- : 'NOT FOUND').PHP_EOL;

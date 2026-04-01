@@ -69,9 +69,45 @@ class WebJWTAuth
             ]);
             
         } catch (TokenExpiredException $e) {
-            \Log::warning('Token expired', ['error' => $e->getMessage()]);
-            return $this->redirectToLogin($request, 'Your session has expired. Please login again.');
-            
+            // Attempt a silent token refresh within the refresh window
+            try {
+                $newToken = JWTAuth::setToken($token)->refresh();
+
+                // Re-parse the new token to get claims
+                JWTAuth::setToken($newToken);
+                $payload = JWTAuth::getPayload();
+
+                $userId = $payload->get('sub');
+                $orgId  = $payload->get('org_id');
+
+                if (!$userId || !$orgId) {
+                    return $this->redirectToLogin($request, 'Invalid token claims');
+                }
+
+                $request->merge([
+                    'auth_user_id' => $userId,
+                    'auth_org_id'  => $orgId,
+                ]);
+
+                // Continue the request and attach the refreshed token as a new cookie
+                $response = $next($request);
+
+                return $response->cookie(
+                    'auth_token',
+                    $newToken,
+                    60 * 24, // 24 hours
+                    '/',
+                    null,
+                    $request->secure(),
+                    true,
+                    false,
+                    'lax'
+                );
+            } catch (\Exception $refreshEx) {
+                \Log::warning('Token refresh failed', ['error' => $refreshEx->getMessage()]);
+                return $this->redirectToLogin($request, 'Your session has expired. Please login again.');
+            }
+
         } catch (TokenInvalidException $e) {
             \Log::warning('Token invalid', ['error' => $e->getMessage()]);
             return $this->redirectToLogin($request, 'Invalid authentication token');
