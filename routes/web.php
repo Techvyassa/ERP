@@ -549,6 +549,14 @@ Route::middleware(['web.jwt'])->group(function () {
                 ]);
             })->name('purchase-orders');
 
+            Route::get('/purchase-orders/create', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.purchase-orders.create', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('purchase-orders.create');
+
             Route::get('/vendors', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('procurement.vendors.index', [

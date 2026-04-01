@@ -8,9 +8,13 @@ use App\Models\Tenant\Material;
 use App\Models\Tenant\UOM;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\User;
+use App\Models\Control\Organization;
+use App\Mail\PurchaseRequisitionMail;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Str;
 
@@ -544,6 +548,143 @@ class PurchaseRequisitionController extends Controller
                 'message' => 'Failed to retrieve users: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp'  => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Send PR to vendor(s) via email
+     * POST /api/v1/purchase-requisitions/{id}/send-to-vendor
+     */
+    public function sendToVendor(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'vendor_ids' => 'required|array|min:1',
+            'vendor_ids.*' => 'integer|exists:tenant.vendor_master,id',
+            'message' => 'nullable|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        try {
+            $pr = PurchaseRequisition::with([
+                'requestedBy',
+                'department',
+                'suggestedVendor',
+                'lineItems.material',
+                'lineItems.uom'
+            ])->findOrFail($id);
+
+            // Only APPROVED PRs can be sent
+            if ($pr->status !== 'APPROVED') {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'PR_NOT_APPROVED', 'details' => ['current_status' => $pr->status]],
+                    'message' => 'Only approved purchase requisitions can be sent to vendors',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            $vendorIds = $request->input('vendor_ids');
+            $customMessage = $request->input('message');
+            $sentCount = 0;
+            $errors = [];
+
+            // Resolve org name and slug from tenant DB name
+            $orgName = config('app.name');
+            $orgSlug = '';
+            $tenantDb = $request->input('tenant_db_name');
+            $org = null;
+            if ($tenantDb) {
+                $org = Organization::where('tenant_db_name', $tenantDb)->first();
+                if ($org) {
+                    $orgName = $org->org_name;
+                    $orgSlug = $org->org_slug;
+                }
+            }
+
+            foreach ($vendorIds as $vendorId) {
+                $vendor = \App\Models\Tenant\Vendor::with('contacts')->find($vendorId);
+                
+                if (!$vendor) {
+                    $errors[] = "Vendor ID {$vendorId} not found";
+                    continue;
+                }
+
+                // Find primary active contact with email
+                $contact = $vendor->contacts
+                    ->where('is_active', true)
+                    ->where('is_primary', true)
+                    ->whereNotNull('email')
+                    ->first()
+                    ?? $vendor->contacts
+                        ->where('is_active', true)
+                        ->whereNotNull('email')
+                        ->first();
+
+                if (!$contact || !$contact->email) {
+                    $errors[] = "No email found for vendor: {$vendor->vendor_name}";
+                    continue;
+                }
+
+                // Send email
+                try {
+                    Mail::to($contact->email, $contact->contact_name)
+                        ->send(new PurchaseRequisitionMail(
+                            $pr,
+                            $contact->contact_name,
+                            $orgName,
+                            $customMessage,
+                            \App\Http\Controllers\VendorPortalController::generatePRToken($orgSlug, $pr->id)
+                        ));
+                    
+                    Log::info("PR {$pr->pr_number} sent to {$contact->email} ({$contact->contact_name})");
+                    $sentCount++;
+                    
+                } catch (\Exception $e) {
+                    $errors[] = "Failed to send to {$vendor->vendor_name}: " . $e->getMessage();
+                }
+            }
+
+            if ($sentCount === 0) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'EMAIL_SEND_FAILED', 'details' => $errors],
+                    'message' => 'Failed to send PR to any vendors. ' . implode('; ', $errors),
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'sent_count' => $sentCount,
+                    'errors' => $errors
+                ],
+                'message' => "PR sent to {$sentCount} vendor(s) successfully",
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'SEND_FAILED', 'details' => []],
+                'message' => 'Failed to send PR: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
             ], 500);
         }
     }

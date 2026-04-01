@@ -298,6 +298,8 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/submit',  [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
                 Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseRequisitionController::class, 'approve']);
                 Route::patch('/{id}/reject',  [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
+                // Send to vendor
+                Route::post('/{id}/send-to-vendor', [App\Http\Controllers\PurchaseRequisitionController::class, 'sendToVendor']);
             });
         });
 
