@@ -516,6 +516,31 @@ Route::middleware(['web.jwt'])->group(function () {
                 ]);
             })->name('dashboard');
 
+            Route::get('/purchase-requisition', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.purchase-requisition.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('purchase-requisition');
+
+            Route::get('/purchase-requisition/create', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.purchase-requisition.create', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('purchase-requisition.create');
+
+            Route::get('/purchase-requisition/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.purchase-requisition.edit', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'prId' => $id,
+                ]);
+            })->name('purchase-requisition.edit');
+
             Route::get('/purchase-orders', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('procurement.purchase-orders.index', [
@@ -547,6 +572,14 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('po-approval');
+
+            Route::get('/pr-approval', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.pr-approval.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('pr-approval');
         });
 
         // Security Department Portal
