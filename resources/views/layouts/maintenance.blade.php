@@ -64,10 +64,42 @@
                     </li>
 
                     <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/maintenance/requests") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.requests*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">description</span>
+                            <span x-show="sidebarOpen" class="font-medium">Requests</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/maintenance/approvals") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.approvals*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">check_circle</span>
+                            <span x-show="sidebarOpen" class="font-medium">Approvals</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/maintenance/assignments") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.assignments*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">assignment_ind</span>
+                            <span x-show="sidebarOpen" class="font-medium">Assignments</span>
+                        </a>
+                    </li>
+
+                    <li>
                         <a href="{{ url("/org/{$organization->org_slug}/maintenance/work-orders") }}"
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.work-orders*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">handyman</span>
                             <span x-show="sidebarOpen" class="font-medium">Work Orders</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/maintenance/closure") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.closure*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">task_alt</span>
+                            <span x-show="sidebarOpen" class="font-medium">Closure</span>
                         </a>
                     </li>
 
@@ -92,6 +124,14 @@
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.spare-parts*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">settings</span>
                             <span x-show="sidebarOpen" class="font-medium">Spare Parts</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/maintenance/material-requests") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.material-requests*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">inventory_2</span>
+                            <span x-show="sidebarOpen" class="font-medium">Material Requests</span>
                         </a>
                     </li>
 

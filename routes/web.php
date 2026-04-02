@@ -832,30 +832,403 @@ Route::middleware(['web.jwt'])->group(function () {
         // MAINTENANCE PORTAL
         // ====================================================================
         Route::prefix('maintenance')->name('maintenance.')->group(function () use ($getOrg) {
-            Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
+
+            // Helper: session key scoped per org
+            $sessionKey = fn($orgSlug, $key) => "maint_{$orgSlug}_{$key}";
+
+            // ---- DASHBOARD ----
+            Route::get('/dashboard', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                return view('tenant.maintenance.dashboard', ['organization' => $org, 'tenantType' => $tenantType]);
+                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
+                $assets     = session($sessionKey($orgSlug, 'assets'), []);
+                $schedules  = session($sessionKey($orgSlug, 'schedules'), []);
+                $today      = date('Y-m-d');
+                $stats = [
+                    'openWorkOrders' => count(array_filter($workOrders, fn($w) => in_array($w['status'], ['Assigned', 'In Progress']))),
+                    'overdueOrders'  => count(array_filter($workOrders, fn($w) => isset($w['due']) && $w['due'] < $today && $w['status'] !== 'Closed')),
+                    'totalAssets'    => count($assets),
+                    'scheduledPM'    => count(array_filter($schedules, fn($pm) => isset($pm['next_due']) && $pm['next_due'] >= $today && $pm['next_due'] <= date('Y-m-d', strtotime('+7 days')) && $pm['status'] !== 'Done')),
+                ];
+                return view('tenant.maintenance.dashboard', compact('org', 'tenantType', 'stats') + ['organization' => $org]);
             })->name('dashboard');
 
-            Route::get('/work-orders', function ($orgSlug) use ($getOrg) {
+            // ---- REQUESTS ----
+            Route::get('/requests', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                return view('tenant.maintenance.work-orders.index', ['organization' => $org, 'tenantType' => $tenantType]);
+                $requests = session($sessionKey($orgSlug, 'requests'), []);
+                $assets   = session($sessionKey($orgSlug, 'assets'), []);
+                return view('tenant.maintenance.requests.index', compact('requests', 'assets')
+                    + ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('requests');
+
+            Route::post('/requests', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $key      = $sessionKey($orgSlug, 'requests');
+                $requests = session($key, []);
+                $seq      = count($requests) + 1;
+                $user     = session('auth_user_name', 'User');
+                $requests[] = [
+                    'id'        => 'MR-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
+                    'asset'     => request('asset'),
+                    'asset_code'=> request('asset_code', ''),
+                    'priority'  => request('priority'),
+                    'issue'     => request('issue'),
+                    'status'    => 'Pending Approval',
+                    'raised_by' => $user,
+                    'raised_on' => now()->format('Y-m-d'),
+                ];
+                session([$key => $requests]);
+                return redirect()->route('tenant.maintenance.requests', $orgSlug)
+                    ->with('success', 'Maintenance request submitted successfully.');
+            })->name('requests.store');
+
+            // ---- APPROVALS ----
+            Route::get('/approvals', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $requests  = session($sessionKey($orgSlug, 'requests'), []);
+                $approvals = array_values(array_filter($requests, fn($r) => $r['status'] === 'Pending Approval'));
+                return view('tenant.maintenance.approvals.index', compact('approvals')
+                    + ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('approvals');
+
+            Route::post('/approvals/{id}/approve', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $key      = $sessionKey($orgSlug, 'requests');
+                $requests = session($key, []);
+                foreach ($requests as &$r) {
+                    if ($r['id'] === $id) { $r['status'] = 'Approved'; $r['approved_on'] = now()->format('Y-m-d'); $r['remarks'] = request('remarks', ''); break; }
+                }
+                session([$key => $requests]);
+                return redirect()->route('tenant.maintenance.approvals', $orgSlug)->with('success', "Request {$id} approved.");
+            })->name('approvals.approve');
+
+            Route::post('/approvals/{id}/reject', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $key      = $sessionKey($orgSlug, 'requests');
+                $requests = session($key, []);
+                foreach ($requests as &$r) {
+                    if ($r['id'] === $id) { $r['status'] = 'Rejected'; $r['rejected_on'] = now()->format('Y-m-d'); $r['remarks'] = request('remarks', ''); break; }
+                }
+                session([$key => $requests]);
+                return redirect()->route('tenant.maintenance.approvals', $orgSlug)->with('success', "Request {$id} rejected.");
+            })->name('approvals.reject');
+
+            // ---- ASSIGNMENTS ----
+            Route::get('/assignments', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $requests   = session($sessionKey($orgSlug, 'requests'), []);
+                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
+                $approved   = array_values(array_filter($requests, fn($r) => $r['status'] === 'Approved'));
+                return view('tenant.maintenance.assignments.index',
+                    compact('approved', 'workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('assignments');
+
+            Route::post('/assignments', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $reqKey     = $sessionKey($orgSlug, 'requests');
+                $woKey      = $sessionKey($orgSlug, 'work_orders');
+                $requests   = session($reqKey, []);
+                $workOrders = session($woKey, []);
+                $mrId       = request('request_id');
+                $assetName  = '';
+                foreach ($requests as &$r) {
+                    if ($r['id'] === $mrId) { $r['status'] = 'Assigned'; $assetName = $r['asset']; break; }
+                }
+                session([$reqKey => $requests]);
+                $seq = count($workOrders) + 1;
+                $workOrders[] = [
+                    'wo'          => 'WO-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
+                    'mr_id'       => $mrId,
+                    'asset'       => $assetName,
+                    'technician'  => request('technician'),
+                    'team'        => request('team', 'Mechanical'),
+                    'due'         => request('due_date'),
+                    'priority'    => request('priority', 'Medium'),
+                    'notes'       => request('notes', ''),
+                    'status'      => 'Assigned',
+                    'assigned_on' => now()->format('Y-m-d'),
+                    'materials'   => [],
+                ];
+                session([$woKey => $workOrders]);
+                return redirect()->route('tenant.maintenance.assignments', $orgSlug)->with('success', 'Work order created and technician assigned.');
+            })->name('assignments.store');
+
+            Route::post('/assignments/{wo}/update-status', function ($orgSlug, $wo) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $woKey      = $sessionKey($orgSlug, 'work_orders');
+                $workOrders = session($woKey, []);
+                foreach ($workOrders as &$w) {
+                    if ($w['wo'] === $wo) { $w['status'] = request('status'); $w['engineer_notes'] = request('engineer_notes', ''); break; }
+                }
+                session([$woKey => $workOrders]);
+                return redirect()->route('tenant.maintenance.assignments', $orgSlug)->with('success', "Work order {$wo} status updated.");
+            })->name('assignments.update-status');
+
+            // ---- WORK ORDERS ----
+            Route::get('/work-orders', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
+                return view('tenant.maintenance.work-orders.index',
+                    compact('workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('work-orders');
 
-            Route::get('/assets', function ($orgSlug) use ($getOrg) {
+            // ---- MATERIAL REQUESTS (per WO) ----
+            Route::get('/material-requests', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                return view('tenant.maintenance.assets.index', ['organization' => $org, 'tenantType' => $tenantType]);
+                $workOrders   = session($sessionKey($orgSlug, 'work_orders'), []);
+                $parts        = session($sessionKey($orgSlug, 'spare_parts'), []);
+                $matRequests  = session($sessionKey($orgSlug, 'mat_requests'), []);
+                return view('tenant.maintenance.material-requests.index',
+                    compact('workOrders', 'parts', 'matRequests') + ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('material-requests');
+
+            Route::post('/material-requests', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $mrKey      = $sessionKey($orgSlug, 'mat_requests');
+                $partsKey   = $sessionKey($orgSlug, 'spare_parts');
+                $matReqs    = session($mrKey, []);
+                $parts      = session($partsKey, []);
+                $partCode   = request('part_code');
+                $qty        = (int) request('qty', 1);
+                $woId       = request('wo_id');
+
+                // Check stock
+                $inStock = false;
+                foreach ($parts as $p) {
+                    if ($p['code'] === $partCode && $p['stock'] >= $qty) { $inStock = true; break; }
+                }
+
+                $seq = count($matReqs) + 1;
+                $matReqs[] = [
+                    'id'         => 'MMR-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
+                    'wo_id'      => $woId,
+                    'part_code'  => $partCode,
+                    'part_name'  => request('part_name'),
+                    'qty'        => $qty,
+                    'unit'       => request('unit', 'Nos'),
+                    'in_stock'   => $inStock,
+                    'status'     => $inStock ? 'Pending Issue' : 'Procurement Required',
+                    'raised_on'  => now()->format('Y-m-d'),
+                    'issued_on'  => null,
+                ];
+                session([$mrKey => $matReqs]);
+                return redirect()->route('tenant.maintenance.material-requests', $orgSlug)
+                    ->with('success', $inStock ? 'Material request raised. Stock available — ready to issue.' : 'Material not in stock. Procurement request flagged.');
+            })->name('material-requests.store');
+
+            Route::post('/material-requests/{id}/issue', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $mrKey    = $sessionKey($orgSlug, 'mat_requests');
+                $partsKey = $sessionKey($orgSlug, 'spare_parts');
+                $matReqs  = session($mrKey, []);
+                $parts    = session($partsKey, []);
+
+                $partCode = null; $qty = 0;
+                foreach ($matReqs as &$m) {
+                    if ($m['id'] === $id && $m['status'] === 'Pending Issue') {
+                        $m['status']    = 'Issued';
+                        $m['issued_on'] = now()->format('Y-m-d');
+                        $partCode = $m['part_code'];
+                        $qty      = $m['qty'];
+                        break;
+                    }
+                }
+                // Deduct from spare parts stock
+                if ($partCode) {
+                    foreach ($parts as &$p) {
+                        if ($p['code'] === $partCode) { $p['stock'] = max(0, $p['stock'] - $qty); break; }
+                    }
+                    session([$partsKey => $parts]);
+                }
+                session([$mrKey => $matReqs]);
+                return redirect()->route('tenant.maintenance.material-requests', $orgSlug)->with('success', "Material {$id} issued from stock.");
+            })->name('material-requests.issue');
+
+            // ---- CLOSURE ----
+            Route::get('/closure', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
+                $closures   = array_values(array_filter($workOrders, fn($w) => in_array($w['status'], ['Completed', 'Closed'])));
+                return view('tenant.maintenance.closure.index',
+                    compact('closures') + ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('closure');
+
+            Route::post('/closure/{wo}/close', function ($orgSlug, $wo) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $woKey      = $sessionKey($orgSlug, 'work_orders');
+                $workOrders = session($woKey, []);
+                foreach ($workOrders as &$w) {
+                    if ($w['wo'] === $wo) {
+                        $w['status']        = 'Closed';
+                        $w['closed_on']     = now()->format('Y-m-d');
+                        $w['verified_by']   = request('verified_by', 'Maintenance Lead');
+                        $w['closure_notes'] = request('closure_notes', '');
+                        // Update asset last_maintained
+                        $assetsKey = $sessionKey($orgSlug, 'assets');
+                        $assets    = session($assetsKey, []);
+                        foreach ($assets as &$a) {
+                            if ($a['name'] === $w['asset']) { $a['last_maintained'] = now()->format('Y-m-d'); break; }
+                        }
+                        session([$assetsKey => $assets]);
+                        break;
+                    }
+                }
+                session([$woKey => $workOrders]);
+                return redirect()->route('tenant.maintenance.closure', $orgSlug)->with('success', "Work order {$wo} closed successfully.");
+            })->name('closure.close');
+
+            // ---- ASSETS ----
+            Route::get('/assets', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $assets     = session($sessionKey($orgSlug, 'assets'), []);
+                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
+                $schedules  = session($sessionKey($orgSlug, 'schedules'), []);
+                // Attach history counts per asset
+                foreach ($assets as &$a) {
+                    $a['wo_count'] = count(array_filter($workOrders, fn($w) => $w['asset'] === $a['name']));
+                    $a['pm_count'] = count(array_filter($schedules, fn($pm) => $pm['asset'] === $a['name']));
+                }
+                return view('tenant.maintenance.assets.index', compact('assets') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('assets');
 
-            Route::get('/schedule', function ($orgSlug) use ($getOrg) {
+            Route::post('/assets', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                return view('tenant.maintenance.schedule.index', ['organization' => $org, 'tenantType' => $tenantType]);
+                $key    = $sessionKey($orgSlug, 'assets');
+                $assets = session($key, []);
+                $seq    = count($assets) + 1;
+                $assets[] = [
+                    'code'            => request('code') ?: 'AST-' . str_pad($seq, 3, '0', STR_PAD_LEFT),
+                    'name'            => request('name'),
+                    'category'        => request('category'),
+                    'location'        => request('location', ''),
+                    'model'           => request('model', ''),
+                    'installed_on'    => request('installed_on', ''),
+                    'last_maintained' => null,
+                    'status'          => 'Active',
+                ];
+                session([$key => $assets]);
+                return redirect()->route('tenant.maintenance.assets', $orgSlug)->with('success', 'Asset registered successfully.');
+            })->name('assets.store');
+
+            // ---- PM SCHEDULE ----
+            Route::get('/schedule', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $schedules = session($sessionKey($orgSlug, 'schedules'), []);
+                $assets    = session($sessionKey($orgSlug, 'assets'), []);
+                $parts     = session($sessionKey($orgSlug, 'spare_parts'), []);
+                foreach ($schedules as &$pm) {
+                    if ($pm['status'] !== 'Done' && isset($pm['next_due']) && $pm['next_due'] < date('Y-m-d')) {
+                        $pm['status'] = 'Overdue';
+                    }
+                }
+                return view('tenant.maintenance.schedule.index', compact('schedules', 'assets', 'parts') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('schedule');
 
-            Route::get('/spare-parts', function ($orgSlug) use ($getOrg) {
+            Route::post('/schedule', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                return view('tenant.maintenance.spare-parts.index', ['organization' => $org, 'tenantType' => $tenantType]);
+                $key       = $sessionKey($orgSlug, 'schedules');
+                $schedules = session($key, []);
+                $seq       = count($schedules) + 1;
+                // Parse materials list
+                $matNames  = request('mat_name', []);
+                $matQtys   = request('mat_qty', []);
+                $matUnits  = request('mat_unit', []);
+                $materials = [];
+                foreach ($matNames as $i => $mn) {
+                    if (trim($mn)) $materials[] = ['name' => $mn, 'qty' => $matQtys[$i] ?? 1, 'unit' => $matUnits[$i] ?? 'Nos'];
+                }
+                $schedules[] = [
+                    'id'          => 'PM-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
+                    'asset'       => request('asset'),
+                    'task'        => request('task'),
+                    'frequency'   => request('frequency'),
+                    'assigned_to' => request('assigned_to', ''),
+                    'next_due'    => request('next_due'),
+                    'duration'    => request('duration', ''),
+                    'materials'   => $materials,
+                    'last_done'   => null,
+                    'status'      => 'Scheduled',
+                ];
+                session([$key => $schedules]);
+                return redirect()->route('tenant.maintenance.schedule', $orgSlug)->with('success', 'PM task scheduled successfully.');
+            })->name('schedule.store');
+
+            Route::post('/schedule/{id}/done', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $schKey   = $sessionKey($orgSlug, 'schedules');
+                $partsKey = $sessionKey($orgSlug, 'spare_parts');
+                $schedules = session($schKey, []);
+                $parts     = session($partsKey, []);
+                foreach ($schedules as &$pm) {
+                    if ($pm['id'] === $id) {
+                        $pm['status']    = 'Done';
+                        $pm['last_done'] = now()->format('Y-m-d');
+                        $pm['notes']     = request('notes', '');
+                        // Auto-deduct materials used
+                        foreach ($pm['materials'] ?? [] as $mat) {
+                            foreach ($parts as &$p) {
+                                if (strtolower($p['name']) === strtolower($mat['name'])) {
+                                    $p['stock'] = max(0, $p['stock'] - (int)$mat['qty']);
+                                    break;
+                                }
+                            }
+                        }
+                        break;
+                    }
+                }
+                session([$schKey => $schedules]);
+                session([$partsKey => $parts]);
+                return redirect()->route('tenant.maintenance.schedule', $orgSlug)->with('success', "PM task {$id} marked as done. Materials deducted from stock.");
+            })->name('schedule.done');
+
+            // ---- SPARE PARTS ----
+            Route::get('/spare-parts', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $parts      = session($sessionKey($orgSlug, 'spare_parts'), []);
+                $matReqs    = session($sessionKey($orgSlug, 'mat_requests'), []);
+                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
+                return view('tenant.maintenance.spare-parts.index', compact('parts', 'matReqs', 'workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('spare-parts');
+
+            Route::post('/spare-parts', function ($orgSlug) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $key   = $sessionKey($orgSlug, 'spare_parts');
+                $parts = session($key, []);
+                $parts[] = [
+                    'code'          => request('code'),
+                    'name'          => request('name'),
+                    'asset'         => request('asset', ''),
+                    'stock'         => (int) request('stock', 0),
+                    'reorder_level' => request('reorder_level') !== '' ? (int) request('reorder_level') : null,
+                    'unit'          => request('unit', 'Nos'),
+                ];
+                session([$key => $parts]);
+                return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', 'Spare part added successfully.');
+            })->name('spare-parts.store');
+
+            Route::post('/spare-parts/{code}/issue', function ($orgSlug, $code) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $key   = $sessionKey($orgSlug, 'spare_parts');
+                $parts = session($key, []);
+                $qty   = (int) request('qty', 1);
+                foreach ($parts as &$p) {
+                    if ($p['code'] === $code) { $p['stock'] = max(0, $p['stock'] - $qty); break; }
+                }
+                session([$key => $parts]);
+                return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} issued.");
+            })->name('spare-parts.issue');
+
+            Route::post('/spare-parts/{code}/receive', function ($orgSlug, $code) use ($getOrg, $sessionKey) {
+                extract($getOrg($orgSlug));
+                $key   = $sessionKey($orgSlug, 'spare_parts');
+                $parts = session($key, []);
+                $qty   = (int) request('qty', 1);
+                foreach ($parts as &$p) {
+                    if ($p['code'] === $code) { $p['stock'] += $qty; break; }
+                }
+                session([$key => $parts]);
+                return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} received into stock.");
+            })->name('spare-parts.receive');
         });
 
         // ====================================================================

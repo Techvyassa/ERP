@@ -146,8 +146,7 @@ function maintenanceDashboard() {
     return {
         stats: { openWorkOrders: 0, overdueOrders: 0, totalAssets: 0, scheduledPM: 0 },
         async init() {
-            // TODO: replace with real API calls
-            this.stats = { openWorkOrders: 6, overdueOrders: 2, totalAssets: 45, scheduledPM: 4 };
+            this.stats = @json($stats);
         }
     }
 }
