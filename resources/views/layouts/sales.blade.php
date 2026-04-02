@@ -94,6 +94,27 @@
                             <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
                         </a>
                     </li> -->
+                    <!-- <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/sales/dispatch") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.dispatch*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
+                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
+                        </a>
+                    </li> -->
+                    <!-- <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/sales/dispatch") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.dispatch*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
+                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
+                        </a>
+                    </li> -->
+                    <!-- <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/sales/dispatch") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.dispatch*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
+                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
+                        </a>
+                    </li> -->
 
                     <li class="pt-2 border-t border-gray-200"></li>
                 </ul>
