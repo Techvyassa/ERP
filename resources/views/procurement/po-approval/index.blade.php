@@ -642,7 +642,7 @@ function poApprovalData() {
                 const data = await this.apiFetch(`/api/v1/purchase-orders/${this.rejectingPO.id}/reject`, {
                     method: 'PATCH',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ remarks: this.rejectReason })
+                    body: JSON.stringify({ rejection_reason: this.rejectReason })
                 });
                 if (data.success) {
                     this.showToast('success', `PO ${this.rejectingPO.po_number} rejected`);

@@ -116,7 +116,7 @@
                                             <template x-if="!loading && materials.length === 0">
                                                 <option value="" disabled>No materials available - Add in Master Data</option>
                                             </template>
-                                            <template x-for="material in materials" :key="material.id">
+                                            <template x-for="material in getAvailableMaterials(index)" :key="material.id">
                                                 <option :value="material.id" x-text="material.material_code + ' - ' + material.material_name"></option>
                                             </template>
                                         </select>
@@ -345,6 +345,17 @@ function createPOData() {
         
         onMaterialSelect(index) {
             const item = this.form.line_items[index];
+
+            // Prevent duplicate materials
+            const isDuplicate = this.form.line_items.some((li, i) => 
+                i !== index && li.material_id && li.material_id == item.material_id
+            );
+            if (isDuplicate) {
+                alert('This material is already added. Please select a different material or update the quantity on the existing row.');
+                item.material_id = '';
+                return;
+            }
+
             const material = this.materials.find(m => m.id == item.material_id);
             console.log('Selected material:', material);
             
@@ -404,6 +415,14 @@ function createPOData() {
                 gst_tax_id: '',
                 scheduled_delivery: ''
             });
+        },
+
+        // Returns materials not already selected in other rows
+        getAvailableMaterials(index) {
+            const selectedIds = this.form.line_items
+                .filter((li, i) => i !== index && li.material_id)
+                .map(li => String(li.material_id));
+            return this.materials.filter(m => !selectedIds.includes(String(m.id)));
         },
         
         removeLineItem(index) {
