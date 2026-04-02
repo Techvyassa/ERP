@@ -208,6 +208,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
                 Route::get('/barcode', [App\Http\Controllers\WarehouseController::class, 'barcode']);
+                Route::get('/all-stock', [App\Http\Controllers\WarehouseController::class, 'allWarehouseStock']);
                 Route::get('/{id}', [App\Http\Controllers\WarehouseController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\WarehouseController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\WarehouseController::class, 'update']);
@@ -529,34 +530,38 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // Production Orders & Material Issue Requests
-        Route::prefix('production-orders')->group(function () {
-            Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
-            Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
-            Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
-            Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
-            Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);
-            Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
-            Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
+        // ── PRODUCTION Module ─────────────────────────────────────────────
+        Route::middleware(['check.module.permission:PRODUCTION'])->group(function () {
+            // Production Orders & Material Issue Requests
+            Route::prefix('production-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
+                Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
+                Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
+                Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);
+                Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
+                Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
+            });
+
+            Route::prefix('material-issue-requests')->group(function () {
+                Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
+                Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
+                Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
+                Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
+            });
+
+            Route::prefix('packing-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PackingOrderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PackingOrderController::class, 'store']);
+                Route::post('/{id}/cartons', [App\Http\Controllers\PackingOrderController::class, 'createCarton']);
+                Route::post('/{id}/cartons/{cartonId}/scan', [App\Http\Controllers\PackingOrderController::class, 'scanIntoCarton']);
+                Route::post('/{id}/cartons/{cartonId}/seal', [App\Http\Controllers\PackingOrderController::class, 'sealCarton']);
+                Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
+            });
         });
 
-        Route::prefix('material-issue-requests')->group(function () {
-            Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
-            Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
-            Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
-            Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
-            Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
-        });
-
-        Route::prefix('packing-orders')->group(function () {
-            Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
-            Route::get('/{id}', [App\Http\Controllers\PackingOrderController::class, 'show']);
-            Route::post('/', [App\Http\Controllers\PackingOrderController::class, 'store']);
-            Route::post('/{id}/cartons', [App\Http\Controllers\PackingOrderController::class, 'createCarton']);
-            Route::post('/{id}/cartons/{cartonId}/scan', [App\Http\Controllers\PackingOrderController::class, 'scanIntoCarton']);
-            Route::post('/{id}/cartons/{cartonId}/seal', [App\Http\Controllers\PackingOrderController::class, 'sealCarton']);
-            Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
-        });
 
         // ── Lookup routes for Sales Order creation (no module-permission gate) ──
         Route::get('/lookup/customers', function (\Illuminate\Http\Request $request) {

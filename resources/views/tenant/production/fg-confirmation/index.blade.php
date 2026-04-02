@@ -140,9 +140,6 @@
             </div>
         </div>
     </div>
-            </div>
-        </div>
-    </div>
 
     {{-- ── Sessions History Drawer ────────────────────────────────────── --}}
     <div x-show="drawer.show" x-cloak class="fixed inset-0 z-50 overflow-hidden" style="display:none;">
@@ -456,10 +453,6 @@
                         </tr>
                     </template>
                 </tbody>
-            </table>
-        </div>
-    </div>
-</div>
             </table>
         </div>
     </div>

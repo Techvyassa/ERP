@@ -648,6 +648,15 @@ Route::middleware(['web.jwt'])->group(function () {
                 ]);
             })->name('putaway.show');
 
+            // Stock Management Dashboard
+            Route::get('/stock-management', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.stock-management', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('stock-management');
+
             Route::get('/mir', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('tenant.warehouse.mir.index', [
@@ -766,6 +775,14 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('fg-confirmation');
+
+            Route::get('/mir', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.mir.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('mir');
         });
 
         // ====================================================================
