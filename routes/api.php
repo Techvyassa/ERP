@@ -558,6 +558,181 @@ Route::prefix('v1')->group(function () {
             Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
         });
 
+        // ── Lookup routes for Sales Order creation (no module-permission gate) ──
+        Route::get('/lookup/customers', function (\Illuminate\Http\Request $request) {
+            // Switch to tenant DB (normally done by CheckModulePermission, must do manually here)
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+
+            $customers = \App\Models\Tenant\Customer::where('is_active', true)
+                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%'.$request->search.'%'))
+                ->orderBy('customer_name')
+                ->get(['id', 'customer_name', 'customer_code', 'phone', 'email'])
+                ->map(fn($c) => ['id' => 'c_'.$c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
+
+            $users = \App\Models\Tenant\User::where('is_active', true)
+                ->when($request->filled('search'), fn($q) => $q->where(fn($q2) =>
+                    $q2->where('first_name', 'like', '%'.$request->search.'%')
+                       ->orWhere('last_name', 'like', '%'.$request->search.'%')
+                       ->orWhere('email', 'like', '%'.$request->search.'%')
+                ))
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'last_name', 'email', 'employee_code'])
+                ->map(fn($u) => ['id' => 'u_'.$u->id, 'label' => trim($u->first_name.' '.$u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
+
+            $merged = $customers->concat($users)->sortBy('label')->values();
+            return response()->json(['success' => true, 'data' => $merged]);
+        });
+
+        Route::post('/lookup/customers', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'customer_name' => 'required|string|max:200',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+            }
+            $customer = \App\Models\Tenant\Customer::create([
+                'customer_name' => $request->customer_name,
+                'customer_code' => \App\Models\Tenant\Customer::generateCode(),
+                'created_by'    => $request->input('auth_user_id'),
+            ]);
+            return response()->json(['success' => true, 'data' => $customer], 201);
+        });
+
+        Route::get('/lookup/products', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            $products = \App\Models\Tenant\Product::where('is_active', true)
+                ->when($request->filled('search'), fn($q) => $q->where(fn($q2) =>
+                    $q2->where('product_name', 'like', '%'.$request->search.'%')
+                       ->orWhere('product_code', 'like', '%'.$request->search.'%')
+                ))
+                ->orderBy('product_name')
+                ->get(['id', 'product_code', 'product_name', 'pack_size', 'pack_uom_id', 'standard_cost', 'mrp']);
+            return response()->json(['success' => true, 'data' => $products]);
+        });
+
+        Route::get('/lookup/uoms', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            return response()->json(['success' => true, 'data' => \App\Models\Tenant\UOM::where('is_active', true)->orderBy('uom_name')->get(['id', 'uom_code', 'uom_name'])]);
+        });
+
+        Route::get('/lookup/stock-bins', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            $productId = $request->input('product_id');
+            if (!$productId) {
+                return response()->json(['success' => false, 'message' => 'product_id required'], 422);
+            }
+            $bins = \DB::connection('tenant')
+                ->table('stock_balances as sb')
+                ->join('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
+                ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
+                ->where('sb.product_id', $productId)
+                ->where('sb.bucket', 'AVAILABLE')
+                ->whereRaw('(sb.qty_on_hand - sb.qty_reserved) > 0')
+                ->select(
+                    'bl.bin_code',
+                    'wm.warehouse_name',
+                    \DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available')
+                )
+                ->orderByDesc('qty_available')
+                ->get();
+            return response()->json(['success' => true, 'data' => $bins]);
+        });
+
+        // Sales Order Endpoints (Outward Flow)
+        // Status Flow: DRAFT → CONFIRMED → STOCK_CHECKED → PICKING → PACKED → DISPATCHED → DELIVERED
+        Route::middleware(['check.module.permission:SALES'])->group(function () {
+            // Customer Master (accessible to sales users)
+            Route::prefix('customers')->group(function () {
+                Route::get('/', [App\Http\Controllers\CustomerController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\CustomerController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\CustomerController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\CustomerController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\CustomerController::class, 'destroy']);
+            });
+
+            // Sales Orders
+            Route::prefix('sales-orders')->group(function () {
+                Route::get('/dashboard-stats', [App\Http\Controllers\SalesOrderController::class, 'dashboardStats']);
+                Route::get('/', [App\Http\Controllers\SalesOrderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\SalesOrderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\SalesOrderController::class, 'store']);
+                Route::patch('/{id}/confirm', [App\Http\Controllers\SalesOrderController::class, 'confirm']);
+                Route::patch('/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
+                Route::patch('/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
+                Route::post('/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
+            });
+        });
+
+        // ── SALES Module ─────────────────────────────────────────────────
+        Route::middleware(['check.module.permission:SALES'])->group(function () {
+            Route::prefix('sales')->group(function () {
+                Route::get('/dashboard-stats', [App\Http\Controllers\SalesOrderController::class, 'dashboardStats']);
+                Route::get('/orders', [App\Http\Controllers\SalesOrderController::class, 'index']);
+                Route::get('/orders/{id}', [App\Http\Controllers\SalesOrderController::class, 'show']);
+                Route::post('/orders', [App\Http\Controllers\SalesOrderController::class, 'store']);
+                Route::patch('/orders/{id}/confirm', [App\Http\Controllers\SalesOrderController::class, 'confirm']);
+                Route::patch('/orders/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
+                Route::patch('/orders/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
+                Route::post('/orders/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/orders/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
+            });
+        });
+
+        // ── CUSTOMER Module ───────────────────────────────────────────────
+        Route::middleware(['check.module.permission:CUSTOMER'])->group(function () {
+            Route::prefix('customer-mgmt')->group(function () {
+                Route::get('/', [App\Http\Controllers\CustomerController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\CustomerController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\CustomerController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\CustomerController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\CustomerController::class, 'destroy']);
+            });
+        });
+
+        // ── MAINTENANCE Module ────────────────────────────────────────────
+        Route::middleware(['check.module.permission:MAINTENANCE'])->group(function () {
+            Route::prefix('maintenance')->group(function () {
+                // Work Orders
+                Route::get('/work-orders', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Work orders endpoint — coming soon']));
+                Route::post('/work-orders', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Work order created — coming soon'], 201));
+                Route::patch('/work-orders/{id}/close', fn() => response()->json(['success' => true, 'message' => 'Work order closed — coming soon']));
+                // Assets
+                Route::get('/assets', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Assets endpoint — coming soon']));
+                Route::post('/assets', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Asset created — coming soon'], 201));
+                // PM Schedule
+                Route::get('/schedule', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'PM schedule endpoint — coming soon']));
+                // Spare Parts
+                Route::get('/spare-parts', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Spare parts endpoint — coming soon']));
+            });
+        });
+
         // Admin-only feature control endpoints (require admin authentication)
         Route::prefix('admin')->group(function () {
             Route::prefix('feature-controls')->group(function () {
