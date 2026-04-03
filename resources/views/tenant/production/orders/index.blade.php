@@ -125,7 +125,7 @@
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">Target Quantity</p>
-                                    <p class="font-bold text-gray-900" x-text="viewModal.order.target_qty + ' ' + (viewModal.order.uom || '')"></p>
+                                    <p class="font-bold text-gray-900" x-text="viewModal.order.target_qty + ' ' + (viewModal.order.bom?.output_uom?.uom_name || viewModal.order.uom?.uom_name || '')"></p>
                                 </div>
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">Planned Date</p>
@@ -179,7 +179,7 @@
                                                     <td class="px-4 py-2 text-gray-900 font-medium" x-text="line.material_name"></td>
                                                     <td class="px-4 py-2 text-gray-500 text-xs" x-text="line.material_code"></td>
                                                     <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
-                                                    <td class="px-4 py-2 text-gray-500" x-text="line.uom"></td>
+                                                    <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                                 </tr>
                                             </template>
                                         </tbody>
@@ -333,7 +333,8 @@
                             <input type="date"
                                 x-model="form.planned_date"
                                 :min="today"
-                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 transition-all font-semibold text-gray-900 shadow-inner">
+                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 transition-all font-semibold text-gray-900 shadow-inner"
+                                :value="form.planned_date">
                         </div>
                     </div>
 
@@ -365,7 +366,7 @@
                                             <td class="px-4 py-2 text-gray-900 font-medium" x-text="line.material_name"></td>
                                             <td class="px-4 py-2 text-gray-500 text-xs" x-text="line.material_code"></td>
                                             <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
-                                            <td class="px-4 py-2 text-gray-500" x-text="line.uom"></td>
+                                            <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                         </tr>
                                     </template>
                                 </tbody>
@@ -678,7 +679,7 @@
                 product_id: '',
                 bom_id: '',
                 target_qty: '',
-                planned_date: ''
+                planned_date: new Date().toISOString().split('T')[0]
             },
 
             async init() {
@@ -757,7 +758,10 @@
                         material_code: d.material?.material_code || '',
                         // effective_qty is a DB generated column (qty_required * (1 + scrap/100))
                         required_qty: (parseFloat(d.effective_qty ?? d.qty_required) * this.multiplier).toFixed(3),
-                        uom: d.uom?.uom_code || ''
+                        uom: d.uom ? {
+                            uom_code: d.uom.uom_code,
+                            uom_name: d.uom.uom_name
+                        } : (d.uom_code || '')
                     }));
                 } catch (e) {
                     console.error('RM calculation failed', e);
@@ -839,7 +843,10 @@
                             material_name: l.material?.material_name || '—',
                             material_code: l.material?.material_code || '',
                             required_qty: l.required_qty,
-                            uom: l.uom?.uom_code || ''
+                            uom: l.uom ? {
+                                uom_code: l.uom.uom_code,
+                                uom_name: l.uom.uom_name
+                            } : (l.uom_code || '')
                         }));
                     }
                 } catch (e) {

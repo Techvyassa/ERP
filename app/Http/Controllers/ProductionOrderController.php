@@ -67,7 +67,10 @@ class ProductionOrderController extends Controller
                 'product_name' => $o->product?->product_name,
                 'product_code' => $o->product?->product_code,
                 'target_qty' => $o->target_qty,
-                'uom' => $o->bom?->outputUom?->uom_code,
+                'uom' => $o->bom?->outputUom ? [
+                    'uom_code' => $o->bom->outputUom->uom_code,
+                    'uom_name' => $o->bom->outputUom->uom_name,
+                ] : null,
                 'planned_date' => $o->planned_date?->format('Y-m-d'),
                 'status' => $o->status,
                 'mir_status' => $o->mir?->status,
@@ -349,7 +352,51 @@ class ProductionOrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => ['order' => $order],
+                'data' => [
+                    'order' => [
+                        'id' => $order->id,
+                        'order_no' => $order->order_no,
+                        'product_id' => $order->product_id,
+                        'product' => $order->product ? [
+                            'product_name' => $order->product->product_name,
+                            'product_code' => $order->product->product_code,
+                        ] : null,
+                        'bom_id' => $order->bom_id,
+                        'bom' => $order->bom ? [
+                            'output_uom' => $order->bom->outputUom ? [
+                                'uom_code' => $order->bom->outputUom->uom_code,
+                                'uom_name' => $order->bom->outputUom->uom_name,
+                            ] : null
+                        ] : null,
+                        'target_qty' => $order->target_qty,
+                        'planned_date' => $order->planned_date?->format('Y-m-d'),
+                        'status' => $order->status,
+                        'mir_status' => $order->mir?->status,
+                        'mir_id' => $order->mir?->id,
+                        'mir' => $order->mir ? [
+                            'id' => $order->mir->id,
+                            'status' => $order->mir->status,
+                            'lines' => $order->mir->lines->map(fn($l) => [
+                                'material_id' => $l->material_id,
+                                'material' => $l->material ? [
+                                    'material_name' => $l->material->material_name,
+                                    'material_code' => $l->material->material_code,
+                                ] : null,
+                                'required_qty' => $l->required_qty,
+                                'uom' => $l->uom ? [
+                                    'uom_code' => $l->uom->uom_code,
+                                    'uom_name' => $l->uom->uom_name,
+                                ] : null,
+                            ])->toArray()
+                        ] : null,
+                        'actual_qty' => $order->actual_qty ?? 0,
+                        'rejected_qty' => $order->rejected_qty ?? 0,
+                        'yield_percent' => $order->yield_percent ?? 0,
+                        'fg_batch_number' => $order->fg_batch_number,
+                        'actual_start_at' => $order->actual_start_at?->format('Y-m-d H:i'),
+                        'actual_end_at' => $order->actual_end_at?->format('Y-m-d H:i'),
+                    ]
+                ],
                 'message' => 'Production order retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
