@@ -89,7 +89,7 @@
                             <span x-show="sidebarOpen" class="font-medium">Vendor Quotation Comparison</span>
                         </a>
                     </li>
-
+   
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/procurement/purchase-orders") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">

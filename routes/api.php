@@ -301,6 +301,15 @@ Route::prefix('v1')->group(function () {
                 // Send to vendor
                 Route::post('/{id}/send-to-vendor', [App\Http\Controllers\PurchaseRequisitionController::class, 'sendToVendor']);
             });
+
+            // Quotation Comparison Endpoints
+            Route::prefix('quotation-comparison')->group(function () {
+                Route::get('/', [App\Http\Controllers\QuotationComparisonController::class, 'index']);
+                Route::get('/vendors', [App\Http\Controllers\QuotationComparisonController::class, 'getVendors']);
+                Route::get('/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'show']);
+                Route::post('/upload', [App\Http\Controllers\QuotationComparisonController::class, 'upload']);
+                Route::post('/select', [App\Http\Controllers\QuotationComparisonController::class, 'selectQuotation']);
+            });
         });
 
         Route::middleware(['check.module.permission:STORE'])->group(function () {

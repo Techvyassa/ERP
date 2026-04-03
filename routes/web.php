@@ -588,6 +588,23 @@ Route::middleware(['web.jwt'])->group(function () {
                     'tenantType' => $tenantType
                 ]);
             })->name('pr-approval');
+
+            Route::get('/quotation-comparison', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.quotation-comparison.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('quotation-comparison');
+
+            Route::get('/quotation-comparison/{prNumber}', function ($orgSlug, $prNumber) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('procurement.quotation-comparison.compare', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'prNumber' => $prNumber
+                ]);
+            })->name('quotation-comparison.compare');
         });
 
         // Security Department Portal
