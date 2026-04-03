@@ -55,22 +55,22 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Version</label>
-                            <p class="text-lg font-semibold text-gray-900" x-text="'v' + bom.version"></p>
+                            <p class="text-lg font-semibold text-gray-900" x-text="bom.version ? 'v' + bom.version : '-'"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Batch Size</label>
                             <p class="text-lg font-semibold text-gray-900">
-                                <span x-text="bom.batch_size"></span>
+                                <span x-text="bom.batch_size ? Number(bom.batch_size).toFixed(3) : '0.000'"></span>
                                 <span x-text="bom.output_uom && bom.output_uom.uom_code ? ' ' + bom.output_uom.uom_code : ''"></span>
                             </p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Effective From</label>
-                            <p class="text-lg font-semibold text-gray-900" x-text="bom.effective_from || '-'"></p>
+                            <p class="text-lg font-semibold text-gray-900" x-text="formatDate(bom.effective_from)"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Effective To</label>
-                            <p class="text-lg font-semibold text-gray-900" x-text="bom.effective_to || 'Currently Active'"></p>
+                            <p class="text-lg font-semibold text-gray-900" x-text="bom.effective_to ? formatDate(bom.effective_to) : 'Currently Active'"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Status</label>
@@ -227,6 +227,24 @@ function bomView() {
             } finally {
                 this.loading = false;
             }
+        },
+        formatDate(val) {
+            if (!val) return '-';
+            try {
+                // Handle ISO strings or YYYY-MM-DD
+                const date = new Date(val);
+                if (isNaN(date.getTime())) return val;
+                return date.toLocaleDateString('en-GB', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+            } catch (e) {
+                return val;
+            }
+        },
+        async init() {
+            await this.loadData();
         }
     }
 }

@@ -288,19 +288,19 @@ Route::prefix('v1')->group(function () {
             // Purchase Requisition Endpoints
             Route::prefix('purchase-requisitions')->group(function () {
                 // Master data lookups for PR form
-                Route::get('/master/materials',  [App\Http\Controllers\PurchaseRequisitionController::class, 'getMaterials']);
-                Route::get('/master/uoms',        [App\Http\Controllers\PurchaseRequisitionController::class, 'getUoms']);
-                Route::get('/master/warehouses',  [App\Http\Controllers\PurchaseRequisitionController::class, 'getWarehouses']);
-                Route::get('/master/users',       [App\Http\Controllers\PurchaseRequisitionController::class, 'getUsers']);
+                Route::get('/master/materials', [App\Http\Controllers\PurchaseRequisitionController::class, 'getMaterials']);
+                Route::get('/master/uoms', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUoms']);
+                Route::get('/master/warehouses', [App\Http\Controllers\PurchaseRequisitionController::class, 'getWarehouses']);
+                Route::get('/master/users', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUsers']);
                 // CRUD
-                Route::get('/',      [App\Http\Controllers\PurchaseRequisitionController::class, 'index']);
-                Route::post('/',     [App\Http\Controllers\PurchaseRequisitionController::class, 'store']);
-                Route::get('/{id}',  [App\Http\Controllers\PurchaseRequisitionController::class, 'show']);
-                Route::put('/{id}',  [App\Http\Controllers\PurchaseRequisitionController::class, 'update']);
+                Route::get('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'store']);
+                Route::get('/{id}', [App\Http\Controllers\PurchaseRequisitionController::class, 'show']);
+                Route::put('/{id}', [App\Http\Controllers\PurchaseRequisitionController::class, 'update']);
                 // Status transitions
-                Route::patch('/{id}/submit',  [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
+                Route::patch('/{id}/submit', [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
                 Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseRequisitionController::class, 'approve']);
-                Route::patch('/{id}/reject',  [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
+                Route::patch('/{id}/reject', [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
             });
         });
 
@@ -577,20 +577,21 @@ Route::prefix('v1')->group(function () {
             }
 
             $customers = \App\Models\Tenant\Customer::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%'.$request->search.'%'))
+                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%' . $request->search . '%'))
                 ->orderBy('customer_name')
                 ->get(['id', 'customer_name', 'customer_code', 'phone', 'email'])
-                ->map(fn($c) => ['id' => 'c_'.$c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
+                ->map(fn($c) => ['id' => 'c_' . $c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
 
             $users = \App\Models\Tenant\User::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(fn($q2) =>
-                    $q2->where('first_name', 'like', '%'.$request->search.'%')
-                       ->orWhere('last_name', 'like', '%'.$request->search.'%')
-                       ->orWhere('email', 'like', '%'.$request->search.'%')
+                ->when($request->filled('search'), fn($q) => $q->where(
+                    fn($q2) =>
+                    $q2->where('first_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('last_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('email', 'like', '%' . $request->search . '%')
                 ))
                 ->orderBy('first_name')
                 ->get(['id', 'first_name', 'last_name', 'email', 'employee_code'])
-                ->map(fn($u) => ['id' => 'u_'.$u->id, 'label' => trim($u->first_name.' '.$u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
+                ->map(fn($u) => ['id' => 'u_' . $u->id, 'label' => trim($u->first_name . ' ' . $u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
 
             $merged = $customers->concat($users)->sortBy('label')->values();
             return response()->json(['success' => true, 'data' => $merged]);
@@ -612,7 +613,7 @@ Route::prefix('v1')->group(function () {
             $customer = \App\Models\Tenant\Customer::create([
                 'customer_name' => $request->customer_name,
                 'customer_code' => \App\Models\Tenant\Customer::generateCode(),
-                'created_by'    => $request->input('auth_user_id'),
+                'created_by' => $request->input('auth_user_id'),
             ]);
             return response()->json(['success' => true, 'data' => $customer], 201);
         });
@@ -625,9 +626,10 @@ Route::prefix('v1')->group(function () {
                 \DB::reconnect('tenant');
             }
             $products = \App\Models\Tenant\Product::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(fn($q2) =>
-                    $q2->where('product_name', 'like', '%'.$request->search.'%')
-                       ->orWhere('product_code', 'like', '%'.$request->search.'%')
+                ->when($request->filled('search'), fn($q) => $q->where(
+                    fn($q2) =>
+                    $q2->where('product_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('product_code', 'like', '%' . $request->search . '%')
                 ))
                 ->orderBy('product_name')
                 ->get(['id', 'product_code', 'product_name', 'pack_size', 'pack_uom_id', 'standard_cost', 'mrp']);

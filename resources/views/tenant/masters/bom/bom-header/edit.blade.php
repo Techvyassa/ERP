@@ -64,38 +64,28 @@
             <div class="mb-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">BOM Header Information</h3>
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- BOM Code (Read-only) -->
-                    <div class="md:col-span-2">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <!-- BOM Code (Immutable) -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100 md:col-span-2">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                             BOM Code
                         </label>
-                        <input type="text"
-                            x-model="form.bom_code"
-                            readonly
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
-                        <p class="text-xs text-gray-500 mt-1">BOM code cannot be changed</p>
+                        <p class="text-lg font-bold text-gray-900" x-text="form.bom_code || '-'"></p>
                     </div>
 
-                    <!-- Product (Read-only) -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <!-- Product (Immutable) -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Product
                         </label>
-                        <select disabled
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
-                            <option x-text="form.product_name || 'Loading...'"></option>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">Product cannot be changed</p>
+                        <p class="text-sm font-semibold text-gray-900" x-text="form.product_name || 'Loading...'"></p>
                     </div>
 
-                    <!-- Version (Read-only) -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
+                    <!-- Version (Immutable) -->
+                    <div class="bg-gray-50 p-4 rounded-lg border border-gray-100">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">
                             Version
                         </label>
-                        <input type="number" x-model="form.version" readonly
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
-                        <p class="text-xs text-gray-500 mt-1">Version cannot be changed</p>
+                        <p class="text-lg font-bold text-gray-900" x-text="form.version ? 'v' + form.version : '-'"></p>
                     </div>
 
                     <!-- Effective From -->
@@ -123,8 +113,11 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Batch Size <span class="text-red-500">*</span>
                         </label>
-                        <input type="number" x-model="form.batch_size" required min="0.001" step="0.001"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <div class="relative">
+                            <input type="number" x-model="form.batch_size" required min="0.001" step="0.001"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent mr-2">
+                            <span class="absolute right-3 top-2 text-gray-500 font-medium" x-text="form.output_uom_code"></span>
+                        </div>
                         <p class="text-xs text-gray-500 mt-1">Output quantity per batch</p>
                     </div>
 
@@ -367,6 +360,7 @@
                 effective_to: '',
                 batch_size: 100,
                 output_uom_id: '',
+                output_uom_code: '',
                 bom_status: 'DRAFT',
                 remarks: '',
                 items: []
@@ -484,6 +478,7 @@
                                 effective_to: toDateInput(bom.effective_to),
                                 batch_size: parseFloat(bom.batch_size) || 100,
                                 output_uom_id: bom.output_uom_id ? Number(bom.output_uom_id) : '',
+                                output_uom_code: bom.output_uom ? bom.output_uom.uom_code : '',
                                 bom_status: bom.bom_status || 'DRAFT',
                                 remarks: bom.remarks || '',
                                 items: (bom.bom_details && bom.bom_details.length > 0) ?

@@ -11,16 +11,16 @@
 <div x-data="bomForm()" x-init="loadDropdowns()">
     <div class="max-w-4xl mx-auto relative">
         <!-- Notification Toast -->
-        <div x-show="notification.show" 
-             x-transition:enter="transition ease-out duration-300"
-             x-transition:enter-start="opacity-0 transform -translate-y-2"
-             x-transition:enter-end="opacity-100 transform translate-y-0"
-             x-transition:leave="transition ease-in duration-200"
-             x-transition:leave-start="opacity-100 transform translate-y-0"
-             x-transition:leave-end="opacity-0 transform -translate-y-2"
-             class="fixed top-5 right-5 z-50 max-w-sm w-full bg-white rounded-xl shadow-2xl border-l-4 p-4 pointer-events-auto"
-             :class="notification.type === 'success' ? 'border-green-500' : 'border-red-500'"
-             style="display: none;">
+        <div x-show="notification.show"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 transform -translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform -translate-y-2"
+            class="fixed top-5 right-5 z-50 max-w-sm w-full bg-white rounded-xl shadow-2xl border-l-4 p-4 pointer-events-auto"
+            :class="notification.type === 'success' ? 'border-green-500' : 'border-red-500'"
+            style="display: none;">
             <div class="flex items-center">
                 <div class="flex-shrink-0">
                     <template x-if="notification.type === 'success'">
@@ -368,7 +368,9 @@
                 this.notification.message = message;
                 this.notification.type = type;
                 this.notification.show = true;
-                setTimeout(() => { this.notification.show = false; }, 4000);
+                setTimeout(() => {
+                    this.notification.show = false;
+                }, 4000);
             },
             products: [],
             uoms: [],
@@ -433,6 +435,16 @@
                     is_critical: false,
                     remarks: ''
                 });
+            },
+
+            get outputUomCode() {
+                const uom = this.uoms.find(u => u.id == this.form.output_uom_id);
+                return uom ? uom.uom_code : '';
+            },
+
+            get outputUomCode() {
+                const uom = this.uoms.find(u => u.id == this.form.output_uom_id);
+                return uom ? uom.uom_code : '';
             },
 
             filteredMaterials(currentIndex) {
