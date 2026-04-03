@@ -4,7 +4,53 @@
 @section('page-title', 'Spare Parts')
 
 @section('content')
-<div x-data="{ showForm: false, issueModal: null, issueQty: 1, issueWo: '', receiveModal: null, receiveQty: 1 }">
+<script>
+document.addEventListener('alpine:init', () => {
+    Alpine.data('sparePartsPage', () => ({
+        showForm: false,
+        issueModal: null, issueQty: 1, issueWo: '',
+        receiveModal: null, receiveQty: 1,
+        orderModal: null, orderModalName: '', orderModalUnit: 'Nos', orderQty: 1, orderVendor: '', orderDate: '',
+        orderLoading: false,
+        toast: null,
+        parts: @json(array_values($parts)),
+
+        async submitOrder() {
+            if (!this.orderModal) return;
+            this.orderLoading = true;
+            const body = new FormData();
+            body.append('part_code', this.orderModal);
+            body.append('qty', this.orderQty);
+            body.append('vendor', this.orderVendor);
+            body.append('expected_date', this.orderDate);
+            body.append('_token', document.querySelector('meta[name=csrf-token]').content);
+            try {
+                const res = await fetch('{{ route('tenant.maintenance.procurement.store', $organization->org_slug) }}', {
+                    method: 'POST', body,
+                    headers: { 'X-Requested-With': 'XMLHttpRequest' }
+                });
+                const data = await res.json();
+                if (data.ok) {
+                    const idx = this.parts.findIndex(p => p.code === data.part_code);
+                    if (idx !== -1) {
+                        this.parts[idx].po_no     = data.po_no;
+                        this.parts[idx].po_status = 'Pending';
+                    }
+                    this.toast = 'Procurement order ' + data.po_no + ' raised successfully.';
+                    this.orderModal = null;
+                } else {
+                    this.toast = 'Failed to raise order.';
+                }
+            } catch(e) {
+                this.toast = 'Network error. Please try again.';
+            }
+            this.orderLoading = false;
+            setTimeout(() => this.toast = null, 4000);
+        }
+    }));
+});
+</script>
+<div x-data="sparePartsPage()">
 
     @if(session('success'))
         <div class="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg flex items-center gap-2">
@@ -12,6 +58,13 @@
             {{ session('success') }}
         </div>
     @endif
+
+    <!-- Alpine toast -->
+    <div x-show="toast" x-cloak x-transition
+         class="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg flex items-center gap-2">
+        <span class="material-symbols-outlined text-base">check_circle</span>
+        <span x-text="toast"></span>
+    </div>
 
     <div class="flex items-center justify-between mb-6">
         <div>
@@ -81,34 +134,39 @@
         </form>
     </div>
 
-    <!-- Low Stock Alert -->
+    <!-- Low Stock Alert with quick Order buttons -->
     @php $lowStock = array_values(array_filter($parts, fn($p) => isset($p['reorder_level']) && $p['reorder_level'] !== null && $p['stock'] <= $p['reorder_level'])); @endphp
     @if(count($lowStock) > 0)
     <div class="bg-red-50 border border-red-200 rounded-xl p-4 mb-6">
-        <p class="text-sm font-semibold text-red-800 mb-2 flex items-center gap-2">
+        <p class="text-sm font-semibold text-red-800 mb-3 flex items-center gap-2">
             <span class="material-symbols-outlined text-base">warning</span>
-            {{ count($lowStock) }} part(s) at or below reorder level — raise a procurement request
+            {{ count($lowStock) }} part(s) at or below reorder level — order now
         </p>
         <div class="flex flex-wrap gap-2">
             @foreach($lowStock as $p)
-                <span class="bg-white border border-red-300 text-red-700 text-xs font-semibold px-3 py-1 rounded-full">
-                    {{ $p['name'] }} — {{ $p['stock'] }} {{ $p['unit'] ?? '' }} left
+                @if(empty($p['po_no']))
+                <button
+                    @click="orderModal = '{{ $p['code'] }}'; orderModalName = @js($p['name']); orderModalUnit = '{{ $p['unit'] ?? 'Nos' }}'; orderQty = {{ max(1, ($p['reorder_level'] ?? 1) - $p['stock'] + 1) }}; orderVendor = ''; orderDate = ''"
+                    class="flex items-center gap-1.5 bg-white border border-red-300 hover:bg-red-100 text-red-700 text-xs font-semibold px-3 py-1.5 rounded-full transition-colors">
+                    <span class="material-symbols-outlined text-sm">shopping_cart</span>
+                    Order {{ $p['name'] }} ({{ $p['stock'] }} left)
+                </button>
+                @else
+                <span class="flex items-center gap-1.5 bg-white border border-blue-300 text-blue-700 text-xs font-semibold px-3 py-1.5 rounded-full">
+                    <span class="material-symbols-outlined text-sm">local_shipping</span>
+                    {{ $p['name'] }} — PO {{ $p['po_status'] }} ({{ $p['po_no'] }})
                 </span>
+                @endif
             @endforeach
         </div>
-        <a href="{{ route('tenant.maintenance.material-requests', $organization->org_slug) }}"
-            class="inline-flex items-center gap-1 mt-3 text-xs font-semibold text-red-700 underline">
-            <span class="material-symbols-outlined text-sm">open_in_new</span>
-            Go to Material Requests to raise procurement
-        </a>
     </div>
     @endif
 
-    <!-- Pending Material Requests from WOs -->
+    <!-- Pending Material Requests -->
     @php $pendingMR = array_values(array_filter($matReqs, fn($m) => $m['status'] === 'Pending Issue')); @endphp
     @if(count($pendingMR) > 0)
     <div class="bg-amber-50 border border-amber-200 rounded-xl p-4 mb-6">
-        <p class="text-sm font-semibold text-amber-800 mb-2 flex items-center gap-2">
+        <p class="text-sm font-semibold text-amber-800 mb-1 flex items-center gap-2">
             <span class="material-symbols-outlined text-base">pending_actions</span>
             {{ count($pendingMR) }} material request(s) pending issue from stock
         </p>
@@ -134,47 +192,75 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($parts as $part)
-                        @php $isLow = isset($part['reorder_level']) && $part['reorder_level'] !== null && $part['stock'] <= $part['reorder_level']; @endphp
-                        <tr class="border-b last:border-b-0 hover:bg-gray-50 {{ $isLow ? 'bg-red-50' : '' }}">
-                            <td class="py-3 px-4 font-semibold text-purple-600">{{ $part['code'] }}</td>
-                            <td class="py-3 px-4 font-medium text-gray-900">{{ $part['name'] }}</td>
-                            <td class="py-3 px-4 text-gray-600">{{ $part['asset'] ?: '-' }}</td>
-                            <td class="py-3 px-4 font-semibold {{ $isLow ? 'text-red-600' : 'text-gray-900' }}">{{ $part['stock'] }}</td>
-                            <td class="py-3 px-4 text-gray-600">{{ $part['reorder_level'] ?? '-' }}</td>
-                            <td class="py-3 px-4 text-gray-600">{{ $part['unit'] ?? 'Nos' }}</td>
-                            <td class="py-3 px-4">
-                                @if($part['stock'] == 0)
-                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">Out of Stock</span>
-                                @elseif($isLow)
-                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-orange-100 text-orange-700">Low Stock</span>
-                                @else
-                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700">In Stock</span>
-                                @endif
-                            </td>
-                            <td class="py-3 px-4">
-                                <div class="flex gap-2">
-                                    @if($part['stock'] > 0)
-                                        <button @click="issueModal = '{{ $part['code'] }}'; issueQty = 1; issueWo = ''"
-                                            class="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors">
-                                            <span class="material-symbols-outlined text-sm">output</span> Issue
-                                        </button>
-                                    @endif
-                                    <button @click="receiveModal = '{{ $part['code'] }}'; receiveQty = 1"
-                                        class="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors">
-                                        <span class="material-symbols-outlined text-sm">input</span> Receive
-                                    </button>
-                                </div>
-                            </td>
-                        </tr>
-                    @empty
+                    <template x-if="parts.length === 0">
                         <tr>
                             <td class="py-12 text-center text-gray-400" colspan="8">
                                 <span class="material-symbols-outlined text-4xl block mb-2">settings</span>
                                 No spare parts added yet. Click "Add Part" to build your inventory.
                             </td>
                         </tr>
-                    @endforelse
+                    </template>
+                    <template x-for="part in parts" :key="part.code">
+                        <tr class="border-b last:border-b-0 hover:bg-gray-50"
+                            :class="(part.reorder_level !== null && part.stock <= part.reorder_level && !part.po_no) ? 'bg-red-50/30' : ''">
+                            <td class="py-3 px-4 font-semibold text-purple-600" x-text="part.code"></td>
+                            <td class="py-3 px-4 font-medium text-gray-900" x-text="part.name"></td>
+                            <td class="py-3 px-4 text-gray-600" x-text="part.asset || '-'"></td>
+                            <td class="py-3 px-4 font-bold"
+                                :class="part.stock == 0 ? 'text-red-600' : (part.reorder_level !== null && part.stock <= part.reorder_level ? 'text-orange-600' : 'text-gray-900')"
+                                x-text="part.stock"></td>
+                            <td class="py-3 px-4 text-gray-600" x-text="part.reorder_level ?? '-'"></td>
+                            <td class="py-3 px-4 text-gray-600" x-text="part.unit || 'Nos'"></td>
+                            <td class="py-3 px-4">
+                                <template x-if="part.po_no">
+                                    <div>
+                                        <span class="px-2 py-0.5 rounded text-xs font-semibold bg-blue-100 text-blue-700 inline-flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-xs">local_shipping</span>
+                                            PO <span x-text="part.po_status"></span>
+                                        </span>
+                                        <p class="text-xs text-blue-500 mt-0.5 font-medium" x-text="part.po_no"></p>
+                                    </div>
+                                </template>
+                                <template x-if="!part.po_no && part.stock == 0">
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-red-100 text-red-700">Out of Stock</span>
+                                </template>
+                                <template x-if="!part.po_no && part.stock > 0 && part.reorder_level !== null && part.stock <= part.reorder_level">
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-orange-100 text-orange-700">Low Stock</span>
+                                </template>
+                                <template x-if="!part.po_no && part.stock > 0 && (part.reorder_level === null || part.stock > part.reorder_level)">
+                                    <span class="px-2 py-0.5 rounded text-xs font-semibold bg-green-100 text-green-700">In Stock</span>
+                                </template>
+                            </td>
+                            <td class="py-3 px-4">
+                                <div class="flex gap-1.5 flex-wrap">
+                                    <template x-if="part.stock > 0">
+                                        <button x-on:click="issueModal = part.code; issueQty = 1; issueWo = ''"
+                                            class="flex items-center gap-1 bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors">
+                                            <span class="material-symbols-outlined text-sm">output</span> Issue
+                                        </button>
+                                    </template>
+                                    <button x-on:click="receiveModal = part.code; receiveQty = 1"
+                                        class="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors">
+                                        <span class="material-symbols-outlined text-sm">input</span> Receive
+                                    </button>
+                                    <template x-if="part.reorder_level !== null && part.stock <= part.reorder_level && !part.po_no">
+                                        <button
+                                            x-on:click="orderModal = part.code; orderModalName = part.name; orderModalUnit = part.unit || 'Nos'; orderQty = Math.max(1, (part.reorder_level || 1) - part.stock + 1); orderVendor = ''; orderDate = ''"
+                                            class="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors">
+                                            <span class="material-symbols-outlined text-sm">shopping_cart</span> Order
+                                        </button>
+                                    </template>
+                                    <template x-if="part.po_no">
+                                        <button
+                                            x-on:click="$dispatch('open-po-panel', { code: part.code })"
+                                            class="flex items-center gap-1 border border-blue-300 text-blue-600 hover:bg-blue-50 text-xs font-semibold px-2 py-1.5 rounded-lg transition-colors">
+                                            <span class="material-symbols-outlined text-sm">local_shipping</span> View PO
+                                        </button>
+                                    </template>
+                                </div>
+                            </td>
+                        </tr>
+                    </template>
                 </tbody>
             </table>
         </div>
@@ -236,5 +322,46 @@
             </form>
         </div>
     </div>
+
+    <!-- Quick Order (Procurement) Modal -->
+    <div x-show="orderModal !== null" x-cloak class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4" x-on:click.self="orderModal = null">
+        <div class="bg-white rounded-xl shadow-xl w-full max-w-sm p-6" x-on:click.stop>
+            <div class="flex items-center gap-3 mb-1">
+                <div class="bg-red-100 p-2 rounded-lg"><span class="material-symbols-outlined text-red-600 text-xl">shopping_cart</span></div>
+                <div>
+                    <h3 class="font-semibold text-gray-900">Raise Procurement Order</h3>
+                    <p class="text-sm text-gray-500" x-text="orderModalName + ' (' + orderModal + ')'"></p>
+                </div>
+            </div>
+            <div class="space-y-3 my-4">
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity to Order <span class="text-red-500">*</span></label>
+                    <input type="number" x-model="orderQty" required min="1"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-200 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Vendor / Supplier</label>
+                    <input type="text" x-model="orderVendor" placeholder="e.g. ABC Supplies (optional)"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-200 outline-none">
+                </div>
+                <div>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Expected Delivery</label>
+                    <input type="date" x-model="orderDate"
+                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-red-200 outline-none">
+                </div>
+            </div>
+            <div class="flex gap-3">
+                <button x-on:click="submitOrder()" :disabled="orderLoading"
+                    class="flex-1 bg-red-500 hover:bg-red-600 disabled:opacity-60 text-white font-semibold py-2 rounded-lg text-sm transition-colors flex items-center justify-center gap-2">
+                    <span x-show="orderLoading" class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                    <span x-text="orderLoading ? 'Raising...' : 'Raise Order'"></span>
+                </button>
+                <button type="button" x-on:click="orderModal = null" class="flex-1 border border-gray-300 text-gray-700 font-semibold py-2 rounded-lg text-sm hover:bg-gray-50 transition-colors">Cancel</button>
+            </div>
+        </div>
+    </div>
 </div>
+
+@include('tenant.maintenance.partials.procurement-panel')
+
 @endsection

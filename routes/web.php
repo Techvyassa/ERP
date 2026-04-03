@@ -814,18 +814,165 @@ Route::middleware(['web.jwt'])->group(function () {
             // ---- DASHBOARD ----
             Route::get('/dashboard', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $today      = date('Y-m-d');
-                $workOrders = DB::connection('tenant')->table('maint_work_orders')->get();
-                $assets     = DB::connection('tenant')->table('maint_assets')->get();
-                $schedules  = DB::connection('tenant')->table('maint_pm_schedules')->get();
+                $today = date('Y-m-d');
+
+                $workOrders  = DB::connection('tenant')->table('maint_work_orders')->get();
+                $assets      = DB::connection('tenant')->table('maint_assets')->get();
+                $schedules   = DB::connection('tenant')->table('maint_pm_schedules')->get();
+                $requests    = DB::connection('tenant')->table('maint_requests')->get();
+                $parts       = DB::connection('tenant')->table('maint_spare_parts')->get();
+                $matReqs     = DB::connection('tenant')->table('maint_material_requests')->get();
+                $procOrders  = DB::connection('tenant')->table('maint_procurement_orders')->get();
+
+                // Work order breakdown
+                $woByStatus = $workOrders->groupBy('status')->map->count();
+
+                // Recent work orders (last 5)
+                $recentWOs = DB::connection('tenant')->table('maint_work_orders')
+                    ->orderByDesc('id')->limit(5)->get()
+                    ->map(fn($w) => [
+                        'wo_no'      => $w->wo_no,
+                        'asset'      => $w->asset_name,
+                        'technician' => $w->technician,
+                        'status'     => $w->status,
+                        'due_date'   => $w->due_date,
+                        'priority'   => $w->priority,
+                    ])->all();
+
+                // Overdue PM schedules
+                $overduePM = $schedules->filter(fn($pm) => $pm->next_due && $pm->next_due < $today && $pm->status !== 'Done')->count();
+
+                // Low stock parts
+                $lowStockParts = $parts->filter(fn($p) => $p->reorder_level !== null && $p->stock <= $p->reorder_level)
+                    ->map(fn($p) => ['name' => $p->name, 'code' => $p->code, 'stock' => $p->stock, 'reorder_level' => $p->reorder_level, 'unit' => $p->unit])
+                    ->values()->all();
+
+                // Pending procurement
+                $pendingProcurement = $procOrders->filter(fn($o) => in_array($o->status, ['Pending', 'Ordered']))->count();
+
                 $stats = [
-                    'openWorkOrders' => $workOrders->filter(fn($w) => in_array($w->status, ['Assigned', 'In Progress'], true))->count(),
-                    'overdueOrders'  => $workOrders->filter(fn($w) => $w->due_date && $w->due_date < $today && $w->status !== 'Closed')->count(),
-                    'totalAssets'    => $assets->count(),
-                    'scheduledPM'    => $schedules->filter(fn($pm) => $pm->next_due && $pm->next_due >= $today && $pm->next_due <= date('Y-m-d', strtotime('+7 days')) && $pm->status !== 'Done')->count(),
+                    // Work orders
+                    'openWorkOrders'    => $workOrders->filter(fn($w) => in_array($w->status, ['Assigned', 'In Progress']))->count(),
+                    'overdueOrders'     => $workOrders->filter(fn($w) => $w->due_date && $w->due_date < $today && $w->status !== 'Closed')->count(),
+                    'completedOrders'   => $workOrders->where('status', 'Completed')->count(),
+                    'closedOrders'      => $workOrders->where('status', 'Closed')->count(),
+                    // Assets
+                    'totalAssets'       => $assets->count(),
+                    'activeAssets'      => $assets->where('status', 'Active')->count(),
+                    'underMaintenance'  => $assets->where('status', 'Under Maintenance')->count(),
+                    // PM
+                    'scheduledPM'       => $schedules->filter(fn($pm) => $pm->next_due && $pm->next_due >= $today && $pm->next_due <= date('Y-m-d', strtotime('+7 days')) && $pm->status !== 'Done')->count(),
+                    'overduePM'         => $overduePM,
+                    'donePM'            => $schedules->where('status', 'Done')->count(),
+                    // Requests
+                    'pendingRequests'   => $requests->where('status', 'Pending Approval')->count(),
+                    'approvedRequests'  => $requests->where('status', 'Approved')->count(),
+                    // Material
+                    'procurementNeeded' => $matReqs->where('status', 'Procurement Required')->count(),
+                    'pendingIssue'      => $matReqs->where('status', 'Pending Issue')->count(),
+                    // Procurement
+                    'pendingProcurement'=> $pendingProcurement,
+                    // Spare parts
+                    'lowStockCount'     => count($lowStockParts),
+                    'totalParts'        => $parts->count(),
                 ];
-                return view('tenant.maintenance.dashboard', compact('org', 'tenantType', 'stats') + ['organization' => $org]);
+
+                return view('tenant.maintenance.dashboard', compact('org', 'tenantType', 'stats', 'recentWOs', 'lowStockParts', 'woByStatus') + ['organization' => $org]);
             })->name('dashboard');
+
+            // ---- DASHBOARD JSON ENDPOINTS ----
+            Route::get('/dashboard/work-orders-json', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $today = date('Y-m-d');
+                $rows = DB::connection('tenant')->table('maint_work_orders')->orderByDesc('id')->get()->map(fn($w) => [
+                    'wo_no'      => $w->wo_no,
+                    'asset'      => $w->asset_name,
+                    'technician' => $w->technician,
+                    'status'     => $w->status,
+                    'priority'   => $w->priority,
+                    'due_date'   => $w->due_date,
+                    'overdue'    => $w->due_date && $w->due_date < $today && $w->status !== 'Closed',
+                ])->all();
+                return response()->json($rows);
+            })->name('dashboard.work-orders-json');
+
+            Route::get('/dashboard/assets-json', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $rows = DB::connection('tenant')->table('maint_assets')->orderBy('name')->get()->map(fn($a) => [
+                    'code'     => $a->code,
+                    'name'     => $a->name,
+                    'category' => $a->category,
+                    'location' => $a->location,
+                    'status'   => $a->status,
+                    'model'    => $a->model,
+                ])->all();
+                return response()->json($rows);
+            })->name('dashboard.assets-json');
+
+            Route::get('/dashboard/pm-json', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $today = date('Y-m-d');
+                $rows = DB::connection('tenant')->table('maint_pm_schedules')->orderBy('next_due')->get()->map(fn($p) => [
+                    'pm_no'       => $p->pm_no,
+                    'asset'       => $p->asset_name,
+                    'task'        => $p->task,
+                    'frequency'   => $p->frequency,
+                    'assigned_to' => $p->assigned_to,
+                    'next_due'    => $p->next_due,
+                    'status'      => $p->status,
+                    'overdue'     => $p->next_due && $p->next_due < $today && $p->status !== 'Done',
+                ])->all();
+                return response()->json($rows);
+            })->name('dashboard.pm-json');
+
+            Route::get('/dashboard/low-stock-json', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $rows = DB::connection('tenant')->table('maint_spare_parts')
+                    ->whereNotNull('reorder_level')
+                    ->whereRaw('stock <= reorder_level')
+                    ->orderBy('stock')->get()->map(fn($p) => [
+                        'code'          => $p->code,
+                        'name'          => $p->name,
+                        'stock'         => $p->stock,
+                        'reorder_level' => $p->reorder_level,
+                        'unit'          => $p->unit,
+                        'asset'         => $p->compatible_asset,
+                    ])->all();
+                return response()->json($rows);
+            })->name('dashboard.low-stock-json');
+
+            Route::get('/dashboard/material-requests-json', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $rows = DB::connection('tenant')->table('maint_material_requests')
+                    ->whereIn('status', ['Procurement Required', 'Pending Issue'])
+                    ->orderByDesc('id')->get()->map(fn($m) => [
+                        'id'        => $m->mmr_no,
+                        'wo_no'     => $m->wo_no,
+                        'part_name' => $m->part_name,
+                        'part_code' => $m->part_code,
+                        'qty'       => $m->qty,
+                        'unit'      => $m->unit,
+                        'status'    => $m->status,
+                        'raised_on' => $m->raised_on,
+                    ])->all();
+                return response()->json($rows);
+            })->name('dashboard.material-requests-json');
+
+            Route::get('/dashboard/requests-json', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $rows = DB::connection('tenant')->table('maint_requests')
+                    ->whereIn('status', ['Pending Approval', 'Approved'])
+                    ->orderByDesc('id')->get()->map(fn($r) => [
+                        'id'       => $r->request_no,
+                        'asset'    => $r->asset_name,
+                        'issue'    => $r->issue,
+                        'priority' => $r->priority,
+                        'status'   => $r->status,
+                        'raised_by'=> $r->raised_by,
+                        'date'     => $r->created_at ? date('Y-m-d', strtotime($r->created_at)) : null,
+                    ])->all();
+                return response()->json($rows);
+            })->name('dashboard.requests-json');
 
             // ---- REQUESTS ----
             Route::get('/requests', function ($orgSlug) use ($getOrg, $sessionKey) {
@@ -1035,6 +1182,7 @@ Route::middleware(['web.jwt'])->group(function () {
                     'status' => $m->status,
                     'raised_on' => $m->raised_on,
                     'issued_on' => $m->issued_on,
+                    'po_no' => $m->po_no ?? null,
                 ])->all();
                 return view('tenant.maintenance.material-requests.index',
                     compact('workOrders', 'parts', 'matRequests') + ['organization' => $org, 'tenantType' => $tenantType]);
@@ -1148,6 +1296,69 @@ Route::middleware(['web.jwt'])->group(function () {
                 }
                 return redirect()->route('tenant.maintenance.material-requests', $orgSlug)->with('success', "Material {$id} issued from stock.");
             })->name('material-requests.issue');
+
+            Route::post('/material-requests/{id}/raise-po', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $row = DB::connection('tenant')->table('maint_material_requests')->where('mmr_no', $id)->first();
+                if (!$row || !in_array($row->status, ['Procurement Required'])) {
+                    return redirect()->route('tenant.maintenance.material-requests', $orgSlug)
+                        ->with('success', 'Cannot raise PO for this request.');
+                }
+                $seq  = (int) (DB::connection('tenant')->table('maint_procurement_orders')->max('id') ?? 0) + 1;
+                $poNo = 'MPO-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+                DB::connection('tenant')->table('maint_procurement_orders')->insert([
+                    'po_no'         => $poNo,
+                    'part_id'       => $row->part_id,
+                    'part_code'     => $row->part_code,
+                    'part_name'     => $row->part_name,
+                    'unit'          => $row->unit,
+                    'qty'           => $row->qty,
+                    'vendor'        => request('vendor', ''),
+                    'expected_date' => request('expected_date') ?: null,
+                    'notes'         => 'Auto-raised from MMR: ' . $row->mmr_no . ' (WO: ' . $row->wo_no . ')',
+                    'status'        => 'Pending',
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+                DB::connection('tenant')->table('maint_material_requests')->where('id', $row->id)->update([
+                    'status'     => 'PO Raised',
+                    'po_no'      => $poNo,
+                    'updated_at' => now(),
+                ]);
+                return redirect()->route('tenant.maintenance.material-requests', $orgSlug)
+                    ->with('success', "Procurement order {$poNo} raised for {$row->part_name}.");
+            })->name('material-requests.raise-po');
+
+            Route::post('/material-requests/raise-po-direct', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $id  = request('mmr_no');
+                $row = DB::connection('tenant')->table('maint_material_requests')->where('mmr_no', $id)->first();
+                if (!$row || $row->status !== 'Procurement Required') {
+                    return response()->json(['ok' => false, 'message' => 'Cannot raise PO for this request.'], 422);
+                }
+                $seq  = (int) (DB::connection('tenant')->table('maint_procurement_orders')->max('id') ?? 0) + 1;
+                $poNo = 'MPO-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+                DB::connection('tenant')->table('maint_procurement_orders')->insert([
+                    'po_no'         => $poNo,
+                    'part_id'       => $row->part_id,
+                    'part_code'     => $row->part_code,
+                    'part_name'     => $row->part_name,
+                    'unit'          => $row->unit,
+                    'qty'           => $row->qty,
+                    'vendor'        => request('vendor', ''),
+                    'expected_date' => request('expected_date') ?: null,
+                    'notes'         => 'Auto-raised from MMR: ' . $row->mmr_no . ' (WO: ' . $row->wo_no . ')',
+                    'status'        => 'Pending',
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+                DB::connection('tenant')->table('maint_material_requests')->where('id', $row->id)->update([
+                    'status'     => 'PO Raised',
+                    'po_no'      => $poNo,
+                    'updated_at' => now(),
+                ]);
+                return response()->json(['ok' => true, 'po_no' => $poNo, 'mmr_no' => $id, 'part_name' => $row->part_name]);
+            })->name('material-requests.raise-po-direct');
 
             // ---- CLOSURE ----
             Route::get('/closure', function ($orgSlug) use ($getOrg, $sessionKey) {
@@ -1352,13 +1563,21 @@ Route::middleware(['web.jwt'])->group(function () {
             // ---- SPARE PARTS ----
             Route::get('/spare-parts', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
+                // Get active POs per part code (Pending or Ordered)
+                $activePOs = DB::connection('tenant')->table('maint_procurement_orders')
+                    ->whereIn('status', ['Pending', 'Ordered'])
+                    ->get()
+                    ->keyBy('part_code');
+
                 $parts = DB::connection('tenant')->table('maint_spare_parts')->orderByDesc('id')->get()->map(fn($p) => [
-                    'code' => $p->code,
-                    'name' => $p->name,
-                    'asset' => $p->compatible_asset,
-                    'stock' => $p->stock,
+                    'code'          => $p->code,
+                    'name'          => $p->name,
+                    'asset'         => $p->compatible_asset,
+                    'stock'         => $p->stock,
                     'reorder_level' => $p->reorder_level,
-                    'unit' => $p->unit,
+                    'unit'          => $p->unit,
+                    'po_no'         => $activePOs[$p->code]->po_no ?? null,
+                    'po_status'     => $activePOs[$p->code]->status ?? null,
                 ])->all();
                 $assets = DB::connection('tenant')->table('maint_assets')->orderBy('name')->get()->map(fn($a) => [
                     'code' => $a->code,
@@ -1400,23 +1619,228 @@ Route::middleware(['web.jwt'])->group(function () {
 
             Route::post('/spare-parts/{code}/issue', function ($orgSlug, $code) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $qty   = (int) request('qty', 1);
+                $qty  = (int) request('qty', 1);
+                $wo   = request('work_order', '');
+                $part = DB::connection('tenant')->table('maint_spare_parts')->where('code', $code)->first();
                 DB::connection('tenant')->table('maint_spare_parts')->where('code', $code)->update([
-                    'stock' => DB::raw('GREATEST(0, stock - ' . $qty . ')'),
+                    'stock'      => DB::raw('GREATEST(0, stock - ' . $qty . ')'),
                     'updated_at' => now(),
                 ]);
+                if ($part) {
+                    DB::connection('tenant')->table('maint_stock_movements')->insert([
+                        'part_id'    => $part->id,
+                        'part_code'  => $part->code,
+                        'part_name'  => $part->name,
+                        'type'       => 'Issue',
+                        'qty'        => $qty,
+                        'reference'  => $wo ?: null,
+                        'note'       => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
                 return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} issued.");
             })->name('spare-parts.issue');
 
             Route::post('/spare-parts/{code}/receive', function ($orgSlug, $code) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $qty   = (int) request('qty', 1);
+                $qty  = (int) request('qty', 1);
+                $part = DB::connection('tenant')->table('maint_spare_parts')->where('code', $code)->first();
                 DB::connection('tenant')->table('maint_spare_parts')->where('code', $code)->update([
-                    'stock' => DB::raw('stock + ' . $qty),
+                    'stock'      => DB::raw('stock + ' . $qty),
                     'updated_at' => now(),
                 ]);
+                if ($part) {
+                    DB::connection('tenant')->table('maint_stock_movements')->insert([
+                        'part_id'    => $part->id,
+                        'part_code'  => $part->code,
+                        'part_name'  => $part->name,
+                        'type'       => 'Receive',
+                        'qty'        => $qty,
+                        'reference'  => null,
+                        'note'       => null,
+                        'created_at' => now(),
+                        'updated_at' => now(),
+                    ]);
+                }
                 return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} received into stock.");
             })->name('spare-parts.receive');
+
+            // ---- PROCUREMENT ----
+            Route::get('/procurement', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $orders = DB::connection('tenant')->table('maint_procurement_orders')->orderByDesc('id')->get()->map(fn($o) => [
+                    'id'            => $o->id,
+                    'po_no'         => $o->po_no,
+                    'part_code'     => $o->part_code,
+                    'part_name'     => $o->part_name,
+                    'unit'          => $o->unit,
+                    'qty'           => $o->qty,
+                    'vendor'        => $o->vendor,
+                    'expected_date' => $o->expected_date,
+                    'notes'         => $o->notes,
+                    'status'        => $o->status,
+                    'raised_on'     => $o->created_at ? date('Y-m-d', strtotime($o->created_at)) : null,
+                ])->all();
+                $parts = DB::connection('tenant')->table('maint_spare_parts')->orderBy('name')->get()->map(fn($p) => [
+                    'code'  => $p->code,
+                    'name'  => $p->name,
+                    'stock' => $p->stock,
+                    'unit'  => $p->unit,
+                ])->all();
+                return view('tenant.maintenance.procurement.index', compact('orders', 'parts') + ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('procurement');
+
+            // JSON endpoint for procurement panel
+            Route::get('/procurement/orders-json', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $orders = DB::connection('tenant')->table('maint_procurement_orders')->orderByDesc('id')->get()->map(fn($o) => [
+                    'id'            => $o->id,
+                    'po_no'         => $o->po_no,
+                    'part_code'     => $o->part_code,
+                    'part_name'     => $o->part_name,
+                    'unit'          => $o->unit,
+                    'qty'           => $o->qty,
+                    'vendor'        => $o->vendor,
+                    'expected_date' => $o->expected_date,
+                    'status'        => $o->status,
+                    'raised_on'     => $o->created_at ? date('Y-m-d', strtotime($o->created_at)) : null,
+                ])->all();
+                return response()->json($orders);
+            })->name('procurement.orders-json');
+
+            Route::post('/procurement', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $seq     = (int) (DB::connection('tenant')->table('maint_procurement_orders')->max('id') ?? 0) + 1;
+                $code    = (string) request('part_code');
+                $part    = DB::connection('tenant')->table('maint_spare_parts')->where('code', $code)->first();
+                DB::connection('tenant')->table('maint_procurement_orders')->insert([
+                    'po_no'         => 'MPO-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT),
+                    'part_id'       => $part?->id,
+                    'part_code'     => $code,
+                    'part_name'     => $part?->name ?? $code,
+                    'unit'          => $part?->unit ?? 'Nos',
+                    'qty'           => (int) request('qty', 1),
+                    'vendor'        => request('vendor', ''),
+                    'expected_date' => request('expected_date') ?: null,
+                    'notes'         => request('notes', ''),
+                    'status'        => 'Pending',
+                    'created_at'    => now(),
+                    'updated_at'    => now(),
+                ]);
+                $back = request('redirect_back', 'procurement');
+                $routeName = match($back) {
+                    'spare-parts'      => 'tenant.maintenance.spare-parts',
+                    'material-requests'=> 'tenant.maintenance.material-requests',
+                    default            => 'tenant.maintenance.procurement',
+                };
+                $poNo = 'MPO-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+                if (request()->expectsJson() || request()->header('X-Requested-With') === 'XMLHttpRequest') {
+                    return response()->json(['ok' => true, 'po_no' => $poNo, 'part_code' => $code]);
+                }
+                return redirect()->route($routeName, $orgSlug)->with('success', 'Procurement order raised successfully.');
+            })->name('procurement.store');
+
+            Route::post('/procurement/{id}/mark-ordered', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                DB::connection('tenant')->table('maint_procurement_orders')->where('id', $id)->update([
+                    'status'     => 'Ordered',
+                    'updated_at' => now(),
+                ]);
+                return redirect()->route('tenant.maintenance.procurement', $orgSlug)->with('success', 'Order marked as Ordered.');
+            })->name('procurement.mark-ordered');
+
+            Route::post('/procurement/{id}/receive', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $order = DB::connection('tenant')->table('maint_procurement_orders')->where('id', $id)->first();
+                if (!$order) {
+                    return redirect()->route('tenant.maintenance.procurement', $orgSlug)->with('success', 'Order not found.');
+                }
+                $qty = (int) request('qty', $order->qty);
+                // Update stock
+                DB::connection('tenant')->table('maint_spare_parts')->where('code', $order->part_code)->update([
+                    'stock'      => DB::raw('stock + ' . $qty),
+                    'updated_at' => now(),
+                ]);
+                // Log movement
+                DB::connection('tenant')->table('maint_stock_movements')->insert([
+                    'part_id'    => $order->part_id,
+                    'part_code'  => $order->part_code,
+                    'part_name'  => $order->part_name,
+                    'type'       => 'Receive',
+                    'qty'        => $qty,
+                    'reference'  => $order->po_no,
+                    'note'       => request('note', ''),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                // Mark order received
+                DB::connection('tenant')->table('maint_procurement_orders')->where('id', $id)->update([
+                    'status'     => 'Received',
+                    'updated_at' => now(),
+                ]);
+                return redirect()->route('tenant.maintenance.procurement', $orgSlug)->with('success', "{$qty} unit(s) received and stock updated.");
+            })->name('procurement.receive');
+
+            // ---- STOCK MANAGEMENT ----
+            Route::get('/stock-management', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $parts = DB::connection('tenant')->table('maint_spare_parts')->orderBy('name')->get()->map(fn($p) => [
+                    'id'            => $p->id,
+                    'code'          => $p->code,
+                    'name'          => $p->name,
+                    'asset'         => $p->compatible_asset,
+                    'stock'         => $p->stock,
+                    'reorder_level' => $p->reorder_level,
+                    'unit'          => $p->unit,
+                ])->all();
+                $movements = DB::connection('tenant')->table('maint_stock_movements')->orderByDesc('id')->limit(50)->get()->map(fn($m) => [
+                    'date'       => $m->created_at ? date('Y-m-d', strtotime($m->created_at)) : null,
+                    'part_code'  => $m->part_code,
+                    'part_name'  => $m->part_name,
+                    'type'       => $m->type,
+                    'qty'        => $m->qty,
+                    'reference'  => $m->reference,
+                    'note'       => $m->note,
+                ])->all();
+                return view('tenant.maintenance.stock-management.index', compact('parts', 'movements') + ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('stock-management');
+
+            Route::post('/stock-management/{id}/adjust', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                $part = DB::connection('tenant')->table('maint_spare_parts')->where('id', $id)->first();
+                if (!$part) {
+                    return redirect()->route('tenant.maintenance.stock-management', $orgSlug)->with('success', 'Part not found.');
+                }
+                $qty  = (int) request('qty', 0);
+                $type = request('type', 'add');
+                $note = request('note', '');
+                if ($type === 'add') {
+                    DB::connection('tenant')->table('maint_spare_parts')->where('id', $id)->update([
+                        'stock'      => DB::raw('stock + ' . $qty),
+                        'updated_at' => now(),
+                    ]);
+                    $mvType = 'Adjust+';
+                } else {
+                    DB::connection('tenant')->table('maint_spare_parts')->where('id', $id)->update([
+                        'stock'      => DB::raw('GREATEST(0, stock - ' . $qty . ')'),
+                        'updated_at' => now(),
+                    ]);
+                    $mvType = 'Adjust-';
+                }
+                DB::connection('tenant')->table('maint_stock_movements')->insert([
+                    'part_id'    => $part->id,
+                    'part_code'  => $part->code,
+                    'part_name'  => $part->name,
+                    'type'       => $mvType,
+                    'qty'        => $qty,
+                    'reference'  => null,
+                    'note'       => $note,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+                return redirect()->route('tenant.maintenance.stock-management', $orgSlug)->with('success', "Stock adjusted for {$part->name}.");
+            })->name('stock-management.adjust');
         });
 
         // ====================================================================
