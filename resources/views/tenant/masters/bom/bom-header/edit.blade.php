@@ -128,16 +128,19 @@
                         <p class="text-xs text-gray-500 mt-1">Output quantity per batch</p>
                     </div>
 
-                    <!-- Output UOM -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Output UOM <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.output_uom_id" required
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        <select :value="form.output_uom_id" 
+                                @change="form.output_uom_id = Number($event.target.value)"
+                                required
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select UOM</option>
                             <template x-for="uom in uoms" :key="uom.id">
-                                <option :value="uom.id" x-text="uom.uom_code + ' - ' + uom.uom_name"></option>
+                                <option :value="uom.id" 
+                                        :selected="Number(form.output_uom_id) == Number(uom.id)"
+                                        x-text="uom.uom_name"></option>
                             </template>
                         </select>
                         <p class="text-xs text-gray-500 mt-1">→ uom_master(output_uom_id)</p>
@@ -219,18 +222,14 @@
                                     </td>
                                     <!-- UOM -->
                                     <td class="px-4 py-2">
-                                        <select
-                                            :value="item.uom_id"
-                                            @change="item.uom_id = Number($event.target.value)"
-                                            required
-                                            class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <select :value="item.uom_id" 
+                                                @change="item.uom_id = Number($event.target.value)"
+                                                required class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                             <option value="">Select UOM</option>
                                             <template x-for="uom in uoms" :key="uom.id">
-                                                <option
-                                                    :value="uom.id"
-                                                    :selected="item.uom_id == uom.id"
-                                                    x-text="uom.uom_code + ' - ' + uom.uom_name">
-                                                </option>
+                                                <option :value="uom.id" 
+                                                        :selected="Number(item.uom_id) == Number(uom.id)"
+                                                        x-text="uom.uom_name"></option>
                                             </template>
                                         </select>
                                     </td>
@@ -297,17 +296,18 @@
                         </tfoot>
                     </table>
                 </div>
-            </div>
-
-            <!-- Info Box -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+            </div>            <!-- Info Box/About BOM -->
+            <div class="bg-blue-50 border border-blue-200 rounded-lg p-5 mb-6">
                 <div class="flex items-start">
-                    <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
-                    <div class="text-sm text-blue-800">
-                        <p class="font-semibold mb-1">About BOM Header</p>
-                        <p>Bill of Materials header with version management. Supports multiple BOM versions per product with effective date ranges.</p>
-                        <p class="mt-2 text-xs">Used in: Production Work Orders, MRP, Material Planning, Costing</p>
-                        <p class="mt-1 text-xs font-semibold">Note: BOM Code, Product, and Version cannot be changed after creation</p>
+                    <div class="flex-shrink-0 mt-1">
+                        <i class="fas fa-info-circle text-blue-600 text-lg"></i>
+                    </div>
+                    <div class="ml-3">
+                        <h4 class="text-sm font-bold text-blue-900 mb-1">About Bill of Materials</h4>
+                        <div class="text-xs text-blue-800 space-y-2 leading-relaxed">
+                            <p>This BOM defines the recipe for <strong x-text="form.product_name || 'the selected product'"></strong>.</p>
+                            <p><strong>Formulation Logic:</strong> Qty Required is the net weight. Scrap % accounts for processing loss. Effective Qty is calculated as <code>Qty / (1 - Scrap/100)</code>.</p>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -357,11 +357,7 @@
             },
             uoms: [],
             materials: [],
-            bomId: {
-                {
-                    $bomId
-                }
-            },
+            bomId: {{ $bomId }},
             form: {
                 bom_code: '',
                 product_id: '',
@@ -394,13 +390,13 @@
                     .map((item, idx) => idx !== currentIndex ? parseInt(item.material_id) : null)
                     .filter(id => id !== null && !isNaN(id));
 
-                return this.filteredMaterialsBase.filter(mat => !selectedIds.includes(mat.id));
+                return this.materials.filter(mat => !selectedIds.includes(parseInt(mat.id)));
             },
 
             updateItemUom(item) {
-                const mat = this.materials.find(m => m.id == item.material_id);
+                const mat = this.materials.find(m => parseInt(m.id) === parseInt(item.material_id));
                 if (mat && mat.uom_id) {
-                    item.uom_id = mat.uom_id;
+                    item.uom_id = parseInt(mat.uom_id);
                 }
             },
 
@@ -408,6 +404,28 @@
                 if (this.form.items.length > 1) {
                     this.form.items.splice(index, 1);
                 }
+            },
+
+            calculateEffectiveQty(item) {
+                const qty = parseFloat(item.qty_required) || 0;
+                const scrap = parseFloat(item.scrap_percent) || 0;
+                if (scrap >= 100) return 'Error';
+                return (qty / (1 - (scrap / 100))).toFixed(4);
+            },
+
+            get totalWeight() {
+                return this.form.items.reduce((sum, item) => sum + (parseFloat(item.qty_required) || 0), 0);
+            },
+
+            get totalEffectiveQty() {
+                return this.form.items.reduce((sum, item) => {
+                    const eff = parseFloat(this.calculateEffectiveQty(item));
+                    return sum + (isNaN(eff) ? 0 : eff);
+                }, 0);
+            },
+
+            get weightDifference() {
+                return (this.totalWeight - (parseFloat(this.form.batch_size) || 0));
             },
 
             async loadData() {
@@ -475,7 +493,7 @@
                                         qty_required: parseFloat(item.qty_required) || 0,
                                         uom_id: item.uom_id ? Number(item.uom_id) : '',
                                         scrap_percent: parseFloat(item.scrap_percent) || 0,
-                                        substitute_material_id: item.substitute_material_id ? Number(item.substitute_material_id) : '',
+                                        substitute_material_id: (item.substitute_material_id && item.substitute_material_id !== 'null') ? Number(item.substitute_material_id) : '',
                                         is_critical: Boolean(item.is_critical),
                                         remarks: item.remarks || ''
                                     })) :
@@ -544,9 +562,8 @@
 
                     this.showNotification('BOM updated successfully!', 'success');
                     setTimeout(() => {
-                        window.location.href = '{{ url(request()->get('
-                        tenant_type ') === '
-                        subdomain ' ? ' / bom - header ' : ' / org / ' . $organization->org_slug . ' / bom - header ') }}';
+                        const baseUrl = '{{ $tenantType }}' === 'subdomain' ? '' : '/org/{{ $organization->org_slug }}';
+                        window.location.href = baseUrl + '/bom-header';
                     }, 1000);
                 } catch (error) {
                     console.error('Failed to update BOM:', error);

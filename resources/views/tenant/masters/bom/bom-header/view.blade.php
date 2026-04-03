@@ -120,7 +120,7 @@
                                             <td class="px-4 py-2" x-text="item.line_no || (index + 1)"></td>
                                             <td class="px-4 py-2 font-medium text-gray-900" x-text="item.material ? (item.material.material_code + ' - ' + item.material.material_name) : '-'"></td>
                                             <td class="px-4 py-2" x-text="item.qty_required"></td>
-                                            <td class="px-4 py-2" x-text="item.uom ? item.uom.uom_code : '-'"></td>
+                                            <td class="px-4 py-2" x-text="item.uom ? item.uom.uom_name : '-'"></td>
                                             <td class="px-4 py-2" x-text="(item.scrap_percent || 0) + '%'"></td>
                                             <td class="px-4 py-2" x-text="item.substitute_material ? (item.substitute_material.material_code + ' - ' + item.substitute_material.material_name) : '-'"></td>
                                             <td class="px-4 py-2 text-center">
@@ -182,8 +182,8 @@ function bomView() {
         bomId: {{ $bomId }},
         
         get editUrl() {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
-            return `${baseUrl}/${this.bomId}/edit`;
+            const baseUrl = '{{ $tenantType }}' === 'subdomain' ? '' : '/org/{{ $organization->org_slug }}';
+            return `${baseUrl}/bom-header/${this.bomId}/edit`;
         },
         
         async init() {

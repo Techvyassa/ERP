@@ -190,7 +190,7 @@
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select UOM</option>
                             <template x-for="uom in uoms" :key="uom.id">
-                                <option :value="uom.id" x-text="uom.uom_code + ' - ' + uom.uom_name"></option>
+                                <option :value="uom.id" x-text="uom.uom_name"></option>
                             </template>
                         </select>
                         <p class="text-xs text-gray-500 mt-1">→ uom</p>
@@ -264,7 +264,7 @@
                                         <select x-model="item.uom_id" required class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                             <option value="">Select UOM</option>
                                             <template x-for="uom in uoms" :key="uom.id">
-                                                <option :value="uom.id" x-text="uom.uom_code"></option>
+                                                <option :value="uom.id" x-text="uom.uom_name"></option>
                                             </template>
                                         </select>
                                     </td>
@@ -592,7 +592,8 @@
 
                     this.showNotification('BOM header created successfully!', 'success');
                     setTimeout(() => {
-                        window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
+                        const baseUrl = '{{ $tenantType }}' === 'subdomain' ? '' : '/org/{{ $organization->org_slug }}';
+                        window.location.href = baseUrl + '/bom-header';
                     }, 1000);
                 } catch (error) {
                     console.error('Failed to create BOM:', error);
