@@ -511,6 +511,7 @@ Route::prefix('v1')->group(function () {
             // BOM Header
             Route::prefix('bom-headers')->group(function () {
                 Route::get('/', [App\Http\Controllers\BOMHeaderController::class, 'index']);
+                Route::get('/next-code', [App\Http\Controllers\BOMHeaderController::class, 'getNextCode']);
                 Route::get('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\BOMHeaderController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'update']);

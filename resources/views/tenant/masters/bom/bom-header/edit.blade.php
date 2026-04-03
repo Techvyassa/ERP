@@ -9,7 +9,41 @@
 
 @section('content')
 <div x-data="bomForm()" x-init="loadData()">
-    <div class="max-w-4xl mx-auto">
+    <div class="max-w-4xl mx-auto relative">
+        <!-- Notification Toast -->
+        <div x-show="notification.show"
+            x-transition:enter="transition ease-out duration-300"
+            x-transition:enter-start="opacity-0 transform -translate-y-2"
+            x-transition:enter-end="opacity-100 transform translate-y-0"
+            x-transition:leave="transition ease-in duration-200"
+            x-transition:leave-start="opacity-100 transform translate-y-0"
+            x-transition:leave-end="opacity-0 transform -translate-y-2"
+            class="fixed top-5 right-5 z-50 max-w-sm w-full bg-white rounded-xl shadow-2xl border-l-4 p-4 pointer-events-auto"
+            :class="notification.type === 'success' ? 'border-green-500' : 'border-red-500'"
+            style="display: none;">
+            <div class="flex items-center">
+                <div class="flex-shrink-0">
+                    <template x-if="notification.type === 'success'">
+                        <div class="bg-green-100 rounded-full p-1">
+                            <i class="fas fa-check text-green-600 text-xs"></i>
+                        </div>
+                    </template>
+                    <template x-if="notification.type === 'error'">
+                        <div class="bg-red-100 rounded-full p-1">
+                            <i class="fas fa-times text-red-600 text-xs"></i>
+                        </div>
+                    </template>
+                </div>
+                <div class="ml-3 pr-8">
+                    <p class="text-sm font-semibold text-gray-900" x-text="notification.type === 'success' ? 'Success' : 'Error'"></p>
+                    <p class="text-xs text-gray-600" x-text="notification.message"></p>
+                </div>
+                <button @click="notification.show = false" class="ml-auto text-gray-400 hover:text-gray-500">
+                    <i class="fas fa-times text-xs"></i>
+                </button>
+            </div>
+        </div>
+
         <!-- Header -->
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex items-center justify-between">
@@ -17,8 +51,8 @@
                     <h2 class="text-2xl font-bold text-gray-900">Edit Bill of Materials</h2>
                     <p class="text-gray-600 mt-1">Update product BOM details</p>
                 </div>
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}"
+                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     <i class="fas fa-arrow-left mr-2"></i>Back to List
                 </a>
             </div>
@@ -35,10 +69,10 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             BOM Code
                         </label>
-                        <input type="text" 
-                               x-model="form.bom_code"
-                               readonly
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                        <input type="text"
+                            x-model="form.bom_code"
+                            readonly
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
                         <p class="text-xs text-gray-500 mt-1">BOM code cannot be changed</p>
                     </div>
 
@@ -48,7 +82,7 @@
                             Product
                         </label>
                         <select disabled
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
                             <option x-text="form.product_name || 'Loading...'"></option>
                         </select>
                         <p class="text-xs text-gray-500 mt-1">Product cannot be changed</p>
@@ -60,7 +94,7 @@
                             Version
                         </label>
                         <input type="number" x-model="form.version" readonly
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-600">
                         <p class="text-xs text-gray-500 mt-1">Version cannot be changed</p>
                     </div>
 
@@ -70,7 +104,7 @@
                             Effective From <span class="text-red-500">*</span>
                         </label>
                         <input type="date" x-model="form.effective_from" required
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">BOM valid from this date</p>
                     </div>
 
@@ -80,7 +114,7 @@
                             Effective To
                         </label>
                         <input type="date" x-model="form.effective_to"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">NULL = currently active BOM</p>
                     </div>
 
@@ -90,7 +124,7 @@
                             Batch Size <span class="text-red-500">*</span>
                         </label>
                         <input type="number" x-model="form.batch_size" required min="0.001" step="0.001"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         <p class="text-xs text-gray-500 mt-1">Output quantity per batch</p>
                     </div>
 
@@ -100,7 +134,7 @@
                             Output UOM <span class="text-red-500">*</span>
                         </label>
                         <select x-model="form.output_uom_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select UOM</option>
                             <template x-for="uom in uoms" :key="uom.id">
                                 <option :value="uom.id" x-text="uom.uom_code + ' - ' + uom.uom_name"></option>
@@ -115,7 +149,7 @@
                             BOM Status <span class="text-red-500">*</span>
                         </label>
                         <select x-model="form.bom_status" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="DRAFT">DRAFT</option>
                             <option value="ACTIVE">ACTIVE</option>
                             <option value="OBSOLETE">OBSOLETE</option>
@@ -129,8 +163,8 @@
                             Remarks
                         </label>
                         <textarea x-model="form.remarks" rows="2" maxlength="1000"
-                                  placeholder="Change notes, reason for version..."
-                                  class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
+                            placeholder="Change notes, reason for version..."
+                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent"></textarea>
                         <p class="text-xs text-gray-500 mt-1">Change notes, reason for version (max 1000 chars)</p>
                     </div>
                 </div>
@@ -144,7 +178,7 @@
                         <i class="fas fa-plus mr-1"></i> Add Item
                     </button>
                 </div>
-                
+
                 <div class="overflow-x-auto">
                     <table class="w-full text-sm text-left border rounded-lg">
                         <thead class="text-xs text-gray-700 bg-gray-50 border-b">
@@ -154,6 +188,7 @@
                                 <th class="px-4 py-3">UOM <span class="text-red-500">*</span></th>
                                 <th class="px-4 py-3">Sub. Material</th>
                                 <th class="px-4 py-3 w-24">Scrap %</th>
+                                <th class="px-4 py-3 w-32 bg-gray-100 text-gray-700">Effective Qty</th>
                                 <th class="px-4 py-3 w-20 text-center">Critical</th>
                                 <th class="px-4 py-3 w-16 text-center">Actions</th>
                             </tr>
@@ -165,11 +200,11 @@
                                     <td class="px-4 py-2">
                                         <select
                                             :value="item.material_id"
-                                            @change="item.material_id = Number($event.target.value)"
+                                            @change="item.material_id = Number($event.target.value); updateItemUom(item)"
                                             required
                                             class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                             <option value="">Select Material</option>
-                                            <template x-for="mat in materials" :key="mat.id">
+                                            <template x-for="mat in filteredMaterials(index)" :key="mat.id">
                                                 <option
                                                     :value="mat.id"
                                                     :selected="item.material_id == mat.id"
@@ -219,6 +254,9 @@
                                     <td class="px-4 py-2">
                                         <input type="number" x-model="item.scrap_percent" min="0" max="100" step="0.01" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                     </td>
+                                    <td class="px-4 py-2 bg-gray-50">
+                                        <input type="text" :value="calculateEffectiveQty(item)" readonly class="w-full px-2 py-1 border rounded bg-gray-100 text-gray-600 cursor-not-allowed font-medium">
+                                    </td>
                                     <!-- Critical -->
                                     <td class="px-4 py-2 text-center">
                                         <input type="checkbox" x-model="item.is_critical" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
@@ -232,6 +270,31 @@
                                 </tr>
                             </template>
                         </tbody>
+                        <tfoot class="bg-gray-50 font-semibold">
+                            <tr>
+                                <td class="px-4 py-3 text-right">Total Material Weight:</td>
+                                <td class="px-4 py-3">
+                                    <span :class="Math.abs(weightDifference) > 0.001 ? 'text-orange-600' : 'text-green-600'"
+                                        x-text="totalWeight.toFixed(4)"></span>
+                                </td>
+                                <td colspan="3" class="px-4 py-3 text-sm italic">
+                                    <template x-if="Math.abs(weightDifference) > 0.001">
+                                        <span class="text-orange-500">
+                                            <i class="fas fa-exclamation-triangle mr-1"></i>
+                                            Formulation <span x-text="weightDifference > 0 ? 'Gain' : 'Loss'"></span>:
+                                            <span x-text="Math.abs(weightDifference).toFixed(4)"></span>
+                                        </span>
+                                    </template>
+                                    <template x-if="Math.abs(weightDifference) <= 0.001">
+                                        <span class="text-green-600">
+                                            <i class="fas fa-check-circle mr-1"></i> Perfect Balance
+                                        </span>
+                                    </template>
+                                </td>
+                                <td class="px-4 py-3 bg-gray-100 text-gray-700" x-text="totalEffectiveQty.toFixed(4)"></td>
+                                <td colspan="2"></td>
+                            </tr>
+                        </tfoot>
                     </table>
                 </div>
             </div>
@@ -251,12 +314,12 @@
 
             <!-- Form Actions -->
             <div class="flex items-center justify-end space-x-4 pt-6 border-t">
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}" 
-                   class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}"
+                    class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     Cancel
                 </a>
                 <button type="submit" :disabled="loading"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                     <span x-show="!loading">Update BOM</span>
                     <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
                 </button>
@@ -266,191 +329,233 @@
 </div>
 
 <script>
-function bomForm() {
-    // Helper: convert ISO date string to YYYY-MM-DD for <input type="date">
-    function toDateInput(val) {
-        if (!val) return '';
-        // If already YYYY-MM-DD
-        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
-        // ISO 8601: "2025-01-15T00:00:00.000000Z"
-        return val.substring(0, 10);
-    }
+    function bomForm() {
+        // Helper: convert ISO date string to YYYY-MM-DD for <input type="date">
+        function toDateInput(val) {
+            if (!val) return '';
+            // If already YYYY-MM-DD
+            if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+            // ISO 8601: "2025-01-15T00:00:00.000000Z"
+            return val.substring(0, 10);
+        }
 
-    return {
-        loading: false,
-        dataLoading: true,
-        uoms: [],
-        materials: [],
-        bomId: {{ $bomId }},
-        form: {
-            bom_code: '',
-            product_id: '',
-            product_name: '',
-            version: 1,
-            effective_from: '',
-            effective_to: '',
-            batch_size: 100,
-            output_uom_id: '',
-            bom_status: 'DRAFT',
-            remarks: '',
-            items: []
-        },
-        
-        addItem() {
-            this.form.items.push({
-                id: null,
-                material_id: '',
-                qty_required: 1,
-                uom_id: '',
-                scrap_percent: 0,
-                substitute_material_id: '',
-                is_critical: false,
-                remarks: ''
-            });
-        },
-        
-        removeItem(index) {
-            if (this.form.items.length > 1) {
-                this.form.items.splice(index, 1);
-            }
-        },
-        
-        async loadData() {
-            try {
-                // Step 1: Load all dropdowns in parallel first
-                const [uomResponse, matResponse] = await Promise.all([
-                    fetch('/api/v1/uoms?per_page=1000', {
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    }),
-                    fetch('/api/v1/materials?per_page=1000', {
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    })
-                ]);
-
-                if (uomResponse.ok) {
-                    const uomData = await uomResponse.json();
-                    if (uomData && uomData.success && uomData.data) {
-                        this.uoms = Array.isArray(uomData.data) ? uomData.data : (uomData.data.uoms || []);
-                    }
+        return {
+            loading: false,
+            dataLoading: true,
+            notification: {
+                show: false,
+                message: '',
+                type: 'success'
+            },
+            showNotification(message, type = 'success') {
+                this.notification.message = message;
+                this.notification.type = type;
+                this.notification.show = true;
+                setTimeout(() => {
+                    this.notification.show = false;
+                }, 4000);
+            },
+            uoms: [],
+            materials: [],
+            bomId: {
+                {
+                    $bomId
                 }
+            },
+            form: {
+                bom_code: '',
+                product_id: '',
+                product_name: '',
+                version: 1,
+                effective_from: '',
+                effective_to: '',
+                batch_size: 100,
+                output_uom_id: '',
+                bom_status: 'DRAFT',
+                remarks: '',
+                items: []
+            },
 
-                if (matResponse.ok) {
-                    const matData = await matResponse.json();
-                    if (matData && matData.success && matData.data) {
-                        this.materials = Array.isArray(matData.data) ? matData.data : (matData.data.materials || []);
-                    }
-                }
-
-                // Step 2: AFTER dropdowns are loaded, fetch BOM data
-                const bomResponse = await fetch(`/api/v1/bom-headers/${this.bomId}`, {
-                    credentials: 'same-origin',
-                    headers: { 'Accept': 'application/json' }
+            addItem() {
+                this.form.items.push({
+                    id: null,
+                    material_id: '',
+                    qty_required: 1,
+                    uom_id: '',
+                    scrap_percent: 0,
+                    substitute_material_id: '',
+                    is_critical: false,
+                    remarks: ''
                 });
-                
-                if (bomResponse.ok) {
-                    const bomData = await bomResponse.json();
-                    if (bomData && bomData.success && bomData.data) {
-                        const bom = bomData.data;
+            },
 
-                        // NOTE: All IDs must be Numbers (not strings) so Alpine's
-                        // x-model equality check can match <option :value="mat.id">
-                        this.form = {
-                            bom_code:       bom.bom_code || '',
-                            product_id:     bom.product_id ? Number(bom.product_id) : '',
-                            product_name:   bom.product ? (bom.product.product_code + ' - ' + bom.product.product_name) : '',
-                            version:        bom.version || 1,
-                            effective_from: toDateInput(bom.effective_from),
-                            effective_to:   toDateInput(bom.effective_to),
-                            batch_size:     parseFloat(bom.batch_size) || 100,
-                            output_uom_id:  bom.output_uom_id ? Number(bom.output_uom_id) : '',
-                            bom_status:     bom.bom_status || 'DRAFT',
-                            remarks:        bom.remarks || '',
-                            items: (bom.bom_details && bom.bom_details.length > 0)
-                                ? bom.bom_details.map(item => ({
-                                    id:                     item.id,
-                                    material_id:            item.material_id ? Number(item.material_id) : '',
-                                    qty_required:           parseFloat(item.qty_required) || 0,
-                                    uom_id:                 item.uom_id ? Number(item.uom_id) : '',
-                                    scrap_percent:          parseFloat(item.scrap_percent) || 0,
-                                    substitute_material_id: item.substitute_material_id ? Number(item.substitute_material_id) : '',
-                                    is_critical:            Boolean(item.is_critical),
-                                    remarks:                item.remarks || ''
-                                }))
-                                : [{
-                                    id: null,
-                                    material_id: '',
-                                    qty_required: 1,
-                                    uom_id: '',
-                                    scrap_percent: 0,
-                                    substitute_material_id: '',
-                                    is_critical: false,
-                                    remarks: ''
-                                }]
-                        };
+            filteredMaterials(currentIndex) {
+                const selectedIds = this.form.items
+                    .map((item, idx) => idx !== currentIndex ? parseInt(item.material_id) : null)
+                    .filter(id => id !== null && !isNaN(id));
+
+                return this.filteredMaterialsBase.filter(mat => !selectedIds.includes(mat.id));
+            },
+
+            updateItemUom(item) {
+                const mat = this.materials.find(m => m.id == item.material_id);
+                if (mat && mat.uom_id) {
+                    item.uom_id = mat.uom_id;
+                }
+            },
+
+            removeItem(index) {
+                if (this.form.items.length > 1) {
+                    this.form.items.splice(index, 1);
+                }
+            },
+
+            async loadData() {
+                try {
+                    // Step 1: Load all dropdowns in parallel first
+                    const [uomResponse, matResponse] = await Promise.all([
+                        fetch('/api/v1/uoms?per_page=1000', {
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        }),
+                        fetch('/api/v1/materials?per_page=1000', {
+                            credentials: 'same-origin',
+                            headers: {
+                                'Accept': 'application/json'
+                            }
+                        })
+                    ]);
+
+                    if (uomResponse.ok) {
+                        const uomData = await uomResponse.json();
+                        if (uomData && uomData.success && uomData.data) {
+                            this.uoms = Array.isArray(uomData.data) ? uomData.data : (uomData.data.uoms || []);
+                        }
                     }
-                }
-            } catch (error) {
-                console.error('Failed to load data:', error);
-                alert('Failed to load BOM data. Please refresh the page.');
-            } finally {
-                this.dataLoading = false;
-            }
-        },
-        
-        async submitForm() {
-            this.loading = true;
-            try {
-                const formData = {
-                    effective_from:  this.form.effective_from,
-                    effective_to:    this.form.effective_to || null,
-                    batch_size:      parseFloat(this.form.batch_size),
-                    output_uom_id:   parseInt(this.form.output_uom_id),
-                    bom_status:      this.form.bom_status,
-                    remarks:         this.form.remarks || null,
-                    items: this.form.items.map(item => ({
-                        id:                     item.id ? parseInt(item.id) : null,
-                        material_id:            parseInt(item.material_id),
-                        qty_required:           parseFloat(item.qty_required),
-                        uom_id:                 parseInt(item.uom_id),
-                        scrap_percent:          item.scrap_percent ? parseFloat(item.scrap_percent) : 0,
-                        substitute_material_id: item.substitute_material_id ? parseInt(item.substitute_material_id) : null,
-                        is_critical:            Boolean(item.is_critical),
-                        remarks:                item.remarks || null
-                    }))
-                };
 
-                const response = await fetch(`/api/v1/bom-headers/${this.bomId}`, {
-                    method: 'PUT',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(formData)
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok || !data || data.success !== true) {
-                    const errorMsg = data && data.error && data.error.details 
-                        ? JSON.stringify(data.error.details) 
-                        : (data && data.message) ? data.message : 'Failed to update BOM';
-                    throw new Error(errorMsg);
+                    if (matResponse.ok) {
+                        const matData = await matResponse.json();
+                        if (matData && matData.success && matData.data) {
+                            this.materials = Array.isArray(matData.data) ? matData.data : (matData.data.materials || []);
+                        }
+                    }
+
+                    // Step 2: AFTER dropdowns are loaded, fetch BOM data
+                    const bomResponse = await fetch(`/api/v1/bom-headers/${this.bomId}`, {
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (bomResponse.ok) {
+                        const bomData = await bomResponse.json();
+                        if (bomData && bomData.success && bomData.data) {
+                            const bom = bomData.data;
+
+                            // NOTE: All IDs must be Numbers (not strings) so Alpine's
+                            // x-model equality check can match <option :value="mat.id">
+                            this.form = {
+                                bom_code: bom.bom_code || '',
+                                product_id: bom.product_id ? Number(bom.product_id) : '',
+                                product_name: bom.product ? (bom.product.product_code + ' - ' + bom.product.product_name) : '',
+                                version: bom.version || 1,
+                                effective_from: toDateInput(bom.effective_from),
+                                effective_to: toDateInput(bom.effective_to),
+                                batch_size: parseFloat(bom.batch_size) || 100,
+                                output_uom_id: bom.output_uom_id ? Number(bom.output_uom_id) : '',
+                                bom_status: bom.bom_status || 'DRAFT',
+                                remarks: bom.remarks || '',
+                                items: (bom.bom_details && bom.bom_details.length > 0) ?
+                                    bom.bom_details.map(item => ({
+                                        id: item.id,
+                                        material_id: item.material_id ? Number(item.material_id) : '',
+                                        qty_required: parseFloat(item.qty_required) || 0,
+                                        uom_id: item.uom_id ? Number(item.uom_id) : '',
+                                        scrap_percent: parseFloat(item.scrap_percent) || 0,
+                                        substitute_material_id: item.substitute_material_id ? Number(item.substitute_material_id) : '',
+                                        is_critical: Boolean(item.is_critical),
+                                        remarks: item.remarks || ''
+                                    })) :
+                                    [{
+                                        id: null,
+                                        material_id: '',
+                                        qty_required: 1,
+                                        uom_id: '',
+                                        scrap_percent: 0,
+                                        substitute_material_id: '',
+                                        is_critical: false,
+                                        remarks: ''
+                                    }]
+                            };
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load data:', error);
+                    alert('Failed to load BOM data. Please refresh the page.');
+                } finally {
+                    this.dataLoading = false;
                 }
-                
-                alert('BOM updated successfully!');
-                window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
-            } catch (error) {
-                console.error('Failed to update BOM:', error);
-                alert(error.message || 'Failed to update BOM. Please try again.');
-            } finally {
-                this.loading = false;
+            },
+
+            async submitForm() {
+                this.loading = true;
+                try {
+                    const formData = {
+                        effective_from: this.form.effective_from,
+                        effective_to: this.form.effective_to || null,
+                        batch_size: parseFloat(this.form.batch_size),
+                        output_uom_id: parseInt(this.form.output_uom_id),
+                        bom_status: this.form.bom_status,
+                        remarks: this.form.remarks || null,
+                        items: this.form.items.map(item => ({
+                            id: item.id ? parseInt(item.id) : null,
+                            material_id: parseInt(item.material_id),
+                            qty_required: parseFloat(item.qty_required),
+                            uom_id: parseInt(item.uom_id),
+                            scrap_percent: item.scrap_percent ? parseFloat(item.scrap_percent) : 0,
+                            substitute_material_id: item.substitute_material_id ? parseInt(item.substitute_material_id) : null,
+                            is_critical: Boolean(item.is_critical),
+                            remarks: item.remarks || null
+                        }))
+                    };
+
+                    const response = await fetch(`/api/v1/bom-headers/${this.bomId}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(formData)
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data || data.success !== true) {
+                        const errorMsg = data && data.error && data.error.details ?
+                            JSON.stringify(data.error.details) :
+                            (data && data.message) ? data.message : 'Failed to update BOM';
+                        throw new Error(errorMsg);
+                    }
+
+                    this.showNotification('BOM updated successfully!', 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url(request()->get('
+                        tenant_type ') === '
+                        subdomain ' ? ' / bom - header ' : ' / org / ' . $organization->org_slug . ' / bom - header ') }}';
+                    }, 1000);
+                } catch (error) {
+                    console.error('Failed to update BOM:', error);
+                    this.showNotification(error.message || 'Failed to update BOM. Please try again.', 'error');
+                } finally {
+                    this.loading = false;
+                }
             }
         }
     }
-}
 </script>
 @endsection

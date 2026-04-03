@@ -17,6 +17,50 @@ use Illuminate\Support\Str;
 class BOMHeaderController extends Controller
 {
     /**
+     * Get next available BOM code
+     * GET /api/v1/bom-headers/next-code
+     */
+    public function getNextCode(Request $request): JsonResponse
+    {
+        $prefix = $request->get('prefix', 'BOM');
+        $requestId = Str::uuid()->toString();
+
+        try {
+            // Find the latest BOM code with this prefix
+            $latest = BOMHeader::where('bom_code', 'like', $prefix . '-%')
+                ->orderBy('bom_code', 'desc')
+                ->first();
+
+            $nextNumber = 1;
+            if ($latest) {
+                // Extract number from code like BOM-0001 or BOM-123
+                $parts = explode('-', $latest->bom_code);
+                $lastPart = end($parts);
+                if (is_numeric($lastPart)) {
+                    $nextNumber = (int)$lastPart + 1;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'prefix' => $prefix,
+                    'next_number' => str_pad($nextNumber, 4, '0', STR_PAD_LEFT),
+                    'full_code' => $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT)
+                ],
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate next code: ' . $e->getMessage(),
+                'request_id' => $requestId
+            ], 500);
+        }
+    }
+
+    /**
      * Get all BOM headers
      * GET /api/v1/bom-headers
      */
