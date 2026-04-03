@@ -21,6 +21,15 @@
 
     <!-- Best Vendor Recommendation Summary -->
     <div x-show="!loading && comparison.length > 0" class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl shadow-lg p-6 mb-6 border-2 border-green-200">
+        <template x-if="isAlreadySelected">
+            <div class="bg-green-600 text-white rounded-lg p-4 mb-4 flex items-center gap-3">
+                <span class="material-symbols-outlined text-3xl">check_circle</span>
+                <div>
+                    <p class="font-bold text-lg">Quotation Already Selected</p>
+                    <p class="text-sm opacity-90">Selected Vendor: <span class="font-semibold" x-text="selectedVendorName"></span></p>
+                </div>
+            </div>
+        </template>
         <div class="flex items-start justify-between">
             <div class="flex-1">
                 <div class="flex items-center gap-2 mb-3">
@@ -115,11 +124,23 @@
                                             </td>
                                             <td class="px-4 py-3 text-gray-700" x-text="quote.delivery_date || '—'"></td>
                                             <td class="px-4 py-3 text-gray-600 text-xs" x-text="quote.remarks || '—'"></td>
-                                            <td class="px-4 py-3 text-center">
-                                                <button @click="selectQuotation(quote)" 
-                                                        class="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs">
-                                                    Select
-                                                </button>
+                                            <td class="px-6 py-4 text-center">
+                                                <template x-if="!isAlreadySelected">
+                                                    <button @click="selectQuotation(quote)" 
+                                                            class="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs">
+                                                        Select
+                                                    </button>
+                                                </template>
+                                                <template x-if="isAlreadySelected && quote.vendor_name === selectedVendorName">
+                                                    <span class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
+                                                        ✓ Selected
+                                                    </span>
+                                                </template>
+                                                <template x-if="isAlreadySelected && quote.vendor_name !== selectedVendorName">
+                                                    <span class="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-xs">
+                                                        —
+                                                    </span>
+                                                </template>
                                             </td>
                                         </tr>
                                     </template>
@@ -203,6 +224,8 @@ function compareQuotationsData() {
         showSelectionModal: false,
         selectedQuote: null,
         selectionReason: '',
+        isAlreadySelected: false,
+        selectedVendorName: '',
         toast: { show: false, message: '', type: 'success' },
 
         async init() {
@@ -223,6 +246,8 @@ function compareQuotationsData() {
                 const data = await response.json();
                 if (data.success) {
                     this.comparison = data.data.comparison;
+                    this.isAlreadySelected = data.data.is_selected || false;
+                    this.selectedVendorName = data.data.selected_vendor || '';
                 } else {
                     this.showToast(data.message || 'Failed to load comparison', 'error');
                 }

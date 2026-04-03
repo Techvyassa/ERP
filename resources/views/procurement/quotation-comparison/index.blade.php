@@ -43,16 +43,17 @@
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">PR Number</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Quotations</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Vendors</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created At</th>
                         <th class="px-6 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="divide-y divide-gray-100">
                     <template x-if="loading">
-                        <tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">Loading...</td></tr>
+                        <tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">Loading...</td></tr>
                     </template>
                     <template x-if="!loading && items.length === 0">
-                        <tr><td colspan="5" class="px-6 py-8 text-center text-gray-400">No quotations found</td></tr>
+                        <tr><td colspan="6" class="px-6 py-8 text-center text-gray-400">No quotations found</td></tr>
                     </template>
                     <template x-for="item in items" :key="item.pr_number">
                         <tr class="hover:bg-gray-50">
@@ -69,12 +70,34 @@
                                     </template>
                                 </div>
                             </td>
+                            <td class="px-6 py-4">
+                                <template x-if="item.is_selected">
+                                    <div class="space-y-1">
+                                        <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1 w-fit">
+                                            <span class="material-symbols-outlined text-xs">check_circle</span>
+                                            Selected
+                                        </span>
+                                        <p class="text-xs text-gray-600">Vendor: <span class="font-semibold" x-text="item.selected_vendor"></span></p>
+                                    </div>
+                                </template>
+                                <template x-if="!item.is_selected">
+                                    <span class="px-2 py-1 bg-yellow-100 text-yellow-700 rounded text-xs font-medium">Pending Selection</span>
+                                </template>
+                            </td>
                             <td class="px-6 py-4 text-gray-600" x-text="formatDate(item.created_at)"></td>
                             <td class="px-6 py-4 text-center">
-                                <button @click="viewComparison(item.pr_number)" 
-                                        class="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs">
-                                    Compare
-                                </button>
+                                <template x-if="!item.is_selected">
+                                    <button @click="viewComparison(item.pr_number)" 
+                                            class="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs">
+                                        Compare
+                                    </button>
+                                </template>
+                                <template x-if="item.is_selected">
+                                    <button @click="viewComparison(item.pr_number)" 
+                                            class="px-3 py-1.5 bg-gray-100 text-gray-600 rounded-lg hover:bg-gray-200 transition-colors text-xs">
+                                        View
+                                    </button>
+                                </template>
                             </td>
                         </tr>
                     </template>

@@ -42,11 +42,19 @@ class QuotationComparisonController extends Controller
                     ->unique()
                     ->values();
                 
+                // Check if a selection has been made
+                $selection = QuotationSelection::where('pr_number', $item->pr_number)
+                    ->with('vendor:id,vendor_name')
+                    ->first();
+                
                 return [
                     'pr_number' => $item->pr_number,
                     'quotation_count' => $count,
                     'vendors' => $vendors,
                     'created_at' => $item->latest_created_at,
+                    'is_selected' => $selection ? true : false,
+                    'selected_vendor' => $selection ? $selection->vendor->vendor_name : null,
+                    'selection_status' => $selection ? $selection->status : null,
                 ];
             });
 
@@ -111,11 +119,19 @@ class QuotationComparisonController extends Controller
                 ];
             })->values();
 
+            // Check if selection already made
+            $selection = QuotationSelection::where('pr_number', $prNumber)
+                ->with('vendor:id,vendor_name')
+                ->first();
+
             return response()->json([
                 'success' => true,
                 'data' => [
                     'pr_number' => $prNumber,
                     'comparison' => $comparison,
+                    'is_selected' => $selection ? true : false,
+                    'selected_vendor' => $selection ? $selection->vendor->vendor_name : null,
+                    'selection_status' => $selection ? $selection->status : null,
                 ],
                 'message' => 'Quotation comparison retrieved successfully',
                 'request_id' => $requestId,
@@ -280,7 +296,7 @@ class QuotationComparisonController extends Controller
                 'selected_price' => $quotation->total_price,
                 'selected_delivery_date' => $quotation->delivery_date,
                 'selection_reason' => $request->input('selection_reason'),
-                'status' => 'PENDING',
+                'status' => 'selected',
                 'selected_by' => $request->input('auth_user_id'),
                 'selected_at' => now(),
             ]);
