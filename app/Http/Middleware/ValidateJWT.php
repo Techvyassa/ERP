@@ -16,6 +16,7 @@ use Tymon\JWTAuth\Exceptions\TokenInvalidException;
  * Validates JWT token signature and expiration
  * Extracts user_id and org_id from token claims
  * Returns 401 for invalid/expired tokens
+ * Attempts silent refresh when token is expired but refresh token is available
  * 
  * Requirements: 10.1, 10.2, 10.6
  */
@@ -54,6 +55,40 @@ class ValidateJWT
                 'auth_org_id' => $orgId,
             ]);
         } catch (TokenExpiredException $e) {
+            // Try to refresh the token using the refresh token from cookie or header
+            $refreshToken = $request->input('refresh_token') ?? $request->cookie('refresh_token');
+            
+            if ($refreshToken) {
+                try {
+                    $tokens = $this->refreshToken($refreshToken, $request);
+                    
+                    // Re-parse the new token to get claims
+                    JWTAuth::setToken($tokens['access_token']);
+                    $payload = JWTAuth::getPayload();
+
+                    $userId = $payload->get('sub');
+                    $orgId = $payload->get('org_id');
+
+                    if (!$userId || !$orgId) {
+                        return $this->errorResponse('Invalid token claims', 'INVALID_TOKEN_CLAIMS', 401);
+                    }
+
+                    $request->merge([
+                        'auth_user_id' => $userId,
+                        'auth_org_id' => $orgId,
+                    ]);
+
+                    // Continue the request and attach the refreshed tokens
+                    $response = $next($request);
+                    
+                    // Attach new tokens to response
+                    return $this->attachTokensToResponse($response, $tokens, $request);
+                } catch (\Exception $refreshEx) {
+                    \Log::warning('Token refresh failed in ValidateJWT', ['error' => $refreshEx->getMessage()]);
+                    return $this->errorResponse('Token expired and refresh failed', 'TOKEN_EXPIRED', 401);
+                }
+            }
+            
             return $this->errorResponse('Token expired', 'TOKEN_EXPIRED', 401);
         } catch (TokenInvalidException $e) {
             return $this->errorResponse('Invalid token', 'TOKEN_INVALID', 401);
@@ -62,6 +97,66 @@ class ValidateJWT
         }
 
         return $next($request);
+    }
+
+    /**
+     * Refresh access token
+     */
+    private function refreshToken(string $refreshToken, Request $request): array
+    {
+        $tokenService = app(\App\Services\TokenService::class);
+        $tokens = $tokenService->refreshAccessToken($refreshToken);
+        
+        return $tokens;
+    }
+
+    /**
+     * Attach tokens to response as cookies
+     */
+    private function attachTokensToResponse($response, array $tokens, Request $request): Response
+    {
+        $response = response()->json([
+            'success' => true,
+            'data' => [
+                'access_token' => $tokens['access_token'],
+                'refresh_token' => $tokens['refresh_token'] ?? null,
+                'expires_in' => $tokens['expires_in'],
+                'token_type' => 'Bearer',
+            ],
+            'message' => 'Token refreshed',
+            'request_id' => \Illuminate\Support\Str::uuid()->toString(),
+            'timestamp' => now()->toIso8601String()
+        ], 200);
+
+        // Set access token cookie (24 hours)
+        $response->cookie(
+            'auth_token',
+            $tokens['access_token'],
+            60 * 24,
+            '/',
+            null,
+            $request->secure(),
+            true,
+            false,
+            'lax'
+        );
+
+        // Set refresh token cookie if available (30 days)
+        if (!empty($tokens['refresh_token'])) {
+            $response->cookie(
+                'refresh_token',
+                $tokens['refresh_token'],
+                60 * 24 * 30,
+                '/',
+                null,
+                $request->secure(),
+                true,
+                false,
+                'lax'
+            );
+        }
+
+        return $response;
     }
 
     /**
