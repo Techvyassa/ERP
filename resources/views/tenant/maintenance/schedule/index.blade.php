@@ -45,7 +45,7 @@
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Asset <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Maintanance Name <span class="text-red-500">*</span></label>
                     @if(count($assets) > 0)
                         <select name="asset" id="assetSelect" required class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-green-300 outline-none">
                             <option value="">Select asset</option>
@@ -144,7 +144,7 @@
                 <thead class="bg-gray-50">
                     <tr class="text-left text-gray-500 border-b">
                         <th class="py-3 px-4 font-semibold">PM ID</th>
-                        <th class="py-3 px-4 font-semibold">Asset</th>
+                        <th class="py-3 px-4 font-semibold">Maintanance Name</th>
                         <th class="py-3 px-4 font-semibold">Task</th>
                         <th class="py-3 px-4 font-semibold">Frequency</th>
                         <th class="py-3 px-4 font-semibold">Assigned To</th>

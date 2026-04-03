@@ -107,7 +107,7 @@
                         <a href="{{ url("/org/{$organization->org_slug}/maintenance/assets") }}"
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.assets*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">precision_manufacturing</span>
-                            <span x-show="sidebarOpen" class="font-medium">Assets</span>
+                            <span x-show="sidebarOpen" class="font-medium">Maintenance Register</span>
                         </a>
                     </li>
 
@@ -135,7 +135,23 @@
                         </a>
                     </li>
 
-                    <li class="pt-2 border-t border-gray-200"></li>
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/maintenance/procurement") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.procurement*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">shopping_cart</span>
+                            <span x-show="sidebarOpen" class="font-medium">Procurement</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/maintenance/stock-management") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.maintenance.stock-management*') ? 'bg-amber-50 text-maintenance font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">warehouse</span>
+                            <span x-show="sidebarOpen" class="font-medium">Stock Management</span>
+                        </a>
+                    </li>
+
+                    <!-- <li class="pt-2 border-t border-gray-200"></li>
                     <li x-show="sidebarOpen" class="px-3 py-2">
                         <span class="text-xs font-semibold text-gray-400 uppercase">Organization</span>
                     </li>
@@ -154,7 +170,7 @@
                             <span class="material-symbols-outlined text-lg w-5">apartment</span>
                             <span x-show="sidebarOpen" class="font-medium">Departments</span>
                         </a>
-                    </li>
+                    </li> -->
                 </ul>
             </nav>
 
