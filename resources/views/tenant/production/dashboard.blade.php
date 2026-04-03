@@ -145,9 +145,22 @@
 function productionPortalDashboard() {
     return {
         stats: { activeOrders: 0, pendingMIR: 0, approvedMIR: 0, products: 0 },
+        loading: false,
         async init() {
-            // TODO: replace with real API calls
-            this.stats = { activeOrders: 8, pendingMIR: 3, approvedMIR: 12, products: 23 };
+            this.loading = true;
+            try {
+                const response = await fetch(`/api/v1/production-orders/stats`, {
+                    headers: { 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.stats = data.data;
+                }
+            } catch (e) {
+                console.error('Failed to load stats', e);
+            } finally {
+                this.loading = false;
+            }
         }
     }
 }

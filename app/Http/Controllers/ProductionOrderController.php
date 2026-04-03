@@ -74,6 +74,11 @@ class ProductionOrderController extends Controller
                 'mir_id' => $o->mir?->id,
                 'confirmed_qty_total' => $o->confirmed_qty_total ?? 0,
                 'rejected_qty_total'  => $o->rejected_qty_total ?? 0,
+                'actual_qty' => $o->actual_qty ?? 0,
+                'yield_percent' => $o->yield_percent ?? 0,
+                'fg_batch_number' => $o->fg_batch_number,
+                'actual_start_at' => $o->actual_start_at?->format('Y-m-d H:i'),
+                'actual_end_at' => $o->actual_end_at?->format('Y-m-d H:i'),
                 'remaining_qty' => max(0, (float)$o->target_qty - (float)($o->confirmed_qty_total ?? 0)),
                 'created_at' => $o->created_at?->format('Y-m-d H:i'),
             ]);
@@ -82,6 +87,37 @@ class ProductionOrderController extends Controller
                 'success' => true,
                 'data' => ['orders' => $orders],
                 'message' => 'Production orders retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return $this->error($requestId, $e->getMessage());
+        }
+    }
+
+    /**
+     * GET /api/v1/production-orders/stats
+     */
+    public function stats(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $this->switchTenantDb($request);
+            
+            $activeOrders = ProductionOrder::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->count();
+            $pendingMIR = MaterialIssueRequest::where('status', 'PENDING')->count();
+            $approvedMIR = MaterialIssueRequest::where('status', 'APPROVED')->count();
+            $productsWithBOM = BOMHeader::where('bom_status', 'ACTIVE')->distinct('product_id')->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'activeOrders' => $activeOrders,
+                    'pendingMIR' => $pendingMIR,
+                    'approvedMIR' => $approvedMIR,
+                    'products' => $productsWithBOM,
+                ],
+                'message' => 'Production stats retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);

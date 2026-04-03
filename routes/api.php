@@ -244,6 +244,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/barcode', [App\Http\Controllers\ProductController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\ProductController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\ProductController::class, 'store']);
+                Route::post('/bulk', [App\Http\Controllers\ProductController::class, 'bulkStore']);
                 Route::put('/{id}', [App\Http\Controllers\ProductController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\ProductController::class, 'destroy']); // Deactivate
             });

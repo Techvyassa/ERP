@@ -5,354 +5,174 @@
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" rel="stylesheet">
+<style>
+    .input-field { width: 100%; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 8px; font-weight: 500; font-size: 14px; outline: none; transition: 0.2s; background: #f8fafc; }
+    .input-field:focus { border-color: #2563eb; background: #ffffff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+    .label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; }
+    [x-cloak] { display: none !important; }
+    .section-title { font-size: 14px; font-weight: 800; color: #1e293b; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px; display: flex; items-center; gap: 8px; }
+    .immutable-field { background: #f1f5f9; border-color: #e2e8f0; color: #64748b; cursor: not-allowed; font-family: monospace; }
+</style>
 @endpush
 
 @section('content')
-<div x-data="productForm()" x-init="loadProductData()">
-    <!-- Loading Overlay -->
-    <div x-show="loading" x-transition class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <i class="fas fa-spinner fa-spin text-blue-600 text-xl"></i>
-            <span class="text-gray-700">Loading...</span>
+<div x-data="productForm()" x-init="loadProduct()" class="max-w-4xl mx-auto space-y-6">
+    <div class="flex items-center justify-between bg-white p-6 rounded-2xl border shadow-sm">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight">Update Product</h1>
+            <p class="text-slate-500 text-sm font-medium">Modify existing master record details</p>
         </div>
+        <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}" 
+           class="px-5 py-2.5 bg-slate-100 text-slate-600 text-xs font-bold rounded-xl hover:bg-slate-200 transition-all flex items-center gap-2">
+            <span class="material-symbols-outlined text-lg">arrow_back</span>
+            Back to List
+        </a>
     </div>
 
-    <!-- Notification Container -->
-    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
-    
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="bg-white rounded-xl shadow p-6 mb-6">
-            <div class="flex items-center justify-between">
+    <!-- Main Edit Form -->
+    <div class="bg-white border rounded-2xl shadow-sm overflow-hidden p-8 space-y-10 animate-in" x-show="!loading" x-cloak>
+        <!-- Section 1: Basic Info -->
+        <div>
+            <div class="section-title">
+                <span class="material-symbols-outlined text-blue-600">info</span>
+                1. Basic Product Details
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Edit Product</h2>
-                    <p class="text-gray-600 mt-1">Update product information</p>
+                    <label class="label">Product Name *</label>
+                    <input type="text" x-model="form.product_name" required class="input-field" placeholder="Full Product Name">
                 </div>
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>Back to List
-                </a>
+                <div>
+                    <label class="label">Category</label>
+                    <input type="text" x-model="form.product_category" class="input-field" placeholder="e.g. Spices, Grains">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="label">System Identification Code</label>
+                    <input type="text" x-model="form.product_code" disabled class="input-field immutable-field" title="Product code cannot be changed after creation">
+                    <p class="text-[10px] text-slate-400 mt-2 font-medium">This code is unique and cannot be updated once saved.</p>
+                </div>
             </div>
         </div>
 
-        <!-- Form -->
-        <form @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
-            <!-- Basic Information -->
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Product Information</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Product Code -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Product Code <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" x-model="form.product_code" required maxlength="30"
-                               placeholder="FG-0001"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-
-                    <!-- Product Name -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Product Name <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" x-model="form.product_name" required maxlength="200"
-                               placeholder="Masala Powder 100g"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-
-                    <!-- Product Category -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Product Category
-                        </label>
-                        <input type="text" x-model="form.product_category" maxlength="60"
-                               placeholder="Spice / Blend / Condiment"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Product category for classification</p>
-                    </div>
-
-                    <!-- Pack Size -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Pack Size <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.pack_size" required step="0.001" min="0"
-                               placeholder="100"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Size per pack (in UOM)</p>
-                    </div>
-
-                    <!-- Pack UOM -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Pack UOM <span class="text-red-500">*</span>
-                        </label>
-                        <select x-model="form.pack_uom_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select UOM</option>
+        <!-- Section 2: Weight & Package -->
+        <div>
+            <div class="section-title">
+                <span class="material-symbols-outlined text-green-600">scale</span>
+                2. Weight & Packaging
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="label">Weight / Pack Size</label>
+                    <div class="flex gap-2">
+                        <input type="number" x-model="form.pack_size" step="0.001" class="w-1/2 input-field" placeholder="0.00">
+                        <select x-model="form.pack_uom_id" class="w-1/2 input-field">
                             <template x-for="uom in uoms" :key="uom.id">
                                 <option :value="uom.id" x-text="uom.uom_name"></option>
                             </template>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">Unit of measurement for pack size</p>
-                    </div>
-
-                    <!-- HSN Code -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            HSN Code <span class="text-red-500">*</span>
-                        </label>
-                        <select x-model="form.hsn_code_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select HSN Code</option>
-                            <template x-for="hsn in hsnCodes" :key="hsn.id">
-                                <option :value="hsn.id" x-text="hsn.hsn_code + ' - ' + hsn.description"></option>
-                            </template>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">HSN code for tax purposes</p>
-                    </div>
-
-                    <!-- Standard Cost -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Standard Cost
-                        </label>
-                        <input type="number" x-model="form.standard_cost" step="0.0001" min="0"
-                               placeholder="0.0000"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Cost per unit (4 decimal places)</p>
-                    </div>
-
-                    <!-- MRP -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Maximum Retail Price (MRP)
-                        </label>
-                        <input type="number" x-model="form.mrp" step="0.01" min="0"
-                               placeholder="0.00"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Maximum retail price (2 decimal places)</p>
                     </div>
                 </div>
-            </div>
-
-            <!-- Status -->
-            <div class="mb-6">
-                <label class="flex items-center space-x-3">
-                    <input type="checkbox" x-model="form.is_active" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
-                    <span class="text-sm font-medium text-gray-700">Active Product</span>
-                </label>
-                <p class="text-xs text-gray-500 mt-1 ml-8">Enable for transactions and sales</p>
-            </div>
-
-            <!-- Info Box -->
-            <div class="bg-purple-50 border border-purple-200 rounded-lg p-4 mb-6">
-                <div class="flex items-start">
-                    <i class="fas fa-info-circle text-purple-600 mt-1 mr-3"></i>
-                    <div class="text-sm text-purple-800">
-                        <p class="font-semibold mb-1">About Product Master</p>
-                        <p>Finished goods and products for sales and inventory management with pricing and tax information.</p>
-                        <p class="mt-2 text-xs">Used in: Sales Orders, Invoices, Production, Inventory Management</p>
-                    </div>
+                <div class="md:col-span-2">
+                    <label class="label">HSN Code *</label>
+                    <select x-model="form.hsn_code_id" required class="input-field">
+                        <template x-for="hsn in hsnCodes" :key="hsn.id">
+                            <option :value="hsn.id" x-text="hsn.hsn_code + ' - ' + hsn.description"></option>
+                        </template>
+                    </select>
                 </div>
             </div>
+        </div>
 
-            <!-- Form Actions -->
-            <div class="flex items-center justify-end space-x-4 pt-6 border-t">
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}" 
-                   class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    Cancel
-                </a>
-                <button type="submit" :disabled="loading"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading">Update Product</span>
-                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Updating...</span>
-                </button>
+        <!-- Section 3: Pricing -->
+        <div>
+            <div class="section-title">
+                <span class="material-symbols-outlined text-orange-600">payments</span>
+                3. Update Prices (₹)
             </div>
-        </form>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <div>
+                    <label class="label">Internal Cost (₹)</label>
+                    <input type="number" x-model="form.standard_cost" step="0.0001" class="input-field !bg-white">
+                </div>
+                <div>
+                    <label class="label text-blue-700">Retail MRP (₹) *</label>
+                    <input type="number" x-model="form.mrp" step="0.01" class="input-field !bg-white border-blue-200 text-blue-700 font-bold text-lg">
+                </div>
+            </div>
+        </div>
+
+        <!-- Section 4: Status -->
+        <div class="bg-blue-50/50 p-6 rounded-2xl flex items-center justify-between border border-blue-100">
+            <div class="flex items-center gap-4">
+                <div class="flex items-center justify-center p-2 bg-white rounded-lg shadow-sm">
+                    <input type="checkbox" x-model="form.is_active" class="w-6 h-6 rounded-md text-blue-600 focus:ring-blue-500">
+                </div>
+                <div>
+                    <span class="text-sm font-bold text-slate-700 block">Product is Active</span>
+                    <span class="text-[11px] text-slate-500 font-medium">When disabled, this product will not be visible in sales or production orders.</span>
+                </div>
+            </div>
+        </div>
+
+        <div class="flex items-center justify-end gap-4 pt-6">
+            <button @click="submitUpdate" :disabled="saving" class="px-14 py-4 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-xl shadow-blue-100 disabled:opacity-50 flex items-center gap-2">
+                <span x-show="saving" class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                <span x-text="saving ? 'Saving...' : 'Update Record'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Spinner -->
+    <div x-show="loading" class="bg-white border rounded-2xl p-20 flex flex-col items-center justify-center gap-6 shadow-sm">
+        <div class="relative w-16 h-16">
+            <div class="absolute inset-0 border-4 border-slate-100 rounded-full"></div>
+            <div class="absolute inset-0 border-4 border-blue-600 border-t-transparent rounded-full animate-spin"></div>
+        </div>
+        <p class="text-[10px] font-black text-slate-400 uppercase tracking-[0.2em]">Synchronizing Master Data...</p>
     </div>
 </div>
 
 <script>
 function productForm() {
     return {
-        loading: false,
-        uoms: [],
-        hsnCodes: [],
-        productId: null,
-        form: {
-            product_code: '',
-            product_name: '',
-            product_category: '',
-            pack_size: '',
-            pack_uom_id: '',
-            hsn_code_id: '',
-            standard_cost: 0,
-            mrp: '',
-            is_active: true
+        loading: true, saving: false, productId: null, uoms: [], hsnCodes: [],
+        form: { product_code: '', product_name: '', product_category: '', pack_size: 0, pack_uom_id: '', hsn_code_id: '', standard_cost: 0, mrp: 0, is_active: true },
+
+        async loadProduct() {
+            const parts = window.location.pathname.split('/');
+            this.productId = parts[parts.length - 2];
+            try {
+                const [uRes, hRes, pRes] = await Promise.all([
+                    fetch('/api/v1/uoms', { headers: { 'Accept': 'application/json' } }),
+                    fetch('/api/v1/hsn-codes', { headers: { 'Accept': 'application/json' } }),
+                    fetch(`/api/v1/products/${this.productId}`, { headers: { 'Accept': 'application/json' } })
+                ]);
+                this.uoms = (await uRes.json()).data || [];
+                this.hsnCodes = (await hRes.json()).data?.hsn_codes || [];
+                const pData = (await pRes.json()).data?.product;
+                if(pData) {
+                    this.form = { ...this.form, ...pData };
+                }
+            } finally { this.loading = false; }
         },
-        
-        async loadProductData() {
-            // Get product ID from URL
-            const urlParts = window.location.pathname.split('/');
-            this.productId = urlParts[urlParts.length - 2]; // Get ID before /edit
-            
-            console.log('URL Path:', window.location.pathname);
-            console.log('Extracted Product ID:', this.productId);
-            
-            if (!this.productId || isNaN(this.productId)) {
-                console.error('Invalid product ID:', this.productId);
-                this.showNotification('Invalid product ID', 'error');
-                setTimeout(() => {
-                    window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}';
-                }, 2000);
+
+        async submitUpdate() {
+            if (!this.form.product_name || !this.form.mrp) {
+                alert('Product Name and MRP are required.');
                 return;
             }
-            
-            this.loading = true;
+            this.saving = true;
             try {
-                // Load product data and dropdowns
-                const productResponse = await fetch(`/api/v1/products/${this.productId}`, {
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json'
-                    }
-                });
-                
-                console.log('Product API Response Status:', productResponse.status);
-                
-                if (!productResponse.ok) {
-                    const errorData = await productResponse.json();
-                    console.error('Product API Error:', errorData);
-                    throw new Error(errorData.message || 'Failed to load product data');
-                }
-                
-                const productData = await productResponse.json();
-                console.log('Product Data:', productData);
-                
-                this.form = {
-                    product_code: productData.data?.product?.product_code || '',
-                    product_name: productData.data?.product?.product_name || '',
-                    product_category: productData.data?.product?.product_category || '',
-                    pack_size: productData.data?.product?.pack_size || '',
-                    pack_uom_id: productData.data?.product?.pack_uom_id || '',
-                    hsn_code_id: productData.data?.product?.hsn_code_id || '',
-                    standard_cost: productData.data?.product?.standard_cost || 0,
-                    mrp: productData.data?.product?.mrp || '',
-                    is_active: productData.data?.product?.is_active !== undefined ? productData.data.product.is_active : true
-                };
-                
-                console.log('Form populated:', this.form);
-                
-                // Load dropdowns separately
-                await this.loadDropdowns();
-                
-            } catch (error) {
-                console.error('Failed to load product data:', error);
-                this.showNotification('Failed to load product data: ' + error.message, 'error');
-            } finally {
-                this.loading = false;
-            }
-        },
-        
-        async loadDropdowns() {
-            try {
-                // Load UOMs and HSN Codes in parallel
-                const [uomsResponse, hsnResponse] = await Promise.all([
-                    fetch('/api/v1/uoms', {
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    }),
-                    fetch('/api/v1/hsn-codes', {
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    })
-                ]);
-                
-                if (uomsResponse.ok) {
-                    const uomsData = await uomsResponse.json();
-                    // API returns data directly as array, not nested
-                    this.uoms = Array.isArray(uomsData.data) ? uomsData.data : (uomsData.data?.uoms || []);
-                }
-                
-                if (hsnResponse.ok) {
-                    const hsnData = await hsnResponse.json();
-                    this.hsnCodes = Array.isArray(hsnData.data) ? hsnData.data : (hsnData.data?.hsn_codes || []);
-                }
-            } catch (error) {
-                console.error('Failed to load dropdowns:', error);
-                this.showNotification('Failed to load dropdown data', 'error');
-            }
-        },
-        
-        async submitForm() {
-            this.loading = true;
-            try {
-                console.log('Submitting product update with data:', this.form);
-                console.log('Product ID:', this.productId);
-                
-                const response = await fetch(`/api/v1/products/${this.productId}`, {
+                const res = await fetch(`/api/v1/products/${this.productId}`, {
                     method: 'PUT',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') },
                     body: JSON.stringify(this.form)
                 });
-                
-                console.log('Update API Response Status:', response.status);
-                
-                const data = await response.json();
-                console.log('Update API Response Data:', data);
-                
-                if (!response.ok) {
-                    if (data.error && data.error.details) {
-                        console.log('Validation errors:', data.error.details);
-                        this.showNotification('Please fix validation errors', 'error');
-                    } else {
-                        console.log('API Error:', data);
-                        this.showNotification(data.message || 'Failed to update product', 'error');
-                    }
-                    return;
-                }
-                
-                this.showNotification('Product updated successfully!', 'success');
-                setTimeout(() => {
-                    window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}';
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Failed to update product:', error);
-                this.showNotification('Network error. Please try again.', 'error');
-            } finally {
-                this.loading = false;
-            }
-        },
-        
-        showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500 text-white' : 
-                type === 'error' ? 'bg-red-500 text-white' : 
-                'bg-blue-500 text-white'
-            }`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
+                if(res.ok) { window.location.href = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}"; }
+            } finally { this.saving = false; }
         }
-    }
+    };
 }
 </script>
 @endsection
