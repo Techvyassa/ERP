@@ -40,7 +40,7 @@
                 <div class="px-6 pt-6">
                     <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-tighter text-gray-400 mb-2">
                         <span>Quantity Tracker</span>
-                        <span x-text="modal.order?.confirmed_qty_total + ' / ' + modal.order?.target_qty + ' ' + (modal.order?.uom || '')"></span>
+                        <span x-text="modal.order?.confirmed_qty_total + ' / ' + modal.order?.target_qty + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"></span>
                     </div>
                     <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
                         <div class="bg-emerald-500 h-full transition-all duration-700"
@@ -411,12 +411,12 @@
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <span class="text-xs font-extrabold text-slate-600"
-                                      x-text="order.target_qty + ' ' + (order.uom || '')"></span>
+                                      x-text="order.target_qty + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <div class="inline-flex flex-col items-end gap-1">
                                     <span class="text-xs font-black text-emerald-600"
-                                          x-text="(order.confirmed_qty_total ?? 0) + ' ' + (order.uom || '')"></span>
+                                          x-text="(order.confirmed_qty_total ?? 0) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                                     <div class="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
                                          <div class="bg-emerald-500 h-full transition-all duration-1000" :style="'width: ' + ((order.confirmed_qty_total / order.target_qty) * 100) + '%'"></div>
                                     </div>
@@ -425,7 +425,7 @@
                             <td class="px-6 py-4 text-right font-black leading-none">
                                 <span class="text-xs"
                                       :class="remainingQty(order) > 0 ? 'text-orange-600' : 'text-gray-400'"
-                                      x-text="remainingQty(order) + ' ' + (order.uom || '')"></span>
+                                      x-text="remainingQty(order) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                             </td>
                             <td class="px-6 py-4 text-center leading-none">
                                 <span class="px-3 py-1 text-[10px] rounded-full font-black uppercase tracking-widest"

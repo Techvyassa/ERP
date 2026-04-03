@@ -540,6 +540,7 @@
                                 </div>
                             </td>
                             <td class="px-5 py-4">
+                            <td class="px-5 py-4">
                                 <div class="space-y-1">
                                     <div class="flex items-center gap-1.5 font-bold text-gray-400 text-xs">
                                         <span>Target:</span>

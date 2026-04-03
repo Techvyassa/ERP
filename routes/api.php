@@ -503,6 +503,9 @@ Route::prefix('v1')->group(function () {
 
                 // Bucket drill-down: all balance rows for a material in one bucket
                 Route::get('/bucket/{materialId}/{bucket}', [App\Http\Controllers\StockController::class, 'byBucket']);
+
+
+                Route::post('/adjust', [App\Http\Controllers\StockController::class, 'adjust']);
             });
         });
 

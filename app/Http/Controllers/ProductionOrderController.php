@@ -145,7 +145,7 @@ class ProductionOrderController extends Controller
             'rm_lines' => 'required|array|min:1',
             'rm_lines.*.material_id' => 'required|integer',
             'rm_lines.*.required_qty' => 'required|numeric|min:0.001',
-            'rm_lines.*.uom' => 'nullable|string',
+            'rm_lines.*.uom' => 'nullable',
         ]);
 
         if ($validator->fails()) {
