@@ -489,7 +489,6 @@ class ProductionOrderController extends Controller
                 'confirmed_qty'         => 'required|numeric|min:0.001',
                 'rejected_qty'          => 'nullable|numeric|min:0',
                 'rejection_reason_code' => 'nullable|string|max:100',
-                'completion_status'     => 'required|in:PARTIALLY_COMPLETED,COMPLETED',
                 'fg_bin_id'             => 'nullable|integer',
                 'fg_warehouse_id'       => 'nullable|integer',
                 'fg_batch_number'       => 'nullable|string|max:50',
@@ -525,10 +524,12 @@ class ProductionOrderController extends Controller
             $confirmedQty   = (float) ($request->input('confirmed_qty') ?? $request->input('actual_qty', 0));
             $rejectedQty    = (float) $request->input('rejected_qty', 0);
             $reworkQty      = (float) $request->input('rework_qty', 0);
-            $completionStatus = $request->input('completion_status', 'COMPLETED');
             $targetQty      = (float) $order->target_qty;
             $alreadyConfirmed = (float) ($order->confirmed_qty_total ?? 0);
             $remaining      = max(0, $targetQty - $alreadyConfirmed);
+
+            // Auto-determine completion status based on remaining quantity
+            $completionStatus = $remaining <= 0.001 ? 'COMPLETED' : 'PARTIALLY_COMPLETED';
 
             // Validate session qty doesn't exceed remaining (with 1% tolerance)
             $sessionTotal = $confirmedQty + $rejectedQty;

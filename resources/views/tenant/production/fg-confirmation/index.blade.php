@@ -48,64 +48,65 @@
                     </div>
                     <div class="flex justify-between text-xs mt-2 font-semibold">
                         <span class="text-emerald-600" x-text="'Produced: ' + (modal.order?.confirmed_qty_total || 0)"></span>
-                        <span class="text-orange-600" x-text="'Open: ' + (modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
+                        <span class="text-orange-600" x-text="'Remaining: ' + (modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
                     </div>
                 </div>
 
                 <div class="px-6 py-5 space-y-5">
+                    <!-- Auto-calculated fields -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Produced (This Session) <span class="text-red-500">*</span></label>
-                            <input type="number" min="0.001" step="0.001"
-                                   x-model="form.confirmed_qty"
-                                   :max="modal.order?.remaining_qty"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold text-gray-900 shadow-inner">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Total Target</label>
+                            <input type="text" readonly
+                                   :value="modal.order?.target_qty + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                   class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejected</label>
-                            <input type="number" min="0" step="0.001"
-                                   x-model="form.rejected_qty"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
-                            <select x-model="form.rejection_reason_code"
-                                    class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-inner">
-                                <option value="">— None —</option>
-                                <option value="DEFECT_VISUAL">Visual Defect</option>
-                                <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
-                                <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
-                                <option value="CONTAMINATION">Contamination</option>
-                                <option value="PACKAGING_DAMAGE">Packaging Damage</option>
-                                <option value="OTHER">Other</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Identity</label>
-                            <input type="text" x-model="form.fg_batch_number"
-                                   placeholder="Auto or Manual"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-inner">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Already Confirmed</label>
+                            <input type="text" readonly
+                                   :value="(modal.order?.confirmed_qty_total ?? 0) + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                   class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                     </div>
 
-                    {{-- Completion status --}}
-                    <div class="grid grid-cols-2 gap-4">
-                        <button @click="form.completion_status = 'PARTIALLY_COMPLETED'"
-                                :class="form.completion_status === 'PARTIALLY_COMPLETED'
-                                    ? 'bg-amber-500 text-white ring-4 ring-amber-100 shadow-lg translate-y--0.5'
-                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
-                                class="flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl transition-all duration-300 text-center group">
-                            <span class="material-symbols-outlined text-2xl" :class="form.completion_status === 'PARTIALLY_COMPLETED' ? 'text-white' : 'text-amber-500'">pending</span>
-                            <span class="font-bold text-xs uppercase tracking-widest">Partial</span>
-                        </button>
-                        <button @click="form.completion_status = 'COMPLETED'"
-                                :class="form.completion_status === 'COMPLETED'
-                                    ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 shadow-lg translate-y--0.5'
-                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
-                                class="flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl transition-all duration-300 text-center group">
-                            <span class="material-symbols-outlined text-2xl" :class="form.completion_status === 'COMPLETED' ? 'text-white' : 'text-emerald-500'">check_circle</span>
-                            <span class="font-bold text-xs uppercase tracking-widest">Finalize</span>
-                        </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Accept (Auto-filled)</label>
+                            <input type="number" min="0.001" step="0.001"
+                                   x-model="form.confirmed_qty"
+                                   :max="modal.order?.remaining_qty"
+                                   readonly
+                                   class="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold shadow-inner cursor-not-allowed">
+                            <p class="text-[10px] text-emerald-600">Auto-calculated from remaining quantity</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Reject (Optional)</label>
+                            <input type="number" min="0" step="0.001"
+                                   x-model="form.rejected_qty"
+                                   @input="onRejectChange()"
+                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
+                        </div>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
+                        <select x-model="form.rejection_reason_code"
+                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-inner">
+                            <option value="">— None —</option>
+                            <option value="DEFECT_VISUAL">Visual Defect</option>
+                            <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
+                            <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
+                            <option value="CONTAMINATION">Contamination</option>
+                            <option value="PACKAGING_DAMAGE">Packaging Damage</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Identity</label>
+                        <input type="text" x-model="form.fg_batch_number"
+                               placeholder="Auto-generated"
+                               class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-inner">
                     </div>
 
                     <label class="flex items-center gap-3 rounded-2xl bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800 cursor-pointer border border-emerald-100 hover:bg-emerald-50 transition-colors">
@@ -523,10 +524,23 @@ function fgConfirmation(orgSlug) {
                 rejected_qty: 0,
                 rejection_reason_code: '',
                 fg_batch_number: '',
-                completion_status: 'PARTIALLY_COMPLETED',
+                completion_status: 'COMPLETED',
                 qc_required: false,
             };
             this.modal.show = true;
+        },
+        
+        onRejectChange() {
+            // Auto-adjust confirmed_qty when reject_qty changes
+            const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
+            const rejectQty = parseFloat(this.form.rejected_qty || 0);
+            const maxAccept = remaining - rejectQty;
+            
+            if (maxAccept < 0) {
+                this.form.confirmed_qty = 0;
+            } else if (parseFloat(this.form.confirmed_qty) > maxAccept) {
+                this.form.confirmed_qty = maxAccept;
+            }
         },
 
         closeModal() {
