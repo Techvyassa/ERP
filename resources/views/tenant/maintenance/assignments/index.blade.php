@@ -113,7 +113,7 @@
                     <tr class="text-left text-gray-500 border-b">
                         <th class="py-3 px-4 font-semibold">Work Order</th>
                         <th class="py-3 px-4 font-semibold">Request</th>
-                        <th class="py-3 px-4 font-semibold">Asset</th>
+                        <th class="py-3 px-4 font-semibold">Maintanance Name</th>
                         <th class="py-3 px-4 font-semibold">Technician</th>
                         <th class="py-3 px-4 font-semibold">Due Date</th>
                         <th class="py-3 px-4 font-semibold">Status</th>

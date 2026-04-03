@@ -15,7 +15,7 @@
 
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-lg font-semibold text-gray-900">Asset Register</h2>
+            <h2 class="text-lg font-semibold text-gray-900">Maintanance  Register</h2>
             <p class="text-sm text-gray-500">Register equipment and track maintenance history</p>
         </div>
         <button @click="showForm = !showForm"
@@ -35,12 +35,12 @@
             @csrf
             <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Asset Name <span class="text-red-500">*</span></label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Maintanance Name <span class="text-red-500">*</span></label>
                     <input type="text" name="name" required placeholder="e.g. Air Compressor"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 outline-none">
                 </div>
                 <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Asset Code</label>
+                    <label class="block text-sm font-medium text-gray-700 mb-1">Maintanance Code</label>
                     <input type="text" name="code" placeholder="Auto-generated if blank"
                         class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-blue-300 outline-none">
                 </div>
