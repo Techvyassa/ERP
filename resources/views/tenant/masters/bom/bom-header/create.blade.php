@@ -189,6 +189,75 @@
                 </div>
             </div>
 
+            <!-- BOM Details (Items) -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                    <h3 class="text-lg font-semibold text-gray-900">BOM Components (Items)</h3>
+                    <button type="button" @click="addItem" class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm font-medium transition-colors">
+                        <i class="fas fa-plus mr-1"></i> Add Item
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border rounded-lg">
+                        <thead class="text-xs text-gray-700 bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-4 py-3">Material <span class="text-red-500">*</span></th>
+                                <th class="px-4 py-3">Qty <span class="text-red-500">*</span></th>
+                                <th class="px-4 py-3">UOM <span class="text-red-500">*</span></th>
+                                <th class="px-4 py-3">Sub. Material</th>
+                                <th class="px-4 py-3 w-24">Scrap %</th>
+                                <th class="px-4 py-3 w-20 text-center">Critical</th>
+                                <th class="px-4 py-3 w-16 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(item, index) in form.items" :key="index">
+                                <tr class="border-b bg-white hover:bg-gray-50 transition-colors">
+                                    <td class="px-4 py-2">
+                                        <select x-model="item.material_id" required class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">Select Material</option>
+                                            <template x-for="mat in materials" :key="mat.id">
+                                                <option :value="mat.id" x-text="mat.material_code + ' - ' + mat.material_name"></option>
+                                            </template>
+                                        </select>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <input type="number" x-model="item.qty_required" required min="0.0001" step="0.0001" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <select x-model="item.uom_id" required class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">Select UOM</option>
+                                            <template x-for="uom in uoms" :key="uom.id">
+                                                <option :value="uom.id" x-text="uom.uom_code"></option>
+                                            </template>
+                                        </select>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <select x-model="item.substitute_material_id" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">None</option>
+                                            <template x-for="mat in materials" :key="mat.id">
+                                                <option :value="mat.id" x-text="mat.material_code"></option>
+                                            </template>
+                                        </select>
+                                    </td>
+                                    <td class="px-4 py-2">
+                                        <input type="number" x-model="item.scrap_percent" min="0" max="100" step="0.01" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <td class="px-4 py-2 text-center">
+                                        <input type="checkbox" x-model="item.is_critical" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    </td>
+                                    <td class="px-4 py-2 text-center">
+                                        <button type="button" @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors" :disabled="form.items.length === 1">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
             <!-- Info Box -->
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div class="flex items-start">
@@ -224,6 +293,7 @@ function bomForm() {
         loading: false,
         products: [],
         uoms: [],
+        materials: [],
         autoGenerate: false,
         codeGeneration: {
             prefix: 'BOM',
@@ -238,7 +308,34 @@ function bomForm() {
             batch_size: 100,
             output_uom_id: '',
             bom_status: 'DRAFT',
-            remarks: ''
+            remarks: '',
+            items: [{
+                material_id: '',
+                qty_required: 1,
+                uom_id: '',
+                scrap_percent: 0,
+                substitute_material_id: '',
+                is_critical: false,
+                remarks: ''
+            }]
+        },
+        
+        addItem() {
+            this.form.items.push({
+                material_id: '',
+                qty_required: 1,
+                uom_id: '',
+                scrap_percent: 0,
+                substitute_material_id: '',
+                is_critical: false,
+                remarks: ''
+            });
+        },
+        
+        removeItem(index) {
+            if (this.form.items.length > 1) {
+                this.form.items.splice(index, 1);
+            }
         },
         
         toggleAutoGenerate() {
@@ -284,6 +381,19 @@ function bomForm() {
                         this.uoms = Array.isArray(uomData.data) ? uomData.data : (uomData.data.uoms || []);
                     }
                 }
+
+                // Load Materials
+                const matResponse = await fetch('/api/v1/materials?per_page=1000', {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
+
+                if (matResponse.ok) {
+                    const matData = await matResponse.json();
+                    if (matData && matData.success && matData.data) {
+                        this.materials = Array.isArray(matData.data) ? matData.data : (matData.data.materials || []);
+                    }
+                }
             } catch (error) {
                 console.error('Failed to load dropdowns:', error);
                 alert('Failed to load products/UOMs. Please refresh the page.');
@@ -303,7 +413,16 @@ function bomForm() {
                     batch_size: parseFloat(this.form.batch_size),
                     output_uom_id: parseInt(this.form.output_uom_id),
                     bom_status: this.form.bom_status,
-                    remarks: this.form.remarks || null
+                    remarks: this.form.remarks || null,
+                    items: this.form.items.map(item => ({
+                        material_id: parseInt(item.material_id),
+                        qty_required: parseFloat(item.qty_required),
+                        uom_id: parseInt(item.uom_id),
+                        scrap_percent: item.scrap_percent ? parseFloat(item.scrap_percent) : 0,
+                        substitute_material_id: item.substitute_material_id ? parseInt(item.substitute_material_id) : null,
+                        is_critical: Boolean(item.is_critical),
+                        remarks: item.remarks || null
+                    }))
                 };
 
                 const response = await fetch('/api/v1/bom-headers', {

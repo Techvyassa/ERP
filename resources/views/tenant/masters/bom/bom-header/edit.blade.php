@@ -136,6 +136,106 @@
                 </div>
             </div>
 
+            <!-- BOM Details (Items) -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center mb-4 pb-2 border-b">
+                    <h3 class="text-lg font-semibold text-gray-900">BOM Components (Items)</h3>
+                    <button type="button" @click="addItem" class="px-3 py-1 bg-blue-100 text-blue-700 rounded hover:bg-blue-200 text-sm font-medium transition-colors">
+                        <i class="fas fa-plus mr-1"></i> Add Item
+                    </button>
+                </div>
+                
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm text-left border rounded-lg">
+                        <thead class="text-xs text-gray-700 bg-gray-50 border-b">
+                            <tr>
+                                <th class="px-4 py-3">Material <span class="text-red-500">*</span></th>
+                                <th class="px-4 py-3">Qty <span class="text-red-500">*</span></th>
+                                <th class="px-4 py-3">UOM <span class="text-red-500">*</span></th>
+                                <th class="px-4 py-3">Sub. Material</th>
+                                <th class="px-4 py-3 w-24">Scrap %</th>
+                                <th class="px-4 py-3 w-20 text-center">Critical</th>
+                                <th class="px-4 py-3 w-16 text-center">Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            <template x-for="(item, index) in form.items" :key="index">
+                                <tr class="border-b bg-white hover:bg-gray-50 transition-colors">
+                                    <!-- Material -->
+                                    <td class="px-4 py-2">
+                                        <select
+                                            :value="item.material_id"
+                                            @change="item.material_id = Number($event.target.value)"
+                                            required
+                                            class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">Select Material</option>
+                                            <template x-for="mat in materials" :key="mat.id">
+                                                <option
+                                                    :value="mat.id"
+                                                    :selected="item.material_id == mat.id"
+                                                    x-text="mat.material_code + ' - ' + mat.material_name">
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </td>
+                                    <!-- Qty -->
+                                    <td class="px-4 py-2">
+                                        <input type="number" x-model="item.qty_required" required min="0.0001" step="0.0001" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <!-- UOM -->
+                                    <td class="px-4 py-2">
+                                        <select
+                                            :value="item.uom_id"
+                                            @change="item.uom_id = Number($event.target.value)"
+                                            required
+                                            class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">Select UOM</option>
+                                            <template x-for="uom in uoms" :key="uom.id">
+                                                <option
+                                                    :value="uom.id"
+                                                    :selected="item.uom_id == uom.id"
+                                                    x-text="uom.uom_code + ' - ' + uom.uom_name">
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </td>
+                                    <!-- Sub. Material -->
+                                    <td class="px-4 py-2">
+                                        <select
+                                            :value="item.substitute_material_id"
+                                            @change="item.substitute_material_id = $event.target.value ? Number($event.target.value) : ''"
+                                            class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <option value="">None</option>
+                                            <template x-for="mat in materials" :key="mat.id">
+                                                <option
+                                                    :value="mat.id"
+                                                    :selected="item.substitute_material_id == mat.id"
+                                                    x-text="mat.material_code + ' - ' + mat.material_name">
+                                                </option>
+                                            </template>
+                                        </select>
+                                    </td>
+                                    <!-- Scrap % -->
+                                    <td class="px-4 py-2">
+                                        <input type="number" x-model="item.scrap_percent" min="0" max="100" step="0.01" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                    </td>
+                                    <!-- Critical -->
+                                    <td class="px-4 py-2 text-center">
+                                        <input type="checkbox" x-model="item.is_critical" class="rounded border-gray-300 text-blue-600 focus:ring-blue-500">
+                                    </td>
+                                    <!-- Actions -->
+                                    <td class="px-4 py-2 text-center">
+                                        <button type="button" @click="removeItem(index)" class="text-red-500 hover:text-red-700 transition-colors" :disabled="form.items.length === 1">
+                                            <i class="fas fa-trash"></i>
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
             <!-- Info Box -->
             <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
                 <div class="flex items-start">
@@ -167,10 +267,20 @@
 
 <script>
 function bomForm() {
+    // Helper: convert ISO date string to YYYY-MM-DD for <input type="date">
+    function toDateInput(val) {
+        if (!val) return '';
+        // If already YYYY-MM-DD
+        if (/^\d{4}-\d{2}-\d{2}$/.test(val)) return val;
+        // ISO 8601: "2025-01-15T00:00:00.000000Z"
+        return val.substring(0, 10);
+    }
+
     return {
         loading: false,
-        products: [],
+        dataLoading: true,
         uoms: [],
+        materials: [],
         bomId: {{ $bomId }},
         form: {
             bom_code: '',
@@ -182,17 +292,43 @@ function bomForm() {
             batch_size: 100,
             output_uom_id: '',
             bom_status: 'DRAFT',
-            remarks: ''
+            remarks: '',
+            items: []
+        },
+        
+        addItem() {
+            this.form.items.push({
+                id: null,
+                material_id: '',
+                qty_required: 1,
+                uom_id: '',
+                scrap_percent: 0,
+                substitute_material_id: '',
+                is_critical: false,
+                remarks: ''
+            });
+        },
+        
+        removeItem(index) {
+            if (this.form.items.length > 1) {
+                this.form.items.splice(index, 1);
+            }
         },
         
         async loadData() {
             try {
-                // Load UOMs
-                const uomResponse = await fetch('/api/v1/uoms?per_page=1000', {
-                    credentials: 'same-origin',
-                    headers: { 'Accept': 'application/json' }
-                });
-                
+                // Step 1: Load all dropdowns in parallel first
+                const [uomResponse, matResponse] = await Promise.all([
+                    fetch('/api/v1/uoms?per_page=1000', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    }),
+                    fetch('/api/v1/materials?per_page=1000', {
+                        credentials: 'same-origin',
+                        headers: { 'Accept': 'application/json' }
+                    })
+                ]);
+
                 if (uomResponse.ok) {
                     const uomData = await uomResponse.json();
                     if (uomData && uomData.success && uomData.data) {
@@ -200,7 +336,14 @@ function bomForm() {
                     }
                 }
 
-                // Load BOM data
+                if (matResponse.ok) {
+                    const matData = await matResponse.json();
+                    if (matData && matData.success && matData.data) {
+                        this.materials = Array.isArray(matData.data) ? matData.data : (matData.data.materials || []);
+                    }
+                }
+
+                // Step 2: AFTER dropdowns are loaded, fetch BOM data
                 const bomResponse = await fetch(`/api/v1/bom-headers/${this.bomId}`, {
                     credentials: 'same-origin',
                     headers: { 'Accept': 'application/json' }
@@ -210,37 +353,72 @@ function bomForm() {
                     const bomData = await bomResponse.json();
                     if (bomData && bomData.success && bomData.data) {
                         const bom = bomData.data;
+
+                        // NOTE: All IDs must be Numbers (not strings) so Alpine's
+                        // x-model equality check can match <option :value="mat.id">
                         this.form = {
-                            bom_code: bom.bom_code || '',
-                            product_id: bom.product_id || '',
-                            product_name: bom.product ? bom.product.product_name : '',
-                            version: bom.version || 1,
-                            effective_from: bom.effective_from || '',
-                            effective_to: bom.effective_to || '',
-                            batch_size: bom.batch_size || 100,
-                            output_uom_id: bom.output_uom_id || '',
-                            bom_status: bom.bom_status || 'DRAFT',
-                            remarks: bom.remarks || ''
+                            bom_code:       bom.bom_code || '',
+                            product_id:     bom.product_id ? Number(bom.product_id) : '',
+                            product_name:   bom.product ? (bom.product.product_code + ' - ' + bom.product.product_name) : '',
+                            version:        bom.version || 1,
+                            effective_from: toDateInput(bom.effective_from),
+                            effective_to:   toDateInput(bom.effective_to),
+                            batch_size:     parseFloat(bom.batch_size) || 100,
+                            output_uom_id:  bom.output_uom_id ? Number(bom.output_uom_id) : '',
+                            bom_status:     bom.bom_status || 'DRAFT',
+                            remarks:        bom.remarks || '',
+                            items: (bom.bom_details && bom.bom_details.length > 0)
+                                ? bom.bom_details.map(item => ({
+                                    id:                     item.id,
+                                    material_id:            item.material_id ? Number(item.material_id) : '',
+                                    qty_required:           parseFloat(item.qty_required) || 0,
+                                    uom_id:                 item.uom_id ? Number(item.uom_id) : '',
+                                    scrap_percent:          parseFloat(item.scrap_percent) || 0,
+                                    substitute_material_id: item.substitute_material_id ? Number(item.substitute_material_id) : '',
+                                    is_critical:            Boolean(item.is_critical),
+                                    remarks:                item.remarks || ''
+                                }))
+                                : [{
+                                    id: null,
+                                    material_id: '',
+                                    qty_required: 1,
+                                    uom_id: '',
+                                    scrap_percent: 0,
+                                    substitute_material_id: '',
+                                    is_critical: false,
+                                    remarks: ''
+                                }]
                         };
                     }
                 }
             } catch (error) {
                 console.error('Failed to load data:', error);
                 alert('Failed to load BOM data. Please refresh the page.');
+            } finally {
+                this.dataLoading = false;
             }
         },
         
         async submitForm() {
             this.loading = true;
             try {
-                // Convert string values to proper types
                 const formData = {
-                    effective_from: this.form.effective_from,
-                    effective_to: this.form.effective_to || null,
-                    batch_size: parseFloat(this.form.batch_size),
-                    output_uom_id: parseInt(this.form.output_uom_id),
-                    bom_status: this.form.bom_status,
-                    remarks: this.form.remarks || null
+                    effective_from:  this.form.effective_from,
+                    effective_to:    this.form.effective_to || null,
+                    batch_size:      parseFloat(this.form.batch_size),
+                    output_uom_id:   parseInt(this.form.output_uom_id),
+                    bom_status:      this.form.bom_status,
+                    remarks:         this.form.remarks || null,
+                    items: this.form.items.map(item => ({
+                        id:                     item.id ? parseInt(item.id) : null,
+                        material_id:            parseInt(item.material_id),
+                        qty_required:           parseFloat(item.qty_required),
+                        uom_id:                 parseInt(item.uom_id),
+                        scrap_percent:          item.scrap_percent ? parseFloat(item.scrap_percent) : 0,
+                        substitute_material_id: item.substitute_material_id ? parseInt(item.substitute_material_id) : null,
+                        is_critical:            Boolean(item.is_critical),
+                        remarks:                item.remarks || null
+                    }))
                 };
 
                 const response = await fetch(`/api/v1/bom-headers/${this.bomId}`, {
@@ -263,7 +441,7 @@ function bomForm() {
                     throw new Error(errorMsg);
                 }
                 
-                alert('BOM header updated successfully!');
+                alert('BOM updated successfully!');
                 window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
             } catch (error) {
                 console.error('Failed to update BOM:', error);

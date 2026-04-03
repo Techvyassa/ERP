@@ -460,39 +460,7 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('bom-header.view');
 
-        Route::get('/bom-detail', function ($orgSlug) use ($getOrg) {
-            extract($getOrg($orgSlug));
-            return view('tenant.masters.bom.bom-detail.index', [
-                'organization' => $org,
-                'tenantType' => $tenantType
-            ]);
-        })->name('bom-detail.index');
 
-        Route::get('/bom-detail/create', function ($orgSlug) use ($getOrg) {
-            extract($getOrg($orgSlug));
-            return view('tenant.masters.bom.bom-detail.create', [
-                'organization' => $org,
-                'tenantType' => $tenantType
-            ]);
-        })->name('bom-detail.create');
-
-        Route::get('/bom-detail/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
-            extract($getOrg($orgSlug));
-            return view('tenant.masters.bom.bom-detail.edit', [
-                'organization' => $org,
-                'tenantType' => $tenantType,
-                'id' => $id
-            ]);
-        })->name('bom-detail.edit');
-
-        Route::get('/bom-detail/{id}/view', function ($orgSlug, $id) use ($getOrg) {
-            extract($getOrg($orgSlug));
-            return view('tenant.masters.bom.bom-detail.view', [
-                'organization' => $org,
-                'tenantType' => $tenantType,
-                'id' => $id
-            ]);
-        })->name('bom-detail.view');
 
         // ====================================================================
         // DEPARTMENTAL PORTALS (Organization-specific)

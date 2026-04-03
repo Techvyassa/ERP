@@ -95,6 +95,57 @@
                     </template>
                 </div>
 
+                <!-- BOM Details (Items) -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">BOM Components (Items)</h3>
+                    
+                    <template x-if="bom.bom_details && bom.bom_details.length > 0">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left border rounded-lg">
+                                <thead class="text-xs text-gray-700 bg-gray-50 border-b">
+                                    <tr>
+                                        <th class="px-4 py-3">Line #</th>
+                                        <th class="px-4 py-3">Material</th>
+                                        <th class="px-4 py-3">Qty Required</th>
+                                        <th class="px-4 py-3">UOM</th>
+                                        <th class="px-4 py-3">Scrap %</th>
+                                        <th class="px-4 py-3">Sub. Material</th>
+                                        <th class="px-4 py-3 text-center">Critical</th>
+                                        <th class="px-4 py-3">Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(item, index) in bom.bom_details" :key="index">
+                                        <tr class="border-b bg-white hover:bg-gray-50">
+                                            <td class="px-4 py-2" x-text="item.line_no || (index + 1)"></td>
+                                            <td class="px-4 py-2 font-medium text-gray-900" x-text="item.material ? (item.material.material_code + ' - ' + item.material.material_name) : '-'"></td>
+                                            <td class="px-4 py-2" x-text="item.qty_required"></td>
+                                            <td class="px-4 py-2" x-text="item.uom ? item.uom.uom_code : '-'"></td>
+                                            <td class="px-4 py-2" x-text="(item.scrap_percent || 0) + '%'"></td>
+                                            <td class="px-4 py-2" x-text="item.substitute_material ? (item.substitute_material.material_code + ' - ' + item.substitute_material.material_name) : '-'"></td>
+                                            <td class="px-4 py-2 text-center">
+                                                <template x-if="item.is_critical">
+                                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Yes</span>
+                                                </template>
+                                                <template x-if="!item.is_critical">
+                                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">No</span>
+                                                </template>
+                                            </td>
+                                            <td class="px-4 py-2 text-gray-500" x-text="item.remarks || '-'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                    
+                    <template x-if="!bom.bom_details || bom.bom_details.length === 0">
+                        <div class="text-center py-6 border rounded-lg bg-gray-50">
+                            <p class="text-gray-500">No components defined for this BOM.</p>
+                        </div>
+                    </template>
+                </div>
+
                 <!-- Audit Information -->
                 <div class="bg-white rounded-xl shadow p-6">
                     <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Audit Information</h3>
