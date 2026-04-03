@@ -46,9 +46,13 @@
                 </div>
                 <div>
                     <label class="block text-sm font-medium text-gray-700 mb-1">Compatible Asset</label>
-                    @if(count($workOrders) > 0)
-                        <input type="text" name="asset" placeholder="e.g. Air Compressor"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-300 outline-none">
+                    @if(isset($assets) && count($assets) > 0)
+                        <select name="asset" class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-300 outline-none">
+                            <option value="">Select asset (optional)</option>
+                            @foreach($assets as $a)
+                                <option value="{{ $a['name'] }}">{{ $a['name'] }} ({{ $a['code'] }})</option>
+                            @endforeach
+                        </select>
                     @else
                         <input type="text" name="asset" placeholder="e.g. Air Compressor"
                             class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-purple-300 outline-none">

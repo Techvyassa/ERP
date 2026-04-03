@@ -4,7 +4,7 @@
 @section('page-title', 'Material Requests')
 
 @section('content')
-<div x-data="{ showForm: false, woId: '', partCode: '', partName: '', partUnit: 'Nos' }">
+<div x-data="{ showForm: false, woId: '', items: [{ part_code: '', part_name: '', unit: 'Nos', qty: 1 }] }">
 
     @if(session('success'))
         <div class="mb-4 p-3 bg-green-50 border border-green-200 text-green-700 text-sm rounded-lg flex items-center gap-2">
@@ -70,39 +70,61 @@
                         </p>
                     @endif
                 </div>
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Spare Part / Material <span class="text-red-500">*</span></label>
-                    @if(count($parts) > 0)
-                        <select name="part_code" x-model="partCode" required
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-300 outline-none"
-                            @change="
-                                const opt = $event.target.options[$event.target.selectedIndex];
-                                partName = opt.dataset.name || '';
-                                partUnit = opt.dataset.unit || 'Nos';
-                            ">
-                            <option value="">Select part</option>
-                            @foreach($parts as $p)
-                                <option value="{{ $p['code'] }}"
-                                    data-name="{{ $p['name'] }}"
-                                    data-unit="{{ $p['unit'] ?? 'Nos' }}"
-                                    data-stock="{{ $p['stock'] }}">
-                                    {{ $p['name'] }} ({{ $p['code'] }}) — {{ $p['stock'] }} {{ $p['unit'] ?? 'Nos' }} in stock
-                                </option>
-                            @endforeach
-                        </select>
-                    @else
-                        <input type="text" name="part_code" x-model="partCode" required placeholder="Part code e.g. SP-001"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-300 outline-none">
-                        <p class="text-xs text-gray-400 mt-1">No parts in inventory. <a href="{{ route('tenant.maintenance.spare-parts', $organization->org_slug) }}" class="text-purple-600 underline">Add spare parts first</a>.</p>
-                    @endif
-                </div>
-                <input type="hidden" name="part_name" :value="partName">
-                <input type="hidden" name="unit" :value="partUnit">
-                <div>
-                    <label class="block text-sm font-medium text-gray-700 mb-1">Quantity Required <span class="text-red-500">*</span></label>
-                    <input type="number" name="qty" required min="1" value="1"
-                        class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-300 outline-none">
-                </div>
+            </div>
+
+            <div class="mt-4 space-y-3">
+                <template x-for="(it, idx) in items" :key="idx">
+                    <div class="grid grid-cols-1 md:grid-cols-12 gap-3 items-end">
+                        <div class="md:col-span-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Spare Part / Material <span class="text-red-500">*</span></label>
+                            @if(count($parts) > 0)
+                                <select :name="`items[${idx}][part_code]`" x-model="it.part_code" required
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-300 outline-none"
+                                    @change="
+                                        const opt = $event.target.options[$event.target.selectedIndex];
+                                        it.part_name = opt?.dataset?.name || '';
+                                        it.unit = opt?.dataset?.unit || 'Nos';
+                                    ">
+                                    <option value="">Select part</option>
+                                    @foreach($parts as $p)
+                                        <option value="{{ $p['code'] }}"
+                                            data-name="{{ $p['name'] }}"
+                                            data-unit="{{ $p['unit'] ?? 'Nos' }}"
+                                            data-stock="{{ $p['stock'] }}">
+                                            {{ $p['name'] }} ({{ $p['code'] }}) — {{ $p['stock'] }} {{ $p['unit'] ?? 'Nos' }} in stock
+                                        </option>
+                                    @endforeach
+                                </select>
+                            @else
+                                <input type="text" :name="`items[${idx}][part_code]`" x-model="it.part_code" required placeholder="Part code e.g. SP-001"
+                                    class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-300 outline-none">
+                                <p class="text-xs text-gray-400 mt-1">No parts in inventory. <a href="{{ route('tenant.maintenance.spare-parts', $organization->org_slug) }}" class="text-purple-600 underline">Add spare parts first</a>.</p>
+                            @endif
+                            <input type="hidden" :name="`items[${idx}][part_name]`" :value="it.part_name">
+                            <input type="hidden" :name="`items[${idx}][unit]`" :value="it.unit">
+                        </div>
+                        <div class="md:col-span-3">
+                            <label class="block text-sm font-medium text-gray-700 mb-1">Quantity Required <span class="text-red-500">*</span></label>
+                            <input type="number" :name="`items[${idx}][qty]`" x-model.number="it.qty" required min="1"
+                                class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:ring-2 focus:ring-amber-300 outline-none">
+                        </div>
+                        <div class="md:col-span-3 flex gap-2">
+                            <button type="button" @click="items.push({ part_code: '', part_name: '', unit: 'Nos', qty: 1 })"
+                                class="w-full flex items-center justify-center gap-1 bg-blue-500 hover:bg-blue-600 text-white text-xs font-semibold px-3 py-2 rounded-lg transition-colors">
+                                <span class="material-symbols-outlined text-sm">add</span>
+                                Add
+                            </button>
+                            <button type="button" @click="items.length > 1 ? items.splice(idx, 1) : null" :disabled="items.length === 1"
+                                class="w-full flex items-center justify-center gap-1 border border-gray-300 hover:bg-gray-50 text-gray-700 text-xs font-semibold px-3 py-2 rounded-lg transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                                <span class="material-symbols-outlined text-sm">delete</span>
+                                Remove
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
                 <div class="flex items-end">
                     <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-700 w-full">
                         <span class="material-symbols-outlined text-sm align-middle">info</span>
@@ -156,49 +178,82 @@
                     </tr>
                 </thead>
                 <tbody>
-                    @forelse($matRequests as $mr)
-                        <tr class="border-b last:border-b-0 hover:bg-gray-50 {{ $mr['status'] === 'Procurement Required' ? 'bg-red-50' : '' }}">
-                            <td class="py-3 px-4 font-semibold text-gray-900">{{ $mr['id'] }}</td>
-                            <td class="py-3 px-4 font-medium text-amber-700">{{ $mr['wo_id'] }}</td>
+                    @php
+                        $groupedByWo = collect($matRequests)->groupBy('wo_id');
+                    @endphp
+                    @forelse($groupedByWo as $woNo => $rows)
+                        @php
+                            $rowsArr = $rows->values();
+                            $anyProc = $rowsArr->contains(fn($r) => ($r['status'] ?? '') === 'Procurement Required');
+                            $raisedOn = $rowsArr->first()['raised_on'] ?? null;
+                            $mmrLabel = $rowsArr->count() === 1
+                                ? ($rowsArr->first()['id'] ?? '')
+                                : (($rowsArr->first()['id'] ?? '') . ' +' . ($rowsArr->count() - 1));
+                        @endphp
+                        <tr class="border-b last:border-b-0 hover:bg-gray-50 {{ $anyProc ? 'bg-red-50' : '' }}">
+                            <td class="py-3 px-4 font-semibold text-gray-900">{{ $mmrLabel }}</td>
+                            <td class="py-3 px-4 font-medium text-amber-700">{{ $woNo }}</td>
                             <td class="py-3 px-4">
-                                <p class="font-medium text-gray-900">{{ $mr['part_name'] ?: $mr['part_code'] }}</p>
-                                <p class="text-xs text-gray-400">{{ $mr['part_code'] }}</p>
+                                <div class="space-y-2">
+                                    @foreach($rowsArr as $mr)
+                                        <div>
+                                            <p class="font-medium text-gray-900">{{ $mr['part_name'] ?: $mr['part_code'] }}</p>
+                                            <p class="text-xs text-gray-400">{{ $mr['part_code'] }}</p>
+                                        </div>
+                                    @endforeach
+                                </div>
                             </td>
-                            <td class="py-3 px-4 font-semibold text-gray-900">{{ $mr['qty'] }} {{ $mr['unit'] }}</td>
-                            <td class="py-3 px-4 text-gray-600">{{ $mr['raised_on'] }}</td>
+                            <td class="py-3 px-4 font-semibold text-gray-900">
+                                <div class="space-y-2">
+                                    @foreach($rowsArr as $mr)
+                                        <div>{{ $mr['qty'] }} {{ $mr['unit'] }}</div>
+                                    @endforeach
+                                </div>
+                            </td>
+                            <td class="py-3 px-4 text-gray-600">{{ $raisedOn }}</td>
                             <td class="py-3 px-4">
-                                @php
-                                    $sc = [
-                                        'Pending Issue'         => 'bg-amber-100 text-amber-700',
-                                        'Procurement Required'  => 'bg-red-100 text-red-700',
-                                        'Issued'                => 'bg-green-100 text-green-700',
-                                    ][$mr['status']] ?? 'bg-gray-100 text-gray-700';
-                                @endphp
-                                <span class="px-2 py-0.5 rounded text-xs font-semibold {{ $sc }}">{{ $mr['status'] }}</span>
-                                @if($mr['status'] === 'Procurement Required')
-                                    <p class="text-xs text-red-500 mt-0.5">Stock insufficient — order required</p>
-                                @endif
+                                <div class="space-y-2">
+                                    @foreach($rowsArr as $mr)
+                                        @php
+                                            $sc = [
+                                                'Pending Issue'         => 'bg-amber-100 text-amber-700',
+                                                'Procurement Required'  => 'bg-red-100 text-red-700',
+                                                'Issued'                => 'bg-green-100 text-green-700',
+                                            ][$mr['status']] ?? 'bg-gray-100 text-gray-700';
+                                        @endphp
+                                        <div>
+                                            <span class="px-2 py-0.5 rounded text-xs font-semibold {{ $sc }}">{{ $mr['status'] }}</span>
+                                            @if($mr['status'] === 'Procurement Required')
+                                                <p class="text-xs text-red-500 mt-0.5">Stock insufficient — order required</p>
+                                            @endif
+                                        </div>
+                                    @endforeach
+                                </div>
                             </td>
                             <td class="py-3 px-4">
-                                @if($mr['status'] === 'Pending Issue')
-                                    <form method="POST" action="{{ route('tenant.maintenance.material-requests.issue', [$organization->org_slug, $mr['id']]) }}">
-                                        @csrf
-                                        <button type="submit"
-                                            class="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-                                            <span class="material-symbols-outlined text-sm">output</span> Issue from Stock
-                                        </button>
-                                    </form>
-                                @elseif($mr['status'] === 'Procurement Required')
-                                    <a href="{{ route('tenant.maintenance.spare-parts', $organization->org_slug) }}"
-                                        class="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
-                                        <span class="material-symbols-outlined text-sm">shopping_cart</span> Receive Stock
-                                    </a>
-                                @else
-                                    <span class="text-xs text-gray-400 flex items-center gap-1">
-                                        <span class="material-symbols-outlined text-sm">check_circle</span>
-                                        Issued {{ $mr['issued_on'] }}
-                                    </span>
-                                @endif
+                                <div class="space-y-2">
+                                    @foreach($rowsArr as $mr)
+                                        @if($mr['status'] === 'Pending Issue')
+                                            <form method="POST" action="{{ route('tenant.maintenance.material-requests.issue', [$organization->org_slug, $mr['id']]) }}">
+                                                @csrf
+                                                <button type="submit"
+                                                    class="flex items-center gap-1 bg-green-500 hover:bg-green-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                                                    <span class="material-symbols-outlined text-sm">output</span> Issue from Stock
+                                                </button>
+                                            </form>
+                                        @elseif($mr['status'] === 'Procurement Required')
+                                            <a href="{{ route('tenant.maintenance.spare-parts', $organization->org_slug) }}"
+                                                class="flex items-center gap-1 bg-red-500 hover:bg-red-600 text-white text-xs font-semibold px-3 py-1.5 rounded-lg transition-colors">
+                                                <span class="material-symbols-outlined text-sm">shopping_cart</span> Receive Stock
+                                            </a>
+                                        @else
+                                            <span class="text-xs text-gray-400 flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-sm">check_circle</span>
+                                                Issued {{ $mr['issued_on'] }}
+                                            </span>
+                                        @endif
+                                    @endforeach
+                                </div>
                             </td>
                         </tr>
                     @empty

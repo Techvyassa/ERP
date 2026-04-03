@@ -24,7 +24,7 @@
                 <thead class="bg-gray-50">
                     <tr class="text-left text-gray-500 border-b">
                         <th class="py-3 px-4 font-semibold">Request ID</th>
-                        <th class="py-3 px-4 font-semibold">Asset</th>
+                        <th class="py-3 px-4 font-semibold">Maintanance Name</th>
                         <th class="py-3 px-4 font-semibold">Issue</th>
                         <th class="py-3 px-4 font-semibold">Priority</th>
                         <th class="py-3 px-4 font-semibold">Raised By</th>

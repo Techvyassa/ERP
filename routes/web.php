@@ -3,6 +3,7 @@
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\PublicController;
 use App\Models\Control\Organization;
+use Illuminate\Support\Facades\DB;
 
 /*
 |--------------------------------------------------------------------------
@@ -112,7 +113,7 @@ Route::middleware(['web.jwt'])->group(function () {
     // TENANT ROUTES (Organization-specific)
     // Pattern: /org/{org_slug}/...
     // ------------------------------------------------------------------------
-    Route::prefix('org/{org_slug}')->name('tenant.')->group(function () {
+    Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db'])->name('tenant.')->group(function () {
         // Helper function to get organization and tenant type
         $getOrg = function ($orgSlug) {
             $org = Organization::where('org_slug', $orgSlug)->firstOrFail();
@@ -813,15 +814,15 @@ Route::middleware(['web.jwt'])->group(function () {
             // ---- DASHBOARD ----
             Route::get('/dashboard', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
-                $assets     = session($sessionKey($orgSlug, 'assets'), []);
-                $schedules  = session($sessionKey($orgSlug, 'schedules'), []);
                 $today      = date('Y-m-d');
+                $workOrders = DB::connection('tenant')->table('maint_work_orders')->get();
+                $assets     = DB::connection('tenant')->table('maint_assets')->get();
+                $schedules  = DB::connection('tenant')->table('maint_pm_schedules')->get();
                 $stats = [
-                    'openWorkOrders' => count(array_filter($workOrders, fn($w) => in_array($w['status'], ['Assigned', 'In Progress']))),
-                    'overdueOrders'  => count(array_filter($workOrders, fn($w) => isset($w['due']) && $w['due'] < $today && $w['status'] !== 'Closed')),
-                    'totalAssets'    => count($assets),
-                    'scheduledPM'    => count(array_filter($schedules, fn($pm) => isset($pm['next_due']) && $pm['next_due'] >= $today && $pm['next_due'] <= date('Y-m-d', strtotime('+7 days')) && $pm['status'] !== 'Done')),
+                    'openWorkOrders' => $workOrders->filter(fn($w) => in_array($w->status, ['Assigned', 'In Progress'], true))->count(),
+                    'overdueOrders'  => $workOrders->filter(fn($w) => $w->due_date && $w->due_date < $today && $w->status !== 'Closed')->count(),
+                    'totalAssets'    => $assets->count(),
+                    'scheduledPM'    => $schedules->filter(fn($pm) => $pm->next_due && $pm->next_due >= $today && $pm->next_due <= date('Y-m-d', strtotime('+7 days')) && $pm->status !== 'Done')->count(),
                 ];
                 return view('tenant.maintenance.dashboard', compact('org', 'tenantType', 'stats') + ['organization' => $org]);
             })->name('dashboard');
@@ -829,29 +830,52 @@ Route::middleware(['web.jwt'])->group(function () {
             // ---- REQUESTS ----
             Route::get('/requests', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $requests = session($sessionKey($orgSlug, 'requests'), []);
-                $assets   = session($sessionKey($orgSlug, 'assets'), []);
+                $requests = DB::connection('tenant')->table('maint_requests')->orderByDesc('id')->get()->map(function ($r) {
+                    return [
+                        'id' => $r->request_no,
+                        'asset' => $r->asset_name,
+                        'asset_code' => '',
+                        'priority' => $r->priority,
+                        'issue' => $r->issue,
+                        'status' => $r->status,
+                        'raised_by' => $r->raised_by,
+                        'raised_on' => $r->created_at ? date('Y-m-d', strtotime($r->created_at)) : null,
+                    ];
+                })->all();
+                $assets = DB::connection('tenant')->table('maint_assets')->orderBy('name')->get()->map(fn($a) => [
+                    'code' => $a->code,
+                    'name' => $a->name,
+                ])->all();
                 return view('tenant.maintenance.requests.index', compact('requests', 'assets')
                     + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('requests');
 
             Route::post('/requests', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key      = $sessionKey($orgSlug, 'requests');
-                $requests = session($key, []);
-                $seq      = count($requests) + 1;
-                $user     = session('auth_user_name', 'User');
-                $requests[] = [
-                    'id'        => 'MR-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
-                    'asset'     => request('asset'),
-                    'asset_code'=> request('asset_code', ''),
-                    'priority'  => request('priority'),
-                    'issue'     => request('issue'),
-                    'status'    => 'Pending Approval',
+                $seq  = (int) (DB::connection('tenant')->table('maint_requests')->max('id') ?? 0) + 1;
+                $user = session('auth_user_name', 'User');
+                $assetName = (string) request('asset');
+                $assetCode = (string) request('asset_code', '');
+                $assetRow = null;
+                if ($assetCode !== '') {
+                    $assetRow = DB::connection('tenant')->table('maint_assets')->where('code', $assetCode)->first();
+                }
+                if (!$assetRow && $assetName !== '') {
+                    $assetRow = DB::connection('tenant')->table('maint_assets')->where('name', $assetName)->first();
+                }
+
+                DB::connection('tenant')->table('maint_requests')->insert([
+                    'request_no' => 'MR-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT),
+                    'asset_id' => $assetRow?->id,
+                    'asset_name' => $assetRow?->name ?? $assetName,
+                    'priority' => request('priority'),
+                    'issue' => request('issue'),
+                    'status' => 'Pending Approval',
                     'raised_by' => $user,
-                    'raised_on' => now()->format('Y-m-d'),
-                ];
-                session([$key => $requests]);
+                    'raised_by_id' => request()->get('auth_user_id'),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.requests', $orgSlug)
                     ->with('success', 'Maintenance request submitted successfully.');
             })->name('requests.store');
@@ -859,89 +883,127 @@ Route::middleware(['web.jwt'])->group(function () {
             // ---- APPROVALS ----
             Route::get('/approvals', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $requests  = session($sessionKey($orgSlug, 'requests'), []);
-                $approvals = array_values(array_filter($requests, fn($r) => $r['status'] === 'Pending Approval'));
+                $approvals = DB::connection('tenant')->table('maint_requests')
+                    ->where('status', 'Pending Approval')
+                    ->orderByDesc('id')
+                    ->get()
+                    ->map(fn($r) => [
+                        'id' => $r->request_no,
+                        'asset' => $r->asset_name,
+                        'priority' => $r->priority,
+                        'issue' => $r->issue,
+                        'status' => $r->status,
+                        'raised_by' => $r->raised_by,
+                        'raised_on' => $r->created_at ? date('Y-m-d', strtotime($r->created_at)) : null,
+                    ])
+                    ->all();
                 return view('tenant.maintenance.approvals.index', compact('approvals')
                     + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('approvals');
 
             Route::post('/approvals/{id}/approve', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key      = $sessionKey($orgSlug, 'requests');
-                $requests = session($key, []);
-                foreach ($requests as &$r) {
-                    if ($r['id'] === $id) { $r['status'] = 'Approved'; $r['approved_on'] = now()->format('Y-m-d'); $r['remarks'] = request('remarks', ''); break; }
-                }
-                session([$key => $requests]);
+                DB::connection('tenant')->table('maint_requests')->where('request_no', $id)->update([
+                    'status' => 'Approved',
+                    'approved_on' => now()->format('Y-m-d'),
+                    'remarks' => request('remarks', ''),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.approvals', $orgSlug)->with('success', "Request {$id} approved.");
             })->name('approvals.approve');
 
             Route::post('/approvals/{id}/reject', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key      = $sessionKey($orgSlug, 'requests');
-                $requests = session($key, []);
-                foreach ($requests as &$r) {
-                    if ($r['id'] === $id) { $r['status'] = 'Rejected'; $r['rejected_on'] = now()->format('Y-m-d'); $r['remarks'] = request('remarks', ''); break; }
-                }
-                session([$key => $requests]);
+                DB::connection('tenant')->table('maint_requests')->where('request_no', $id)->update([
+                    'status' => 'Rejected',
+                    'rejected_on' => now()->format('Y-m-d'),
+                    'remarks' => request('remarks', ''),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.approvals', $orgSlug)->with('success', "Request {$id} rejected.");
             })->name('approvals.reject');
 
             // ---- ASSIGNMENTS ----
             Route::get('/assignments', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $requests   = session($sessionKey($orgSlug, 'requests'), []);
-                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
-                $approved   = array_values(array_filter($requests, fn($r) => $r['status'] === 'Approved'));
+                $approved = DB::connection('tenant')->table('maint_requests')->where('status', 'Approved')->orderByDesc('id')->get()->map(fn($r) => [
+                    'id' => $r->request_no,
+                    'asset' => $r->asset_name,
+                    'priority' => $r->priority,
+                    'issue' => $r->issue,
+                    'status' => $r->status,
+                ])->all();
+                $workOrders = DB::connection('tenant')->table('maint_work_orders')->orderByDesc('id')->get()->map(fn($w) => [
+                    'wo' => $w->wo_no,
+                    'mr_id' => $w->request_id ? (DB::connection('tenant')->table('maint_requests')->where('id', $w->request_id)->value('request_no')) : null,
+                    'asset' => $w->asset_name,
+                    'technician' => $w->technician,
+                    'team' => $w->team,
+                    'due' => $w->due_date,
+                    'priority' => $w->priority,
+                    'notes' => $w->notes,
+                    'status' => $w->status,
+                    'assigned_on' => $w->assigned_on,
+                ])->all();
                 return view('tenant.maintenance.assignments.index',
                     compact('approved', 'workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('assignments');
 
             Route::post('/assignments', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $reqKey     = $sessionKey($orgSlug, 'requests');
-                $woKey      = $sessionKey($orgSlug, 'work_orders');
-                $requests   = session($reqKey, []);
-                $workOrders = session($woKey, []);
-                $mrId       = request('request_id');
-                $assetName  = '';
-                foreach ($requests as &$r) {
-                    if ($r['id'] === $mrId) { $r['status'] = 'Assigned'; $assetName = $r['asset']; break; }
+                $mrNo = request('request_id');
+                $reqRow = DB::connection('tenant')->table('maint_requests')->where('request_no', $mrNo)->first();
+                if ($reqRow) {
+                    DB::connection('tenant')->table('maint_requests')->where('id', $reqRow->id)->update([
+                        'status' => 'Assigned',
+                        'updated_at' => now(),
+                    ]);
                 }
-                session([$reqKey => $requests]);
-                $seq = count($workOrders) + 1;
-                $workOrders[] = [
-                    'wo'          => 'WO-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
-                    'mr_id'       => $mrId,
-                    'asset'       => $assetName,
-                    'technician'  => request('technician'),
-                    'team'        => request('team', 'Mechanical'),
-                    'due'         => request('due_date'),
-                    'priority'    => request('priority', 'Medium'),
-                    'notes'       => request('notes', ''),
-                    'status'      => 'Assigned',
+
+                $seq = (int) (DB::connection('tenant')->table('maint_work_orders')->max('id') ?? 0) + 1;
+                DB::connection('tenant')->table('maint_work_orders')->insert([
+                    'wo_no' => 'WO-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT),
+                    'request_id' => $reqRow?->id,
+                    'asset_id' => $reqRow?->asset_id,
+                    'asset_name' => $reqRow?->asset_name ?? '',
+                    'technician' => request('technician'),
+                    'team' => request('team', 'Mechanical'),
+                    'due_date' => request('due_date'),
+                    'priority' => $reqRow?->priority ?? request('priority', 'Medium'),
+                    'notes' => request('notes', ''),
+                    'status' => 'Assigned',
                     'assigned_on' => now()->format('Y-m-d'),
-                    'materials'   => [],
-                ];
-                session([$woKey => $workOrders]);
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.assignments', $orgSlug)->with('success', 'Work order created and technician assigned.');
             })->name('assignments.store');
 
             Route::post('/assignments/{wo}/update-status', function ($orgSlug, $wo) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $woKey      = $sessionKey($orgSlug, 'work_orders');
-                $workOrders = session($woKey, []);
-                foreach ($workOrders as &$w) {
-                    if ($w['wo'] === $wo) { $w['status'] = request('status'); $w['engineer_notes'] = request('engineer_notes', ''); break; }
-                }
-                session([$woKey => $workOrders]);
+                DB::connection('tenant')->table('maint_work_orders')->where('wo_no', $wo)->update([
+                    'status' => request('status'),
+                    'engineer_notes' => request('engineer_notes', ''),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.assignments', $orgSlug)->with('success', "Work order {$wo} status updated.");
             })->name('assignments.update-status');
 
             // ---- WORK ORDERS ----
             Route::get('/work-orders', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
+                $workOrders = DB::connection('tenant')->table('maint_work_orders')->orderByDesc('id')->get()->map(fn($w) => [
+                    'wo' => $w->wo_no,
+                    'mr_id' => $w->request_id ? (DB::connection('tenant')->table('maint_requests')->where('id', $w->request_id)->value('request_no')) : null,
+                    'asset' => $w->asset_name,
+                    'technician' => $w->technician,
+                    'team' => $w->team,
+                    'due' => $w->due_date,
+                    'priority' => $w->priority,
+                    'notes' => $w->notes,
+                    'status' => $w->status,
+                    'assigned_on' => $w->assigned_on,
+                ])->all();
                 return view('tenant.maintenance.work-orders.index',
                     compact('workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('work-orders');
@@ -949,160 +1011,279 @@ Route::middleware(['web.jwt'])->group(function () {
             // ---- MATERIAL REQUESTS (per WO) ----
             Route::get('/material-requests', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $workOrders   = session($sessionKey($orgSlug, 'work_orders'), []);
-                $parts        = session($sessionKey($orgSlug, 'spare_parts'), []);
-                $matRequests  = session($sessionKey($orgSlug, 'mat_requests'), []);
+                $workOrders = DB::connection('tenant')->table('maint_work_orders')->orderByDesc('id')->get()->map(fn($w) => [
+                    'wo' => $w->wo_no,
+                    'asset' => $w->asset_name,
+                    'status' => $w->status,
+                ])->all();
+                $parts = DB::connection('tenant')->table('maint_spare_parts')->orderBy('name')->get()->map(fn($p) => [
+                    'id' => $p->id,
+                    'code' => $p->code,
+                    'name' => $p->name,
+                    'stock' => $p->stock,
+                    'reorder_level' => $p->reorder_level,
+                    'unit' => $p->unit,
+                ])->all();
+                $matRequests = DB::connection('tenant')->table('maint_material_requests')->orderByDesc('id')->get()->map(fn($m) => [
+                    'id' => $m->mmr_no,
+                    'wo_id' => $m->wo_no,
+                    'part_code' => $m->part_code,
+                    'part_name' => $m->part_name,
+                    'qty' => $m->qty,
+                    'unit' => $m->unit,
+                    'in_stock' => (bool) $m->in_stock,
+                    'status' => $m->status,
+                    'raised_on' => $m->raised_on,
+                    'issued_on' => $m->issued_on,
+                ])->all();
                 return view('tenant.maintenance.material-requests.index',
                     compact('workOrders', 'parts', 'matRequests') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('material-requests');
 
             Route::post('/material-requests', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $mrKey      = $sessionKey($orgSlug, 'mat_requests');
-                $partsKey   = $sessionKey($orgSlug, 'spare_parts');
-                $matReqs    = session($mrKey, []);
-                $parts      = session($partsKey, []);
-                $partCode   = request('part_code');
-                $qty        = (int) request('qty', 1);
-                $woId       = request('wo_id');
+                $woNo = request('wo_id');
+                $woRow = DB::connection('tenant')->table('maint_work_orders')->where('wo_no', $woNo)->first();
 
-                // Check stock
-                $inStock = false;
-                foreach ($parts as $p) {
-                    if ($p['code'] === $partCode && $p['stock'] >= $qty) { $inStock = true; break; }
+                $items = request('items');
+                if (!is_array($items) || count($items) === 0) {
+                    $items = [[
+                        'part_code' => request('part_code'),
+                        'part_name' => request('part_name'),
+                        'unit' => request('unit', 'Nos'),
+                        'qty' => request('qty', 1),
+                    ]];
                 }
 
-                $seq = count($matReqs) + 1;
-                $matReqs[] = [
-                    'id'         => 'MMR-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
-                    'wo_id'      => $woId,
-                    'part_code'  => $partCode,
-                    'part_name'  => request('part_name'),
-                    'qty'        => $qty,
-                    'unit'       => request('unit', 'Nos'),
-                    'in_stock'   => $inStock,
-                    'status'     => $inStock ? 'Pending Issue' : 'Procurement Required',
-                    'raised_on'  => now()->format('Y-m-d'),
-                    'issued_on'  => null,
-                ];
-                session([$mrKey => $matReqs]);
-                return redirect()->route('tenant.maintenance.material-requests', $orgSlug)
-                    ->with('success', $inStock ? 'Material request raised. Stock available — ready to issue.' : 'Material not in stock. Procurement request flagged.');
+                $items = array_values(array_filter($items, fn ($i) => is_array($i) && !empty($i['part_code'])));
+
+                if (!$woNo || count($items) === 0) {
+                    return redirect()->route('tenant.maintenance.material-requests', $orgSlug)
+                        ->with('success', 'No material items provided.');
+                }
+
+                $now = now();
+                $today = $now->format('Y-m-d');
+                $seq = (int) (DB::connection('tenant')->table('maint_material_requests')->max('id') ?? 0) + 1;
+
+                $createdCount = 0;
+                $anyProcurement = false;
+                $anyPendingIssue = false;
+
+                DB::connection('tenant')->transaction(function () use (
+                    $items,
+                    $woNo,
+                    $woRow,
+                    $today,
+                    $now,
+                    &$seq,
+                    &$createdCount,
+                    &$anyProcurement,
+                    &$anyPendingIssue
+                ) {
+                    foreach ($items as $item) {
+                        $partCode = $item['part_code'] ?? null;
+                        $qty = max(1, (int) ($item['qty'] ?? 1));
+
+                        $partRow = $partCode
+                            ? DB::connection('tenant')->table('maint_spare_parts')->where('code', $partCode)->first()
+                            : null;
+
+                        $inStock = $partRow ? ((int) $partRow->stock >= $qty) : false;
+                        $status = $inStock ? 'Pending Issue' : 'Procurement Required';
+
+                        $anyPendingIssue = $anyPendingIssue || $inStock;
+                        $anyProcurement = $anyProcurement || !$inStock;
+
+                        DB::connection('tenant')->table('maint_material_requests')->insert([
+                            'mmr_no' => 'MMR-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT),
+                            'wo_id' => $woRow?->id,
+                            'wo_no' => $woRow?->wo_no ?? $woNo,
+                            'part_id' => $partRow?->id,
+                            'part_code' => $partCode,
+                            'part_name' => ($item['part_name'] ?? null) ?: ($partRow?->name ?? $partCode),
+                            'qty' => $qty,
+                            'unit' => ($item['unit'] ?? null) ?: ($partRow?->unit ?? 'Nos'),
+                            'in_stock' => $inStock,
+                            'status' => $status,
+                            'raised_on' => $today,
+                            'issued_on' => null,
+                            'created_at' => $now,
+                            'updated_at' => $now,
+                        ]);
+
+                        $seq++;
+                        $createdCount++;
+                    }
+                });
+
+                $msg = "Material request raised for {$createdCount} item(s).";
+                if ($anyPendingIssue && $anyProcurement) {
+                    $msg .= ' Some items are in stock (Pending Issue) and some require procurement.';
+                } elseif ($anyPendingIssue) {
+                    $msg .= ' Stock available — ready to issue.';
+                } else {
+                    $msg .= ' Material not in stock. Procurement request flagged.';
+                }
+
+                return redirect()->route('tenant.maintenance.material-requests', $orgSlug)->with('success', $msg);
             })->name('material-requests.store');
 
             Route::post('/material-requests/{id}/issue', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $mrKey    = $sessionKey($orgSlug, 'mat_requests');
-                $partsKey = $sessionKey($orgSlug, 'spare_parts');
-                $matReqs  = session($mrKey, []);
-                $parts    = session($partsKey, []);
+                $row = DB::connection('tenant')->table('maint_material_requests')->where('mmr_no', $id)->first();
+                if ($row && $row->status === 'Pending Issue') {
+                    DB::connection('tenant')->table('maint_material_requests')->where('id', $row->id)->update([
+                        'status' => 'Issued',
+                        'issued_on' => now()->format('Y-m-d'),
+                        'updated_at' => now(),
+                    ]);
 
-                $partCode = null; $qty = 0;
-                foreach ($matReqs as &$m) {
-                    if ($m['id'] === $id && $m['status'] === 'Pending Issue') {
-                        $m['status']    = 'Issued';
-                        $m['issued_on'] = now()->format('Y-m-d');
-                        $partCode = $m['part_code'];
-                        $qty      = $m['qty'];
-                        break;
+                    if ($row->part_id) {
+                        DB::connection('tenant')->table('maint_spare_parts')->where('id', $row->part_id)->update([
+                            'stock' => DB::raw('GREATEST(0, stock - ' . ((int) $row->qty) . ')'),
+                            'updated_at' => now(),
+                        ]);
                     }
                 }
-                // Deduct from spare parts stock
-                if ($partCode) {
-                    foreach ($parts as &$p) {
-                        if ($p['code'] === $partCode) { $p['stock'] = max(0, $p['stock'] - $qty); break; }
-                    }
-                    session([$partsKey => $parts]);
-                }
-                session([$mrKey => $matReqs]);
                 return redirect()->route('tenant.maintenance.material-requests', $orgSlug)->with('success', "Material {$id} issued from stock.");
             })->name('material-requests.issue');
 
             // ---- CLOSURE ----
             Route::get('/closure', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
-                $closures   = array_values(array_filter($workOrders, fn($w) => in_array($w['status'], ['Completed', 'Closed'])));
+                $closures = DB::connection('tenant')->table('maint_work_orders')
+                    ->whereIn('status', ['Completed', 'Closed'])
+                    ->orderByDesc('id')
+                    ->get()
+                    ->map(fn($w) => [
+                        'wo' => $w->wo_no,
+                        'mr_id' => $w->request_id ? (DB::connection('tenant')->table('maint_requests')->where('id', $w->request_id)->value('request_no')) : null,
+                        'asset' => $w->asset_name,
+                        'technician' => $w->technician,
+                        'due' => $w->due_date,
+                        'priority' => $w->priority,
+                        'notes' => $w->notes,
+                        'status' => $w->status,
+                        'assigned_on' => $w->assigned_on,
+                        'closed_on' => $w->closed_on,
+                        'verified_by' => $w->verified_by,
+                    ])
+                    ->all();
                 return view('tenant.maintenance.closure.index',
                     compact('closures') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('closure');
 
             Route::post('/closure/{wo}/close', function ($orgSlug, $wo) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $woKey      = $sessionKey($orgSlug, 'work_orders');
-                $workOrders = session($woKey, []);
-                foreach ($workOrders as &$w) {
-                    if ($w['wo'] === $wo) {
-                        $w['status']        = 'Closed';
-                        $w['closed_on']     = now()->format('Y-m-d');
-                        $w['verified_by']   = request('verified_by', 'Maintenance Lead');
-                        $w['closure_notes'] = request('closure_notes', '');
-                        // Update asset last_maintained
-                        $assetsKey = $sessionKey($orgSlug, 'assets');
-                        $assets    = session($assetsKey, []);
-                        foreach ($assets as &$a) {
-                            if ($a['name'] === $w['asset']) { $a['last_maintained'] = now()->format('Y-m-d'); break; }
-                        }
-                        session([$assetsKey => $assets]);
-                        break;
+                $woRow = DB::connection('tenant')->table('maint_work_orders')->where('wo_no', $wo)->first();
+                if ($woRow) {
+                    DB::connection('tenant')->table('maint_work_orders')->where('id', $woRow->id)->update([
+                        'status' => 'Closed',
+                        'closed_on' => now()->format('Y-m-d'),
+                        'verified_by' => request('verified_by', 'Maintenance Lead'),
+                        'closure_notes' => request('closure_notes', ''),
+                        'updated_at' => now(),
+                    ]);
+                    if ($woRow->asset_id) {
+                        DB::connection('tenant')->table('maint_assets')->where('id', $woRow->asset_id)->update([
+                            'last_maintained' => now()->format('Y-m-d'),
+                            'updated_at' => now(),
+                        ]);
                     }
                 }
-                session([$woKey => $workOrders]);
                 return redirect()->route('tenant.maintenance.closure', $orgSlug)->with('success', "Work order {$wo} closed successfully.");
             })->name('closure.close');
 
             // ---- ASSETS ----
             Route::get('/assets', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $assets     = session($sessionKey($orgSlug, 'assets'), []);
-                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
-                $schedules  = session($sessionKey($orgSlug, 'schedules'), []);
-                // Attach history counts per asset
-                foreach ($assets as &$a) {
-                    $a['wo_count'] = count(array_filter($workOrders, fn($w) => $w['asset'] === $a['name']));
-                    $a['pm_count'] = count(array_filter($schedules, fn($pm) => $pm['asset'] === $a['name']));
-                }
+                $workOrders = DB::connection('tenant')->table('maint_work_orders')->get();
+                $schedules = DB::connection('tenant')->table('maint_pm_schedules')->get();
+                $assets = DB::connection('tenant')->table('maint_assets')->orderByDesc('id')->get()->map(function ($a) use ($workOrders, $schedules) {
+                    $woCount = $workOrders->filter(fn($w) => $w->asset_id === $a->id)->count();
+                    $pmCount = $schedules->filter(fn($pm) => $pm->asset_id === $a->id)->count();
+                    return [
+                        'code' => $a->code,
+                        'name' => $a->name,
+                        'category' => $a->category,
+                        'location' => $a->location,
+                        'model' => $a->model,
+                        'installed_on' => $a->installed_on,
+                        'last_maintained' => $a->last_maintained,
+                        'status' => $a->status,
+                        'wo_count' => $woCount,
+                        'pm_count' => $pmCount,
+                    ];
+                })->all();
                 return view('tenant.maintenance.assets.index', compact('assets') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('assets');
 
             Route::post('/assets', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key    = $sessionKey($orgSlug, 'assets');
-                $assets = session($key, []);
-                $seq    = count($assets) + 1;
-                $assets[] = [
-                    'code'            => request('code') ?: 'AST-' . str_pad($seq, 3, '0', STR_PAD_LEFT),
-                    'name'            => request('name'),
-                    'category'        => request('category'),
-                    'location'        => request('location', ''),
-                    'model'           => request('model', ''),
-                    'installed_on'    => request('installed_on', ''),
+                $seq = (int) (DB::connection('tenant')->table('maint_assets')->max('id') ?? 0) + 1;
+                DB::connection('tenant')->table('maint_assets')->insert([
+                    'code' => request('code') ?: 'AST-' . str_pad((string) $seq, 3, '0', STR_PAD_LEFT),
+                    'name' => request('name'),
+                    'category' => request('category'),
+                    'location' => request('location', ''),
+                    'model' => request('model', ''),
+                    'installed_on' => request('installed_on') ?: null,
                     'last_maintained' => null,
-                    'status'          => 'Active',
-                ];
-                session([$key => $assets]);
+                    'status' => 'Active',
+                    'created_by' => request()->get('auth_user_id'),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.assets', $orgSlug)->with('success', 'Asset registered successfully.');
             })->name('assets.store');
 
             // ---- PM SCHEDULE ----
             Route::get('/schedule', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $schedules = session($sessionKey($orgSlug, 'schedules'), []);
-                $assets    = session($sessionKey($orgSlug, 'assets'), []);
-                $parts     = session($sessionKey($orgSlug, 'spare_parts'), []);
-                foreach ($schedules as &$pm) {
-                    if ($pm['status'] !== 'Done' && isset($pm['next_due']) && $pm['next_due'] < date('Y-m-d')) {
-                        $pm['status'] = 'Overdue';
+                $assets = DB::connection('tenant')->table('maint_assets')->orderBy('name')->get()->map(fn($a) => [
+                    'code' => $a->code,
+                    'name' => $a->name,
+                ])->all();
+                $parts = DB::connection('tenant')->table('maint_spare_parts')->orderBy('name')->get()->map(fn($p) => [
+                    'code' => $p->code,
+                    'name' => $p->name,
+                    'stock' => $p->stock,
+                    'unit' => $p->unit,
+                ])->all();
+
+                $materialsByPm = DB::connection('tenant')->table('maint_pm_materials')->get()->groupBy('pm_id');
+                $schedules = DB::connection('tenant')->table('maint_pm_schedules')->orderByDesc('id')->get()->map(function ($pm) use ($materialsByPm) {
+                    $mats = ($materialsByPm[$pm->id] ?? collect())->map(fn($m) => [
+                        'name' => $m->part_name,
+                        'qty' => $m->qty,
+                        'unit' => $m->unit,
+                    ])->values()->all();
+
+                    $status = $pm->status;
+                    if ($status !== 'Done' && $pm->next_due && $pm->next_due < date('Y-m-d')) {
+                        $status = 'Overdue';
                     }
-                }
+
+                    return [
+                        'id' => $pm->pm_no,
+                        'asset' => $pm->asset_name,
+                        'task' => $pm->task,
+                        'frequency' => $pm->frequency,
+                        'assigned_to' => $pm->assigned_to,
+                        'next_due' => $pm->next_due,
+                        'duration' => $pm->duration,
+                        'materials' => $mats,
+                        'last_done' => $pm->last_done,
+                        'status' => $status,
+                        'notes' => $pm->notes,
+                    ];
+                })->all();
                 return view('tenant.maintenance.schedule.index', compact('schedules', 'assets', 'parts') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('schedule');
 
             Route::post('/schedule', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key       = $sessionKey($orgSlug, 'schedules');
-                $schedules = session($key, []);
-                $seq       = count($schedules) + 1;
                 // Parse materials list
                 $matNames  = request('mat_name', []);
                 $matQtys   = request('mat_qty', []);
@@ -1111,96 +1292,129 @@ Route::middleware(['web.jwt'])->group(function () {
                 foreach ($matNames as $i => $mn) {
                     if (trim($mn)) $materials[] = ['name' => $mn, 'qty' => $matQtys[$i] ?? 1, 'unit' => $matUnits[$i] ?? 'Nos'];
                 }
-                $schedules[] = [
-                    'id'          => 'PM-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
-                    'asset'       => request('asset'),
-                    'task'        => request('task'),
-                    'frequency'   => request('frequency'),
+
+                $assetName = (string) request('asset');
+                $assetRow = DB::connection('tenant')->table('maint_assets')->where('name', $assetName)->first();
+
+                $seq = (int) (DB::connection('tenant')->table('maint_pm_schedules')->max('id') ?? 0) + 1;
+                $pmNo = 'PM-' . str_pad((string) $seq, 4, '0', STR_PAD_LEFT);
+                $pmId = DB::connection('tenant')->table('maint_pm_schedules')->insertGetId([
+                    'pm_no' => $pmNo,
+                    'asset_id' => $assetRow?->id,
+                    'asset_name' => $assetRow?->name ?? $assetName,
+                    'task' => request('task'),
+                    'frequency' => request('frequency'),
                     'assigned_to' => request('assigned_to', ''),
-                    'next_due'    => request('next_due'),
-                    'duration'    => request('duration', ''),
-                    'materials'   => $materials,
-                    'last_done'   => null,
-                    'status'      => 'Scheduled',
-                ];
-                session([$key => $schedules]);
+                    'next_due' => request('next_due'),
+                    'duration' => request('duration', ''),
+                    'status' => 'Scheduled',
+                    'last_done' => null,
+                    'notes' => null,
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
+
+                foreach ($materials as $mat) {
+                    DB::connection('tenant')->table('maint_pm_materials')->insert([
+                        'pm_id' => $pmId,
+                        'part_name' => $mat['name'],
+                        'qty' => (int) ($mat['qty'] ?? 1),
+                        'unit' => $mat['unit'] ?? 'Nos',
+                    ]);
+                }
                 return redirect()->route('tenant.maintenance.schedule', $orgSlug)->with('success', 'PM task scheduled successfully.');
             })->name('schedule.store');
 
             Route::post('/schedule/{id}/done', function ($orgSlug, $id) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $schKey   = $sessionKey($orgSlug, 'schedules');
-                $partsKey = $sessionKey($orgSlug, 'spare_parts');
-                $schedules = session($schKey, []);
-                $parts     = session($partsKey, []);
-                foreach ($schedules as &$pm) {
-                    if ($pm['id'] === $id) {
-                        $pm['status']    = 'Done';
-                        $pm['last_done'] = now()->format('Y-m-d');
-                        $pm['notes']     = request('notes', '');
-                        // Auto-deduct materials used
-                        foreach ($pm['materials'] ?? [] as $mat) {
-                            foreach ($parts as &$p) {
-                                if (strtolower($p['name']) === strtolower($mat['name'])) {
-                                    $p['stock'] = max(0, $p['stock'] - (int)$mat['qty']);
-                                    break;
-                                }
-                            }
-                        }
-                        break;
+                $pmRow = DB::connection('tenant')->table('maint_pm_schedules')->where('pm_no', $id)->first();
+                if ($pmRow) {
+                    DB::connection('tenant')->table('maint_pm_schedules')->where('id', $pmRow->id)->update([
+                        'status' => 'Done',
+                        'last_done' => now()->format('Y-m-d'),
+                        'notes' => request('notes', ''),
+                        'updated_at' => now(),
+                    ]);
+
+                    $materials = DB::connection('tenant')->table('maint_pm_materials')->where('pm_id', $pmRow->id)->get();
+                    foreach ($materials as $mat) {
+                        DB::connection('tenant')->table('maint_spare_parts')
+                            ->whereRaw('LOWER(name) = ?', [strtolower($mat->part_name)])
+                            ->update([
+                                'stock' => DB::raw('GREATEST(0, stock - ' . ((int) $mat->qty) . ')'),
+                                'updated_at' => now(),
+                            ]);
                     }
                 }
-                session([$schKey => $schedules]);
-                session([$partsKey => $parts]);
                 return redirect()->route('tenant.maintenance.schedule', $orgSlug)->with('success', "PM task {$id} marked as done. Materials deducted from stock.");
             })->name('schedule.done');
 
             // ---- SPARE PARTS ----
             Route::get('/spare-parts', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $parts      = session($sessionKey($orgSlug, 'spare_parts'), []);
-                $matReqs    = session($sessionKey($orgSlug, 'mat_requests'), []);
-                $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
-                return view('tenant.maintenance.spare-parts.index', compact('parts', 'matReqs', 'workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
+                $parts = DB::connection('tenant')->table('maint_spare_parts')->orderByDesc('id')->get()->map(fn($p) => [
+                    'code' => $p->code,
+                    'name' => $p->name,
+                    'asset' => $p->compatible_asset,
+                    'stock' => $p->stock,
+                    'reorder_level' => $p->reorder_level,
+                    'unit' => $p->unit,
+                ])->all();
+                $assets = DB::connection('tenant')->table('maint_assets')->orderBy('name')->get()->map(fn($a) => [
+                    'code' => $a->code,
+                    'name' => $a->name,
+                    'category' => $a->category,
+                    'status' => $a->status,
+                ])->all();
+                $matReqs = DB::connection('tenant')->table('maint_material_requests')->orderByDesc('id')->get()->map(fn($m) => [
+                    'id' => $m->mmr_no,
+                    'wo_id' => $m->wo_no,
+                    'part_code' => $m->part_code,
+                    'part_name' => $m->part_name,
+                    'qty' => $m->qty,
+                    'unit' => $m->unit,
+                    'status' => $m->status,
+                ])->all();
+                $workOrders = DB::connection('tenant')->table('maint_work_orders')->orderByDesc('id')->get()->map(fn($w) => [
+                    'wo' => $w->wo_no,
+                    'asset' => $w->asset_name,
+                    'status' => $w->status,
+                ])->all();
+                return view('tenant.maintenance.spare-parts.index', compact('parts', 'assets', 'matReqs', 'workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('spare-parts');
 
             Route::post('/spare-parts', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key   = $sessionKey($orgSlug, 'spare_parts');
-                $parts = session($key, []);
-                $parts[] = [
-                    'code'          => request('code'),
-                    'name'          => request('name'),
-                    'asset'         => request('asset', ''),
-                    'stock'         => (int) request('stock', 0),
+                DB::connection('tenant')->table('maint_spare_parts')->insert([
+                    'code' => request('code'),
+                    'name' => request('name'),
+                    'compatible_asset' => request('asset', ''),
+                    'stock' => (int) request('stock', 0),
                     'reorder_level' => request('reorder_level') !== '' ? (int) request('reorder_level') : null,
-                    'unit'          => request('unit', 'Nos'),
-                ];
-                session([$key => $parts]);
+                    'unit' => request('unit', 'Nos'),
+                    'created_at' => now(),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', 'Spare part added successfully.');
             })->name('spare-parts.store');
 
             Route::post('/spare-parts/{code}/issue', function ($orgSlug, $code) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key   = $sessionKey($orgSlug, 'spare_parts');
-                $parts = session($key, []);
                 $qty   = (int) request('qty', 1);
-                foreach ($parts as &$p) {
-                    if ($p['code'] === $code) { $p['stock'] = max(0, $p['stock'] - $qty); break; }
-                }
-                session([$key => $parts]);
+                DB::connection('tenant')->table('maint_spare_parts')->where('code', $code)->update([
+                    'stock' => DB::raw('GREATEST(0, stock - ' . $qty . ')'),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} issued.");
             })->name('spare-parts.issue');
 
             Route::post('/spare-parts/{code}/receive', function ($orgSlug, $code) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
-                $key   = $sessionKey($orgSlug, 'spare_parts');
-                $parts = session($key, []);
                 $qty   = (int) request('qty', 1);
-                foreach ($parts as &$p) {
-                    if ($p['code'] === $code) { $p['stock'] += $qty; break; }
-                }
-                session([$key => $parts]);
+                DB::connection('tenant')->table('maint_spare_parts')->where('code', $code)->update([
+                    'stock' => DB::raw('stock + ' . $qty),
+                    'updated_at' => now(),
+                ]);
                 return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} received into stock.");
             })->name('spare-parts.receive');
         });
