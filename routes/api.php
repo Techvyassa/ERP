@@ -233,6 +233,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/search', [App\Http\Controllers\MaterialController::class, 'search']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
+                Route::post('/bulk', [App\Http\Controllers\MaterialController::class, 'bulkStore']);
                 Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\MaterialController::class, 'destroy']); // Deactivate
             });

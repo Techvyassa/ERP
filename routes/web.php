@@ -855,7 +855,7 @@ Route::middleware(['web.jwt'])->group(function () {
                 $requests[] = [
                     'id'        => 'MR-' . str_pad($seq, 4, '0', STR_PAD_LEFT),
                     'asset'     => request('asset'),
-                    'asset_code'=> request('asset_code', ''),
+                    'asset_code' => request('asset_code', ''),
                     'priority'  => request('priority'),
                     'issue'     => request('issue'),
                     'status'    => 'Pending Approval',
@@ -881,7 +881,12 @@ Route::middleware(['web.jwt'])->group(function () {
                 $key      = $sessionKey($orgSlug, 'requests');
                 $requests = session($key, []);
                 foreach ($requests as &$r) {
-                    if ($r['id'] === $id) { $r['status'] = 'Approved'; $r['approved_on'] = now()->format('Y-m-d'); $r['remarks'] = request('remarks', ''); break; }
+                    if ($r['id'] === $id) {
+                        $r['status'] = 'Approved';
+                        $r['approved_on'] = now()->format('Y-m-d');
+                        $r['remarks'] = request('remarks', '');
+                        break;
+                    }
                 }
                 session([$key => $requests]);
                 return redirect()->route('tenant.maintenance.approvals', $orgSlug)->with('success', "Request {$id} approved.");
@@ -892,7 +897,12 @@ Route::middleware(['web.jwt'])->group(function () {
                 $key      = $sessionKey($orgSlug, 'requests');
                 $requests = session($key, []);
                 foreach ($requests as &$r) {
-                    if ($r['id'] === $id) { $r['status'] = 'Rejected'; $r['rejected_on'] = now()->format('Y-m-d'); $r['remarks'] = request('remarks', ''); break; }
+                    if ($r['id'] === $id) {
+                        $r['status'] = 'Rejected';
+                        $r['rejected_on'] = now()->format('Y-m-d');
+                        $r['remarks'] = request('remarks', '');
+                        break;
+                    }
                 }
                 session([$key => $requests]);
                 return redirect()->route('tenant.maintenance.approvals', $orgSlug)->with('success', "Request {$id} rejected.");
@@ -904,8 +914,10 @@ Route::middleware(['web.jwt'])->group(function () {
                 $requests   = session($sessionKey($orgSlug, 'requests'), []);
                 $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
                 $approved   = array_values(array_filter($requests, fn($r) => $r['status'] === 'Approved'));
-                return view('tenant.maintenance.assignments.index',
-                    compact('approved', 'workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
+                return view(
+                    'tenant.maintenance.assignments.index',
+                    compact('approved', 'workOrders') + ['organization' => $org, 'tenantType' => $tenantType]
+                );
             })->name('assignments');
 
             Route::post('/assignments', function ($orgSlug) use ($getOrg, $sessionKey) {
@@ -917,7 +929,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 $mrId       = request('request_id');
                 $assetName  = '';
                 foreach ($requests as &$r) {
-                    if ($r['id'] === $mrId) { $r['status'] = 'Assigned'; $assetName = $r['asset']; break; }
+                    if ($r['id'] === $mrId) {
+                        $r['status'] = 'Assigned';
+                        $assetName = $r['asset'];
+                        break;
+                    }
                 }
                 session([$reqKey => $requests]);
                 $seq = count($workOrders) + 1;
@@ -943,7 +959,11 @@ Route::middleware(['web.jwt'])->group(function () {
                 $woKey      = $sessionKey($orgSlug, 'work_orders');
                 $workOrders = session($woKey, []);
                 foreach ($workOrders as &$w) {
-                    if ($w['wo'] === $wo) { $w['status'] = request('status'); $w['engineer_notes'] = request('engineer_notes', ''); break; }
+                    if ($w['wo'] === $wo) {
+                        $w['status'] = request('status');
+                        $w['engineer_notes'] = request('engineer_notes', '');
+                        break;
+                    }
                 }
                 session([$woKey => $workOrders]);
                 return redirect()->route('tenant.maintenance.assignments', $orgSlug)->with('success', "Work order {$wo} status updated.");
@@ -953,8 +973,10 @@ Route::middleware(['web.jwt'])->group(function () {
             Route::get('/work-orders', function ($orgSlug) use ($getOrg, $sessionKey) {
                 extract($getOrg($orgSlug));
                 $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
-                return view('tenant.maintenance.work-orders.index',
-                    compact('workOrders') + ['organization' => $org, 'tenantType' => $tenantType]);
+                return view(
+                    'tenant.maintenance.work-orders.index',
+                    compact('workOrders') + ['organization' => $org, 'tenantType' => $tenantType]
+                );
             })->name('work-orders');
 
             // ---- MATERIAL REQUESTS (per WO) ----
@@ -963,8 +985,10 @@ Route::middleware(['web.jwt'])->group(function () {
                 $workOrders   = session($sessionKey($orgSlug, 'work_orders'), []);
                 $parts        = session($sessionKey($orgSlug, 'spare_parts'), []);
                 $matRequests  = session($sessionKey($orgSlug, 'mat_requests'), []);
-                return view('tenant.maintenance.material-requests.index',
-                    compact('workOrders', 'parts', 'matRequests') + ['organization' => $org, 'tenantType' => $tenantType]);
+                return view(
+                    'tenant.maintenance.material-requests.index',
+                    compact('workOrders', 'parts', 'matRequests') + ['organization' => $org, 'tenantType' => $tenantType]
+                );
             })->name('material-requests');
 
             Route::post('/material-requests', function ($orgSlug) use ($getOrg, $sessionKey) {
@@ -980,7 +1004,10 @@ Route::middleware(['web.jwt'])->group(function () {
                 // Check stock
                 $inStock = false;
                 foreach ($parts as $p) {
-                    if ($p['code'] === $partCode && $p['stock'] >= $qty) { $inStock = true; break; }
+                    if ($p['code'] === $partCode && $p['stock'] >= $qty) {
+                        $inStock = true;
+                        break;
+                    }
                 }
 
                 $seq = count($matReqs) + 1;
@@ -1008,7 +1035,8 @@ Route::middleware(['web.jwt'])->group(function () {
                 $matReqs  = session($mrKey, []);
                 $parts    = session($partsKey, []);
 
-                $partCode = null; $qty = 0;
+                $partCode = null;
+                $qty = 0;
                 foreach ($matReqs as &$m) {
                     if ($m['id'] === $id && $m['status'] === 'Pending Issue') {
                         $m['status']    = 'Issued';
@@ -1021,7 +1049,10 @@ Route::middleware(['web.jwt'])->group(function () {
                 // Deduct from spare parts stock
                 if ($partCode) {
                     foreach ($parts as &$p) {
-                        if ($p['code'] === $partCode) { $p['stock'] = max(0, $p['stock'] - $qty); break; }
+                        if ($p['code'] === $partCode) {
+                            $p['stock'] = max(0, $p['stock'] - $qty);
+                            break;
+                        }
                     }
                     session([$partsKey => $parts]);
                 }
@@ -1034,8 +1065,10 @@ Route::middleware(['web.jwt'])->group(function () {
                 extract($getOrg($orgSlug));
                 $workOrders = session($sessionKey($orgSlug, 'work_orders'), []);
                 $closures   = array_values(array_filter($workOrders, fn($w) => in_array($w['status'], ['Completed', 'Closed'])));
-                return view('tenant.maintenance.closure.index',
-                    compact('closures') + ['organization' => $org, 'tenantType' => $tenantType]);
+                return view(
+                    'tenant.maintenance.closure.index',
+                    compact('closures') + ['organization' => $org, 'tenantType' => $tenantType]
+                );
             })->name('closure');
 
             Route::post('/closure/{wo}/close', function ($orgSlug, $wo) use ($getOrg, $sessionKey) {
@@ -1052,7 +1085,10 @@ Route::middleware(['web.jwt'])->group(function () {
                         $assetsKey = $sessionKey($orgSlug, 'assets');
                         $assets    = session($assetsKey, []);
                         foreach ($assets as &$a) {
-                            if ($a['name'] === $w['asset']) { $a['last_maintained'] = now()->format('Y-m-d'); break; }
+                            if ($a['name'] === $w['asset']) {
+                                $a['last_maintained'] = now()->format('Y-m-d');
+                                break;
+                            }
                         }
                         session([$assetsKey => $assets]);
                         break;
@@ -1197,7 +1233,10 @@ Route::middleware(['web.jwt'])->group(function () {
                 $parts = session($key, []);
                 $qty   = (int) request('qty', 1);
                 foreach ($parts as &$p) {
-                    if ($p['code'] === $code) { $p['stock'] = max(0, $p['stock'] - $qty); break; }
+                    if ($p['code'] === $code) {
+                        $p['stock'] = max(0, $p['stock'] - $qty);
+                        break;
+                    }
                 }
                 session([$key => $parts]);
                 return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} issued.");
@@ -1209,7 +1248,10 @@ Route::middleware(['web.jwt'])->group(function () {
                 $parts = session($key, []);
                 $qty   = (int) request('qty', 1);
                 foreach ($parts as &$p) {
-                    if ($p['code'] === $code) { $p['stock'] += $qty; break; }
+                    if ($p['code'] === $code) {
+                        $p['stock'] += $qty;
+                        break;
+                    }
                 }
                 session([$key => $parts]);
                 return redirect()->route('tenant.maintenance.spare-parts', $orgSlug)->with('success', "{$qty} unit(s) of {$code} received into stock.");
