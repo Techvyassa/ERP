@@ -208,6 +208,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
                 Route::get('/barcode', [App\Http\Controllers\WarehouseController::class, 'barcode']);
+                Route::get('/all-stock', [App\Http\Controllers\WarehouseController::class, 'allWarehouseStock']);
                 Route::get('/{id}', [App\Http\Controllers\WarehouseController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\WarehouseController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\WarehouseController::class, 'update']);
@@ -232,6 +233,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/search', [App\Http\Controllers\MaterialController::class, 'search']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
+                Route::post('/bulk', [App\Http\Controllers\MaterialController::class, 'bulkStore']);
                 Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\MaterialController::class, 'destroy']); // Deactivate
             });
@@ -242,6 +244,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/barcode', [App\Http\Controllers\ProductController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\ProductController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\ProductController::class, 'store']);
+                Route::post('/bulk', [App\Http\Controllers\ProductController::class, 'bulkStore']);
                 Route::put('/{id}', [App\Http\Controllers\ProductController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\ProductController::class, 'destroy']); // Deactivate
             });
@@ -285,19 +288,19 @@ Route::prefix('v1')->group(function () {
             // Purchase Requisition Endpoints
             Route::prefix('purchase-requisitions')->group(function () {
                 // Master data lookups for PR form
-                Route::get('/master/materials',  [App\Http\Controllers\PurchaseRequisitionController::class, 'getMaterials']);
-                Route::get('/master/uoms',        [App\Http\Controllers\PurchaseRequisitionController::class, 'getUoms']);
-                Route::get('/master/warehouses',  [App\Http\Controllers\PurchaseRequisitionController::class, 'getWarehouses']);
-                Route::get('/master/users',       [App\Http\Controllers\PurchaseRequisitionController::class, 'getUsers']);
+                Route::get('/master/materials', [App\Http\Controllers\PurchaseRequisitionController::class, 'getMaterials']);
+                Route::get('/master/uoms', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUoms']);
+                Route::get('/master/warehouses', [App\Http\Controllers\PurchaseRequisitionController::class, 'getWarehouses']);
+                Route::get('/master/users', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUsers']);
                 // CRUD
-                Route::get('/',      [App\Http\Controllers\PurchaseRequisitionController::class, 'index']);
-                Route::post('/',     [App\Http\Controllers\PurchaseRequisitionController::class, 'store']);
-                Route::get('/{id}',  [App\Http\Controllers\PurchaseRequisitionController::class, 'show']);
-                Route::put('/{id}',  [App\Http\Controllers\PurchaseRequisitionController::class, 'update']);
+                Route::get('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'store']);
+                Route::get('/{id}', [App\Http\Controllers\PurchaseRequisitionController::class, 'show']);
+                Route::put('/{id}', [App\Http\Controllers\PurchaseRequisitionController::class, 'update']);
                 // Status transitions
-                Route::patch('/{id}/submit',  [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
+                Route::patch('/{id}/submit', [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
                 Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseRequisitionController::class, 'approve']);
-                Route::patch('/{id}/reject',  [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
+                Route::patch('/{id}/reject', [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
             });
         });
 
@@ -500,6 +503,9 @@ Route::prefix('v1')->group(function () {
 
                 // Bucket drill-down: all balance rows for a material in one bucket
                 Route::get('/bucket/{materialId}/{bucket}', [App\Http\Controllers\StockController::class, 'byBucket']);
+
+
+                Route::post('/adjust', [App\Http\Controllers\StockController::class, 'adjust']);
             });
         });
 
@@ -508,6 +514,7 @@ Route::prefix('v1')->group(function () {
             // BOM Header
             Route::prefix('bom-headers')->group(function () {
                 Route::get('/', [App\Http\Controllers\BOMHeaderController::class, 'index']);
+                Route::get('/next-code', [App\Http\Controllers\BOMHeaderController::class, 'getNextCode']);
                 Route::get('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\BOMHeaderController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'update']);
@@ -529,34 +536,38 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // Production Orders & Material Issue Requests
-        Route::prefix('production-orders')->group(function () {
-            Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
-            Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
-            Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
-            Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
-            Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);
-            Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
-            Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
+        // ── PRODUCTION Module ─────────────────────────────────────────────
+        Route::middleware(['check.module.permission:PRODUCTION'])->group(function () {
+            // Production Orders & Material Issue Requests
+            Route::prefix('production-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
+                Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
+                Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
+                Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);
+                Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
+                Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
+            });
+
+            Route::prefix('material-issue-requests')->group(function () {
+                Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
+                Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
+                Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
+                Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
+            });
+
+            Route::prefix('packing-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PackingOrderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PackingOrderController::class, 'store']);
+                Route::post('/{id}/cartons', [App\Http\Controllers\PackingOrderController::class, 'createCarton']);
+                Route::post('/{id}/cartons/{cartonId}/scan', [App\Http\Controllers\PackingOrderController::class, 'scanIntoCarton']);
+                Route::post('/{id}/cartons/{cartonId}/seal', [App\Http\Controllers\PackingOrderController::class, 'sealCarton']);
+                Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
+            });
         });
 
-        Route::prefix('material-issue-requests')->group(function () {
-            Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
-            Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
-            Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
-            Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
-            Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
-        });
-
-        Route::prefix('packing-orders')->group(function () {
-            Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
-            Route::get('/{id}', [App\Http\Controllers\PackingOrderController::class, 'show']);
-            Route::post('/', [App\Http\Controllers\PackingOrderController::class, 'store']);
-            Route::post('/{id}/cartons', [App\Http\Controllers\PackingOrderController::class, 'createCarton']);
-            Route::post('/{id}/cartons/{cartonId}/scan', [App\Http\Controllers\PackingOrderController::class, 'scanIntoCarton']);
-            Route::post('/{id}/cartons/{cartonId}/seal', [App\Http\Controllers\PackingOrderController::class, 'sealCarton']);
-            Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
-        });
 
         // ── Lookup routes for Sales Order creation (no module-permission gate) ──
         Route::get('/lookup/customers', function (\Illuminate\Http\Request $request) {
@@ -569,20 +580,21 @@ Route::prefix('v1')->group(function () {
             }
 
             $customers = \App\Models\Tenant\Customer::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%'.$request->search.'%'))
+                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%' . $request->search . '%'))
                 ->orderBy('customer_name')
                 ->get(['id', 'customer_name', 'customer_code', 'phone', 'email'])
-                ->map(fn($c) => ['id' => 'c_'.$c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
+                ->map(fn($c) => ['id' => 'c_' . $c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
 
             $users = \App\Models\Tenant\User::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(fn($q2) =>
-                    $q2->where('first_name', 'like', '%'.$request->search.'%')
-                       ->orWhere('last_name', 'like', '%'.$request->search.'%')
-                       ->orWhere('email', 'like', '%'.$request->search.'%')
+                ->when($request->filled('search'), fn($q) => $q->where(
+                    fn($q2) =>
+                    $q2->where('first_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('last_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('email', 'like', '%' . $request->search . '%')
                 ))
                 ->orderBy('first_name')
                 ->get(['id', 'first_name', 'last_name', 'email', 'employee_code'])
-                ->map(fn($u) => ['id' => 'u_'.$u->id, 'label' => trim($u->first_name.' '.$u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
+                ->map(fn($u) => ['id' => 'u_' . $u->id, 'label' => trim($u->first_name . ' ' . $u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
 
             $merged = $customers->concat($users)->sortBy('label')->values();
             return response()->json(['success' => true, 'data' => $merged]);
@@ -604,7 +616,7 @@ Route::prefix('v1')->group(function () {
             $customer = \App\Models\Tenant\Customer::create([
                 'customer_name' => $request->customer_name,
                 'customer_code' => \App\Models\Tenant\Customer::generateCode(),
-                'created_by'    => $request->input('auth_user_id'),
+                'created_by' => $request->input('auth_user_id'),
             ]);
             return response()->json(['success' => true, 'data' => $customer], 201);
         });
@@ -617,9 +629,10 @@ Route::prefix('v1')->group(function () {
                 \DB::reconnect('tenant');
             }
             $products = \App\Models\Tenant\Product::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(fn($q2) =>
-                    $q2->where('product_name', 'like', '%'.$request->search.'%')
-                       ->orWhere('product_code', 'like', '%'.$request->search.'%')
+                ->when($request->filled('search'), fn($q) => $q->where(
+                    fn($q2) =>
+                    $q2->where('product_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('product_code', 'like', '%' . $request->search . '%')
                 ))
                 ->orderBy('product_name')
                 ->get(['id', 'product_code', 'product_name', 'pack_size', 'pack_uom_id', 'standard_cost', 'mrp']);

@@ -256,7 +256,7 @@ function userEditForm() {
             }
             
             try {
-                const response = await fetch(`/api/v1/users/${this.userId}`, {
+                const response = await fetch(`{{ url('api/v1/users') }}/${this.userId}`, {
                     credentials: 'same-origin',
                     headers: { 
                         'Accept': 'application/json',
@@ -325,7 +325,7 @@ function userEditForm() {
         
         async loadDepartments() {
             try {
-                const response = await fetch('/api/v1/departments', {
+                const response = await fetch('{{ url("api/v1/departments") }}', {
                     credentials: 'same-origin',
                     headers: { 
                         'Accept': 'application/json',
@@ -364,7 +364,7 @@ function userEditForm() {
             }
             
             try {
-                const response = await fetch(`/api/v1/departments/${deptId}/roles`, {
+                const response = await fetch(`{{ url('api/v1/departments') }}/${deptId}/roles`, {
                     credentials: 'same-origin',
                     headers: { 
                         'Accept': 'application/json',
@@ -402,7 +402,7 @@ function userEditForm() {
             }
             
             try {
-                const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`, {
+                const response = await fetch(`{{ url('api/v1/roles') }}/${this.form.role_id}/permissions`, {
                     credentials: 'same-origin',
                     headers: { 
                         'Accept': 'application/json',
@@ -460,7 +460,7 @@ function userEditForm() {
                 
                 console.log('Submitting form data:', formData); // Debug log
                 
-                const response = await fetch(`/api/v1/users/${this.userId}`, {
+                const response = await fetch(`{{ url('api/v1/users') }}/${this.userId}`, {
                     method: 'PUT',
                     credentials: 'same-origin',
                     headers: {

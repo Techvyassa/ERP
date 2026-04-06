@@ -1,449 +1,282 @@
 @extends('tenant.layouts.inventory')
 
-@section('title', 'Create Product')
-@section('page-title', 'Create New Product')
+@section('title', 'Add Product')
+@section('page-title', 'Add New Product')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" rel="stylesheet">
+<style>
+    .input-field { width: 100%; border: 1px solid #cbd5e1; padding: 10px 14px; border-radius: 8px; font-weight: 500; font-size: 14px; outline: none; transition: 0.2s; background: #f8fafc; }
+    .input-field:focus { border-color: #2563eb; background: #ffffff; box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.1); }
+    .label { display: block; font-size: 12px; font-weight: 700; color: #475569; margin-bottom: 6px; }
+    [x-cloak] { display: none !important; }
+    .section-title { font-size: 14px; font-weight: 800; color: #1e293b; border-bottom: 2px solid #f1f5f9; padding-bottom: 8px; margin-bottom: 16px; display: flex; items-center; gap: 8px; }
+</style>
 @endpush
 
 @section('content')
-<div x-data="productForm()" x-init="loadDropdowns()">
-    <!-- Loading Overlay -->
-    <div x-show="loading" x-transition class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-40">
-        <div class="bg-white rounded-lg p-6 flex items-center space-x-3">
-            <i class="fas fa-spinner fa-spin text-blue-600 text-xl"></i>
-            <span class="text-gray-700">Loading...</span>
+<div x-data="productFlow()" x-init="initialize()" class="max-w-5xl mx-auto space-y-6">
+    <!-- Header & Mode Toggle -->
+    <div class="flex items-center justify-between bg-white p-6 rounded-2xl border shadow-sm">
+        <div>
+            <h1 class="text-2xl font-black text-slate-900 tracking-tight" x-text="mode === 'single' ? 'New Product Entry' : 'Quick Batch Upload'"></h1>
+            <p class="text-slate-500 text-sm font-medium" x-text="mode === 'single' ? 'Create a single product record with full details' : 'Enter multiple products quickly in a spreadsheet-like view'"></p>
         </div>
+        <button @click="toggleMode()" class="px-6 py-2.5 bg-slate-900 text-white text-xs font-bold rounded-xl hover:bg-slate-800 transition-all flex items-center gap-2 shadow-lg shadow-slate-100">
+            <span class="material-symbols-outlined text-lg" x-text="mode === 'single' ? 'list_alt' : 'person_add'"></span>
+            <span x-text="mode === 'single' ? 'Switch to Bulk Mode' : 'Switch to Single Entry'"></span>
+        </button>
     </div>
 
-    <!-- Notification Container -->
-    <div id="notification-container" class="fixed top-4 right-4 z-50 space-y-2"></div>
-    <div class="max-w-4xl mx-auto">
-        <!-- Header -->
-        <div class="bg-white rounded-xl shadow p-6 mb-6">
-            <div class="flex items-center justify-between">
+    <!-- Single Form View -->
+    <div x-show="mode === 'single'" class="bg-white border rounded-2xl shadow-sm overflow-hidden p-8 space-y-10">
+        <!-- Section 1: Basic Info -->
+        <div>
+            <div class="section-title">
+                <span class="material-symbols-outlined text-blue-600">info</span>
+                1. Basic Product Details
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create New Product</h2>
-                    <p class="text-gray-600 mt-1">Add finished goods master</p>
+                    <label class="label">Product Name *</label>
+                    <input type="text" x-model="single.product_name" required class="input-field" placeholder="e.g. Black Pepper Powder 500g">
                 </div>
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    <i class="fas fa-arrow-left mr-2"></i>Back to List
-                </a>
+                <div>
+                    <label class="label">Category</label>
+                    <select x-model="single.product_category" class="input-field">
+                        <option value="">-- Choose Category --</option>
+                        <option value="AGRICULTURE">Agri-Products</option>
+                        <option value="SPICES">Spices & Powders</option>
+                        <option value="PULSES">Pulses & Grains</option>
+                        <option value="GRAINS">Grains</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 flex items-center gap-6 p-4 bg-blue-50/50 rounded-xl border border-blue-100">
+                    <div class="flex items-center gap-3">
+                        <input type="checkbox" x-model="single.auto_generate_code" id="autoCode" class="w-5 h-5 rounded-md border-gray-300 text-blue-600 focus:ring-blue-500">
+                        <label for="autoCode" class="text-sm font-bold text-slate-700">Auto-generate Product Code</label>
+                    </div>
+                    <template x-if="!single.auto_generate_code">
+                        <div class="flex-1 flex items-center gap-3">
+                            <span class="text-xs font-bold text-slate-400 uppercase">Custom Code:</span>
+                            <input type="text" x-model="single.product_code" placeholder="e.g. FG-SPICE-001" class="flex-1 input-field !bg-white">
+                        </div>
+                    </template>
+                </div>
             </div>
         </div>
 
-        <!-- Form -->
-        <form @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
-            <!-- Basic Information -->
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Product Information</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Product Code -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Product Code <span class="text-red-500" x-show="!form.auto_generate_code">*</span>
-                        </label>
-                        <div class="space-y-3">
-                            <!-- Auto-generate option -->
-                            <div class="flex items-center space-x-3">
-                                <input type="checkbox" 
-                                       x-model="form.auto_generate_code"
-                                       @change="handleAutoGenerateChange()"
-                                       class="w-4 h-4 text-blue-600 border-gray-300 rounded focus:ring-blue-500">
-                                <label class="text-sm text-gray-700 cursor-pointer">Auto-generate code</label>
-                            </div>
-                            
-                            <!-- Manual code generation -->
-                            <div x-show="!form.auto_generate_code" x-transition>
-                                <div class="flex items-center space-x-2">
-                                    <!-- Manual Prefix -->
-                                    <div class="w-32">
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Prefix</label>
-                                        <input type="text" 
-                                               x-model="form.manual_prefix"
-                                               @input="updateManualCode()"
-                                               maxlength="10"
-                                               placeholder="FG"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                    </div>
-                                    
-                                    <!-- Separator -->
-                                    <div class="flex items-center pb-6">
-                                        <span class="text-gray-500 font-medium">-</span>
-                                    </div>
-                                    
-                                    <!-- Sequential Number -->
-                                    <div class="flex-1">
-                                        <label class="block text-xs font-medium text-gray-600 mb-1">Number</label>
-                                        <input type="text" 
-                                               x-model="form.manual_number"
-                                               @input="updateManualCode()"
-                                               maxlength="10"
-                                               placeholder="0001"
-                                               class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
-                                    </div>
-                                </div>
-                                
-                                <!-- Generated Code Display -->
-                                <div class="mt-2">
-                                    <input type="text" 
-                                           x-model="form.product_code"
-                                           :required="!form.auto_generate_code"
-                                           maxlength="30"
-                                           placeholder="FG-0001"
-                                           :class="{
-                                               'border-red-500 focus:ring-red-500': errors.product_code, 
-                                               'border-gray-300 focus:ring-blue-500': !errors.product_code
-                                           }"
-                                           class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent">
-                                    <p class="text-xs text-gray-500 mt-1">Generated product code (auto-updates from prefix and number)</p>
-                                    <template x-if="errors.product_code">
-                                        <p class="mt-1 text-sm text-red-600" x-text="Array.isArray(errors.product_code) ? errors.product_code[0] : errors.product_code"></p>
-                                    </template>
-                                </div>
-                            </div>
-                            
-                            <!-- Auto-generate info -->
-                            <div x-show="form.auto_generate_code" x-transition>
-                                <div class="bg-green-50 border border-green-200 rounded-lg p-3">
-                                    <div class="flex items-center">
-                                        <i class="fas fa-magic text-green-600 mr-2"></i>
-                                        <div class="text-sm text-green-800">
-                                            <p class="font-medium">Auto-generation enabled</p>
-                                            <p class="text-xs mt-1">Code will be generated based on product category:
-                                                <span x-show="form.product_category === 'ELECTRONICS'">ELEC-XXXX</span>
-                                                <span x-show="form.product_category === 'CLOTHING'">CLO-XXXX</span>
-                                                <span x-show="form.product_category === 'FOOD'">FD-XXXX</span>
-                                                <span x-show="form.product_category === 'BEVERAGES'">BEV-XXXX</span>
-                                                <span x-show="form.product_category === 'FURNITURE'">FUR-XXXX</span>
-                                                <span x-show="form.product_category === 'TOYS'">TOY-XXXX</span>
-                                                <span x-show="form.product_category === 'BOOKS'">BK-XXXX</span>
-                                                <span x-show="form.product_category === 'SPORTS'">SP-XXXX</span>
-                                                <span x-show="form.product_category === 'BEAUTY'">BEA-XXXX</span>
-                                                <span x-show="form.product_category === 'AUTOMOTIVE'">AUTO-XXXX</span>
-                                                <span x-show="form.product_category && !['ELECTRONICS','CLOTHING','FOOD','BEVERAGES','FURNITURE','TOYS','BOOKS','SPORTS','BEAUTY','AUTOMOTIVE'].includes(form.product_category)">PROD-XXXX (default)</span>
-                                                <span x-show="!form.product_category">Enter category to see prefix</span>
-                                            </p>
-                                        </div>
-                                    </div>
-                                </div>
-                            </div>
-                        </div>
-                    </div>
-
-                    <!-- Product Name -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Product Name <span class="text-red-500">*</span>
-                        </label>
-                        <input type="text" x-model="form.product_name" required maxlength="200"
-                               placeholder="Masala Powder 100g"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
-
-                    <!-- Product Category -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Product Category
-                        </label>
-                        <input type="text" x-model="form.product_category" 
-                               @change="handleProductCategoryChange()"
-                               maxlength="60"
-                               placeholder="Spice / Blend / Condiment"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Category determines auto-generated code prefix</p>
-                    </div>
-
-                    <!-- Pack Size -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Pack Size <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.pack_size" required min="0" step="0.001"
-                               placeholder="100, 250, 1000"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">100, 250, 1000 (per pack uom)</p>
-                    </div>
-
-                    <!-- Pack UOM -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Pack UOM <span class="text-red-500">*</span>
-                        </label>
-                        <select x-model="form.pack_uom_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select UOM</option>
+        <!-- Section 2: Weight & Taxation -->
+        <div>
+            <div class="section-title">
+                <span class="material-symbols-outlined text-green-600">scale</span>
+                2. Weight & Tax Configuration
+            </div>
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div>
+                    <label class="label">Weight / Pack Size</label>
+                    <div class="flex gap-2">
+                        <input type="number" x-model="single.pack_size" step="0.001" class="w-1/2 input-field" placeholder="0.00">
+                        <select x-model="single.pack_uom_id" class="w-1/2 input-field">
                             <template x-for="uom in uoms" :key="uom.id">
                                 <option :value="uom.id" x-text="uom.uom_name"></option>
                             </template>
                         </select>
-                        <p class="text-xs text-gray-500 mt-1">→ uom_master(uom_id)</p>
-                    </div>
-
-                    <!-- HSN Code -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            HSN Code <span class="text-red-500">*</span>
-                        </label>
-                        <select x-model="form.hsn_code_id" required
-                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                            <option value="">Select HSN Code</option>
-                            <template x-for="hsn in hsnCodes" :key="hsn.id">
-                                <option :value="hsn.id" x-text="hsn.hsn_code + ' - ' + hsn.description"></option>
-                            </template>
-                        </select>
-                        <p class="text-xs text-gray-500 mt-1">→ hsn_codes(hsn_id)</p>
                     </div>
                 </div>
-            </div>
-
-            <!-- Costing & Pricing -->
-            <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Costing & Pricing</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Standard Cost -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Standard Cost <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.standard_cost" required min="0" step="0.01"
-                               placeholder="0.00"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Cost per unit</p>
-                    </div>
-
-                    <!-- MRP -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            MRP (Maximum Retail Price)
-                        </label>
-                        <input type="number" x-model="form.mrp" min="0" step="0.01"
-                               placeholder="Optional"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Maximum retail price</p>
-                    </div>
+                <div class="md:col-span-2">
+                    <label class="label">HSN Code & Tax Category *</label>
+                    <select x-model="single.hsn_code_id" required class="input-field">
+                        <option value="">-- Search & Select HSN Code --</option>
+                        <template x-for="hsn in hsnCodes" :key="hsn.id">
+                            <option :value="hsn.id" x-text="hsn.hsn_code + ' - ' + hsn.description"></option>
+                        </template>
+                    </select>
                 </div>
             </div>
+        </div>
 
-            <!-- Status -->
-            <div class="mb-6">
-                <label class="flex items-center space-x-3">
-                    <input type="checkbox" x-model="form.is_active" class="w-5 h-5 text-blue-600 border-gray-300 rounded focus:ring-2 focus:ring-blue-500">
-                    <span class="text-sm font-medium text-gray-700">Active Product</span>
-                </label>
-                <p class="text-xs text-gray-500 mt-1 ml-8">Active flag</p>
+        <!-- Section 3: Pricing -->
+        <div>
+            <div class="section-title">
+                <span class="material-symbols-outlined text-orange-600">payments</span>
+                3. Pricing (₹)
             </div>
-
-            <!-- Info Box -->
-            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
-                <div class="flex items-start">
-                    <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
-                    <div class="text-sm text-blue-800">
-                        <p class="font-semibold mb-1">About Product Master</p>
-                        <p>Finished Goods master. The raw_materials JSON column has been REMOVED and replaced by bom_header + bom_detail for proper relational integrity.</p>
-                        <p class="mt-2 text-xs">Used in: BOM, Sales Orders, Production Planning, Dispatch, Costing</p>
-                    </div>
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6 bg-slate-50 p-6 rounded-2xl border border-slate-200">
+                <div>
+                    <label class="label">Manufacturing / Standard Cost (₹)</label>
+                    <input type="number" x-model="single.standard_cost" step="0.01" class="input-field !bg-white" placeholder="0.00">
+                    <p class="text-[10px] text-slate-400 mt-2 font-medium">Internal cost for valuation</p>
+                </div>
+                <div>
+                    <label class="label text-blue-700">Retail Selling Price (MRP ₹) *</label>
+                    <input type="number" x-model="single.mrp" step="0.01" class="input-field !bg-white border-blue-200 text-blue-700 font-bold text-lg" placeholder="0.00">
+                    <p class="text-[10px] text-blue-500 mt-2 font-bold">Standard price for sales</p>
                 </div>
             </div>
+        </div>
 
-            <!-- Form Actions -->
-            <div class="flex items-center justify-end space-x-4 pt-6 border-t">
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}" 
-                   class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                    Cancel
-                </a>
-                <button type="submit" :disabled="loading"
-                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
-                    <span x-show="!loading">Create Product</span>
-                    <span x-show="loading"><i class="fas fa-spinner fa-spin mr-2"></i>Creating...</span>
+        <!-- Submit -->
+        <div class="flex items-center justify-end gap-4 pt-6">
+            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}" class="text-sm font-bold text-slate-400 hover:text-slate-600 transition-colors">Discard Draft</a>
+            <button @click="submitSingle" :disabled="loading" class="px-12 py-3.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl transition-all shadow-xl shadow-blue-200 disabled:opacity-50 flex items-center gap-2">
+                <span x-show="loading" class="material-symbols-outlined animate-spin text-sm">progress_activity</span>
+                <span x-text="loading ? 'Processing...' : 'Save Product Now'"></span>
+            </button>
+        </div>
+    </div>
+
+    <!-- Bulk Form View -->
+    <div x-show="mode === 'bulk'" x-cloak class="space-y-6">
+        <div class="bg-slate-900 rounded-2xl p-8 text-white flex items-center justify-between shadow-xl">
+            <div class="flex items-center gap-6">
+                <div class="bg-blue-500/20 p-4 rounded-2xl border border-blue-500/30">
+                    <span class="material-symbols-outlined text-blue-400 text-3xl">grid_view</span>
+                </div>
+                <div>
+                    <h3 class="text-xl font-black tracking-tight">Mass Product Entry</h3>
+                    <p class="text-slate-400 text-xs font-medium mt-1">Ideal for entering many items from a physical list</p>
+                </div>
+            </div>
+            <button @click="addBulkRow()" class="px-5 py-2.5 bg-white/10 hover:bg-white/20 border border-white/20 rounded-xl text-xs font-bold transition-all flex items-center gap-2">
+                <span class="material-symbols-outlined text-lg">add_circle</span>
+                Add Empty Row
+            </button>
+        </div>
+
+        <div class="bg-white border rounded-2xl overflow-hidden shadow-md">
+            <table class="w-full text-left">
+                <thead class="bg-slate-50 border-b">
+                    <tr class="text-[11px] font-black uppercase text-slate-500 tracking-wider">
+                        <th class="px-4 py-4 w-1/3">Product Name</th>
+                        <th class="px-4 py-4">Category</th>
+                        <th class="px-4 py-4">Weight / Unit</th>
+                        <th class="px-4 py-4">Selling Price (₹)</th>
+                        <th class="px-4 py-4 text-center">Action</th>
+                    </tr>
+                </thead>
+                <tbody class="divide-y divide-slate-100">
+                    <template x-for="(item, i) in bulk" :key="i">
+                        <tr class="hover:bg-slate-50/50 transition-colors">
+                            <td class="px-3 py-4">
+                                <input type="text" x-model="item.product_name" placeholder="Enter Product Name..." class="w-full px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-sm font-bold focus:ring-2 focus:ring-blue-500 outline-none">
+                            </td>
+                            <td class="px-3 py-4">
+                                <select x-model="item.product_category" class="w-full px-2 py-2.5 bg-slate-100 border-none rounded-lg text-xs font-bold text-slate-700">
+                                    <option value="AGRICULTURE">Agriculture</option>
+                                    <option value="SPICES">Spices</option>
+                                    <option value="PULSES">Pulses</option>
+                                    <option value="GRAINS">Grains</option>
+                                </select>
+                            </td>
+                            <td class="px-3 py-4">
+                                <div class="flex gap-1">
+                                    <input type="number" x-model="item.pack_size" class="w-20 px-3 py-2.5 bg-white border border-slate-200 rounded-lg text-xs font-black" placeholder="Size">
+                                    <select x-model="item.pack_uom_id" class="w-20 px-2 py-2.5 bg-slate-100 border-none rounded-lg text-[10px] font-bold">
+                                        <template x-for="uom in uoms" :key="uom.id">
+                                            <option :value="uom.id" x-text="uom.uom_name"></option>
+                                        </template>
+                                    </select>
+                                </div>
+                            </td>
+                            <td class="px-3 py-4">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs font-bold text-slate-400">₹</span>
+                                    <input type="number" x-model="item.mrp" placeholder="MRP" class="w-24 px-3 py-2.5 bg-blue-50/50 border border-blue-100 rounded-lg text-xs font-black text-blue-700">
+                                </div>
+                            </td>
+                            <td class="px-3 py-4 text-center">
+                                <button @click="removeBulkRow(i)" class="p-2 text-slate-300 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all">
+                                    <span class="material-symbols-outlined text-lg">delete</span>
+                                </button>
+                            </td>
+                        </tr>
+                    </template>
+                </tbody>
+            </table>
+        </div>
+        
+        <div class="flex items-center justify-between bg-white p-6 rounded-2xl border shadow-sm">
+            <button @click="addBulkRow()" class="px-6 py-3 text-xs font-black text-blue-600 border border-dashed border-blue-200 bg-blue-50/20 rounded-xl hover:bg-blue-50 transition-all">
+                + Append More Rows
+            </button>
+            <div class="flex items-center gap-4">
+                <span class="text-xs font-bold text-slate-400" x-text="validBulkCount + ' items ready to save'"></span>
+                <button @click="submitBulk" :disabled="loading || !validBulkCount" class="px-10 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl shadow-xl shadow-blue-100 disabled:opacity-50 transition-all">
+                    <span x-text="loading ? 'Creating Records...' : 'Save All Products'"></span>
                 </button>
             </div>
-        </form>
+        </div>
     </div>
 </div>
 
 <script>
-function productForm() {
+function productFlow() {
     return {
-        loading: false,
-        uoms: [],
-        hsnCodes: [],
-        form: {
-            product_code: '',
-            product_name: '',
-            product_category: '',
-            pack_size: '',
-            pack_uom_id: '',
-            hsn_code_id: '',
-            standard_cost: 0,
-            mrp: '',
-            is_active: true,
-            auto_generate_code: false,
-            manual_prefix: '',
-            manual_number: ''
-        },
-        
-        handleProductCategoryChange() {
-            if (this.form.auto_generate_code) {
-                this.showAutoGeneratedCode();
-            } else {
-                // Update manual prefix when product category changes
-                this.form.manual_prefix = this.getDefaultPrefix(this.form.product_category);
-                this.updateManualCode();
-            }
-        },
-        
-        handleAutoGenerateChange() {
-            if (this.form.auto_generate_code) {
-                this.form.product_code = ''; // Clear the field when auto-generate is checked
-                this.form.manual_prefix = ''; // Clear manual fields
-                this.form.manual_number = '';
-                this.errors.product_code = null; // Clear any validation errors
-            } else {
-                // Set default manual values when switching to manual
-                this.form.manual_prefix = this.getDefaultPrefix(this.form.product_category);
-                this.form.manual_number = '0001';
-                this.updateManualCode();
-            }
-        },
-        
-        getDefaultPrefix(productCategory) {
-            const prefixes = {
-                'ELECTRONICS': 'ELEC',
-                'CLOTHING': 'CLO',
-                'FOOD': 'FD',
-                'BEVERAGES': 'BEV',
-                'FURNITURE': 'FUR',
-                'TOYS': 'TOY',
-                'BOOKS': 'BK',
-                'SPORTS': 'SP',
-                'BEAUTY': 'BEA',
-                'AUTOMOTIVE': 'AUTO'
-            };
-            return prefixes[productCategory] || 'PROD';
-        },
-        
-        updateManualCode() {
-            if (this.form.manual_prefix && this.form.manual_number) {
-                this.form.product_code = `${this.form.manual_prefix}-${this.form.manual_number}`;
-            } else {
-                this.form.product_code = '';
-            }
-        },
-        
-        showAutoGeneratedCode() {
-            if (this.form.auto_generate_code && this.form.product_category) {
-                const prefix = {
-                    'ELECTRONICS': 'ELEC',
-                    'CLOTHING': 'CLO',
-                    'FOOD': 'FD',
-                    'BEVERAGES': 'BEV',
-                    'FURNITURE': 'FUR',
-                    'TOYS': 'TOY',
-                    'BOOKS': 'BK',
-                    'SPORTS': 'SP',
-                    'BEAUTY': 'BEA',
-                    'AUTOMOTIVE': 'AUTO'
-                }[this.form.product_category] || 'PROD';
-                
-                // Show a preview of what the code will be
-                console.log(`Auto-generated product code will be: ${prefix}-XXXX (sequential)`);
-            }
-        },
-        
-        async loadDropdowns() {
-            this.loading = true;
+        mode: 'single', loading: false, uoms: [], hsnCodes: [],
+        single: { product_name: '', product_category: '', pack_size: 1, pack_uom_id: '', hsn_code_id: '', standard_cost: 0, mrp: 0, auto_generate_code: true, product_code: '' },
+        bulk: [],
+        get validBulkCount() { return this.bulk.filter(i => i.product_name && i.product_name.trim()).length; },
+
+        async initialize() {
             try {
-                // Load UOMs and HSN Codes in parallel
-                const [uomsResponse, hsnResponse] = await Promise.all([
-                    fetch('/api/v1/uoms', {
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    }),
-                    fetch('/api/v1/hsn-codes', {
-                        credentials: 'same-origin',
-                        headers: { 'Accept': 'application/json' }
-                    })
+                const [uRes, hRes] = await Promise.all([
+                    fetch('/api/v1/uoms', { headers: { 'Accept': 'application/json' } }),
+                    fetch('/api/v1/hsn-codes', { headers: { 'Accept': 'application/json' } })
                 ]);
-                
-                if (uomsResponse.ok) {
-                    const uomsData = await uomsResponse.json();
-                    // API returns data directly as array, not nested
-                    this.uoms = Array.isArray(uomsData.data) ? uomsData.data : (uomsData.data?.uoms || []);
-                }
-                
-                if (hsnResponse.ok) {
-                    const hsnData = await hsnResponse.json();
-                    this.hsnCodes = Array.isArray(hsnData.data) ? hsnData.data : (hsnData.data?.hsn_codes || []);
-                }
-            } catch (error) {
-                console.error('Failed to load dropdowns:', error);
-                this.showNotification('Failed to load dropdown data', 'error');
-            } finally {
-                this.loading = false;
-            }
+                if (uRes.ok) this.uoms = (await uRes.json()).data || [];
+                if (hRes.ok) this.hsnCodes = (await hRes.json()).data?.hsn_codes || [];
+                if (this.uoms.length) this.single.pack_uom_id = this.uoms[0].id;
+                if (this.hsnCodes.length) this.single.hsn_code_id = this.hsnCodes[0].id;
+            } catch (e) { console.error('Init failed', e); }
+            // Prefill with 5 rows for bulk entry
+            for(let i=0; i<5; i++) this.addBulkRow();
         },
-        
-        async submitForm() {
+
+        toggleMode() { this.mode = this.mode === 'single' ? 'bulk' : 'single'; },
+        addBulkRow() { 
+            this.bulk.push({ 
+                product_name: '', 
+                product_category: 'SPICES', 
+                pack_size: 1, 
+                pack_uom_id: this.single.pack_uom_id, 
+                hsn_code_id: this.single.hsn_code_id, 
+                standard_cost: 0, 
+                mrp: 0 
+            }); 
+        },
+        removeBulkRow(i) { if(this.bulk.length > 1) this.bulk.splice(i, 1); },
+
+        async submitSingle() {
+            if (!this.single.product_name || !this.single.mrp) {
+                alert('Please fill at least Product Name and Selling Price.');
+                return;
+            }
             this.loading = true;
             try {
-                const response = await fetch('/api/v1/products', {
-                    method: 'POST',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(this.form)
+                const res = await fetch('/api/v1/products', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, 
+                    body: JSON.stringify(this.single) 
                 });
-                
-                const data = await response.json();
-                
-                if (!response.ok) {
-                    if (data.error && data.error.details) {
-                        this.showNotification('Please fix validation errors', 'error');
-                    } else {
-                        this.showNotification(data.message || 'Failed to create product', 'error');
-                    }
-                    return;
-                }
-                
-                this.showNotification('Product created successfully!', 'success');
-                setTimeout(() => {
-                    window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}';
-                }, 1500);
-                
-            } catch (error) {
-                console.error('Failed to create product:', error);
-                this.showNotification('Network error. Please try again.', 'error');
-            } finally {
-                this.loading = false;
-            }
+                if (res.ok) { window.location.href = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}"; }
+            } finally { this.loading = false; }
         },
-        
-        showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500 text-white' : 
-                type === 'error' ? 'bg-red-500 text-white' : 
-                'bg-blue-500 text-white'
-            }`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
+
+        async submitBulk() {
+            this.loading = true;
+            const products = this.bulk.filter(i => i.product_name && i.product_name.trim());
+            try {
+                const res = await fetch('/api/v1/products/bulk', { 
+                    method: 'POST', 
+                    headers: { 'Content-Type': 'application/json', 'Accept': 'application/json', 'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content') }, 
+                    body: JSON.stringify({ products }) 
+                });
+                if (res.ok) { window.location.href = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}"; }
+            } finally { this.loading = false; }
         }
-    }
+    };
 }
 </script>
 @endsection

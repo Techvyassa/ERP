@@ -1,1 +1,0 @@
-"maint_stock_movements exists: " . (count($tables2)  ? 'YES' : 'NO') . "\n";

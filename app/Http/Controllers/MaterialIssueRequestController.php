@@ -271,10 +271,20 @@ class MaterialIssueRequestController extends Controller
             }
 
             // Check stock availability in that bin
+            // First try bin-specific stock, then fall back to warehouse-level stock
             $stock = StockBalance::where('material_id', $material->id)
                 ->where('bin_id', $bin->id)
                 ->where('bucket', 'AVAILABLE')
                 ->first();
+
+            // If no bin-specific stock found, check warehouse-level stock (bin_id IS NULL)
+            if (!$stock) {
+                $stock = StockBalance::where('material_id', $material->id)
+                    ->whereNull('bin_id')
+                    ->where('bucket', 'AVAILABLE')
+                    ->where('warehouse_id', $bin->warehouse_id)
+                    ->first();
+            }
 
             $availableQty = $stock ? max(0, (float)$stock->qty_on_hand - (float)$stock->qty_reserved) : 0;
 
@@ -290,24 +300,35 @@ class MaterialIssueRequestController extends Controller
                 // Capture batch_number from stock_balances for traceability
                 $batchNumber = $stock?->batch_number;
 
-                // Release reservation for the issued quantity
-                $this->stockService->releaseReservation(
-                    item: [
-                        'material_id'  => $material->id,
-                        'uom_id'       => $line->uom_id,
-                        'warehouse_id' => $bin->warehouse_id,
-                        'batch_number' => $batchNumber,
-                    ],
-                    qty: $issueQty,
-                    referenceType: 'MaterialIssueRequest',
-                    referenceId: $mir->id,
-                    referenceNumber: $mir->mir_no,
-                    userId: (int)($request->input('auth_user_id') ?? 0),
-                    warehouseId: $bin->warehouse_id,
-                    binId: $bin->id,
-                    transactionType: 'CANCELLATION',
-                    remarks: "Reservation consumed by issue for {$mir->mir_no}"
-                );
+                // Release reservation for the issued quantity (if any exists)
+                try {
+                    $this->stockService->releaseReservation(
+                        item: [
+                            'material_id'  => $material->id,
+                            'uom_id'       => $line->uom_id,
+                            'warehouse_id' => $bin->warehouse_id,
+                            'batch_number' => $batchNumber,
+                        ],
+                        qty: $issueQty,
+                        referenceType: 'MaterialIssueRequest',
+                        referenceId: $mir->id,
+                        referenceNumber: $mir->mir_no,
+                        userId: (int)($request->input('auth_user_id') ?? 0),
+                        warehouseId: $bin->warehouse_id,
+                        binId: $bin->id,
+                        transactionType: 'CANCELLATION',
+                        remarks: "Reservation consumed by issue for {$mir->mir_no}"
+                    );
+                } catch (\Exception $e) {
+                    // If no reservation exists, log and continue (stock was never reserved)
+                    Log::info('[MIR] No reservation to release', [
+                        'mir_id' => $mir->id,
+                        'line_id' => $line->id,
+                        'material_id' => $material->id,
+                        'qty' => $issueQty,
+                        'error' => $e->getMessage()
+                    ]);
+                }
 
                 $this->stockService->post(
                     item: [

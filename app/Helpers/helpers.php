@@ -1,6 +1,35 @@
 <?php
 
 use App\Helpers\TenantUrlHelper;
+use Illuminate\Support\Str;
+
+if (!function_exists('generateEmployeeCode')) {
+    /**
+     * Generate a unique employee code based on department name
+     * 
+     * @param string $deptName Department name
+     * @param string $firstName User's first name
+     * @param string $lastName User's last name
+     * @return string Generated employee code
+     */
+    function generateEmployeeCode(string $deptName, string $firstName = '', string $lastName = ''): string
+    {
+        // Create prefix from department name (first 3 letters, uppercase)
+        $prefix = strtoupper(substr(trim($deptName), 0, 3));
+        if (empty($prefix)) {
+            $prefix = 'EMP';
+        }
+        
+        // If first and last name are provided, use first letter of each for uniqueness
+        if (!empty($firstName) && !empty($lastName)) {
+            $initials = strtoupper(substr($firstName, 0, 1) . substr($lastName, 0, 1));
+            return $prefix . '-' . $initials . '-' . date('Ymd');
+        }
+        
+        // Otherwise, use timestamp for uniqueness
+        return $prefix . '-' . date('Ymd') . '-' . substr(mt_rand(1000, 9999), 0, 4);
+    }
+}
 
 if (!function_exists('tenantRoute')) {
     /**

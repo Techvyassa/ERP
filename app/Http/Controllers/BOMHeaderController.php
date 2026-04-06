@@ -2,6 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\DB;
+use App\Models\Tenant\BOMDetail;
+use App\Models\Tenant\Material;
 use App\Models\Tenant\BOMHeader;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\UOM;
@@ -14,6 +17,50 @@ use Illuminate\Support\Str;
 class BOMHeaderController extends Controller
 {
     /**
+     * Get next available BOM code
+     * GET /api/v1/bom-headers/next-code
+     */
+    public function getNextCode(Request $request): JsonResponse
+    {
+        $prefix = $request->get('prefix', 'BOM');
+        $requestId = Str::uuid()->toString();
+
+        try {
+            // Find the latest BOM code with this prefix
+            $latest = BOMHeader::where('bom_code', 'like', $prefix . '-%')
+                ->orderBy('bom_code', 'desc')
+                ->first();
+
+            $nextNumber = 1;
+            if ($latest) {
+                // Extract number from code like BOM-0001 or BOM-123
+                $parts = explode('-', $latest->bom_code);
+                $lastPart = end($parts);
+                if (is_numeric($lastPart)) {
+                    $nextNumber = (int)$lastPart + 1;
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'prefix' => $prefix,
+                    'next_number' => str_pad($nextNumber, 4, '0', STR_PAD_LEFT),
+                    'full_code' => $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT)
+                ],
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to generate next code: ' . $e->getMessage(),
+                'request_id' => $requestId
+            ], 500);
+        }
+    }
+
+    /**
      * Get all BOM headers
      * GET /api/v1/bom-headers
      */
@@ -22,7 +69,7 @@ class BOMHeaderController extends Controller
         $requestId = Str::uuid()->toString();
 
         try {
-            $query = BOMHeader::with(['product', 'outputUom']);
+            $query = BOMHeader::with(['product', 'outputUom', 'bomDetails.material', 'bomDetails.uom', 'bomDetails.substituteMaterial']);
 
             // Filters
             if ($request->has('product_id')) {
@@ -69,7 +116,7 @@ class BOMHeaderController extends Controller
 
         try {
             // Try to load with relationships
-            $bom = BOMHeader::with(['product', 'outputUom', 'creator', 'approver'])->find($id);
+            $bom = BOMHeader::with(['product', 'outputUom', 'creator', 'approver', 'bomDetails.material', 'bomDetails.uom', 'bomDetails.substituteMaterial'])->find($id);
 
             if (!$bom) {
                 return response()->json([
@@ -97,7 +144,7 @@ class BOMHeaderController extends Controller
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
             ]);
-            
+
             return response()->json([
                 'success' => false,
                 'error' => ['code' => 'ERROR', 'details' => ['exception' => $e->getMessage()]],
@@ -126,6 +173,14 @@ class BOMHeaderController extends Controller
             'batch_size' => 'required|numeric|min:0.001',
             'output_uom_id' => 'required|integer',
             'remarks' => 'nullable|string|max:1000',
+            'items' => 'required|array|min:1',
+            'items.*.material_id' => 'required|integer',
+            'items.*.qty_required' => 'required|numeric|min:0.0001',
+            'items.*.uom_id' => 'required|integer',
+            'items.*.scrap_percent' => 'nullable|numeric|min:0|max:100',
+            'items.*.substitute_material_id' => 'nullable|integer',
+            'items.*.is_critical' => 'nullable|boolean',
+            'items.*.remarks' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -181,6 +236,9 @@ class BOMHeaderController extends Controller
                 ], 409);
             }
 
+            // Begin Transaction
+            DB::beginTransaction();
+
             // Create BOM header
             $bom = BOMHeader::create([
                 'bom_code' => $request->input('bom_code'),
@@ -195,7 +253,51 @@ class BOMHeaderController extends Controller
                 'created_by' => $request->input('auth_user_id'),
             ]);
 
-            $bom->load(['product', 'outputUom', 'creator']);
+            // Create BOM details
+            $lineNo = 1;
+            foreach ($request->input('items') as $item) {
+                // Verify material exists
+                $material = Material::find($item['material_id']);
+                if (!$material) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'error' => ['code' => 'VALIDATION_ERROR', 'details' => ['material' => ['Invalid material ID: ' . $item['material_id']]]],
+                        'message' => 'Validation failed',
+                        'request_id' => $requestId,
+                        'timestamp' => now()->toIso8601String()
+                    ], 422);
+                }
+
+                // Verify UOM exists
+                $itemUom = UOM::find($item['uom_id']);
+                if (!$itemUom) {
+                    DB::rollBack();
+                    return response()->json([
+                        'success' => false,
+                        'error' => ['code' => 'VALIDATION_ERROR', 'details' => ['uom' => ['Invalid UOM ID: ' . $item['uom_id']]]],
+                        'message' => 'Validation failed',
+                        'request_id' => $requestId,
+                        'timestamp' => now()->toIso8601String()
+                    ], 422);
+                }
+
+                BOMDetail::create([
+                    'bom_id' => $bom->id,
+                    'material_id' => $item['material_id'],
+                    'qty_required' => $item['qty_required'],
+                    'uom_id' => $item['uom_id'],
+                    'scrap_percent' => $item['scrap_percent'] ?? 0,
+                    'substitute_material_id' => $item['substitute_material_id'] ?? null,
+                    'is_critical' => $item['is_critical'] ?? false,
+                    'line_no' => $lineNo++,
+                    'remarks' => $item['remarks'] ?? null,
+                ]);
+            }
+
+            DB::commit();
+
+            $bom->load(['product', 'outputUom', 'creator', 'bomDetails.material', 'bomDetails.uom', 'bomDetails.substituteMaterial']);
 
             return response()->json([
                 'success' => true,
@@ -205,6 +307,7 @@ class BOMHeaderController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -233,6 +336,15 @@ class BOMHeaderController extends Controller
             'batch_size' => 'nullable|numeric|min:0.001',
             'output_uom_id' => 'nullable|integer',
             'remarks' => 'nullable|string|max:1000',
+            'items' => 'nullable|array|min:1',
+            'items.*.id' => 'nullable|integer',
+            'items.*.material_id' => 'required|integer',
+            'items.*.qty_required' => 'required|numeric|min:0.0001',
+            'items.*.uom_id' => 'required|integer',
+            'items.*.scrap_percent' => 'nullable|numeric|min:0|max:100',
+            'items.*.substitute_material_id' => 'nullable|integer',
+            'items.*.is_critical' => 'nullable|boolean',
+            'items.*.remarks' => 'nullable|string|max:500',
         ]);
 
         if ($validator->fails()) {
@@ -268,6 +380,8 @@ class BOMHeaderController extends Controller
                 }
             }
 
+            DB::beginTransaction();
+
             // Update only provided fields
             $updateData = $request->only([
                 'effective_from',
@@ -279,7 +393,47 @@ class BOMHeaderController extends Controller
             ]);
 
             $bom->update($updateData);
-            $bom->load(['product', 'outputUom', 'creator', 'approver']);
+
+            // Update BOM Details
+            if ($request->has('items')) {
+                $existingDetailIds = $bom->bomDetails()->pluck('id')->toArray();
+                $updatedDetailIds = [];
+                $lineNo = 1;
+
+                foreach ($request->input('items') as $item) {
+                    $detailData = [
+                        'bom_id' => $bom->id,
+                        'material_id' => $item['material_id'],
+                        'qty_required' => $item['qty_required'],
+                        'uom_id' => $item['uom_id'],
+                        'scrap_percent' => $item['scrap_percent'] ?? 0,
+                        'substitute_material_id' => $item['substitute_material_id'] ?? null,
+                        'is_critical' => $item['is_critical'] ?? false,
+                        'line_no' => $lineNo++,
+                        'remarks' => $item['remarks'] ?? null,
+                    ];
+
+                    if (isset($item['id']) && in_array($item['id'], $existingDetailIds)) {
+                        // Update existing detail
+                        BOMDetail::where('id', $item['id'])->update($detailData);
+                        $updatedDetailIds[] = $item['id'];
+                    } else {
+                        // Create new detail
+                        $newDetail = BOMDetail::create($detailData);
+                        $updatedDetailIds[] = $newDetail->id;
+                    }
+                }
+
+                // Delete removed details
+                $detailsToDelete = array_diff($existingDetailIds, $updatedDetailIds);
+                if (!empty($detailsToDelete)) {
+                    BOMDetail::whereIn('id', $detailsToDelete)->delete();
+                }
+            }
+
+            DB::commit();
+
+            $bom->load(['product', 'outputUom', 'creator', 'approver', 'bomDetails.material', 'bomDetails.uom', 'bomDetails.substituteMaterial']);
 
             return response()->json([
                 'success' => true,
@@ -289,6 +443,7 @@ class BOMHeaderController extends Controller
                 'timestamp' => now()->toIso8601String()
             ], 200);
         } catch (\Exception $e) {
+            DB::rollBack();
             Log::error('BOM Update Error', [
                 'id' => $id,
                 'error' => $e->getMessage(),

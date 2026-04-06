@@ -55,22 +55,22 @@
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Version</label>
-                            <p class="text-lg font-semibold text-gray-900" x-text="'v' + bom.version"></p>
+                            <p class="text-lg font-semibold text-gray-900" x-text="bom.version ? 'v' + bom.version : '-'"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Batch Size</label>
                             <p class="text-lg font-semibold text-gray-900">
-                                <span x-text="bom.batch_size"></span>
+                                <span x-text="bom.batch_size ? Number(bom.batch_size).toFixed(3) : '0.000'"></span>
                                 <span x-text="bom.output_uom && bom.output_uom.uom_code ? ' ' + bom.output_uom.uom_code : ''"></span>
                             </p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Effective From</label>
-                            <p class="text-lg font-semibold text-gray-900" x-text="bom.effective_from || '-'"></p>
+                            <p class="text-lg font-semibold text-gray-900" x-text="formatDate(bom.effective_from)"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Effective To</label>
-                            <p class="text-lg font-semibold text-gray-900" x-text="bom.effective_to || 'Currently Active'"></p>
+                            <p class="text-lg font-semibold text-gray-900" x-text="bom.effective_to ? formatDate(bom.effective_to) : 'Currently Active'"></p>
                         </div>
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Status</label>
@@ -91,6 +91,57 @@
                         <div class="mt-6 pt-6 border-t">
                             <label class="block text-sm font-medium text-gray-600 mb-2">Remarks</label>
                             <p class="text-gray-700 whitespace-pre-wrap" x-text="bom.remarks"></p>
+                        </div>
+                    </template>
+                </div>
+
+                <!-- BOM Details (Items) -->
+                <div class="bg-white rounded-xl shadow p-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">BOM Components (Items)</h3>
+                    
+                    <template x-if="bom.bom_details && bom.bom_details.length > 0">
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-sm text-left border rounded-lg">
+                                <thead class="text-xs text-gray-700 bg-gray-50 border-b">
+                                    <tr>
+                                        <th class="px-4 py-3">Line #</th>
+                                        <th class="px-4 py-3">Material</th>
+                                        <th class="px-4 py-3">Qty Required</th>
+                                        <th class="px-4 py-3">UOM</th>
+                                        <th class="px-4 py-3">Scrap %</th>
+                                        <th class="px-4 py-3">Sub. Material</th>
+                                        <th class="px-4 py-3 text-center">Critical</th>
+                                        <th class="px-4 py-3">Remarks</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <template x-for="(item, index) in bom.bom_details" :key="index">
+                                        <tr class="border-b bg-white hover:bg-gray-50">
+                                            <td class="px-4 py-2" x-text="item.line_no || (index + 1)"></td>
+                                            <td class="px-4 py-2 font-medium text-gray-900" x-text="item.material ? (item.material.material_code + ' - ' + item.material.material_name) : '-'"></td>
+                                            <td class="px-4 py-2" x-text="item.qty_required"></td>
+                                            <td class="px-4 py-2" x-text="item.uom ? item.uom.uom_name : '-'"></td>
+                                            <td class="px-4 py-2" x-text="(item.scrap_percent || 0) + '%'"></td>
+                                            <td class="px-4 py-2" x-text="item.substitute_material ? (item.substitute_material.material_code + ' - ' + item.substitute_material.material_name) : '-'"></td>
+                                            <td class="px-4 py-2 text-center">
+                                                <template x-if="item.is_critical">
+                                                    <span class="px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800">Yes</span>
+                                                </template>
+                                                <template x-if="!item.is_critical">
+                                                    <span class="px-2 py-1 text-xs rounded-full bg-gray-100 text-gray-600">No</span>
+                                                </template>
+                                            </td>
+                                            <td class="px-4 py-2 text-gray-500" x-text="item.remarks || '-'"></td>
+                                        </tr>
+                                    </template>
+                                </tbody>
+                            </table>
+                        </div>
+                    </template>
+                    
+                    <template x-if="!bom.bom_details || bom.bom_details.length === 0">
+                        <div class="text-center py-6 border rounded-lg bg-gray-50">
+                            <p class="text-gray-500">No components defined for this BOM.</p>
                         </div>
                     </template>
                 </div>
@@ -131,8 +182,8 @@ function bomView() {
         bomId: {{ $bomId }},
         
         get editUrl() {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
-            return `${baseUrl}/${this.bomId}/edit`;
+            const baseUrl = '{{ $tenantType }}' === 'subdomain' ? '' : '/org/{{ $organization->org_slug }}';
+            return `${baseUrl}/bom-header/${this.bomId}/edit`;
         },
         
         async init() {
@@ -176,6 +227,24 @@ function bomView() {
             } finally {
                 this.loading = false;
             }
+        },
+        formatDate(val) {
+            if (!val) return '-';
+            try {
+                // Handle ISO strings or YYYY-MM-DD
+                const date = new Date(val);
+                if (isNaN(date.getTime())) return val;
+                return date.toLocaleDateString('en-GB', { 
+                    day: 'numeric', 
+                    month: 'short', 
+                    year: 'numeric' 
+                });
+            } catch (e) {
+                return val;
+            }
+        },
+        async init() {
+            await this.loadData();
         }
     }
 }

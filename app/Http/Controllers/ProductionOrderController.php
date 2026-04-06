@@ -67,13 +67,21 @@ class ProductionOrderController extends Controller
                 'product_name' => $o->product?->product_name,
                 'product_code' => $o->product?->product_code,
                 'target_qty' => $o->target_qty,
-                'uom' => $o->bom?->outputUom?->uom_code,
+                'uom' => $o->bom?->outputUom ? [
+                    'uom_code' => $o->bom->outputUom->uom_code,
+                    'uom_name' => $o->bom->outputUom->uom_name,
+                ] : null,
                 'planned_date' => $o->planned_date?->format('Y-m-d'),
                 'status' => $o->status,
                 'mir_status' => $o->mir?->status,
                 'mir_id' => $o->mir?->id,
                 'confirmed_qty_total' => $o->confirmed_qty_total ?? 0,
                 'rejected_qty_total'  => $o->rejected_qty_total ?? 0,
+                'actual_qty' => $o->actual_qty ?? 0,
+                'yield_percent' => $o->yield_percent ?? 0,
+                'fg_batch_number' => $o->fg_batch_number,
+                'actual_start_at' => $o->actual_start_at?->format('Y-m-d H:i'),
+                'actual_end_at' => $o->actual_end_at?->format('Y-m-d H:i'),
                 'remaining_qty' => max(0, (float)$o->target_qty - (float)($o->confirmed_qty_total ?? 0)),
                 'created_at' => $o->created_at?->format('Y-m-d H:i'),
             ]);
@@ -82,6 +90,37 @@ class ProductionOrderController extends Controller
                 'success' => true,
                 'data' => ['orders' => $orders],
                 'message' => 'Production orders retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return $this->error($requestId, $e->getMessage());
+        }
+    }
+
+    /**
+     * GET /api/v1/production-orders/stats
+     */
+    public function stats(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $this->switchTenantDb($request);
+            
+            $activeOrders = ProductionOrder::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->count();
+            $pendingMIR = MaterialIssueRequest::where('status', 'PENDING')->count();
+            $approvedMIR = MaterialIssueRequest::where('status', 'APPROVED')->count();
+            $productsWithBOM = BOMHeader::where('bom_status', 'ACTIVE')->distinct('product_id')->count();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'activeOrders' => $activeOrders,
+                    'pendingMIR' => $pendingMIR,
+                    'approvedMIR' => $approvedMIR,
+                    'products' => $productsWithBOM,
+                ],
+                'message' => 'Production stats retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);
@@ -106,7 +145,7 @@ class ProductionOrderController extends Controller
             'rm_lines' => 'required|array|min:1',
             'rm_lines.*.material_id' => 'required|integer',
             'rm_lines.*.required_qty' => 'required|numeric|min:0.001',
-            'rm_lines.*.uom' => 'nullable|string',
+            'rm_lines.*.uom' => 'nullable',
         ]);
 
         if ($validator->fails()) {
@@ -313,7 +352,51 @@ class ProductionOrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => ['order' => $order],
+                'data' => [
+                    'order' => [
+                        'id' => $order->id,
+                        'order_no' => $order->order_no,
+                        'product_id' => $order->product_id,
+                        'product' => $order->product ? [
+                            'product_name' => $order->product->product_name,
+                            'product_code' => $order->product->product_code,
+                        ] : null,
+                        'bom_id' => $order->bom_id,
+                        'bom' => $order->bom ? [
+                            'output_uom' => $order->bom->outputUom ? [
+                                'uom_code' => $order->bom->outputUom->uom_code,
+                                'uom_name' => $order->bom->outputUom->uom_name,
+                            ] : null
+                        ] : null,
+                        'target_qty' => $order->target_qty,
+                        'planned_date' => $order->planned_date?->format('Y-m-d'),
+                        'status' => $order->status,
+                        'mir_status' => $order->mir?->status,
+                        'mir_id' => $order->mir?->id,
+                        'mir' => $order->mir ? [
+                            'id' => $order->mir->id,
+                            'status' => $order->mir->status,
+                            'lines' => $order->mir->lines->map(fn($l) => [
+                                'material_id' => $l->material_id,
+                                'material' => $l->material ? [
+                                    'material_name' => $l->material->material_name,
+                                    'material_code' => $l->material->material_code,
+                                ] : null,
+                                'required_qty' => $l->required_qty,
+                                'uom' => $l->uom ? [
+                                    'uom_code' => $l->uom->uom_code,
+                                    'uom_name' => $l->uom->uom_name,
+                                ] : null,
+                            ])->toArray()
+                        ] : null,
+                        'actual_qty' => $order->actual_qty ?? 0,
+                        'rejected_qty' => $order->rejected_qty ?? 0,
+                        'yield_percent' => $order->yield_percent ?? 0,
+                        'fg_batch_number' => $order->fg_batch_number,
+                        'actual_start_at' => $order->actual_start_at?->format('Y-m-d H:i'),
+                        'actual_end_at' => $order->actual_end_at?->format('Y-m-d H:i'),
+                    ]
+                ],
                 'message' => 'Production order retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
@@ -406,7 +489,6 @@ class ProductionOrderController extends Controller
                 'confirmed_qty'         => 'required|numeric|min:0.001',
                 'rejected_qty'          => 'nullable|numeric|min:0',
                 'rejection_reason_code' => 'nullable|string|max:100',
-                'completion_status'     => 'required|in:PARTIALLY_COMPLETED,COMPLETED',
                 'fg_bin_id'             => 'nullable|integer',
                 'fg_warehouse_id'       => 'nullable|integer',
                 'fg_batch_number'       => 'nullable|string|max:50',
@@ -442,10 +524,12 @@ class ProductionOrderController extends Controller
             $confirmedQty   = (float) ($request->input('confirmed_qty') ?? $request->input('actual_qty', 0));
             $rejectedQty    = (float) $request->input('rejected_qty', 0);
             $reworkQty      = (float) $request->input('rework_qty', 0);
-            $completionStatus = $request->input('completion_status', 'COMPLETED');
             $targetQty      = (float) $order->target_qty;
             $alreadyConfirmed = (float) ($order->confirmed_qty_total ?? 0);
             $remaining      = max(0, $targetQty - $alreadyConfirmed);
+
+            // Auto-determine completion status based on remaining quantity
+            $completionStatus = $remaining <= 0.001 ? 'COMPLETED' : 'PARTIALLY_COMPLETED';
 
             // Validate session qty doesn't exceed remaining (with 1% tolerance)
             $sessionTotal = $confirmedQty + $rejectedQty;
