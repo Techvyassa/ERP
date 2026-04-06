@@ -301,6 +301,19 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/submit', [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
                 Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseRequisitionController::class, 'approve']);
                 Route::patch('/{id}/reject', [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
+                // Send to vendor
+                Route::post('/{id}/send-to-vendor', [App\Http\Controllers\PurchaseRequisitionController::class, 'sendToVendor']);
+            });
+
+            // Quotation Comparison Endpoints
+            Route::prefix('quotation-comparison')->group(function () {
+                Route::get('/', [App\Http\Controllers\QuotationComparisonController::class, 'index']);
+                Route::get('/vendors', [App\Http\Controllers\QuotationComparisonController::class, 'getVendors']);
+                Route::get('/selected-prs', [App\Http\Controllers\QuotationComparisonController::class, 'getSelectedPRs']);
+                Route::get('/pr-quotation/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'getPRQuotation']);
+                Route::get('/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'show']);
+                Route::post('/upload', [App\Http\Controllers\QuotationComparisonController::class, 'upload']);
+                Route::post('/select', [App\Http\Controllers\QuotationComparisonController::class, 'selectQuotation']);
             });
         });
 

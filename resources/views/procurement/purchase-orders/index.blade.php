@@ -11,7 +11,7 @@
             <h2 class="text-2xl font-bold text-gray-900">Purchase Orders</h2>
             <p class="text-gray-600">Manage and track all purchase orders</p>
         </div>
-        <button @click="openCreateModal()" class="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2">
+        <button onclick="window.location.href='{{ url("/org/{$organization->org_slug}/procurement/purchase-orders/create") }}'" class="px-6 py-3 bg-primary text-white font-semibold rounded-lg hover:bg-primary/90 transition-all flex items-center gap-2">
             <span class="material-symbols-outlined">add</span>
             Create Purchase Order
         </button>
@@ -269,17 +269,6 @@
                             </button>
                         </div>
                         
-                        <!-- Column Headers -->
-                        <div class="grid grid-cols-12 gap-3 px-3 mb-2">
-                            <div class="col-span-3 text-xs font-semibold text-gray-500 uppercase">Material</div>
-                            <div class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Type</div>
-                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase">Qty</div>
-                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase">UOM</div>
-                            <div class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Unit Price</div>
-                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase">Total</div>
-                            <div class="col-span-1 text-xs font-semibold text-gray-500 uppercase text-right">Action</div>
-                        </div>
-                        
                         <div class="space-y-3">
                             <template x-if="materials.length === 0">
                                 <div class="p-4 bg-amber-50 border border-amber-200 rounded-lg">
@@ -290,93 +279,142 @@
                                 </div>
                             </template>
                             
-                            <template x-for="(item, index) in form.line_items" :key="index">
-                                <!-- Main row: Material, Type, Qty, UOM, Unit Price, Total, Action -->
-                                <div class="grid grid-cols-12 gap-3 items-start p-3 bg-gray-50 rounded-lg">
-                                    <div class="col-span-3">
-                                        <select x-model="item.material_id" @change="onMaterialSelect(index)" required 
-                                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                            <option value="">Select Material</option>
-                                            <template x-if="materials.length === 0">
-                                                <option value="" disabled>No materials - Add in Master Data</option>
+                            <!-- Dynamic Table with GST Columns -->
+                            <div class="overflow-x-auto border border-gray-200 rounded-lg" x-show="form.line_items.length > 0">
+                                <table class="w-full text-sm">
+                                    <thead class="bg-gray-50 border-b border-gray-200">
+                                        <tr>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Material</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Type</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Qty</th>
+                                            <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">UOM</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Unit Price</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Disc %</th>
+                                            <template x-if="hasAnyCGST()">
+                                                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">CGST</th>
                                             </template>
-                                            <template x-for="material in materials" :key="material.id">
-                                                <option :value="material.id" x-text="material.material_code + ' - ' + material.material_name"></option>
+                                            <template x-if="hasAnySGST()">
+                                                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">SGST</th>
                                             </template>
-                                        </select>
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input type="text" x-model="item.material_type" placeholder="Type" readonly 
-                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100">
-                                    </div>
-                                    <div class="col-span-1">
-                                        <input type="number" x-model="item.ordered_qty" @input="calculateItemTotal(index)" placeholder="Qty" required min="1" 
-                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                    </div>
-                                    <div class="col-span-1">
-                                        <input type="text" x-model="item.uom" placeholder="UOM" readonly 
-                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100">
-                                    </div>
-                                    <div class="col-span-2">
-                                        <input type="number" x-model="item.unit_price" @input="calculateItemTotal(index)" placeholder="Unit Price" required min="0" step="0.01" 
-                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"
-                                               :title="item.material_id && item.unit_price > 0 ? 'Auto-filled from Standard Cost' : 'Enter unit price'">
-                                        <p class="text-xs text-green-600 mt-0.5" 
-                                           x-show="item.material_id && item.unit_price > 0">
-                                            Standard cost
-                                        </p>
-                                    </div>
-                                    <div class="col-span-1">
-                                        <input type="text" :value="getItemTotal(index).toFixed(2)" readonly 
-                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100 font-semibold">
-                                    </div>
-                                    <div class="col-span-1 flex justify-end items-center">
-                                        <button type="button" @click="removeLineItem(index)" class="text-red-600 hover:text-red-800" title="Remove">
-                                            <span class="material-symbols-outlined">delete</span>
-                                        </button>
-                                    </div>
-                                </div>
-                                
-                                <!-- Extra row: Discount, Tax, Scheduled Delivery, Tolerance -->
-                                <div class="grid grid-cols-12 gap-3 items-start px-3 pb-3 -mt-3">
-                                    <div class="col-span-2">
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Discount %</label>
-                                        <input type="number" x-model="item.discount_pct" @input="calculateItemTotal(index)" min="0" max="100" step="0.01" placeholder="0"
-                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
-                                    </div>
-                                    <div class="col-span-3">
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">GST Tax</label>
-                                        <select x-model="item.gst_tax_id" @change="calculateItemTotal(index)" 
-                                                class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
-                                            <option value="">Select Tax</option>
-                                            <template x-for="tax in gstTaxes" :key="tax.id">
-                                                <option :value="tax.id" x-text="tax.tax_code + ' - ' + tax.total_tax_rate + '%'"></option>
+                                            <template x-if="hasAnyIGST()">
+                                                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">IGST</th>
                                             </template>
-                                        </select>
-                                    </div>
-                                    <div class="col-span-3">
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Scheduled Delivery</label>
-                                        <input type="date" x-model="item.scheduled_delivery" 
-                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Under Tol. %</label>
-                                        <input type="number" x-model="item.under_delivery_tolerance" min="0" max="100" step="0.01" placeholder="3"
-                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
-                                    </div>
-                                    <div class="col-span-2">
-                                        <label class="block text-xs font-medium text-gray-500 mb-1">Over Tol. %</label>
-                                        <input type="number" x-model="item.over_delivery_tolerance" min="0" max="100" step="0.01" placeholder="5"
-                                               class="w-full px-3 py-1.5 border border-gray-200 rounded-lg text-sm">
-                                    </div>
-                                </div>
-                            </template>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Total GST</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
+                                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase">Action</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <template x-for="(item, index) in form.line_items" :key="index">
+                                            <tr class="hover:bg-gray-50">
+                                                <td class="px-3 py-2">
+                                                    <select x-model="item.material_id" @change="onMaterialSelect(index)" required 
+                                                            class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                        <option value="">Select Material</option>
+                                                        <template x-for="material in materials" :key="material.id">
+                                                            <option :value="material.id" x-text="material.material_code + ' - ' + material.material_name"></option>
+                                                        </template>
+                                                    </select>
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <input type="text" x-model="item.material_type" readonly 
+                                                           class="w-20 px-2 py-1 border border-gray-200 rounded text-xs bg-gray-50">
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <input type="number" x-model="item.ordered_qty" @input="calculateItemTotal(index)" required min="1" 
+                                                           class="w-16 px-2 py-1 border border-gray-200 rounded text-xs">
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <input type="text" x-model="item.uom" readonly 
+                                                           class="w-16 px-2 py-1 border border-gray-200 rounded text-xs bg-gray-50">
+                                                </td>
+                                                <td class="px-3 py-2 text-right">
+                                                    <input type="number" x-model="item.unit_price" @input="calculateItemTotal(index)" required min="0" step="0.01" 
+                                                           class="w-24 px-2 py-1 border border-gray-200 rounded text-xs text-right">
+                                                </td>
+                                                <td class="px-3 py-2 text-right">
+                                                    <input type="number" x-model="item.discount_pct" @input="calculateItemTotal(index)" min="0" max="100" step="0.01" placeholder="0"
+                                                           class="w-16 px-2 py-1 border border-gray-200 rounded text-xs text-right">
+                                                </td>
+                                                <template x-if="hasAnyCGST()">
+                                                    <td class="px-3 py-2 text-right">
+                                                        <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemCGST(index))"></span>
+                                                    </td>
+                                                </template>
+                                                <template x-if="hasAnySGST()">
+                                                    <td class="px-3 py-2 text-right">
+                                                        <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemSGST(index))"></span>
+                                                    </td>
+                                                </template>
+                                                <template x-if="hasAnyIGST()">
+                                                    <td class="px-3 py-2 text-right">
+                                                        <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemIGST(index))"></span>
+                                                    </td>
+                                                </template>
+                                                <td class="px-3 py-2 text-right">
+                                                    <span class="text-xs font-semibold text-blue-600" x-text="formatCurrency(getItemTotalGST(index))"></span>
+                                                </td>
+                                                <td class="px-3 py-2 text-right">
+                                                    <span class="text-xs font-bold text-gray-900" x-text="formatCurrency(getItemTotal(index))"></span>
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <button type="button" @click="removeLineItem(index)" class="text-red-600 hover:text-red-800" title="Remove">
+                                                        <span class="material-symbols-outlined text-base">delete</span>
+                                                    </button>
+                                                </td>
+                                            </tr>
+                                            <!-- Additional row for GST Tax selection and other details -->
+                                            <tr class="bg-gray-50">
+                                                <td colspan="12" class="px-3 py-2">
+                                                    <div class="grid grid-cols-4 gap-3">
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-500 mb-1">GST Tax</label>
+                                                            <select x-model="item.gst_tax_id" @change="calculateItemTotal(index)" 
+                                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                                <option value="">Select Tax</option>
+                                                                <template x-for="tax in gstTaxes" :key="tax.id">
+                                                                    <option :value="tax.id" x-text="tax.tax_code + ' - ' + tax.total_tax_rate + '%'"></option>
+                                                                </template>
+                                                            </select>
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-500 mb-1">Scheduled Delivery</label>
+                                                            <input type="date" x-model="item.scheduled_delivery" 
+                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-500 mb-1">Under Tolerance %</label>
+                                                            <input type="number" x-model="item.under_delivery_tolerance" min="0" max="100" step="0.01" placeholder="3"
+                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                        </div>
+                                                        <div>
+                                                            <label class="block text-xs font-medium text-gray-500 mb-1">Over Tolerance %</label>
+                                                            <input type="number" x-model="item.over_delivery_tolerance" min="0" max="100" step="0.01" placeholder="5"
+                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                        </div>
+                                                    </div>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
                         </div>
                         
                         <div class="mt-4 flex justify-end">
-                            <div class="text-right">
-                                <p class="text-sm text-gray-600">Total Amount</p>
-                                <p class="text-2xl font-bold text-gray-900" x-text="formatCurrency(calculateTotal())"></p>
+                            <div class="text-right space-y-2 bg-gray-50 border border-gray-200 rounded-lg p-4 min-w-[300px]">
+                                <div class="flex justify-between text-sm text-gray-600">
+                                    <span>Subtotal:</span>
+                                    <span class="font-semibold" x-text="formatCurrency(calculateSubtotal())"></span>
+                                </div>
+                                <div class="flex justify-between text-sm text-blue-600">
+                                    <span>Total GST:</span>
+                                    <span class="font-semibold" x-text="formatCurrency(calculateTotalGST())"></span>
+                                </div>
+                                <div class="flex justify-between text-lg font-bold text-gray-900 pt-2 border-t border-gray-300">
+                                    <span>Total Amount:</span>
+                                    <span x-text="formatCurrency(calculateTotal())"></span>
+                                </div>
                             </div>
                         </div>
                     </div>
@@ -727,8 +765,25 @@ function purchaseOrdersData() {
         },
         
         calculateTotal() {
+            return this.form.line_items.reduce((sum, item, index) => {
+                return sum + this.getItemTotal(index);
+            }, 0);
+        },
+        
+        calculateSubtotal() {
             return this.form.line_items.reduce((sum, item) => {
-                return sum + this.getItemTotalByItem(item);
+                const qty = parseFloat(item.ordered_qty || 0);
+                const price = parseFloat(item.unit_price || 0);
+                const discount = parseFloat(item.discount_pct || 0);
+                const subtotal = qty * price;
+                const discountAmount = subtotal * discount / 100;
+                return sum + (subtotal - discountAmount);
+            }, 0);
+        },
+        
+        calculateTotalGST() {
+            return this.form.line_items.reduce((sum, item, index) => {
+                return sum + this.getItemTotalGST(index);
             }, 0);
         },
         
@@ -741,7 +796,14 @@ function purchaseOrdersData() {
         
         getItemTotal(index) {
             const item = this.form.line_items[index];
-            return this.getItemTotalByItem(item);
+            const qty = parseFloat(item.ordered_qty || 0);
+            const price = parseFloat(item.unit_price || 0);
+            const discount = parseFloat(item.discount_pct || 0);
+            const subtotal = qty * price;
+            const discountAmount = subtotal * discount / 100;
+            const taxableAmount = subtotal - discountAmount;
+            const gstAmount = this.getItemTotalGST(index);
+            return taxableAmount + gstAmount;
         },
         
         calculateItemTotal(index) {
@@ -749,6 +811,95 @@ function purchaseOrdersData() {
             const item = this.form.line_items[index];
             // Force update by touching the item
             item._updated = Date.now();
+        },
+        
+        // Check if any line item uses CGST
+        hasAnyCGST() {
+            return this.form.line_items.some(item => {
+                if (!item.gst_tax_id) return false;
+                const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
+                return tax && parseFloat(tax.cgst_rate || 0) > 0;
+            });
+        },
+        
+        // Check if any line item uses SGST
+        hasAnySGST() {
+            return this.form.line_items.some(item => {
+                if (!item.gst_tax_id) return false;
+                const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
+                return tax && parseFloat(tax.sgst_rate || 0) > 0;
+            });
+        },
+        
+        // Check if any line item uses IGST
+        hasAnyIGST() {
+            return this.form.line_items.some(item => {
+                if (!item.gst_tax_id) return false;
+                const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
+                return tax && parseFloat(tax.igst_rate || 0) > 0;
+            });
+        },
+        
+        // Get CGST amount for a line item
+        getItemCGST(index) {
+            const item = this.form.line_items[index];
+            if (!item.gst_tax_id) return 0;
+            
+            const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
+            if (!tax) return 0;
+            
+            const qty = parseFloat(item.ordered_qty || 0);
+            const price = parseFloat(item.unit_price || 0);
+            const discount = parseFloat(item.discount_pct || 0);
+            const subtotal = qty * price;
+            const discountAmount = subtotal * discount / 100;
+            const taxableAmount = subtotal - discountAmount;
+            
+            const cgstRate = parseFloat(tax.cgst_rate || 0);
+            return taxableAmount * cgstRate / 100;
+        },
+        
+        // Get SGST amount for a line item
+        getItemSGST(index) {
+            const item = this.form.line_items[index];
+            if (!item.gst_tax_id) return 0;
+            
+            const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
+            if (!tax) return 0;
+            
+            const qty = parseFloat(item.ordered_qty || 0);
+            const price = parseFloat(item.unit_price || 0);
+            const discount = parseFloat(item.discount_pct || 0);
+            const subtotal = qty * price;
+            const discountAmount = subtotal * discount / 100;
+            const taxableAmount = subtotal - discountAmount;
+            
+            const sgstRate = parseFloat(tax.sgst_rate || 0);
+            return taxableAmount * sgstRate / 100;
+        },
+        
+        // Get IGST amount for a line item
+        getItemIGST(index) {
+            const item = this.form.line_items[index];
+            if (!item.gst_tax_id) return 0;
+            
+            const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
+            if (!tax) return 0;
+            
+            const qty = parseFloat(item.ordered_qty || 0);
+            const price = parseFloat(item.unit_price || 0);
+            const discount = parseFloat(item.discount_pct || 0);
+            const subtotal = qty * price;
+            const discountAmount = subtotal * discount / 100;
+            const taxableAmount = subtotal - discountAmount;
+            
+            const igstRate = parseFloat(tax.igst_rate || 0);
+            return taxableAmount * igstRate / 100;
+        },
+        
+        // Get total GST amount for a line item
+        getItemTotalGST(index) {
+            return this.getItemCGST(index) + this.getItemSGST(index) + this.getItemIGST(index);
         },
         
         getCurrencyDisplay() {
@@ -905,6 +1056,56 @@ function purchaseOrdersData() {
                         lineItemsHtml = '<p class="text-gray-500 mt-4">No line items</p>';
                     }
                     
+                    // Calculate tax breakdown from line items
+                    let taxBreakdownHtml = '';
+                    const taxSummary = {};
+                    
+                    if (po.line_items && po.line_items.length > 0) {
+                        po.line_items.forEach(item => {
+                            if (item.gst_tax && item.gst_tax_id) {
+                                const tax = item.gst_tax;
+                                const taxCode = tax.tax_code || 'GST';
+                                const itemSubtotal = (parseFloat(item.ordered_qty) || 0) * (parseFloat(item.unit_price) || 0);
+                                const discountAmount = itemSubtotal * (parseFloat(item.discount_pct) || 0) / 100;
+                                const taxableAmount = itemSubtotal - discountAmount;
+                                
+                                // Calculate individual tax components
+                                const cgstRate = parseFloat(tax.cgst_rate) || 0;
+                                const sgstRate = parseFloat(tax.sgst_rate) || 0;
+                                const igstRate = parseFloat(tax.igst_rate) || 0;
+                                
+                                const cgstAmount = taxableAmount * cgstRate / 100;
+                                const sgstAmount = taxableAmount * sgstRate / 100;
+                                const igstAmount = taxableAmount * igstRate / 100;
+                                
+                                // Add to summary
+                                if (cgstRate > 0) {
+                                    if (!taxSummary['CGST']) taxSummary['CGST'] = 0;
+                                    taxSummary['CGST'] += cgstAmount;
+                                }
+                                if (sgstRate > 0) {
+                                    if (!taxSummary['SGST']) taxSummary['SGST'] = 0;
+                                    taxSummary['SGST'] += sgstAmount;
+                                }
+                                if (igstRate > 0) {
+                                    if (!taxSummary['IGST']) taxSummary['IGST'] = 0;
+                                    taxSummary['IGST'] += igstAmount;
+                                }
+                            }
+                        });
+                        
+                        // Build tax breakdown HTML
+                        if (Object.keys(taxSummary).length > 0) {
+                            for (const [taxType, amount] of Object.entries(taxSummary)) {
+                                taxBreakdownHtml += `<div class="text-sm text-gray-600">${taxType}: <span class="font-semibold">${this.formatCurrency(amount)}</span></div>`;
+                            }
+                        } else {
+                            taxBreakdownHtml = '<div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>';
+                        }
+                    } else {
+                        taxBreakdownHtml = '<div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>';
+                    }
+                    
                     const vendorName = (po.vendor && po.vendor.vendor_name) ? po.vendor.vendor_name : 'N/A';
                     const vendorCode = (po.vendor && po.vendor.vendor_code) ? po.vendor.vendor_code : '';
                     const currencyCode = (po.currency && po.currency.currency_code) ? po.currency.currency_code : 'N/A';
@@ -927,7 +1128,7 @@ function purchaseOrdersData() {
                                 <div class="text-sm text-gray-600">Subtotal: <span class="font-semibold">${this.formatCurrency(po.subtotal || 0)}</span></div>
                                 ${po.discount_amount ? '<div class="text-sm text-gray-600">Discount: <span class="font-semibold">-' + this.formatCurrency(po.discount_amount) + '</span></div>' : ''}
                                 ${po.freight_charges ? '<div class="text-sm text-gray-600">Freight: <span class="font-semibold">' + this.formatCurrency(po.freight_charges) + '</span></div>' : ''}
-                                <div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>
+                                ${taxBreakdownHtml}
                                 <div class="text-lg font-bold text-gray-900 pt-2 border-t">Grand Total: ${this.formatCurrency(po.grand_total || 0)}</div>
                             </div>
                         </div>
