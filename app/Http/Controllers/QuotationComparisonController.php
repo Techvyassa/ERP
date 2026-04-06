@@ -350,4 +350,140 @@ class QuotationComparisonController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Get PRs with selected quotations for PO creation
+     * GET /api/v1/quotation-comparison/selected-prs
+     */
+    public function getSelectedPRs(): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $selections = QuotationSelection::with(['vendor:id,vendor_name,vendor_code'])
+                ->where('status', 'selected')
+                ->orderByDesc('selected_at')
+                ->get();
+
+            $selectedPRs = $selections->map(function ($selection) {
+                return [
+                    'pr_number' => $selection->pr_number,
+                    'vendor_id' => $selection->vendor_id,
+                    'vendor_name' => $selection->vendor->vendor_name,
+                    'vendor_code' => $selection->vendor->vendor_code,
+                    'selected_at' => $selection->selected_at?->format('Y-m-d H:i:s'),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => ['selected_prs' => $selectedPRs],
+                'message' => 'Selected PRs retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'FETCH_FAILED', 'details' => []],
+                'message' => 'Failed to retrieve selected PRs: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get PR quotation details for PO creation
+     * GET /api/v1/quotation-comparison/pr-quotation/{prNumber}
+     */
+    public function getPRQuotation(string $prNumber): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            // Get the selected quotation for this PR
+            $selection = QuotationSelection::where('pr_number', $prNumber)
+                ->with(['vendor:id,vendor_name,vendor_code,gstin,currency_id,payment_terms'])
+                ->first();
+
+            if (!$selection) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'NOT_FOUND', 'details' => []],
+                    'message' => 'No selected quotation found for this PR',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
+            }
+
+            // Get all quotation line items for the selected vendor
+            $quotations = VendorQuotation::where('pr_number', $prNumber)
+                ->where('vendor_id', $selection->vendor_id)
+                ->orderBy('id')
+                ->get();
+
+            if ($quotations->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'NOT_FOUND', 'details' => []],
+                    'message' => 'No quotation items found for selected vendor',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 404);
+            }
+
+            // Get the PR with line items to map material_id
+            $pr = \App\Models\Tenant\PurchaseRequisition::where('pr_number', $prNumber)
+                ->with(['lineItems.material', 'lineItems.uom'])
+                ->first();
+
+            // Map quotation items with PR line items to get material_id
+            $lineItems = $quotations->map(function ($quotation) use ($pr) {
+                $material_id = null;
+                
+                // Try to find matching PR line item by item name
+                if ($pr && $pr->lineItems) {
+                    $matchingLineItem = $pr->lineItems->first(function ($lineItem) use ($quotation) {
+                        return strtolower(trim($lineItem->item_name)) === strtolower(trim($quotation->item_name));
+                    });
+                    
+                    if ($matchingLineItem) {
+                        $material_id = $matchingLineItem->material_id;
+                    }
+                }
+                
+                return [
+                    'material_id' => $material_id,
+                    'item_name' => $quotation->item_name,
+                    'quantity' => $quotation->quantity,
+                    'unit_price' => $quotation->unit_price,
+                    'total_price' => $quotation->total_price,
+                    'delivery_date' => $quotation->delivery_date?->format('Y-m-d'),
+                ];
+            });
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'pr_number' => $prNumber,
+                    'vendor_id' => $selection->vendor_id,
+                    'vendor_name' => $selection->vendor->vendor_name,
+                    'vendor_gstin' => $selection->vendor->gstin,
+                    'currency_id' => $selection->vendor->currency_id,
+                    'payment_terms' => $selection->vendor->payment_terms,
+                    'line_items' => $lineItems,
+                ],
+                'message' => 'PR quotation details retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'FETCH_FAILED', 'details' => []],
+                'message' => 'Failed to retrieve PR quotation: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
 }

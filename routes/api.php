@@ -306,6 +306,8 @@ Route::prefix('v1')->group(function () {
             Route::prefix('quotation-comparison')->group(function () {
                 Route::get('/', [App\Http\Controllers\QuotationComparisonController::class, 'index']);
                 Route::get('/vendors', [App\Http\Controllers\QuotationComparisonController::class, 'getVendors']);
+                Route::get('/selected-prs', [App\Http\Controllers\QuotationComparisonController::class, 'getSelectedPRs']);
+                Route::get('/pr-quotation/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'getPRQuotation']);
                 Route::get('/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'show']);
                 Route::post('/upload', [App\Http\Controllers\QuotationComparisonController::class, 'upload']);
                 Route::post('/select', [App\Http\Controllers\QuotationComparisonController::class, 'selectQuotation']);

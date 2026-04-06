@@ -22,6 +22,37 @@
 
         <!-- Form -->
         <form @submit.prevent="savePO()" class="space-y-6">
+            <!-- PR Selection (Optional) -->
+            <div class="bg-blue-50 border border-blue-200 rounded-xl shadow p-6">
+                <div class="flex items-center justify-between mb-4">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">Link to Purchase Requisition (Optional)</h3>
+                        <p class="text-sm text-gray-600 mt-1">Select a PR to auto-fill vendor and line items from selected quotation</p>
+                    </div>
+                    <button type="button" @click="clearPRSelection()" x-show="form.pr_number" 
+                            class="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                        Clear PR Selection
+                    </button>
+                </div>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">PR Number</label>
+                        <select x-model="form.pr_number" @change="onPRSelect()" 
+                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 bg-white">
+                            <option value="">-- Select PR (Optional) --</option>
+                            <template x-for="pr in selectedPRs" :key="pr.pr_number">
+                                <option :value="pr.pr_number" x-text="pr.pr_number + ' - ' + pr.vendor_name"></option>
+                            </template>
+                        </select>
+                    </div>
+                    <div x-show="form.pr_number">
+                        <label class="block text-sm font-semibold text-gray-700 mb-2">Selected Vendor</label>
+                        <input type="text" :value="getSelectedPRVendor()" readonly 
+                               class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                    </div>
+                </div>
+            </div>
+
             <!-- PO Details -->
             <div class="bg-white rounded-xl shadow p-6">
                 <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Purchase Order Details</h3>
@@ -29,7 +60,9 @@
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Vendor *</label>
                         <select x-model="form.vendor_id" @change="onVendorSelect()" required 
-                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                :disabled="form.pr_number !== ''"
+                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary"
+                                :class="{'bg-gray-50': form.pr_number !== ''}">
                             <option value="">Select Vendor</option>
                             <template x-for="vendor in vendors" :key="vendor.id">
                                 <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
@@ -66,6 +99,45 @@
                         <input type="text" x-model="form.payment_terms" placeholder="e.g., Net 30" 
                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
                     </div>
+                </div>
+            </div>
+
+            <!-- PR Items (Read-Only) - Shown when PR is selected -->
+            <div x-show="form.pr_number && prItems.length > 0" class="bg-blue-50 border border-blue-200 rounded-xl shadow p-6">
+                <div class="mb-4">
+                    <h3 class="text-lg font-semibold text-gray-900">Selected PR Items (Reference)</h3>
+                    <p class="text-sm text-gray-600 mt-1">These are the items from the selected Purchase Requisition with quotation prices</p>
+                </div>
+                
+                <div class="overflow-x-auto border border-blue-300 rounded-lg bg-white">
+                    <table class="w-full text-sm">
+                        <thead class="bg-blue-100 border-b border-blue-300">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">#</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item Name</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Quantity</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Unit Price</th>
+                                <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Total Price</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-200">
+                            <template x-for="(item, index) in prItems" :key="index">
+                                <tr class="hover:bg-blue-50">
+                                    <td class="px-4 py-3 text-gray-700" x-text="index + 1"></td>
+                                    <td class="px-4 py-3 text-gray-900 font-medium" x-text="item.item_name"></td>
+                                    <td class="px-4 py-3 text-right text-gray-700" x-text="item.quantity.toFixed(3)"></td>
+                                    <td class="px-4 py-3 text-right text-gray-700" x-text="formatCurrency(item.unit_price)"></td>
+                                    <td class="px-4 py-3 text-right font-semibold text-gray-900" x-text="formatCurrency(item.total_price)"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                        <tfoot class="bg-blue-50 border-t-2 border-blue-300">
+                            <tr>
+                                <td colspan="4" class="px-4 py-3 text-right font-bold text-gray-900">Grand Total:</td>
+                                <td class="px-4 py-3 text-right font-bold text-primary text-lg" x-text="formatCurrency(calculatePRTotal())"></td>
+                            </tr>
+                        </tfoot>
+                    </table>
                 </div>
             </div>
 
@@ -238,9 +310,12 @@ function createPOData() {
         materials: [],
         currencies: [],
         gstTaxes: [],
+        selectedPRs: [],
+        prItems: [],
         saving: false,
         loading: true,
         form: {
+            pr_number: '',
             vendor_id: '',
             vendor_gstin: '',
             currency_id: '',
@@ -256,10 +331,134 @@ function createPOData() {
                 this.loadVendors(),
                 this.loadMaterials(),
                 this.loadCurrencies(),
-                this.loadGstTaxes()
+                this.loadGstTaxes(),
+                this.loadSelectedPRs()
             ]);
             this.loading = false;
             console.log('Initialization complete. Materials count:', this.materials.length);
+        },
+        
+        async loadSelectedPRs() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/v1/quotation-comparison/selected-prs', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success && data.data && data.data.selected_prs) {
+                    this.selectedPRs = data.data.selected_prs;
+                    console.log('Selected PRs loaded:', this.selectedPRs.length);
+                }
+            } catch (error) {
+                console.error('Error loading selected PRs:', error);
+            }
+        },
+        
+        async onPRSelect() {
+            if (!this.form.pr_number) {
+                this.prItems = [];
+                return;
+            }
+            
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`/api/v1/quotation-comparison/pr-quotation/${this.form.pr_number}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                
+                if (data.success && data.data) {
+                    const prData = data.data;
+                    
+                    // Store PR items for read-only display (with total_price from quotation)
+                    this.prItems = prData.line_items.map(item => ({
+                        item_name: item.item_name,
+                        quantity: parseFloat(item.quantity),
+                        unit_price: parseFloat(item.unit_price),
+                        total_price: parseFloat(item.total_price || (item.quantity * item.unit_price))
+                    }));
+                    
+                    // Auto-fill vendor details
+                    this.form.vendor_id = prData.vendor_id;
+                    this.form.vendor_gstin = prData.vendor_gstin || '';
+                    this.form.currency_id = prData.currency_id || '';
+                    this.form.payment_terms = prData.payment_terms || '';
+                    
+                    // Auto-fill line items
+                    this.form.line_items = prData.line_items.map(item => ({
+                        material_id: item.material_id || '',
+                        material_type: '',
+                        ordered_qty: parseFloat(item.quantity) || 1,
+                        uom: '',
+                        uom_id: '',
+                        unit_price: parseFloat(item.unit_price) || 0,
+                        discount_pct: 0,
+                        gst_tax_id: '',
+                        scheduled_delivery: item.delivery_date || ''
+                    }));
+                    
+                    // Load material details for each line item
+                    for (let i = 0; i < this.form.line_items.length; i++) {
+                        const item = this.form.line_items[i];
+                        if (item.material_id) {
+                            await this.loadMaterialDetails(i, item.material_id);
+                        }
+                    }
+                    
+                    console.log('PR data loaded and form auto-filled');
+                } else {
+                    alert('Failed to load PR quotation details');
+                }
+            } catch (error) {
+                console.error('Error loading PR quotation:', error);
+                alert('Error loading PR quotation details');
+            }
+        },
+        
+        async loadMaterialDetails(index, materialId) {
+            try {
+                const material = this.materials.find(m => m.id == materialId);
+                if (material) {
+                    const item = this.form.line_items[index];
+                    item.material_type = material.material_type || '';
+                    item.uom = material.uom?.uom_code || '';
+                    item.uom_id = material.uom_id || '';
+                    
+                    // Auto-select default GST tax
+                    if (material.gst_tax_id) {
+                        item.gst_tax_id = material.gst_tax_id;
+                    } else {
+                        const defaultTax = this.gstTaxes.find(t => 
+                            parseFloat(t.cgst_rate || 0) > 0 && parseFloat(t.sgst_rate || 0) > 0
+                        );
+                        if (defaultTax) {
+                            item.gst_tax_id = defaultTax.id;
+                        }
+                    }
+                    
+                    // Calculate totals after loading material details
+                    this.calculateItemTotal(index);
+                }
+            } catch (error) {
+                console.error('Error loading material details:', error);
+            }
+        },
+        
+        clearPRSelection() {
+            this.form.pr_number = '';
+            this.form.vendor_id = '';
+            this.form.vendor_gstin = '';
+            this.form.currency_id = '';
+            this.form.payment_terms = '';
+            this.form.line_items = [];
+            this.prItems = [];
+            console.log('PR selection cleared');
+        },
+        
+        getSelectedPRVendor() {
+            if (!this.form.pr_number) return '';
+            const pr = this.selectedPRs.find(p => p.pr_number === this.form.pr_number);
+            return pr ? pr.vendor_name : '';
         },
         
         async loadVendors() {
@@ -539,6 +738,12 @@ function createPOData() {
         calculateTotal() {
             return this.form.line_items.reduce((sum, item, index) => {
                 return sum + this.getItemTotal(index);
+            }, 0);
+        },
+        
+        calculatePRTotal() {
+            return this.prItems.reduce((sum, item) => {
+                return sum + parseFloat(item.total_price || 0);
             }, 0);
         },
         
