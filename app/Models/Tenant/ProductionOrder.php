@@ -10,16 +10,28 @@ class ProductionOrder extends Model
     protected $table = 'production_orders';
 
     protected $fillable = [
-        'order_no', 'product_id', 'bom_id', 'target_qty',
-        'planned_date', 'status', 'created_by',
+        'order_no',
+        'product_id',
+        'bom_id',
+        'target_qty',
+        'planned_date',
+        'status',
+        'created_by',
         // Execution fields
-        'actual_start_at', 'actual_end_at',
-        'actual_qty', 'rejected_qty', 'rework_qty',
+        'actual_start_at',
+        'actual_end_at',
+        'actual_qty',
+        'rejected_qty',
+        'rework_qty',
         'yield_percent',
-        'fg_bin_id', 'fg_warehouse_id', 'fg_batch_number',
-        'confirmed_by', 'confirmed_at',
+        'fg_bin_id',
+        'fg_warehouse_id',
+        'fg_batch_number',
+        'confirmed_by',
+        'confirmed_at',
         // Cumulative session totals
-        'confirmed_qty_total', 'rejected_qty_total',
+        'confirmed_qty_total',
+        'rejected_qty_total',
     ];
 
     protected $casts = [
@@ -74,6 +86,11 @@ class ProductionOrder extends Model
     public function fgSessions()
     {
         return $this->hasMany(FGConfirmationSession::class, 'production_order_id');
+    }
+
+    public function packingOrders()
+    {
+        return $this->hasMany(PackingOrder::class, 'production_order_id');
     }
 
     /**

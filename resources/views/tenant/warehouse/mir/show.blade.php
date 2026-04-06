@@ -227,7 +227,7 @@
                                 <span class="material-symbols-outlined">qr_code_scanner</span>
                             </div>
                             <div>
-                                <h3 class="text-lg font-black text-white tracking-tight">Material Allocation</h3>
+                                <h3 class="text-lg font-black text-white tracking-tight">Issue Materials</h3>
                                 <p class="text-[10px] text-slate-300 font-bold uppercase tracking-widest" x-text="selectedLine?.material_name"></p>
                             </div>
                         </div>
@@ -241,12 +241,12 @@
                     <!-- Progress Info -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Entitlement</p>
-                            <p class="text-base font-black text-slate-900" x-text="selectedLine?.required_qty + ' ' + selectedLine?.uom"></p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">To Issue</p>
+                            <p class="text-base font-black text-slate-900" x-text="selectedLine?.required_qty + ' ' + (selectedLine?.uom?.uom_name || selectedLine?.uom)"></p>
                         </div>
                         <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
-                            <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Shortfall</p>
-                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + selectedLine?.uom"></p>
+                            <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Remaining</p>
+                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + (selectedLine?.uom?.uom_name || selectedLine?.uom)"></p>
                         </div>
                     </div>
 
@@ -256,7 +256,7 @@
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">shelves</span>
-                                    Verify Storage Bin
+                                    Storage Bin
                                 </label>
                                 <input type="text" x-model="scanForm.bin_barcode" required autofocus
                                     placeholder="Enter physical bin label..."
@@ -267,7 +267,7 @@
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">barcode_scanner</span>
-                                    Verify Component Tag
+                                    Material Code
                                 </label>
                                 <input type="text" x-model="scanForm.material_barcode" required
                                     placeholder="Scan material identifier..."
@@ -278,12 +278,12 @@
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">numbers</span>
-                                    Allocation Quantity
+                                    Issue Quantity
                                 </label>
                                 <div class="relative">
                                     <input type="number" x-model="scanForm.quantity" step="0.001" required
                                         class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all">
-                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom"></span>
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom?.uom_name || selectedLine?.uom"></span>
                                 </div>
                             </div>
                         </div>

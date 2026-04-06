@@ -309,7 +309,7 @@
                  if (this.filters.search) params.append('search', this.filters.search);
                  if (this.filters.is_active !== '' && this.filters.is_active !== null) params.append('is_active', this.filters.is_active);
 
-                 const response = await fetch(`/api/v1/departments?${params.toString()}`, {
+                 const response = await fetch(`{{ url('api/v1/departments') }}?${params.toString()}`, {
                      credentials: 'same-origin',
                      headers: { 'Accept': 'application/json' }
                  });
@@ -346,7 +346,7 @@
              this.viewModal.department = null;
 
              try {
-                 const response = await fetch(`/api/v1/departments/${item.id}`, {
+                 const response = await fetch(`{{ url('api/v1/departments') }}/${item.id}`, {
                      credentials: 'same-origin',
                      headers: { 'Accept': 'application/json' }
                  });
@@ -383,7 +383,7 @@
              this.rolesModal.roles = [];
 
              try {
-                 const response = await fetch(`/api/v1/departments/${item.id}/roles`, {
+                 const response = await fetch(`{{ url('api/v1/departments') }}/${item.id}/roles`, {
                      credentials: 'same-origin',
                      headers: { 'Accept': 'application/json' }
                  });
@@ -414,7 +414,7 @@
              if (!confirm('Are you sure you want to deactivate department: ' + (item.dept_name || item.dept_code) + '?')) return;
 
              try {
-                 const response = await fetch(`/api/v1/departments/${item.id}`, {
+                 const response = await fetch(`{{ url('api/v1/departments') }}/${item.id}`, {
                      method: 'DELETE',
                      credentials: 'same-origin',
                      headers: {
@@ -483,7 +483,7 @@
                      }
                  }, 200);
                  
-                 const response = await fetch('/api/v1/departments/import', {
+                 const response = await fetch('{{ url("api/v1/departments/import") }}', {
                      method: 'POST',
                      credentials: 'same-origin',
                      headers: {

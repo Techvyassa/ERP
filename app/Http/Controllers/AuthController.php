@@ -145,7 +145,7 @@ class AuthController extends Controller
             $rememberMe  = (bool) $request->input('remember_me', false);
             $cookieMinutes = $rememberMe ? 60 * 24 * 90 : 60 * 24;
 
-            return response()->json([
+            $response = response()->json([
                 'success' => true,
                 'data'    => [
                     'access_token'  => $result->accessToken,
@@ -162,8 +162,10 @@ class AuthController extends Controller
                 'message'    => 'Login successful',
                 'request_id' => $requestId,
                 'timestamp'  => now()->toIso8601String()
-            ], 200)
-            ->cookie(
+            ], 200);
+
+            // Set access token cookie
+            $response->cookie(
                 'auth_token',
                 $result->accessToken,
                 $cookieMinutes,
@@ -174,6 +176,21 @@ class AuthController extends Controller
                 false,
                 'lax'
             );
+
+            // Set refresh token cookie (30 days)
+            $response->cookie(
+                'refresh_token',
+                $result->refreshToken,
+                60 * 24 * 30,
+                '/',
+                null,
+                request()->secure(),
+                true,
+                false,
+                'lax'
+            );
+
+            return $response;
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -270,14 +287,16 @@ class AuthController extends Controller
                 $request->input('refresh_token')
             );
 
-            return response()->json([
+            $response = response()->json([
                 'success' => true,
                 'data'    => $tokens,
                 'message' => 'Token refreshed successfully',
                 'request_id' => $requestId,
                 'timestamp'  => now()->toIso8601String()
-            ], 200)
-            ->cookie(
+            ], 200);
+
+            // Set access token cookie (24 hours)
+            $response->cookie(
                 'auth_token',
                 $tokens['access_token'],
                 60 * 24,
@@ -288,6 +307,23 @@ class AuthController extends Controller
                 false,
                 'lax'
             );
+
+            // Set refresh token cookie (30 days) if returned
+            if (!empty($tokens['refresh_token'])) {
+                $response->cookie(
+                    'refresh_token',
+                    $tokens['refresh_token'],
+                    60 * 24 * 30,
+                    '/',
+                    null,
+                    request()->secure(),
+                    true,
+                    false,
+                    'lax'
+                );
+            }
+
+            return $response;
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
@@ -342,7 +378,8 @@ class AuthController extends Controller
                 'request_id' => $requestId,
                 'timestamp'  => now()->toIso8601String()
             ], 200)
-            ->cookie(cookie()->forget('auth_token'));
+            ->cookie(cookie()->forget('auth_token'))
+            ->cookie(cookie()->forget('refresh_token'));
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,

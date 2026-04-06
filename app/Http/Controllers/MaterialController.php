@@ -189,7 +189,139 @@ class MaterialController extends Controller
         }
     }
 
-    private function generateMaterialCode(string $materialType): string
+    /**
+     * Bulk create materials
+     * POST /api/v1/materials/bulk
+     */
+    public function bulkStore(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'materials' => 'required|array|min:1|max:50',
+            'materials.*.material_name' => 'required|string|max:200',
+            'materials.*.material_type' => 'required|string|max:20',
+            'materials.*.uom_id' => 'required|integer',
+            'materials.*.purchase_uom_id' => 'nullable|integer',
+            'materials.*.hsn_code_id' => 'nullable|integer',
+            'materials.*.default_warehouse_id' => 'nullable|integer',
+            'materials.*.reorder_level' => 'nullable|numeric|min:0',
+            'materials.*.safety_stock' => 'nullable|numeric|min:0',
+            'materials.*.lead_time_days' => 'nullable|integer|min:0',
+            'materials.*.shelf_life_days' => 'nullable|integer|min:0',
+            'materials.*.qc_required' => 'nullable|boolean',
+            'materials.*.inspection_type' => 'nullable|string|max:10',
+            'materials.*.is_batch_tracked' => 'nullable|boolean',
+            'materials.*.standard_cost' => 'nullable|numeric|min:0',
+            'materials.*.valuation_method' => 'nullable|string|max:10',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $created = [];
+            $errors = [];
+
+            \DB::beginTransaction();
+
+            $typeCounters = [];
+
+            foreach ($request->input('materials') as $index => $item) {
+                try {
+                    $materialType = $item['material_type'] ?? 'RAW';
+                    if (!isset($typeCounters[$materialType])) {
+                        $typeCounters[$materialType] = 0;
+                    }
+                    $offset = $typeCounters[$materialType];
+                    $typeCounters[$materialType]++;
+
+                    // Auto-generate material code with batch offset
+                    $materialCode = $this->generateMaterialCode($materialType, $offset);
+
+                    \Log::info("Bulk Create Row " . ($index + 1) . ": Type=$materialType, Code=$materialCode");
+
+                    $material = Material::create([
+                        'material_code' => $materialCode,
+                        'material_name' => $item['material_name'],
+                        'material_type' => $materialType,
+                        'uom_id' => $item['uom_id'],
+                        'purchase_uom_id' => $item['purchase_uom_id'] ?? null,
+                        'hsn_code_id' => $item['hsn_code_id'] ?? null,
+                        'default_warehouse_id' => $item['default_warehouse_id'] ?? null,
+                        'reorder_level' => $item['reorder_level'] ?? 0,
+                        'safety_stock' => $item['safety_stock'] ?? 0,
+                        'lead_time_days' => $item['lead_time_days'] ?? 0,
+                        'shelf_life_days' => $item['shelf_life_days'] ?? null,
+                        'qc_required' => $item['qc_required'] ?? true,
+                        'inspection_type' => $item['inspection_type'] ?? 'AQL',
+                        'is_batch_tracked' => $item['is_batch_tracked'] ?? false,
+                        'standard_cost' => $item['standard_cost'] ?? 0,
+                        'valuation_method' => $item['valuation_method'] ?? 'FIFO',
+                        'is_active' => true,
+                        'created_by' => $request->input('auth_user_id'),
+                    ]);
+
+                    $created[] = $material;
+                } catch (\Exception $e) {
+                    \Log::error("Bulk Row " . ($index + 1) . " Error: " . $e->getMessage());
+                    $errors[] = [
+                        'row' => $index + 1,
+                        'name' => $item['material_name'] ?? 'Unknown',
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+
+            if (!empty($errors) && empty($created)) {
+                \DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'BULK_CREATE_FAILED', 'details' => $errors],
+                    'message' => 'All materials failed to create',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 422);
+            }
+
+            \DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'created' => $created,
+                    'created_count' => count($created),
+                    'errors' => $errors,
+                    'error_count' => count($errors)
+                ],
+                'message' => count($created) . ' material(s) created successfully' .
+                    (count($errors) > 0 ? ', ' . count($errors) . ' failed' : ''),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 201);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'BULK_CREATE_FAILED', 'details' => []],
+                'message' => 'Failed to bulk create materials: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
+    private function generateMaterialCode(string $materialType, int $offset = 0): string
     {
         $prefix = match ($materialType) {
             'RAW' => 'RM',
@@ -199,25 +331,32 @@ class MaterialController extends Controller
             default => 'MAT'
         };
 
-        \Log::info('Generating material code for type: ' . $materialType . ' with prefix: ' . $prefix);
+        // Get all codes with this prefix to find the highest number
+        // We use like then manual parsing to ensure we handle string sorting correctly
+        $existingCodes = Material::where('material_code', 'like', $prefix . '-%')
+            ->pluck('material_code')
+            ->toArray();
 
-        // Get the last material code for this type
-        $lastCode = Material::where('material_code', 'like', $prefix . '-%')
-            ->orderBy('material_code', 'desc')
-            ->value('material_code');
-
-        \Log::info('Last material code found: ' . ($lastCode ?? 'none'));
-
-        $nextNumber = 1;
-        if ($lastCode) {
-            $parts = explode('-', $lastCode);
-            if (isset($parts[1]) && is_numeric($parts[1])) {
-                $nextNumber = (int) $parts[1] + 1;
+        $maxNumber = 0;
+        foreach ($existingCodes as $code) {
+            $parts = explode('-', $code);
+            if (count($parts) >= 2 && is_numeric($parts[1])) {
+                $num = (int)$parts[1];
+                if ($num > $maxNumber) $maxNumber = $num;
             }
         }
 
-        $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        \Log::info('Final generated code: ' . $generatedCode);
+        // Apply batch offset to avoid duplicates within the same bulk request
+        $nextNumber = $maxNumber + 1 + $offset;
+
+        // Final check to ensure it's absolutely unique (handling race conditions or gaps)
+        do {
+            $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            $exists = Material::where('material_code', $generatedCode)->exists();
+            if ($exists) {
+                $nextNumber++;
+            }
+        } while ($exists);
 
         return $generatedCode;
     }

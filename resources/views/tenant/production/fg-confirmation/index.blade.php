@@ -40,7 +40,7 @@
                 <div class="px-6 pt-6">
                     <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-tighter text-gray-400 mb-2">
                         <span>Quantity Tracker</span>
-                        <span x-text="modal.order?.confirmed_qty_total + ' / ' + modal.order?.target_qty + ' ' + (modal.order?.uom || '')"></span>
+                        <span x-text="modal.order?.confirmed_qty_total + ' / ' + modal.order?.target_qty + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"></span>
                     </div>
                     <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
                         <div class="bg-emerald-500 h-full transition-all duration-700"
@@ -48,64 +48,82 @@
                     </div>
                     <div class="flex justify-between text-xs mt-2 font-semibold">
                         <span class="text-emerald-600" x-text="'Produced: ' + (modal.order?.confirmed_qty_total || 0)"></span>
-                        <span class="text-orange-600" x-text="'Open: ' + (modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
+                        <span class="text-orange-600" x-text="'Remaining: ' + (modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
                     </div>
                 </div>
 
                 <div class="px-6 py-5 space-y-5">
+                    <!-- Auto-calculated fields -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Produced (This Session) <span class="text-red-500">*</span></label>
-                            <input type="number" min="0.001" step="0.001"
-                                   x-model="form.confirmed_qty"
-                                   :max="modal.order?.remaining_qty"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold text-gray-900 shadow-inner">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Total Target</label>
+                            <input type="text" readonly
+                                   :value="modal.order?.target_qty + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                   class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejected</label>
-                            <input type="number" min="0" step="0.001"
-                                   x-model="form.rejected_qty"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
-                            <select x-model="form.rejection_reason_code"
-                                    class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-inner">
-                                <option value="">— None —</option>
-                                <option value="DEFECT_VISUAL">Visual Defect</option>
-                                <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
-                                <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
-                                <option value="CONTAMINATION">Contamination</option>
-                                <option value="PACKAGING_DAMAGE">Packaging Damage</option>
-                                <option value="OTHER">Other</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Identity</label>
-                            <input type="text" x-model="form.fg_batch_number"
-                                   placeholder="Auto or Manual"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-inner">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Already Confirmed</label>
+                            <input type="text" readonly
+                                   :value="(modal.order?.confirmed_qty_total ?? 0) + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                   class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                     </div>
 
-                    {{-- Completion status --}}
-                    <div class="grid grid-cols-2 gap-4">
-                        <button @click="form.completion_status = 'PARTIALLY_COMPLETED'"
-                                :class="form.completion_status === 'PARTIALLY_COMPLETED'
-                                    ? 'bg-amber-500 text-white ring-4 ring-amber-100 shadow-lg translate-y--0.5'
-                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
-                                class="flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl transition-all duration-300 text-center group">
-                            <span class="material-symbols-outlined text-2xl" :class="form.completion_status === 'PARTIALLY_COMPLETED' ? 'text-white' : 'text-amber-500'">pending</span>
-                            <span class="font-bold text-xs uppercase tracking-widest">Partial</span>
-                        </button>
-                        <button @click="form.completion_status = 'COMPLETED'"
-                                :class="form.completion_status === 'COMPLETED'
-                                    ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 shadow-lg translate-y--0.5'
-                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
-                                class="flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl transition-all duration-300 text-center group">
-                            <span class="material-symbols-outlined text-2xl" :class="form.completion_status === 'COMPLETED' ? 'text-white' : 'text-emerald-500'">check_circle</span>
-                            <span class="font-bold text-xs uppercase tracking-widest">Finalize</span>
-                        </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Accept (Auto-filled)</label>
+                            <input type="number" min="0.001" step="0.001"
+                                   x-model="form.confirmed_qty"
+                                   :max="modal.order?.remaining_qty"
+                                   readonly
+                                   class="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold shadow-inner cursor-not-allowed">
+                            <p class="text-[10px] text-emerald-600">Auto-calculated from remaining quantity</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Reject (Optional)</label>
+                            <input type="number" min="0" step="0.001"
+                                   x-model="form.rejected_qty"
+                                   @input="syncStatus()"
+                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg" :class="form.completion_status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'">
+                                <span class="material-symbols-outlined text-sm" x-text="form.completion_status === 'COMPLETED' ? 'task_alt' : 'pending_actions'"></span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter leading-none mb-1">Batch Close Logic</p>
+                                <p class="text-xs font-black uppercase tracking-widest" :class="form.completion_status === 'COMPLETED' ? 'text-emerald-700' : 'text-blue-700'"
+                                   x-text="form.completion_status.replace('_', ' ')"></p>
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-500 italic max-w-[180px] text-right">
+                            <span x-show="form.completion_status === 'COMPLETED'">Full batch target met. Order will be marked as Finished for Packing.</span>
+                            <span x-show="form.completion_status !== 'COMPLETED'">Target not fully met. Order remains Open for more recordings.</span>
+                        </p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
+                        <select x-model="form.rejection_reason_code"
+                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-inner">
+                            <option value="">— None —</option>
+                            <option value="DEFECT_VISUAL">Visual Defect</option>
+                            <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
+                            <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
+                            <option value="CONTAMINATION">Contamination</option>
+                            <option value="PACKAGING_DAMAGE">Packaging Damage</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Identity</label>
+                        <input type="text" x-model="form.fg_batch_number"
+                               placeholder="Auto-generated"
+                               class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-inner">
                     </div>
 
                     <label class="flex items-center gap-3 rounded-2xl bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800 cursor-pointer border border-emerald-100 hover:bg-emerald-50 transition-colors">
@@ -137,9 +155,6 @@
                         <span x-text="modal.submitting ? 'Processing...' : 'Confirm Output'"></span>
                     </button>
                 </div>
-            </div>
-        </div>
-    </div>
             </div>
         </div>
     </div>
@@ -414,12 +429,12 @@
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <span class="text-xs font-extrabold text-slate-600"
-                                      x-text="order.target_qty + ' ' + (order.uom || '')"></span>
+                                      x-text="order.target_qty + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <div class="inline-flex flex-col items-end gap-1">
                                     <span class="text-xs font-black text-emerald-600"
-                                          x-text="(order.confirmed_qty_total ?? 0) + ' ' + (order.uom || '')"></span>
+                                          x-text="(order.confirmed_qty_total ?? 0) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                                     <div class="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
                                          <div class="bg-emerald-500 h-full transition-all duration-1000" :style="'width: ' + ((order.confirmed_qty_total / order.target_qty) * 100) + '%'"></div>
                                     </div>
@@ -428,7 +443,7 @@
                             <td class="px-6 py-4 text-right font-black leading-none">
                                 <span class="text-xs"
                                       :class="remainingQty(order) > 0 ? 'text-orange-600' : 'text-gray-400'"
-                                      x-text="remainingQty(order) + ' ' + (order.uom || '')"></span>
+                                      x-text="remainingQty(order) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                             </td>
                             <td class="px-6 py-4 text-center leading-none">
                                 <span class="px-3 py-1 text-[10px] rounded-full font-black uppercase tracking-widest"
@@ -460,10 +475,6 @@
         </div>
     </div>
 </div>
-            </table>
-        </div>
-    </div>
-</div>
 
 <script>
 function fgConfirmation(orgSlug) {
@@ -471,19 +482,34 @@ function fgConfirmation(orgSlug) {
         orgSlug,
         loading: false,
         orders: [],
-        filters: { search: '', status: 'IN_PROGRESS' },
+        filters: {
+            search: '',
+            status: 'IN_PROGRESS'
+        },
 
-        modal: { show: false, submitting: false, order: null, error: '' },
+        modal: {
+            show: false,
+            submitting: false,
+            order: null,
+            error: ''
+        },
         form: {
             confirmed_qty: '',
             rejected_qty: 0,
             rejection_reason_code: '',
+            rejection_reason_note: '',
             fg_batch_number: '',
             completion_status: 'PARTIALLY_COMPLETED',
-            qc_required: false,
+            qc_required: true,
         },
 
-        drawer: { show: false, loading: false, order: null, sessions: [], summary: null },
+        drawer: {
+            show: false,
+            loading: false,
+            order: null,
+            sessions: [],
+            summary: null
+        },
 
         async init() {
             await this.loadOrders();
@@ -491,7 +517,7 @@ function fgConfirmation(orgSlug) {
 
         remainingQty(order) {
             const confirmed = parseFloat(order.confirmed_qty_total ?? 0);
-            const target    = parseFloat(order.target_qty ?? 0);
+            const target = parseFloat(order.target_qty ?? 0);
             return Math.max(0, target - confirmed).toFixed(3).replace(/\.?0+$/, '') || '0';
         },
 
@@ -501,7 +527,7 @@ function fgConfirmation(orgSlug) {
                 const params = new URLSearchParams();
                 if (this.filters.search) params.append('search', this.filters.search);
                 if (this.filters.status) params.append('status', this.filters.status);
-                const res  = await this._fetch(`/api/v1/production-orders?${params}`);
+                const res = await this._fetch(`/api/v1/production-orders?${params}`);
                 const data = await res.json();
                 this.orders = data?.data?.orders || data?.data || [];
             } catch (e) {
@@ -517,27 +543,55 @@ function fgConfirmation(orgSlug) {
             this.modal.error = '';
             this.modal.order = order;
             try {
-                const res  = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
+                const res = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
                 const data = await res.json();
                 if (data.success) {
-                    this.modal.order = { ...order, ...data.data.order };
+                    this.modal.order = {
+                        ...order,
+                        ...data.data.order
+                    };
                 }
-            } catch (e) { /* use cached order data */ }
+            } catch (e) {
+                /* use cached order data */ }
 
             const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
             this.form = {
                 confirmed_qty: remaining > 0 ? remaining : '',
                 rejected_qty: 0,
                 rejection_reason_code: '',
+                rejection_reason_note: '',
                 fg_batch_number: '',
-                completion_status: 'PARTIALLY_COMPLETED',
-                qc_required: false,
+                completion_status: remaining > 0 ? 'COMPLETED' : 'PARTIALLY_COMPLETED',
+                qc_required: true,
             };
             this.modal.show = true;
         },
 
+        syncStatus() {
+            // Auto-adjust confirmed_qty when reject_qty changes
+            const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
+            const rejectQty = parseFloat(this.form.rejected_qty || 0);
+            const maxAccept = Math.max(0, remaining - rejectQty);
+
+            if (parseFloat(this.form.confirmed_qty || 0) > maxAccept) {
+                this.form.confirmed_qty = maxAccept;
+            }
+
+            const sessionTotal = parseFloat(this.form.confirmed_qty || 0) + rejectQty;
+            if (sessionTotal >= remaining - 0.001) {
+                this.form.completion_status = 'COMPLETED';
+            } else {
+                this.form.completion_status = 'PARTIALLY_COMPLETED';
+            }
+        },
+
         closeModal() {
-            this.modal = { show: false, submitting: false, order: null, error: '' };
+            this.modal = {
+                show: false,
+                submitting: false,
+                order: null,
+                error: ''
+            };
         },
 
         async submitConfirmation() {
@@ -549,14 +603,15 @@ function fgConfirmation(orgSlug) {
             this.modal.submitting = true;
             try {
                 const payload = {
-                    confirmed_qty:         parseFloat(this.form.confirmed_qty),
-                    rejected_qty:          parseFloat(this.form.rejected_qty || 0),
+                    confirmed_qty: parseFloat(this.form.confirmed_qty),
+                    rejected_qty: parseFloat(this.form.rejected_qty || 0),
                     rejection_reason_code: this.form.rejection_reason_code || null,
-                    fg_batch_number:       this.form.fg_batch_number || null,
-                    completion_status:     this.form.completion_status,
-                    qc_required:           !!this.form.qc_required,
+                    rejection_reason_note: this.form.rejection_reason_code === 'OTHER' ? this.form.rejection_reason_note : null,
+                    fg_batch_number: this.form.fg_batch_number || null,
+                    completion_status: this.form.completion_status,
+                    qc_required: !!this.form.qc_required,
                 };
-                const res  = await this._fetch(`/api/v1/production-orders/${this.modal.order.id}/confirm-fg`, {
+                const res = await this._fetch(`/api/v1/production-orders/${this.modal.order.id}/confirm-fg`, {
                     method: 'POST',
                     body: JSON.stringify(payload),
                 });
@@ -572,17 +627,17 @@ function fgConfirmation(orgSlug) {
         },
 
         async openSessions(order) {
-            this.drawer.show    = true;
+            this.drawer.show = true;
             this.drawer.loading = true;
-            this.drawer.order   = order;
+            this.drawer.order = order;
             this.drawer.sessions = [];
-            this.drawer.summary  = null;
+            this.drawer.summary = null;
             try {
-                const res  = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
+                const res = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
                 const data = await res.json();
                 if (data.success) {
                     this.drawer.sessions = data.data.sessions || [];
-                    this.drawer.summary  = data.data.order;
+                    this.drawer.summary = data.data.order;
                 }
             } catch (e) {
                 console.error('Failed to load sessions', e);

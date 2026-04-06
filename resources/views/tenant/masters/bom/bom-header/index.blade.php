@@ -1,7 +1,7 @@
 @extends('tenant.layouts.bom')
 
-@section('title', 'BOM Header')
-@section('page-title', 'Bill of Materials - Header')
+@section('title', 'Bill of Materials')
+@section('page-title', 'Bill of Materials')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -9,67 +9,179 @@
 
 @section('content')
 <div x-data="bomData()" x-init="loadData()">
-    <div class="bg-white rounded-xl shadow p-6 mb-6">
+
+    <!-- Page Header -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-6 mb-6">
         <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900">Bill of Materials (BOM)</h2>
-                <p class="text-gray-600 mt-1">Manage product BOMs and manufacturing recipes</p>
+            <div class="flex items-center gap-4">
+                <div class="bg-gradient-to-br from-orange-500 to-orange-600 p-3 rounded-xl shadow-md">
+                    <span class="material-symbols-outlined text-white text-2xl">account_tree</span>
+                </div>
+                <div>
+                    <h2 class="text-2xl font-bold text-gray-900">Bill of Materials</h2>
+                    <p class="text-sm text-gray-500 mt-0.5">Manage product BOMs, versions, and component recipes</p>
+                </div>
             </div>
             <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header/create' : '/org/' . $organization->org_slug . '/bom-header/create') }}" 
-               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
-                <i class="fas fa-plus mr-2"></i>Create BOM
+               class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg font-medium">
+                <span class="material-symbols-outlined text-lg">add</span>
+                Create BOM
             </a>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow p-6 mb-6">
+    <!-- Quick Stats -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+            <div class="bg-blue-50 p-2.5 rounded-lg">
+                <span class="material-symbols-outlined text-blue-600">inventory_2</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-gray-900" x-text="items.length">0</p>
+                <p class="text-xs text-gray-500 font-medium">Total BOMs</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+            <div class="bg-green-50 p-2.5 rounded-lg">
+                <span class="material-symbols-outlined text-green-600">check_circle</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-green-600" x-text="items.filter(i => i.bom_status === 'ACTIVE').length">0</p>
+                <p class="text-xs text-gray-500 font-medium">Active</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+            <div class="bg-yellow-50 p-2.5 rounded-lg">
+                <span class="material-symbols-outlined text-yellow-600">edit_note</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-yellow-600" x-text="items.filter(i => i.bom_status === 'DRAFT').length">0</p>
+                <p class="text-xs text-gray-500 font-medium">Draft</p>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-100 shadow-sm p-4 flex items-center gap-4">
+            <div class="bg-red-50 p-2.5 rounded-lg">
+                <span class="material-symbols-outlined text-red-600">block</span>
+            </div>
+            <div>
+                <p class="text-2xl font-bold text-red-500" x-text="items.filter(i => i.bom_status === 'OBSOLETE').length">0</p>
+                <p class="text-xs text-gray-500 font-medium">Obsolete</p>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filters -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 p-5 mb-6">
         <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input type="text" x-model="filters.search" @input="loadData" placeholder="Search by BOM code..." 
-                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <input type="text" x-model="filters.product" @input="loadData" placeholder="Filter by product..." 
-                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <select x-model="filters.bom_status" @change="loadData" class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
+                <input type="text" x-model="filters.search" @input.debounce.300ms="loadData" placeholder="Search BOM code..." 
+                       class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors text-sm">
+            </div>
+            <div class="relative">
+                <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">inventory</span>
+                <input type="text" x-model="filters.product" @input.debounce.300ms="loadData" placeholder="Filter by product..." 
+                       class="w-full pl-10 pr-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors text-sm">
+            </div>
+            <select x-model="filters.bom_status" @change="loadData" 
+                    class="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent bg-gray-50 focus:bg-white transition-colors text-sm">
                 <option value="">All Status</option>
                 <option value="DRAFT">Draft</option>
                 <option value="ACTIVE">Active</option>
                 <option value="OBSOLETE">Obsolete</option>
             </select>
-            <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <i class="fas fa-redo mr-2"></i>Reset
+            <button @click="resetFilters" class="inline-flex items-center justify-center gap-2 px-4 py-2.5 border border-gray-200 rounded-lg hover:bg-gray-50 transition-colors text-sm font-medium text-gray-600">
+                <span class="material-symbols-outlined text-lg">refresh</span>
+                Reset Filters
             </button>
         </div>
     </div>
 
-    <div class="bg-white rounded-xl shadow overflow-hidden">
+    <!-- BOM Table -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">BOM Code</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Product</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Version</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Batch Size</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective From</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+            <table class="min-w-full">
+                <thead>
+                    <tr class="bg-gray-50 border-b border-gray-200">
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">BOM Code</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Ver.</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch Size</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
+                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Effective From</th>
+                        <th class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-3.5 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-100">
+                    <!-- Loading -->
                     <template x-if="loading">
-                        <tr><td colspan="7" class="px-6 py-12 text-center"><i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i><p class="text-gray-600 mt-2">Loading BOMs...</p></td></tr>
+                        <tr>
+                            <td colspan="8" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="animate-spin rounded-full h-10 w-10 border-b-2 border-orange-500 mb-3"></div>
+                                    <p class="text-sm text-gray-500">Loading BOMs...</p>
+                                </div>
+                            </td>
+                        </tr>
                     </template>
-                    <template x-if="!loading && items.length === 0">
-                        <tr><td colspan="7" class="px-6 py-12 text-center"><i class="fas fa-list-alt text-6xl text-gray-300 mb-4"></i><p class="text-gray-600">No BOMs found.</p></td></tr>
+
+                    <!-- Empty -->
+                    <template x-if="!loading && filteredItems.length === 0">
+                        <tr>
+                            <td colspan="8" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center">
+                                    <div class="bg-gray-100 p-4 rounded-full mb-3">
+                                        <span class="material-symbols-outlined text-4xl text-gray-400">account_tree</span>
+                                    </div>
+                                    <p class="text-gray-600 font-medium mb-1">No BOMs found</p>
+                                    <p class="text-sm text-gray-400">Create your first Bill of Materials to get started.</p>
+                                </div>
+                            </td>
+                        </tr>
                     </template>
-                    <template x-for="item in items" :key="item.id">
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap"><span class="text-sm font-medium text-gray-900" x-text="item.bom_code"></span></td>
-                            <td class="px-6 py-4 text-sm text-gray-900" x-text="item.product_name"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="'v' + item.version"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600"><span x-text="item.batch_size"></span> <span x-text="item.output_uom_name"></span></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.effective_from"></td>
+
+                    <!-- Rows -->
+                    <template x-for="item in filteredItems" :key="item.id">
+                        <tr class="hover:bg-orange-50/40 transition-colors">
+                            <!-- BOM Code -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs rounded-full" 
+                                <span class="text-sm font-semibold text-gray-900" x-text="item.bom_code"></span>
+                            </td>
+                            <!-- Product -->
+                            <td class="px-6 py-4">
+                                <div class="flex items-center gap-2">
+                                    <div class="bg-orange-50 p-1.5 rounded">
+                                        <span class="material-symbols-outlined text-orange-500 text-sm">category</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-medium text-gray-900" x-text="item.product_name"></p>
+                                        <p class="text-xs text-gray-400" x-text="item.product_code"></p>
+                                    </div>
+                                </div>
+                            </td>
+                            <!-- Version -->
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded bg-blue-50 text-blue-700" x-text="'v' + item.version"></span>
+                            </td>
+                            <!-- Batch Size -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm text-gray-800 font-medium" x-text="item.batch_size_formatted"></span>
+                                <span class="text-xs text-gray-400 ml-1" x-text="item.output_uom_name"></span>
+                            </td>
+                            <!-- Items Count -->
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full"
+                                      :class="item.items_count > 0 ? 'bg-green-50 text-green-700' : 'bg-gray-100 text-gray-500'"
+                                      x-text="item.items_count + ' items'"></span>
+                            </td>
+                            <!-- Effective From -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <span class="text-sm text-gray-600" x-text="item.effective_from_formatted"></span>
+                            </td>
+                            <!-- Status -->
+                            <td class="px-6 py-4 whitespace-nowrap text-center">
+                                <span class="inline-flex items-center px-2.5 py-1 text-xs font-semibold rounded-full"
                                       :class="{
                                           'bg-yellow-100 text-yellow-800': item.bom_status === 'DRAFT',
                                           'bg-green-100 text-green-800': item.bom_status === 'ACTIVE',
@@ -77,42 +189,33 @@
                                       }"
                                       x-text="item.bom_status"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <div class="flex items-center justify-end gap-2">
+                            <!-- Actions -->
+                            <td class="px-6 py-4 whitespace-nowrap text-right">
+                                <div class="flex items-center justify-end gap-1.5">
                                     <button @click="viewDetails(item)" 
-                                            class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors" 
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-white border border-gray-200 text-gray-700 hover:bg-gray-50 hover:border-gray-300 rounded-lg transition-all" 
                                             title="View Details">
-                                        <i class="fas fa-eye mr-1"></i>
+                                        <span class="material-symbols-outlined text-sm">visibility</span>
                                         View
                                     </button>
                                     <button @click="edit(item)" 
-                                            class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" 
+                                            class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-white border border-blue-200 text-blue-700 hover:bg-blue-50 hover:border-blue-300 rounded-lg transition-all" 
                                             title="Edit">
-                                        <i class="fas fa-edit mr-1"></i>
+                                        <span class="material-symbols-outlined text-sm">edit</span>
                                         Edit
                                     </button>
                                     <template x-if="item.bom_status === 'ACTIVE'">
                                         <button @click="deactivateItem(item)" 
-                                                class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-white border border-red-200 text-red-600 hover:bg-red-50 hover:border-red-300 rounded-lg transition-all" 
                                                 title="Make Obsolete">
-                                            <i class="fas fa-ban mr-1"></i>
-                                            Deactivate
+                                            <span class="material-symbols-outlined text-sm">block</span>
                                         </button>
                                     </template>
-                                    <template x-if="item.bom_status === 'OBSOLETE'">
+                                    <template x-if="item.bom_status === 'OBSOLETE' || item.bom_status === 'DRAFT'">
                                         <button @click="activateItem(item)" 
-                                                class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors" 
+                                                class="inline-flex items-center gap-1 px-2.5 py-1.5 text-xs font-medium bg-white border border-green-200 text-green-600 hover:bg-green-50 hover:border-green-300 rounded-lg transition-all" 
                                                 title="Make Active">
-                                            <i class="fas fa-check mr-1"></i>
-                                            Activate
-                                        </button>
-                                    </template>
-                                    <template x-if="item.bom_status === 'DRAFT'">
-                                        <button @click="activateItem(item)" 
-                                                class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" 
-                                                title="Make Active">
-                                            <i class="fas fa-play mr-1"></i>
-                                            Activate
+                                            <span class="material-symbols-outlined text-sm">check_circle</span>
                                         </button>
                                     </template>
                                 </div>
@@ -122,15 +225,52 @@
                 </tbody>
             </table>
         </div>
+
+        <!-- Footer -->
+        <div class="bg-gray-50 px-6 py-3 border-t border-gray-200">
+            <p class="text-xs text-gray-500">
+                Showing <span class="font-semibold text-gray-700" x-text="filteredItems.length"></span> of
+                <span class="font-semibold text-gray-700" x-text="items.length"></span> BOMs
+            </p>
+        </div>
     </div>
 </div>
 
 <script>
 function bomData() {
+    // Format ISO date to readable string
+    function formatDate(val) {
+        if (!val || val === '-') return '-';
+        try {
+            const d = new Date(val);
+            if (isNaN(d.getTime())) return val;
+            return d.toLocaleDateString('en-IN', {
+                day: '2-digit', month: 'short', year: 'numeric'
+            });
+        } catch (e) {
+            return val;
+        }
+    }
+
+    // Format batch size number (strip trailing zeros)
+    function formatBatchSize(val) {
+        const n = parseFloat(val);
+        if (isNaN(n)) return val;
+        return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2).replace(/0+$/, '');
+    }
+
     return {
         items: [],
         loading: false,
         filters: { search: '', product: '', bom_status: '' },
+
+        get filteredItems() {
+            let result = this.items;
+            if (this.filters.bom_status) {
+                result = result.filter(item => item.bom_status === this.filters.bom_status);
+            }
+            return result;
+        },
         
         async loadData() {
             this.loading = true;
@@ -148,7 +288,6 @@ function bomData() {
                     throw new Error((data && data.message) ? data.message : 'Failed to load BOMs');
                 }
 
-                // API returns data directly as array, not nested
                 let boms = Array.isArray(data.data) ? data.data : (data.data && data.data.boms) ? data.data.boms : [];
                 
                 // Client-side filtering for product
@@ -166,18 +305,17 @@ function bomData() {
                     bom_code: b.bom_code,
                     product_id: b.product_id,
                     product_name: b.product ? b.product.product_name : 'N/A',
-                    version: b.version || 'v1.0',
+                    product_code: b.product ? b.product.product_code : '',
+                    version: b.version || 1,
                     batch_size: b.batch_size || 1,
+                    batch_size_formatted: formatBatchSize(b.batch_size),
                     output_uom_id: b.output_uom_id,
-                    output_uom_name: b.output_uom ? b.output_uom.uom_code : '',
+                    output_uom_name: b.output_uom ? b.output_uom.uom_name : '',
+                    items_count: b.bom_details ? b.bom_details.length : 0,
                     effective_from: b.effective_from || '-',
+                    effective_from_formatted: formatDate(b.effective_from),
                     bom_status: b.bom_status || 'DRAFT'
                 }));
-
-                // Apply status filter
-                if (this.filters.bom_status) {
-                    this.items = this.items.filter(item => item.bom_status === this.filters.bom_status);
-                }
             } catch (error) {
                 console.error('Failed to load BOMs:', error);
                 alert(error.message || 'Failed to load BOMs. Please try again.');
@@ -185,10 +323,6 @@ function bomData() {
             } finally {
                 this.loading = false;
             }
-        },
-        
-        getBOMStatus(bom) {
-            return bom.bom_status || 'DRAFT';
         },
         
         resetFilters() {
@@ -207,102 +341,90 @@ function bomData() {
         },
         
         async deactivateItem(item) {
-            if (confirm('Are you sure you want to make BOM: ' + item.bom_code + ' obsolete?')) {
-                try {
-                    const response = await fetch(`/api/v1/bom-headers/${item.id}`, {
-                        method: 'PUT',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            bom_code: item.bom_code,
-                            product_id: item.product_id,
-                            version: item.version,
-                            batch_size: item.batch_size,
-                            output_uom_id: item.output_uom_id,
-                            effective_from: item.effective_from,
-                            bom_status: 'OBSOLETE'
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to deactivate BOM', 'error');
-                        return;
-                    }
-                    
-                    this.showNotification('BOM made obsolete successfully', 'success');
-                    this.loadData(); // Refresh the list
-                } catch (error) {
-                    console.error('Failed to deactivate BOM:', error);
-                    this.showNotification('Network error. Please try again.', 'error');
+            if (!confirm('Are you sure you want to make BOM "' + item.bom_code + '" obsolete?')) return;
+            try {
+                const response = await fetch(`/api/v1/bom-headers/${item.id}`, {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ bom_status: 'OBSOLETE' })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) {
+                    this.showNotification(data.message || 'Failed to deactivate BOM', 'error');
+                    return;
                 }
+                this.showNotification('BOM made obsolete successfully', 'success');
+                this.loadData();
+            } catch (error) {
+                console.error('Failed to deactivate BOM:', error);
+                this.showNotification('Network error. Please try again.', 'error');
             }
         },
 
         async activateItem(item) {
             const action = item.bom_status === 'DRAFT' ? 'activate' : 'reactivate';
-            if (confirm(`Are you sure you want to ${action} BOM: ` + item.bom_code + '?')) {
-                try {
-                    const response = await fetch(`/api/v1/bom-headers/${item.id}`, {
-                        method: 'PUT',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            bom_code: item.bom_code,
-                            product_id: item.product_id,
-                            version: item.version,
-                            batch_size: item.batch_size,
-                            output_uom_id: item.output_uom_id,
-                            effective_from: item.effective_from,
-                            bom_status: 'ACTIVE'
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to activate BOM', 'error');
-                        return;
-                    }
-                    
-                    this.showNotification('BOM activated successfully', 'success');
-                    this.loadData(); // Refresh the list
-                } catch (error) {
-                    console.error('Failed to activate BOM:', error);
-                    this.showNotification('Network error. Please try again.', 'error');
+            if (!confirm(`Are you sure you want to ${action} BOM "${item.bom_code}"?`)) return;
+            try {
+                const response = await fetch(`/api/v1/bom-headers/${item.id}`, {
+                    method: 'PUT',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: JSON.stringify({ bom_status: 'ACTIVE' })
+                });
+                
+                const data = await response.json();
+                if (!response.ok) {
+                    this.showNotification(data.message || 'Failed to activate BOM', 'error');
+                    return;
                 }
+                this.showNotification('BOM activated successfully', 'success');
+                this.loadData();
+            } catch (error) {
+                console.error('Failed to activate BOM:', error);
+                this.showNotification('Network error. Please try again.', 'error');
             }
         },
 
         showNotification(message, type = 'info') {
+            const colors = {
+                success: 'bg-green-500',
+                error: 'bg-red-500',
+                info: 'bg-blue-500'
+            };
+            const icons = {
+                success: 'check_circle',
+                error: 'error',
+                info: 'info'
+            };
             const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500 text-white' : 
-                type === 'error' ? 'bg-red-500 text-white' : 
-                'bg-blue-500 text-white'
-            }`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
+            notification.className = `fixed top-4 right-4 px-5 py-3 rounded-lg shadow-lg z-50 text-white text-sm font-medium flex items-center gap-2 ${colors[type] || colors.info}`;
+            notification.style.animation = 'slideInRight 0.3s ease-out';
+            notification.innerHTML = `<span class="material-symbols-outlined text-lg">${icons[type] || icons.info}</span>${message}`;
             document.body.appendChild(notification);
-            
             setTimeout(() => {
-                notification.remove();
+                notification.style.opacity = '0';
+                notification.style.transition = 'opacity 0.3s';
+                setTimeout(() => notification.remove(), 300);
             }, 3000);
         }
     }
 }
 </script>
+
+<style>
+@keyframes slideInRight {
+    from { transform: translateX(100%); opacity: 0; }
+    to { transform: translateX(0); opacity: 1; }
+}
+</style>
 @endsection

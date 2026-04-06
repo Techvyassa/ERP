@@ -3,13 +3,101 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant\Warehouse;
+use App\Models\Tenant\Material;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
+use Illuminate\View\View;
 
 class WarehouseController extends Controller
 {
+    /**
+     * Display stock management dashboard page
+     */
+    public function stockManagementPage(Request $request): View
+    {
+        $warehouses = Warehouse::where('is_active', true)
+            ->orderBy('warehouse_name')
+            ->get(['id', 'warehouse_code', 'warehouse_name']);
+        
+        return view('tenant.warehouse.stock-management', compact('warehouses'));
+    }
+
+    /**
+     * Get stock data for all warehouses or specific warehouse
+     */
+    public function allWarehouseStock(): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        
+        try {
+            $stockData = DB::table('stock_balances')
+                ->join('materials', 'stock_balances.material_id', '=', 'materials.id')
+                ->leftJoin('uoms', 'materials.uom_id', '=', 'uoms.id')
+                ->select(
+                    'materials.id as material_id',
+                    'materials.material_code',
+                    'materials.material_name',
+                    'materials.material_type',
+                    'uoms.uom_code as uom',
+                    DB::raw('SUM(stock_balances.qty_on_hand) as on_hand'),
+                    DB::raw('SUM(stock_balances.available_qty) as available'),
+                    DB::raw('SUM(CASE WHEN stock_balances.bucket = \'QC_HOLD\' THEN stock_balances.qty_on_hand ELSE 0 END) as qc_hold'),
+                    DB::raw('SUM(CASE WHEN stock_balances.bucket = \'PUTAWAY_PENDING\' THEN stock_balances.qty_on_hand ELSE 0 END) as putaway_pending'),
+                    DB::raw('SUM(stock_balances.qty_reserved) as reserved'),
+                    DB::raw('SUM(CASE WHEN stock_balances.bucket = \'BLOCKED\' THEN stock_balances.qty_on_hand ELSE 0 END) as blocked')
+                )
+                ->groupBy(
+                    'materials.id',
+                    'materials.material_code',
+                    'materials.material_name',
+                    'materials.material_type',
+                    'uoms.uom_code'
+                )
+                ->havingRaw('SUM(stock_balances.qty_on_hand) > 0 OR SUM(stock_balances.available_qty) > 0')
+                ->orderBy('materials.material_code')
+                ->get()
+                ->map(function($item) {
+                    return [
+                        'material_id' => $item->material_id,
+                        'material_code' => $item->material_code,
+                        'material_name' => $item->material_name,
+                        'type' => $item->material_type ?? 'Raw Material',
+                        'uom' => $item->uom ?? '-',
+                        'on_hand' => floatval($item->on_hand),
+                        'available' => floatval($item->available),
+                        'qc_hold' => floatval($item->qc_hold),
+                        'putaway_pending' => floatval($item->putaway_pending),
+                        'reserved' => floatval($item->reserved),
+                        'blocked' => floatval($item->blocked),
+                    ];
+                });
+            
+            return response()->json([
+                'success' => true,
+                'data' => $stockData,
+                'message' => 'Stock data retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+            
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'STOCK_DATA_ERROR',
+                    'message' => 'Failed to retrieve stock data',
+                    'details' => $e->getMessage()
+                ],
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
     public function index(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
@@ -188,7 +276,7 @@ class WarehouseController extends Controller
         $autoGenerate = $request->input('auto_generate_code');
         $warehouseType = $request->input('warehouse_type');
         
-        \Log::info('Warehouse creation debug:', [
+        Log::info('Warehouse creation debug:', [
             'warehouse_code_input' => $warehouseCode,
             'auto_generate_code' => $autoGenerate,
             'warehouse_type' => $warehouseType,
@@ -197,13 +285,13 @@ class WarehouseController extends Controller
         
         if (empty($warehouseCode) || $autoGenerate) {
             $warehouseCode = $this->generateWarehouseCode($warehouseType);
-            \Log::info('Generated warehouse code: ' . $warehouseCode);
+            Log::info('Generated warehouse code: ' . $warehouseCode);
             
             // Override the request data with generated code
             $request->merge(['warehouse_code' => $warehouseCode]);
         }
         
-        \Log::info('Final request data before validation:', $request->all());
+        Log::info('Final request data before validation:', $request->all());
 
         $validator = Validator::make($request->all(), [
             'warehouse_code' => 'sometimes|string|max:20|unique:tenant.warehouse_master,warehouse_code',
@@ -217,7 +305,7 @@ class WarehouseController extends Controller
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Warehouse validation failed:', $validator->errors()->toArray());
+            Log::error('Warehouse validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
                 'error' => [
@@ -376,14 +464,14 @@ class WarehouseController extends Controller
             default => 'WH'
         };
 
-        \Log::info('Generating warehouse code for type: ' . $warehouseType . ' with prefix: ' . $prefix);
+        Log::info('Generating warehouse code for type: ' . $warehouseType . ' with prefix: ' . $prefix);
 
         // Get the last warehouse code for this type
         $lastCode = Warehouse::where('warehouse_code', 'like', $prefix . '-%')
             ->orderBy('warehouse_code', 'desc')
             ->value('warehouse_code');
 
-        \Log::info('Last warehouse code found: ' . ($lastCode ?? 'none'));
+        Log::info('Last warehouse code found: ' . ($lastCode ?? 'none'));
 
         $nextNumber = 1;
         if ($lastCode) {
@@ -394,7 +482,7 @@ class WarehouseController extends Controller
         }
 
         $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        \Log::info('Final generated warehouse code: ' . $generatedCode);
+        Log::info('Final generated warehouse code: ' . $generatedCode);
 
         return $generatedCode;
     }
