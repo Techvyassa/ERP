@@ -83,9 +83,26 @@
                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Reject (Optional)</label>
                             <input type="number" min="0" step="0.001"
                                    x-model="form.rejected_qty"
-                                   @input="onRejectChange()"
+                                   @input="syncStatus()"
                                    class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
                         </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg" :class="form.completion_status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'">
+                                <span class="material-symbols-outlined text-sm" x-text="form.completion_status === 'COMPLETED' ? 'task_alt' : 'pending_actions'"></span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter leading-none mb-1">Batch Close Logic</p>
+                                <p class="text-xs font-black uppercase tracking-widest" :class="form.completion_status === 'COMPLETED' ? 'text-emerald-700' : 'text-blue-700'"
+                                   x-text="form.completion_status.replace('_', ' ')"></p>
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-500 italic max-w-[180px] text-right">
+                            <span x-show="form.completion_status === 'COMPLETED'">Full batch target met. Order will be marked as Finished for Packing.</span>
+                            <span x-show="form.completion_status !== 'COMPLETED'">Target not fully met. Order remains Open for more recordings.</span>
+                        </p>
                     </div>
 
                     <div class="space-y-1.5">
@@ -465,19 +482,34 @@ function fgConfirmation(orgSlug) {
         orgSlug,
         loading: false,
         orders: [],
-        filters: { search: '', status: 'IN_PROGRESS' },
+        filters: {
+            search: '',
+            status: 'IN_PROGRESS'
+        },
 
-        modal: { show: false, submitting: false, order: null, error: '' },
+        modal: {
+            show: false,
+            submitting: false,
+            order: null,
+            error: ''
+        },
         form: {
             confirmed_qty: '',
             rejected_qty: 0,
             rejection_reason_code: '',
+            rejection_reason_note: '',
             fg_batch_number: '',
             completion_status: 'PARTIALLY_COMPLETED',
-            qc_required: false,
+            qc_required: true,
         },
 
-        drawer: { show: false, loading: false, order: null, sessions: [], summary: null },
+        drawer: {
+            show: false,
+            loading: false,
+            order: null,
+            sessions: [],
+            summary: null
+        },
 
         async init() {
             await this.loadOrders();
@@ -485,7 +517,7 @@ function fgConfirmation(orgSlug) {
 
         remainingQty(order) {
             const confirmed = parseFloat(order.confirmed_qty_total ?? 0);
-            const target    = parseFloat(order.target_qty ?? 0);
+            const target = parseFloat(order.target_qty ?? 0);
             return Math.max(0, target - confirmed).toFixed(3).replace(/\.?0+$/, '') || '0';
         },
 
@@ -495,7 +527,7 @@ function fgConfirmation(orgSlug) {
                 const params = new URLSearchParams();
                 if (this.filters.search) params.append('search', this.filters.search);
                 if (this.filters.status) params.append('status', this.filters.status);
-                const res  = await this._fetch(`/api/v1/production-orders?${params}`);
+                const res = await this._fetch(`/api/v1/production-orders?${params}`);
                 const data = await res.json();
                 this.orders = data?.data?.orders || data?.data || [];
             } catch (e) {
@@ -511,40 +543,55 @@ function fgConfirmation(orgSlug) {
             this.modal.error = '';
             this.modal.order = order;
             try {
-                const res  = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
+                const res = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
                 const data = await res.json();
                 if (data.success) {
-                    this.modal.order = { ...order, ...data.data.order };
+                    this.modal.order = {
+                        ...order,
+                        ...data.data.order
+                    };
                 }
-            } catch (e) { /* use cached order data */ }
+            } catch (e) {
+                /* use cached order data */ }
 
             const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
             this.form = {
                 confirmed_qty: remaining > 0 ? remaining : '',
                 rejected_qty: 0,
                 rejection_reason_code: '',
+                rejection_reason_note: '',
                 fg_batch_number: '',
-                completion_status: 'COMPLETED',
-                qc_required: false,
+                completion_status: remaining > 0 ? 'COMPLETED' : 'PARTIALLY_COMPLETED',
+                qc_required: true,
             };
             this.modal.show = true;
         },
-        
-        onRejectChange() {
+
+        syncStatus() {
             // Auto-adjust confirmed_qty when reject_qty changes
             const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
             const rejectQty = parseFloat(this.form.rejected_qty || 0);
-            const maxAccept = remaining - rejectQty;
-            
-            if (maxAccept < 0) {
-                this.form.confirmed_qty = 0;
-            } else if (parseFloat(this.form.confirmed_qty) > maxAccept) {
+            const maxAccept = Math.max(0, remaining - rejectQty);
+
+            if (parseFloat(this.form.confirmed_qty || 0) > maxAccept) {
                 this.form.confirmed_qty = maxAccept;
+            }
+
+            const sessionTotal = parseFloat(this.form.confirmed_qty || 0) + rejectQty;
+            if (sessionTotal >= remaining - 0.001) {
+                this.form.completion_status = 'COMPLETED';
+            } else {
+                this.form.completion_status = 'PARTIALLY_COMPLETED';
             }
         },
 
         closeModal() {
-            this.modal = { show: false, submitting: false, order: null, error: '' };
+            this.modal = {
+                show: false,
+                submitting: false,
+                order: null,
+                error: ''
+            };
         },
 
         async submitConfirmation() {
@@ -556,14 +603,15 @@ function fgConfirmation(orgSlug) {
             this.modal.submitting = true;
             try {
                 const payload = {
-                    confirmed_qty:         parseFloat(this.form.confirmed_qty),
-                    rejected_qty:          parseFloat(this.form.rejected_qty || 0),
+                    confirmed_qty: parseFloat(this.form.confirmed_qty),
+                    rejected_qty: parseFloat(this.form.rejected_qty || 0),
                     rejection_reason_code: this.form.rejection_reason_code || null,
-                    fg_batch_number:       this.form.fg_batch_number || null,
-                    completion_status:     this.form.completion_status,
-                    qc_required:           !!this.form.qc_required,
+                    rejection_reason_note: this.form.rejection_reason_code === 'OTHER' ? this.form.rejection_reason_note : null,
+                    fg_batch_number: this.form.fg_batch_number || null,
+                    completion_status: this.form.completion_status,
+                    qc_required: !!this.form.qc_required,
                 };
-                const res  = await this._fetch(`/api/v1/production-orders/${this.modal.order.id}/confirm-fg`, {
+                const res = await this._fetch(`/api/v1/production-orders/${this.modal.order.id}/confirm-fg`, {
                     method: 'POST',
                     body: JSON.stringify(payload),
                 });
@@ -579,17 +627,17 @@ function fgConfirmation(orgSlug) {
         },
 
         async openSessions(order) {
-            this.drawer.show    = true;
+            this.drawer.show = true;
             this.drawer.loading = true;
-            this.drawer.order   = order;
+            this.drawer.order = order;
             this.drawer.sessions = [];
-            this.drawer.summary  = null;
+            this.drawer.summary = null;
             try {
-                const res  = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
+                const res = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
                 const data = await res.json();
                 if (data.success) {
                     this.drawer.sessions = data.data.sessions || [];
-                    this.drawer.summary  = data.data.order;
+                    this.drawer.summary = data.data.order;
                 }
             } catch (e) {
                 console.error('Failed to load sessions', e);

@@ -136,6 +136,25 @@ class PackingOrderController extends Controller
 
         $packingOrder = PackingOrder::findOrFail($id);
 
+        // Check if there's already an open carton for this packing order
+        $existingOpenCarton = Carton::where('packing_order_id', $id)
+            ->where('status', 'OPEN')
+            ->first();
+
+        if ($existingOpenCarton) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Cannot open a new carton. Please close or pack the existing open carton first.',
+                'error' => [
+                    'code' => 'OPEN_CARTON_EXISTS',
+                    'details' => [
+                        'existing_carton_id' => $existingOpenCarton->id,
+                        'existing_carton_barcode' => $existingOpenCarton->carton_barcode,
+                    ],
+                ],
+            ], 409);
+        }
+
         $carton = Carton::create([
             'carton_barcode' => $request->input('carton_barcode', 'CTN-' . now()->format('ymd') . '-' . str_pad((Carton::max('id') ?? 0) + 1, 5, '0', STR_PAD_LEFT)),
             'packing_order_id' => $packingOrder->id,
@@ -218,6 +237,17 @@ class PackingOrderController extends Controller
             ], 422);
         }
 
+        // Validate target quantity not exceeded
+        $packedQty = (float) $carton->items()->sum('qty');
+        $newTotalQty = $packedQty + $qty;
+
+        if ($newTotalQty > $order->target_qty) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot scan more than target quantity. Target: {$order->target_qty}, Already packed: {$packedQty}, Attempting to add: {$qty}.",
+            ], 422);
+        }
+
         DB::connection('tenant')->transaction(function () use ($request, $packingOrder, $carton, $product, $order, $qty, $batchNumber, $warehouseId, $binId) {
             $this->stockService->transfer(
                 item: [
@@ -283,12 +313,24 @@ class PackingOrderController extends Controller
             ], 422);
         }
 
-        $carton = Carton::where('packing_order_id', $id)->findOrFail($cartonId);
+        $carton = Carton::where('packing_order_id', $id)->with('packingOrder.productionOrder')->findOrFail($cartonId);
 
         if ($carton->items()->count() === 0) {
             return response()->json([
                 'success' => false,
                 'message' => 'Cannot seal an empty carton.',
+            ], 422);
+        }
+
+        // Validate target quantity not exceeded
+        $packingOrder = $carton->packingOrder;
+        $order = $packingOrder->productionOrder;
+        $totalPackedQty = (float) $carton->items()->sum('qty');
+
+        if ($order && $totalPackedQty > $order->target_qty) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot seal carton. Total packed quantity ({$totalPackedQty}) exceeds target quantity ({$order->target_qty}).",
             ], 422);
         }
 
@@ -312,7 +354,7 @@ class PackingOrderController extends Controller
     {
         $this->switchTenantDb($request);
 
-        $packingOrder = PackingOrder::with('cartons')->findOrFail($id);
+        $packingOrder = PackingOrder::with('cartons.items')->findOrFail($id);
 
         if ($packingOrder->cartons()->count() === 0) {
             return response()->json([
@@ -326,6 +368,20 @@ class PackingOrderController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => "There are {$openCartons} open cartons. Seal them before completing packing.",
+            ], 422);
+        }
+
+        // Validate total packed quantity doesn't exceed target
+        $totalPackedQty = 0;
+        foreach ($packingOrder->cartons as $carton) {
+            $totalPackedQty += (float) $carton->items()->sum('qty');
+        }
+
+        $order = $packingOrder->productionOrder;
+        if ($order && $totalPackedQty > $order->target_qty) {
+            return response()->json([
+                'success' => false,
+                'message' => "Cannot complete packing. Total packed quantity ({$totalPackedQty}) exceeds target quantity ({$order->target_qty}).",
             ], 422);
         }
 

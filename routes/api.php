@@ -542,6 +542,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('production-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
                 Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
+                Route::get('/for-packing', [App\Http\Controllers\ProductionOrderController::class, 'forPacking']);
                 Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
                 Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
                 Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);

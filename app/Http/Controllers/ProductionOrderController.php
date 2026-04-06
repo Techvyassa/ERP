@@ -130,6 +130,53 @@ class ProductionOrderController extends Controller
     }
 
     /**
+     * GET /api/v1/production-orders/for-packing
+     * Returns completed orders that are eligible for packing (QC passed if required).
+     */
+    public function forPacking(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $this->switchTenantDb($request);
+            
+            $orders = ProductionOrder::with(['product', 'inspectionLots.usageDecision'])
+                ->where('status', 'COMPLETED')
+                ->whereDoesntHave('packingOrders')
+                ->get()
+                ->filter(function ($order) {
+                    // If QC was required, ensure decision is made
+                    if ($order->product?->requires_fg_qc) {
+                        $latestLot = $order->inspectionLots()
+                            ->where('source_type', 'PRODUCTION')
+                            ->latest('id')
+                            ->first();
+                        return $latestLot && $latestLot->status === 'DECISION_MADE';
+                    }
+                    return true;
+                })
+                ->map(fn($o) => [
+                    'id' => $o->id,
+                    'order_no' => $o->order_no,
+                    'product_name' => $o->product?->product_name,
+                    'product_code' => $o->product?->product_code,
+                    'fg_batch_number' => $o->fg_batch_number,
+                    'actual_qty' => $o->actual_qty ?? 0,
+                    'requires_fg_qc' => $o->product?->requires_fg_qc ?? false,
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => ['orders' => $orders],
+                'message' => 'Eligible orders for packing retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return $this->error($requestId, $e->getMessage());
+        }
+    }
+
+    /**
      * POST /api/v1/production-orders
      */
     public function store(Request $request): JsonResponse
@@ -489,6 +536,7 @@ class ProductionOrderController extends Controller
                 'confirmed_qty'         => 'required|numeric|min:0.001',
                 'rejected_qty'          => 'nullable|numeric|min:0',
                 'rejection_reason_code' => 'nullable|string|max:100',
+                'rejection_reason_note' => 'nullable|string',
                 'fg_bin_id'             => 'nullable|integer',
                 'fg_warehouse_id'       => 'nullable|integer',
                 'fg_batch_number'       => 'nullable|string|max:50',
@@ -525,23 +573,32 @@ class ProductionOrderController extends Controller
             $rejectedQty    = (float) $request->input('rejected_qty', 0);
             $reworkQty      = (float) $request->input('rework_qty', 0);
             $targetQty      = (float) $order->target_qty;
+            
             $alreadyConfirmed = (float) ($order->confirmed_qty_total ?? 0);
-            $remaining      = max(0, $targetQty - $alreadyConfirmed);
+            $alreadyRejected  = (float) ($order->rejected_qty_total ?? 0);
+            $alreadyHandled   = $alreadyConfirmed + $alreadyRejected;
+            $remainingToHandle = max(0, $targetQty - $alreadyHandled);
 
-            // Auto-determine completion status based on remaining quantity
-            $completionStatus = $remaining <= 0.001 ? 'COMPLETED' : 'PARTIALLY_COMPLETED';
+            // Determine handled qty in THIS session
+            $sessionHandled = $confirmedQty + $rejectedQty;
 
-            // Validate session qty doesn't exceed remaining (with 1% tolerance)
-            $sessionTotal = $confirmedQty + $rejectedQty;
-            if ($sessionTotal > $remaining * 1.01) {
+            // Auto-determine completion status – respect request if present, else auto-calculate
+            $completionStatus = $request->input('completion_status');
+            if (!$completionStatus) {
+                // If current session handles what's left (or more), it's completed
+                $completionStatus = ($sessionHandled >= $remainingToHandle - 0.001) ? 'COMPLETED' : 'PARTIALLY_COMPLETED';
+            }
+
+            // Validate session qty doesn't drastically exceed remaining (with 10% tolerance for over-production)
+            if ($sessionHandled > $remainingToHandle * 1.1 && $remainingToHandle > 0) {
                 return response()->json([
                     'success' => false,
                     'error' => ['code' => 'QTY_EXCEEDS_REMAINING', 'details' => [
-                        'session_total' => $sessionTotal,
-                        'remaining'     => $remaining,
-                        'tolerance'     => '1%',
+                        'session_total' => $sessionHandled,
+                        'remaining'     => $remainingToHandle,
+                        'tolerance'     => '10%',
                     ]],
-                    'message' => "Session qty ({$sessionTotal}) exceeds remaining ({$remaining}) by more than 1%.",
+                    'message' => "Session total ({$sessionHandled}) exceeds remaining target ({$remainingToHandle}) significantly.",
                     'request_id' => $requestId,
                     'timestamp' => now()->toIso8601String(),
                 ], 422);
@@ -613,6 +670,7 @@ class ProductionOrderController extends Controller
                     'confirmed_qty'         => $confirmedQty,
                     'rejected_qty'          => $rejectedQty,
                     'rejection_reason_code' => $request->input('rejection_reason_code'),
+                    'rejection_reason_note' => $request->input('rejection_reason_note'),
                     'fg_batch_number'       => $batchNumber,
                     'fg_warehouse_id'       => $warehouseId,
                     'fg_bin_id'             => $binId,
@@ -707,6 +765,7 @@ class ProductionOrderController extends Controller
                     'confirmed_qty'         => $s->confirmed_qty,
                     'rejected_qty'          => $s->rejected_qty,
                     'rejection_reason_code' => $s->rejection_reason_code,
+                    'rejection_reason_note' => $s->rejection_reason_note,
                     'fg_batch_number'       => $s->fg_batch_number,
                     'completion_status'     => $s->completion_status,
                     'confirmed_by_name'     => $s->confirmer ? ($s->confirmer->first_name . ' ' . $s->confirmer->last_name) : null,
