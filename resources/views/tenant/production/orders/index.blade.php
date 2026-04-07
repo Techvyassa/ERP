@@ -6,21 +6,109 @@
 @section('content')
 <div x-data="productionOrders('{{ $organization->org_slug }}')" x-init="init()">
 
-    <!-- View Order Modal -->
-    <div x-show="viewModal.show" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
+    <!-- Variance Modal -->
+    <div x-show="varianceModal.show"
+        x-transition:enter="transition ease-out duration-200"
+        x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
         <div class="flex items-center justify-center min-h-screen px-4 py-8">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-50" @click="viewModal.show = false"></div>
-            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl z-10" @click.stop>
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="closeVarianceModal()"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-4xl z-10 overflow-hidden" @click.stop>
+                <div class="bg-gradient-to-r from-blue-700 to-indigo-800 px-6 py-5 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Efficiency & Variance Analysis</h3>
+                        <p class="text-xs text-white/70" x-text="varianceModal.report?.order?.order_no || ''"></p>
+                    </div>
+                    <button @click="closeVarianceModal()" class="text-white/60 hover:text-white">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="px-6 py-5 max-h-[75vh] overflow-y-auto">
+                    <div x-show="varianceModal.loading" class="text-center py-8 text-gray-400">
+                        <span class="material-symbols-outlined text-3xl animate-spin block mx-auto mb-2">progress_activity</span>
+                        Loading...
+                    </div>
+                    <template x-if="!varianceModal.loading && varianceModal.report">
+                        <div class="space-y-5">
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500">Target Qty</p>
+                                    <p class="font-bold text-gray-900" x-text="varianceModal.report.production?.target_qty ?? '—'"></p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500">Actual Qty</p>
+                                    <p class="font-bold text-gray-900" x-text="varianceModal.report.production?.actual_qty ?? '—'"></p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500">Rejected Qty</p>
+                                    <p class="font-bold text-gray-900" x-text="varianceModal.report.production?.rejected_qty ?? '—'"></p>
+                                </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500">Yield %</p>
+                                    <p class="font-bold text-gray-900" x-text="varianceModal.report.production?.yield_percent ?? '—'"></p>
+                                </div>
+                            </div>
+                            <div class="border border-gray-200 rounded-lg overflow-hidden">
+                                <table class="min-w-full text-sm">
+                                    <thead class="bg-gray-50">
+                                        <tr>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Material</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">BOM Effective</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Consumed</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Variance</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Variance %</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <template x-for="line in varianceModal.report.rm_lines || []" :key="line.material_id">
+                                            <tr>
+                                                <td class="px-4 py-2">
+                                                    <div class="font-medium text-gray-900" x-text="line.material_name"></div>
+                                                    <div class="text-xs text-gray-400" x-text="line.material_code"></div>
+                                                </td>
+                                                <td class="px-4 py-2 text-right" x-text="line.bom_effective"></td>
+                                                <td class="px-4 py-2 text-right" x-text="line.actually_consumed"></td>
+                                                <td class="px-4 py-2 text-right font-semibold" :class="parseFloat(line.variance) > 0 ? 'text-red-600' : 'text-green-600'" x-text="line.variance"></td>
+                                                <td class="px-4 py-2 text-right" x-text="line.variance_percent + '%'"></td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end">
+                    <button @click="closeVarianceModal()" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50">Close</button>
+                </div>
+            </div>
+        </div>
+    </div>
 
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+    <!-- View Order Modal -->
+    <div x-show="viewModal.show"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="viewModal.show = false"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                @click.stop>
+                <div class="bg-gradient-to-r from-indigo-800 to-indigo-950 px-6 py-5 flex items-center justify-between">
                     <div class="flex items-center gap-3">
-                        <span class="material-symbols-outlined text-orange-500">factory</span>
+                        <div class="p-2 bg-white/10 rounded-lg">
+                            <span class="material-symbols-outlined text-indigo-200">contract</span>
+                        </div>
                         <div>
-                            <h3 class="text-lg font-semibold text-gray-900" x-text="viewModal.order?.order_no"></h3>
-                            <p class="text-xs text-gray-500" x-text="viewModal.order?.product_name + ' (' + (viewModal.order?.product_code || '') + ')'"></p>
+                            <h3 class="text-lg font-bold text-white" x-text="viewModal.order?.order_no"></h3>
+                            <p class="text-xs text-indigo-200/70" x-text="viewModal.order?.product_name"></p>
                         </div>
                     </div>
-                    <button @click="viewModal.show = false" class="text-gray-400 hover:text-gray-600">
+                    <button @click="viewModal.show = false" class="text-white/60 hover:text-white transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -37,7 +125,7 @@
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">Target Quantity</p>
-                                    <p class="font-bold text-gray-900" x-text="viewModal.order.target_qty + ' ' + (viewModal.order.uom || '')"></p>
+                                    <p class="font-bold text-gray-900" x-text="viewModal.order.target_qty + ' ' + (viewModal.order.bom?.output_uom?.uom_name || viewModal.order.uom?.uom_name || '')"></p>
                                 </div>
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">Planned Date</p>
@@ -46,24 +134,24 @@
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">Order Status</p>
                                     <span class="px-2 py-1 text-xs rounded-full font-semibold"
-                                          :class="{
+                                        :class="{
                                               'bg-gray-100 text-gray-700': viewModal.order.status === 'DRAFT',
                                               'bg-blue-100 text-blue-700': viewModal.order.status === 'IN_PROGRESS',
                                               'bg-green-100 text-green-800': viewModal.order.status === 'COMPLETED',
                                               'bg-red-100 text-red-800': viewModal.order.status === 'CANCELLED'
                                           }"
-                                          x-text="viewModal.order.status"></span>
+                                        x-text="viewModal.order.status"></span>
                                 </div>
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">MIR Status</p>
                                     <span class="px-2 py-1 text-xs rounded-full font-semibold"
-                                          :class="{
+                                        :class="{
                                               'bg-yellow-100 text-yellow-800': viewModal.order.mir_status === 'PENDING',
                                               'bg-green-100 text-green-800': viewModal.order.mir_status === 'APPROVED',
                                               'bg-red-100 text-red-800': viewModal.order.mir_status === 'REJECTED',
                                               'bg-gray-100 text-gray-500': !viewModal.order.mir_status
                                           }"
-                                          x-text="viewModal.order.mir_status || 'Not Generated'"></span>
+                                        x-text="viewModal.order.mir_status || 'Not Generated'"></span>
                                 </div>
                             </div>
 
@@ -91,7 +179,7 @@
                                                     <td class="px-4 py-2 text-gray-900 font-medium" x-text="line.material_name"></td>
                                                     <td class="px-4 py-2 text-gray-500 text-xs" x-text="line.material_code"></td>
                                                     <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
-                                                    <td class="px-4 py-2 text-gray-500" x-text="line.uom"></td>
+                                                    <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                                 </tr>
                                             </template>
                                         </tbody>
@@ -102,14 +190,17 @@
                     </template>
                 </div>
 
-                <div class="px-6 py-4 border-t border-gray-200 flex justify-between items-center">
-                    <a :href="'/org/' + orgSlug + '/production/mir'"
-                       class="flex items-center gap-2 text-sm text-orange-600 hover:text-orange-700 font-semibold">
-                        <span class="material-symbols-outlined text-base">assignment</span>
-                        View all MIRs
-                    </a>
+                <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                    <button x-show="viewModal.order?.status === 'DRAFT'" @click="startOrder(viewModal.order)"
+                        class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                        Start
+                    </button>
+                    <button x-show="viewModal.order?.status === 'COMPLETED'" @click="openVarianceModal(viewModal.order)"
+                        class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
+                        Variance
+                    </button>
                     <button @click="viewModal.show = false"
-                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                         Close
                     </button>
                 </div>
@@ -117,15 +208,30 @@
         </div>
     </div>
 
-    <!-- New Production Order Modal -->
-    <div x-show="showModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
+    <div x-show="showModal"
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-transition:leave-start="opacity-100"
+        x-transition:leave-end="opacity-0"
+        x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
         <div class="flex items-center justify-center min-h-screen px-4 py-8">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-50" @click="closeModal()"></div>
-            <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl z-10" @click.stop>
+            <div class="fixed inset-0 bg-gray-900/60 backdrop-blur-sm" @click="closeModal()"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden"
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95 translate-y-4"
+                x-transition:enter-end="opacity-100 scale-100 translate-y-0"
+                @click.stop>
 
-                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
-                    <h3 class="text-lg font-semibold text-gray-900">New Production Order</h3>
-                    <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
+                <div class="bg-gradient-to-r from-slate-800 to-slate-900 flex items-center justify-between px-6 py-5">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-white/10 rounded-lg backdrop-blur-md">
+                            <span class="material-symbols-outlined text-production">precision_manufacturing</span>
+                        </div>
+                        <h3 class="text-lg font-bold text-white">Create Production Order</h3>
+                    </div>
+                    <button @click="closeModal()" class="text-white/70 hover:text-white transition-colors">
                         <span class="material-symbols-outlined">close</span>
                     </button>
                 </div>
@@ -141,13 +247,13 @@
                             <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Loading products...
                         </div>
                         <select x-show="!productLoading"
-                                x-model="form.product_id"
-                                @change="onProductChange()"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent">
+                            x-model="form.product_id"
+                            @change="onProductChange()"
+                            class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 transition-all font-medium text-gray-900 appearance-none shadow-inner">
                             <option value="">— Select Product —</option>
                             <template x-for="p in products" :key="p.id">
                                 <option :value="p.id"
-                                        x-text="p.product_name + (p.product_code ? ' (' + p.product_code + ')' : '')">
+                                    x-text="p.product_name + (p.product_code ? ' (' + p.product_code + ')' : '')">
                                 </option>
                             </template>
                         </select>
@@ -161,19 +267,43 @@
                         <div x-show="bomLoading" class="text-sm text-gray-500 flex items-center gap-2">
                             <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Loading BOMs...
                         </div>
-                        <select x-show="!bomLoading && boms.length > 0"
-                                x-model="form.bom_id"
-                                @change="onBomChange()"
-                                class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent">
-                            <option value="">— Select BOM Version —</option>
-                            <template x-for="b in boms" :key="b.id">
-                                <option :value="b.id"
-                                        x-text="b.bom_code + '  v' + b.version + '  (batch: ' + b.batch_size + ' ' + (b.output_uom ? b.output_uom.uom_code : '') + ')'">
-                                </option>
+                        <!-- BOM Selection / Display -->
+                        <div x-show="!bomLoading" class="space-y-2">
+                            <!-- Only one BOM: Show as text, no dropdown -->
+                            <template x-if="boms.length === 1">
+                                <div class="flex items-center justify-between px-4 py-3 bg-orange-50 border border-orange-100 rounded-lg shadow-sm">
+                                    <div class="flex items-center gap-3">
+                                        <div class="p-2 bg-orange-100 rounded-lg">
+                                            <span class="material-symbols-outlined text-orange-600 text-lg">settings_b_roll</span>
+                                        </div>
+                                        <div>
+                                            <div class="flex items-center gap-2">
+                                                <span class="text-sm font-bold text-gray-900" x-text="boms[0].bom_code + ' (v' + boms[0].version + ')'"></span>
+                                                <span class="text-[10px] uppercase font-black bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded leading-none">Master</span>
+                                            </div>
+                                            <p class="text-xs text-gray-500 mt-0.5" x-text="'Standard Batch: ' + boms[0].batch_size + ' ' + (boms[0].output_uom ? boms[0].output_uom.uom_code : '')"></p>
+                                        </div>
+                                    </div>
+                                    <span class="material-symbols-outlined text-green-500 text-base">check_circle</span>
+                                </div>
                             </template>
-                        </select>
+
+                            <!-- Multiple BOMs: Show Dropdown -->
+                            <template x-if="boms.length > 1">
+                                <select x-model="form.bom_id"
+                                    @change="onBomChange()"
+                                    class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent">
+                                    <option value="">— Select BOM Version —</option>
+                                    <template x-for="b in boms" :key="b.id">
+                                        <option :value="b.id"
+                                            x-text="b.bom_code + '  v' + b.version + '  (batch: ' + b.batch_size + ' ' + (b.output_uom ? b.output_uom.uom_code : '') + ')'">
+                                        </option>
+                                    </template>
+                                </select>
+                            </template>
+                        </div>
                         <div x-show="!bomLoading && boms.length === 0"
-                             class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
+                            class="text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg px-4 py-2.5 flex items-center gap-2">
                             <span class="material-symbols-outlined text-sm">warning</span>
                             No active BOM found for this product. Please create a BOM first.
                         </div>
@@ -185,15 +315,15 @@
                             <label class="block text-sm font-semibold text-gray-700 mb-2">
                                 Target Quantity <span class="text-red-500">*</span>
                             </label>
-                            <div class="flex gap-2">
+                            <div class="relative group">
                                 <input type="number"
-                                       x-model.number="form.target_qty"
-                                       @input="calculateRM()"
-                                       min="0.001" step="0.001"
-                                       placeholder="e.g. 100"
-                                       class="flex-1 px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent">
-                                <span class="flex items-center px-3 bg-gray-100 border border-gray-300 rounded-lg text-sm text-gray-600 whitespace-nowrap"
-                                      x-text="selectedBom?.output_uom?.uom_code || ''"></span>
+                                    x-model.number="form.target_qty"
+                                    @input="calculateRM()"
+                                    min="0.001" step="0.001"
+                                    placeholder="0.000"
+                                    class="w-full pl-4 pr-16 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 transition-all font-bold text-gray-900 shadow-inner">
+                                <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-gray-400 uppercase tracking-tighter"
+                                    x-text="selectedBom?.output_uom?.uom_code || ''"></span>
                             </div>
                         </div>
                         <div>
@@ -201,9 +331,10 @@
                                 Planned Date <span class="text-red-500">*</span>
                             </label>
                             <input type="date"
-                                   x-model="form.planned_date"
-                                   :min="today"
-                                   class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent">
+                                x-model="form.planned_date"
+                                :min="today"
+                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 transition-all font-semibold text-gray-900 shadow-inner"
+                                :value="form.planned_date">
                         </div>
                     </div>
 
@@ -235,11 +366,19 @@
                                             <td class="px-4 py-2 text-gray-900 font-medium" x-text="line.material_name"></td>
                                             <td class="px-4 py-2 text-gray-500 text-xs" x-text="line.material_code"></td>
                                             <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
-                                            <td class="px-4 py-2 text-gray-500" x-text="line.uom"></td>
+                                            <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                         </tr>
                                     </template>
                                 </tbody>
                             </table>
+                        </div>
+                        <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
+                            <p class="font-semibold mb-1">How this is calculated:</p>
+                            <ul class="space-y-1 ml-4 list-disc">
+                                <li><strong>Effective Qty</strong> = Base Qty + (Base Qty × Scrap %)</li>
+                                <li><strong>Required Qty</strong> = Effective Qty × (Target Qty ÷ Batch Size)</li>
+                                <li>Example: 5.10 × (10 ÷ 100) = 0.510 KG</li>
+                            </ul>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 flex items-center gap-1">
                             <span class="material-symbols-outlined text-xs">info</span>
@@ -252,17 +391,65 @@
 
                 <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
                     <button @click="closeModal()"
-                            class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                         Cancel
                     </button>
                     <button @click="submitOrder()"
-                            :disabled="submitting || !canSubmit()"
-                            :class="(!submitting && canSubmit()) ? 'hover:bg-orange-600' : 'opacity-50 cursor-not-allowed'"
-                            class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2">
+                        :disabled="submitting || !canSubmit()"
+                        :class="(!submitting && canSubmit()) ? 'hover:bg-orange-600' : 'opacity-50 cursor-not-allowed'"
+                        class="px-5 py-2 bg-orange-500 text-white font-semibold rounded-lg transition-colors flex items-center gap-2">
                         <span class="material-symbols-outlined text-sm" :class="submitting ? 'animate-spin' : ''"
-                              x-text="submitting ? 'progress_activity' : 'send'"></span>
+                            x-text="submitting ? 'progress_activity' : 'send'"></span>
                         <span x-text="submitting ? 'Submitting...' : 'Create & Send MIR'"></span>
                     </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Statistics Cards -->
+    <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined">pending_actions</span>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Draft Orders</p>
+                    <p class="text-xl font-bold text-gray-900" x-text="orders.filter(o => o.status === 'DRAFT').length"></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all border-l-4 border-l-blue-500">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-blue-50 text-blue-600 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined">sync</span>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">In Progress</p>
+                    <p class="text-xl font-bold text-gray-900" x-text="orders.filter(o => o.status === 'IN_PROGRESS').length"></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all border-l-4 border-l-green-500">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-green-50 text-green-600 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined">task_alt</span>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Completed</p>
+                    <p class="text-xl font-bold text-gray-900" x-text="orders.filter(o => o.status === 'COMPLETED').length"></p>
+                </div>
+            </div>
+        </div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4 shadow-sm hover:shadow-md transition-all">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 bg-orange-50 text-orange-600 rounded-lg flex items-center justify-center">
+                    <span class="material-symbols-outlined">trending_up</span>
+                </div>
+                <div>
+                    <p class="text-xs font-semibold text-gray-500 uppercase tracking-wider">Yield Avg</p>
+                    <p class="text-xl font-bold text-gray-900" x-text="orders.length > 0 ? (orders.reduce((acc, o) => acc + parseFloat(o.yield_percent || 0), 0) / orders.length).toFixed(1) + '%' : '0%'"></p>
                 </div>
             </div>
         </div>
@@ -271,35 +458,39 @@
     <!-- Page Header -->
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-xl font-bold text-gray-900">Production Orders</h2>
-            <p class="text-sm text-gray-500 mt-1">Select a product, enter target quantity — system auto-calculates RM from BOM and generates MIR for Store.</p>
+            <h2 class="text-2xl font-extrabold text-gray-900 tracking-tight">Production Execution</h2>
+            <p class="text-sm text-gray-500 mt-1">Monitor floor status, issue raw materials, and confirm finished goods production.</p>
         </div>
         <button @click="openModal()"
-                class="flex items-center gap-2 px-4 py-2 bg-orange-500 text-white font-semibold rounded-lg hover:bg-orange-600 transition-colors">
-            <span class="material-symbols-outlined text-lg">add</span>
-            New Production Order
+            class="flex items-center gap-2 px-5 py-2.5 bg-production text-white font-bold rounded-xl hover:bg-orange-600 shadow-lg shadow-orange-200 transition-all hover:-translate-y-0.5 active:translate-y-0">
+            <span class="material-symbols-outlined text-lg font-bold">add</span>
+            New Order
         </button>
     </div>
 
     <!-- Filters -->
-    <div class="bg-white rounded-xl border border-gray-200 p-4 mb-5">
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
+    <div class="bg-white/80 backdrop-blur-md rounded-2xl border border-gray-100 p-4 mb-6 shadow-sm flex flex-wrap items-center gap-4">
+        <div class="flex-1 min-w-[200px] relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">search</span>
             <input type="text" x-model="filters.search" @input.debounce.400ms="loadOrders()"
-                   placeholder="Search by order no, product..."
-                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent text-sm">
+                placeholder="Search by order no, product..."
+                class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 text-sm transition-all">
+        </div>
+        <div class="w-48 relative">
+            <span class="material-symbols-outlined absolute left-3 top-1/2 -translate-y-1/2 text-gray-400 text-lg">filter_alt</span>
             <select x-model="filters.status" @change="loadOrders()"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent text-sm">
+                class="w-full pl-10 pr-4 py-2 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 text-sm appearance-none cursor-pointer transition-all">
                 <option value="">All Status</option>
                 <option value="DRAFT">Draft</option>
                 <option value="IN_PROGRESS">In Progress</option>
                 <option value="COMPLETED">Completed</option>
                 <option value="CANCELLED">Cancelled</option>
             </select>
-            <button @click="filters.search=''; filters.status=''; loadOrders()"
-                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 text-sm transition-colors">
-                Reset
-            </button>
         </div>
+        <button @click="filters.search=''; filters.status=''; loadOrders()"
+            class="px-4 py-2 text-gray-500 hover:text-production font-medium text-sm transition-colors">
+            Clear Filters
+        </button>
     </div>
 
     <!-- Orders Table -->
@@ -308,9 +499,9 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Order No</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Product</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Target Qty</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Order & Product</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Target / Actual</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Yield & Batch</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Planned Date</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">MIR Status</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
@@ -319,51 +510,120 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-if="loading">
-                        <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">
-                            <span class="material-symbols-outlined text-4xl animate-spin block mx-auto mb-2">progress_activity</span>
-                            Loading...
-                        </td></tr>
+                        <tr>
+                            <td colspan="7" class="px-5 py-12 text-center text-gray-400">
+                                <span class="material-symbols-outlined text-4xl animate-spin block mx-auto mb-2">progress_activity</span>
+                                Loading...
+                            </td>
+                        </tr>
                     </template>
                     <template x-if="!loading && orders.length === 0">
-                        <tr><td colspan="7" class="px-5 py-12 text-center text-gray-400">
-                            <span class="material-symbols-outlined text-5xl block mx-auto mb-2">factory</span>
-                            No production orders yet. Create one to get started.
-                        </td></tr>
+                        <tr>
+                            <td colspan="7" class="px-5 py-12 text-center text-gray-400">
+                                <span class="material-symbols-outlined text-5xl block mx-auto mb-2">factory</span>
+                                No production orders yet. Create one to get started.
+                            </td>
+                        </tr>
                     </template>
                     <template x-for="order in orders" :key="order.id">
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-5 py-3 text-sm font-semibold text-gray-900" x-text="order.order_no"></td>
-                            <td class="px-5 py-3 text-sm text-gray-700">
-                                <div x-text="order.product_name"></div>
-                                <div class="text-xs text-gray-400" x-text="order.product_code"></div>
+                        <tr class="group hover:bg-orange-50/30 transition-colors">
+                            <td class="px-5 py-4">
+                                <div class="flex items-start gap-3">
+                                    <div class="mt-1 w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                                        <span class="material-symbols-outlined text-lg">precision_manufacturing</span>
+                                    </div>
+                                    <div>
+                                        <span class="text-sm font-bold text-slate-800" x-text="order.order_no"></span>
+                                        <div class="text-sm font-medium text-gray-500" x-text="order.product_name"></div>
+                                        <div class="text-[10px] text-gray-400 font-mono tracking-tight uppercase" x-text="order.product_code"></div>
+                                    </div>
+                                </div>
                             </td>
-                            <td class="px-5 py-3 text-sm text-gray-700" x-text="order.target_qty + ' ' + (order.uom || '')"></td>
-                            <td class="px-5 py-3 text-sm text-gray-600" x-text="order.planned_date"></td>
-                            <td class="px-5 py-3">
-                                <span class="px-2 py-1 text-xs rounded-full font-semibold"
-                                      :class="{
-                                          'bg-yellow-100 text-yellow-800': order.mir_status === 'PENDING',
-                                          'bg-green-100 text-green-800': order.mir_status === 'APPROVED',
-                                          'bg-red-100 text-red-800': order.mir_status === 'REJECTED',
-                                          'bg-gray-100 text-gray-600': !order.mir_status
-                                      }"
-                                      x-text="order.mir_status || '—'"></span>
+                            <td class="px-5 py-4">
+                            <td class="px-5 py-4">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-1.5 font-bold text-gray-400 text-xs">
+                                        <span>Target:</span>
+                                        <span class="text-gray-900" x-text="order.target_qty"></span>
+                                        <span class="text-[10px] font-normal uppercase" x-text="order.uom"></span>
+                                    </div>
+                                    <template x-if="order.actual_qty && order.actual_qty > 0">
+                                        <div class="flex items-center gap-1.5 font-bold text-blue-600 text-xs">
+                                            <span>Actual:</span>
+                                            <span x-text="order.actual_qty"></span>
+                                            <span class="text-[10px] font-normal uppercase" x-text="order.uom"></span>
+                                        </div>
+                                    </template>
+                                </div>
                             </td>
-                            <td class="px-5 py-3">
-                                <span class="px-2 py-1 text-xs rounded-full font-semibold"
-                                      :class="{
-                                          'bg-gray-100 text-gray-700': order.status === 'DRAFT',
-                                          'bg-blue-100 text-blue-700': order.status === 'IN_PROGRESS',
-                                          'bg-green-100 text-green-800': order.status === 'COMPLETED',
-                                          'bg-red-100 text-red-800': order.status === 'CANCELLED'
-                                      }"
-                                      x-text="order.status"></span>
+                            <td class="px-5 py-4">
+                                <div class="space-y-1">
+                                    <template x-if="order.yield_percent">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                <div class="h-full bg-green-500 rounded-full" :style="'width: ' + Math.min(order.yield_percent, 100) + '%'"></div>
+                                            </div>
+                                            <span class="text-xs font-black text-green-700" x-text="order.yield_percent + '%'"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="order.fg_batch_number">
+                                        <div class="flex items-center gap-1 text-gray-400">
+                                            <span class="material-symbols-outlined text-[10px]">qr_code_2</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-600" x-text="order.fg_batch_number"></span>
+                                        </div>
+                                    </template>
+                                </div>
                             </td>
-                            <td class="px-5 py-3 text-right">
-                                <button @click="viewOrder(order)"
-                                        class="inline-flex items-center gap-1 px-3 py-1.5 bg-gray-50 text-gray-700 hover:bg-gray-100 rounded text-xs transition-colors">
-                                    <span class="material-symbols-outlined text-sm">visibility</span> View
-                                </button>
+                            <td class="px-5 py-4 text-sm text-gray-600">
+                                <div class="font-bold" x-text="order.planned_date"></div>
+                                <div x-show="order.actual_end_at" class="text-[10px] text-gray-400 mt-0.5" x-text="'Done: ' + order.actual_end_at"></div>
+                            </td>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-col gap-1">
+                                    <template x-if="order.mir_status === 'PENDING'">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="w-1 h-1 bg-amber-500 rounded-full"></span> PENDING ISSUE
+                                        </span>
+                                    </template>
+                                    <template x-if="order.mir_status === 'APPROVED'">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1 h-1 bg-emerald-500 rounded-full"></span> ISSUED
+                                        </span>
+                                    </template>
+                                    <template x-if="order.mir_status === 'REJECTED'">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="w-1 h-1 bg-rose-500 rounded-full"></span> REJECTED
+                                        </span>
+                                    </template>
+                                    <template x-if="!order.mir_status">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-gray-50 text-gray-400 border border-gray-200">NO MIR</span>
+                                    </template>
+                                </div>
+                            </td>
+                            <td class="px-5 py-4">
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black rounded-full ring-1 ring-inset uppercase tracking-wide"
+                                    :class="{
+                                          'bg-slate-50 text-slate-700 ring-slate-200': order.status === 'DRAFT',
+                                          'bg-blue-50 text-blue-700 ring-blue-200': order.status === 'IN_PROGRESS',
+                                          'bg-emerald-50 text-emerald-700 ring-emerald-200': order.status === 'COMPLETED',
+                                          'bg-rose-50 text-rose-700 ring-rose-200': order.status === 'CANCELLED'
+                                      }">
+                                    <span x-text="order.status"></span>
+                                </span>
+                            </td>
+                            <td class="px-5 py-4 text-right">
+                                <div class="inline-flex items-center gap-1">
+                                    <button @click="viewOrder(order)"
+                                        class="p-2 text-gray-500 hover:bg-gray-100 hover:text-production rounded-lg transition-all" title="View Details">
+                                        <span class="material-symbols-outlined text-lg">visibility</span>
+                                    </button>
+                                    <template x-if="order.status === 'DRAFT'">
+                                        <button @click="startOrder(order)"
+                                            class="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-xs font-bold transition-all shadow-sm">
+                                            Start Production
+                                        </button>
+                                    </template>
+                                </div>
                             </td>
                         </tr>
                     </template>
@@ -374,233 +634,314 @@
 </div>
 
 <script>
-function productionOrders(orgSlug) {
-    return {
-        orgSlug,
-        showModal: false,
-        loading: false,
-        submitting: false,
-        orders: [],
+    function productionOrders(orgSlug) {
+        return {
+            orgSlug,
+            showModal: false,
+            loading: false,
+            submitting: false,
+            orders: [],
 
-        // Products
-        products: [],
-        productLoading: false,
+            // Products
+            products: [],
+            productLoading: false,
 
-        // BOM
-        boms: [],
-        bomLoading: false,
-        selectedBom: null,
+            // BOM
+            boms: [],
+            bomLoading: false,
+            selectedBom: null,
 
-        // RM calculation
-        rmLines: [],
-        multiplier: 0,
+            // RM calculation
+            rmLines: [],
+            multiplier: 0,
 
-        formError: '',
-        filters: { search: '', status: '' },
-        today: new Date().toISOString().split('T')[0],
+            formError: '',
+            filters: {
+                search: '',
+                status: ''
+            },
+            today: new Date().toISOString().split('T')[0],
 
-        // View modal
-        viewModal: { show: false, loading: false, order: null, rmLines: [] },
+            // View modal
+            viewModal: {
+                show: false,
+                loading: false,
+                order: null,
+                rmLines: []
+            },
+            varianceModal: {
+                show: false,
+                loading: false,
+                order: null,
+                report: null
+            },
 
-        form: {
-            product_id: '',
-            bom_id: '',
-            target_qty: '',
-            planned_date: ''
-        },
+            form: {
+                product_id: '',
+                bom_id: '',
+                target_qty: '',
+                planned_date: new Date().toISOString().split('T')[0]
+            },
 
-        async init() {
-            await this.loadOrders();
-        },
+            async init() {
+                await this.loadOrders();
+            },
 
-        // ── Products ────────────────────────────────────────────────────
-        async loadProducts() {
-            this.productLoading = true;
-            try {
-                const res = await this._fetch('/api/v1/products?is_active=1&per_page=500');
-                const data = await res.json();
-                this.products = data?.data?.products || [];
-            } catch (e) {
-                console.error('Product load failed', e);
-                this.products = [];
-            } finally {
-                this.productLoading = false;
-            }
-        },
+            // ── Products ────────────────────────────────────────────────────
+            async loadProducts() {
+                this.productLoading = true;
+                try {
+                    const res = await this._fetch('/api/v1/products?is_active=1&per_page=500');
+                    const data = await res.json();
+                    this.products = data?.data?.products || [];
+                } catch (e) {
+                    console.error('Product load failed', e);
+                    this.products = [];
+                } finally {
+                    this.productLoading = false;
+                }
+            },
 
-        onProductChange() {
-            this.form.bom_id = '';
-            this.selectedBom = null;
-            this.rmLines = [];
-            if (this.form.product_id) this.loadBoms(this.form.product_id);
-        },
+            onProductChange() {
+                this.form.bom_id = '';
+                this.selectedBom = null;
+                this.rmLines = [];
+                if (this.form.product_id) this.loadBoms(this.form.product_id);
+            },
 
-        // ── BOM loading ─────────────────────────────────────────────────
-        async loadBoms(productId) {
-            this.bomLoading = true;
-            this.boms = [];
-            try {
-                const res = await this._fetch(`/api/v1/bom-headers?product_id=${productId}&bom_status=ACTIVE`);
-                const data = await res.json();
-                // Response: data.data is a flat array
-                this.boms = Array.isArray(data?.data) ? data.data : [];
-            } catch (e) {
-                console.error('BOM load failed', e);
+            // ── BOM loading ─────────────────────────────────────────────────
+            async loadBoms(productId) {
+                this.bomLoading = true;
                 this.boms = [];
-            } finally {
-                this.bomLoading = false;
-            }
-        },
+                try {
+                    const res = await this._fetch(`/api/v1/bom-headers?product_id=${productId}&bom_status=ACTIVE`);
+                    const data = await res.json();
+                    this.boms = Array.isArray(data?.data) ? data.data : [];
 
-        onBomChange() {
-            this.selectedBom = this.boms.find(b => b.id == this.form.bom_id) || null;
-            this.rmLines = [];
-            this.multiplier = 0;
-            if (this.form.target_qty) this.calculateRM();
-        },
+                    // Default: Auto-select if at least one BOM is found
+                    if (this.boms.length > 0) {
+                        this.form.bom_id = this.boms[0].id;
+                        this.onBomChange(); // This triggers RM calculation if target_qty exists
+                    }
+                } catch (e) {
+                    console.error('BOM load failed', e);
+                    this.boms = [];
+                } finally {
+                    this.bomLoading = false;
+                }
+            },
 
-        // ── RM auto-calculation ─────────────────────────────────────────
-        async calculateRM() {
-            if (!this.form.bom_id || !this.form.target_qty || this.form.target_qty <= 0) {
+            onBomChange() {
+                this.selectedBom = this.boms.find(b => b.id == this.form.bom_id) || null;
                 this.rmLines = [];
                 this.multiplier = 0;
-                return;
-            }
-            try {
-                const res = await this._fetch(`/api/v1/bom-details?bom_id=${this.form.bom_id}`);
-                const data = await res.json();
-                // Response: data.data is a flat array
-                const details = Array.isArray(data?.data) ? data.data : [];
-                const batchSize = parseFloat(this.selectedBom?.batch_size) || 1;
-                this.multiplier = this.form.target_qty / batchSize;
+                if (this.form.target_qty) this.calculateRM();
+            },
 
-                this.rmLines = details.map(d => ({
-                    material_id:   d.material_id,
-                    material_name: d.material?.material_name || ('Material #' + d.material_id),
-                    material_code: d.material?.material_code || '',
-                    // effective_qty is a DB generated column (qty_required * (1 + scrap/100))
-                    required_qty:  (parseFloat(d.effective_qty ?? d.qty_required) * this.multiplier).toFixed(3),
-                    uom:           d.uom?.uom_code || ''
-                }));
-            } catch (e) {
-                console.error('RM calculation failed', e);
-            }
-        },
-
-        canSubmit() {
-            return this.form.product_id && this.form.bom_id && this.form.target_qty > 0 && this.form.planned_date;
-        },
-
-        // ── Submit ──────────────────────────────────────────────────────
-        async submitOrder() {
-            this.formError = '';
-            if (!this.canSubmit()) {
-                this.formError = 'Please fill all required fields.';
-                return;
-            }
-            this.submitting = true;
-            try {
-                const res = await this._fetch('/api/v1/production-orders', {
-                    method: 'POST',
-                    body: JSON.stringify({
-                        product_id:   this.form.product_id,
-                        bom_id:       this.form.bom_id,
-                        target_qty:   this.form.target_qty,
-                        planned_date: this.form.planned_date,
-                        rm_lines:     this.rmLines
-                    })
-                });
-                const data = await res.json();
-                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to create order');
-                this.closeModal();
-                // Redirect to MIR page so user can see the generated MIR
-                window.location.href = `/org/${this.orgSlug}/production/mir`;
-            } catch (e) {
-                this.formError = e.message || 'An error occurred. Please try again.';
-            } finally {
-                this.submitting = false;
-            }
-        },
-
-        // ── Orders list ─────────────────────────────────────────────────
-        async loadOrders() {
-            this.loading = true;
-            try {
-                const params = new URLSearchParams();
-                if (this.filters.search) params.append('search', this.filters.search);
-                if (this.filters.status) params.append('status', this.filters.status);
-                const res = await this._fetch(`/api/v1/production-orders?${params}`);
-                const data = await res.json();
-                this.orders = data?.data?.orders || data?.data || [];
-            } catch (e) {
-                console.error('Failed to load orders', e);
-                this.orders = [];
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async viewOrder(order) {
-            this.viewModal.show = true;
-            this.viewModal.loading = true;
-            this.viewModal.order = order;
-            this.viewModal.rmLines = [];
-            try {
-                const res = await this._fetch(`/api/v1/production-orders/${order.id}`);
-                const data = await res.json();
-                const detail = data?.data?.order;
-                if (detail) {
-                    this.viewModal.order = {
-                        ...order,
-                        ...detail,
-                        product_name: detail.product?.product_name || order.product_name,
-                        product_code: detail.product?.product_code || order.product_code,
-                        uom: detail.bom?.output_uom?.uom_code || order.uom,
-                    };
-                    // MIR lines come from the nested mir.lines
-                    this.viewModal.rmLines = (detail.mir?.lines || []).map(l => ({
-                        material_name: l.material?.material_name || '—',
-                        material_code: l.material?.material_code || '',
-                        required_qty:  l.required_qty,
-                        uom:           l.uom?.uom_code || ''
-                    }));
+            // ── RM auto-calculation ─────────────────────────────────────────
+            async calculateRM() {
+                if (!this.form.bom_id || !this.form.target_qty || this.form.target_qty <= 0) {
+                    this.rmLines = [];
+                    this.multiplier = 0;
+                    return;
                 }
-            } catch (e) {
-                console.error('Failed to load order detail', e);
-            } finally {
-                this.viewModal.loading = false;
+                try {
+                    const res = await this._fetch(`/api/v1/bom-details?bom_id=${this.form.bom_id}`);
+                    const data = await res.json();
+                    // Response: data.data is a flat array
+                    const details = Array.isArray(data?.data) ? data.data : [];
+                    const batchSize = parseFloat(this.selectedBom?.batch_size) || 1;
+                    this.multiplier = this.form.target_qty / batchSize;
+
+                    this.rmLines = details.map(d => ({
+                        material_id: d.material_id,
+                        material_name: d.material?.material_name || ('Material #' + d.material_id),
+                        material_code: d.material?.material_code || '',
+                        // effective_qty is a DB generated column (qty_required * (1 + scrap/100))
+                        required_qty: (parseFloat(d.effective_qty ?? d.qty_required) * this.multiplier).toFixed(3),
+                        uom: d.uom ? {
+                            uom_code: d.uom.uom_code,
+                            uom_name: d.uom.uom_name
+                        } : (d.uom_code || '')
+                    }));
+                } catch (e) {
+                    console.error('RM calculation failed', e);
+                }
+            },
+
+            canSubmit() {
+                return this.form.product_id && this.form.bom_id && this.form.target_qty > 0 && this.form.planned_date;
+            },
+
+            // ── Submit ──────────────────────────────────────────────────────
+            async submitOrder() {
+                this.formError = '';
+                if (!this.canSubmit()) {
+                    this.formError = 'Please fill all required fields.';
+                    return;
+                }
+                this.submitting = true;
+                try {
+                    const res = await this._fetch('/api/v1/production-orders', {
+                        method: 'POST',
+                        body: JSON.stringify({
+                            product_id: this.form.product_id,
+                            bom_id: this.form.bom_id,
+                            target_qty: this.form.target_qty,
+                            planned_date: this.form.planned_date,
+                            rm_lines: this.rmLines
+                        })
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.message || 'Failed to create order');
+                    this.closeModal();
+                    // Redirect to Warehouse MIR page so user can see the generated MIR
+                    window.location.href = `/org/${this.orgSlug}/warehouse/mir`;
+                } catch (e) {
+                    this.formError = e.message || 'An error occurred. Please try again.';
+                } finally {
+                    this.submitting = false;
+                }
+            },
+
+            // ── Orders list ─────────────────────────────────────────────────
+            async loadOrders() {
+                this.loading = true;
+                try {
+                    const params = new URLSearchParams();
+                    if (this.filters.search) params.append('search', this.filters.search);
+                    if (this.filters.status) params.append('status', this.filters.status);
+                    const res = await this._fetch(`/api/v1/production-orders?${params}`);
+                    const data = await res.json();
+                    this.orders = data?.data?.orders || data?.data || [];
+                } catch (e) {
+                    console.error('Failed to load orders', e);
+                    this.orders = [];
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            async viewOrder(order) {
+                this.viewModal.show = true;
+                this.viewModal.loading = true;
+                this.viewModal.order = order;
+                this.viewModal.rmLines = [];
+                try {
+                    const res = await this._fetch(`/api/v1/production-orders/${order.id}`);
+                    const data = await res.json();
+                    const detail = data?.data?.order;
+                    if (detail) {
+                        this.viewModal.order = {
+                            ...order,
+                            ...detail,
+                            product_name: detail.product?.product_name || order.product_name,
+                            product_code: detail.product?.product_code || order.product_code,
+                            uom: detail.bom?.output_uom?.uom_code || order.uom,
+                        };
+                        // MIR lines come from the nested mir.lines
+                        this.viewModal.rmLines = (detail.mir?.lines || []).map(l => ({
+                            material_name: l.material?.material_name || '—',
+                            material_code: l.material?.material_code || '',
+                            required_qty: l.required_qty,
+                            uom: l.uom ? {
+                                uom_code: l.uom.uom_code,
+                                uom_name: l.uom.uom_name
+                            } : (l.uom_code || '')
+                        }));
+                    }
+                } catch (e) {
+                    console.error('Failed to load order detail', e);
+                } finally {
+                    this.viewModal.loading = false;
+                }
+            },
+
+            async startOrder(order) {
+                const confirmed = confirm(`Start production for ${order.order_no}?`);
+                if (!confirmed) return;
+                try {
+                    const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, {
+                        method: 'POST'
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start production');
+                    await this.loadOrders();
+                    if (this.viewModal.show && this.viewModal.order?.id === order.id) {
+                        await this.viewOrder({
+                            ...order,
+                            status: 'IN_PROGRESS'
+                        });
+                    }
+                } catch (e) {
+                    alert(e.message || 'Failed to start production');
+                }
+            },
+
+
+            async openVarianceModal(order) {
+                this.varianceModal = {
+                    show: true,
+                    loading: true,
+                    order,
+                    report: null
+                };
+                try {
+                    const res = await this._fetch(`/api/v1/production-orders/${order.id}/variance`);
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load variance report');
+                    this.varianceModal.report = data.data;
+                } catch (e) {
+                    alert(e.message || 'Failed to load variance report');
+                    this.closeVarianceModal();
+                } finally {
+                    this.varianceModal.loading = false;
+                }
+            },
+
+            closeVarianceModal() {
+                this.varianceModal = {
+                    show: false,
+                    loading: false,
+                    order: null,
+                    report: null
+                };
+            },
+
+            openModal() {
+                this.form = {
+                    product_id: '',
+                    bom_id: '',
+                    target_qty: '',
+                    planned_date: ''
+                };
+                this.boms = [];
+                this.selectedBom = null;
+                this.rmLines = [];
+                this.multiplier = 0;
+                this.formError = '';
+                this.showModal = true;
+                this.loadProducts();
+            },
+
+            closeModal() {
+                this.showModal = false;
+            },
+
+            // ── Shared fetch helper ─────────────────────────────────────────
+            _fetch(url, options = {}) {
+                return fetch(url, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || '')
+                    },
+                    ...options
+                });
             }
-        },
-
-        openModal() {
-            this.form = { product_id: '', bom_id: '', target_qty: '', planned_date: '' };
-            this.boms = [];
-            this.selectedBom = null;
-            this.rmLines = [];
-            this.multiplier = 0;
-            this.formError = '';
-            this.showModal = true;
-            this.loadProducts();
-        },
-
-        closeModal() {
-            this.showModal = false;
-        },
-
-        // ── Shared fetch helper ─────────────────────────────────────────
-        _fetch(url, options = {}) {
-            return fetch(url, {
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || '')
-                },
-                ...options
-            });
         }
     }
-}
 </script>
 @endsection

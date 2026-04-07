@@ -32,6 +32,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'validate.jwt' => \App\Http\Middleware\ValidateJWT::class,
             'web.jwt' => \App\Http\Middleware\WebJWTAuth::class,
             'resolve.tenant' => \App\Http\Middleware\ResolveTenant::class,
+            'switch.tenant.db' => \App\Http\Middleware\SwitchTenantDatabase::class,
             'validate.subscription' => \App\Http\Middleware\ValidateSubscription::class,
             'check.module.permission' => \App\Http\Middleware\CheckModulePermission::class,
             'detect.tenant' => \App\Http\Middleware\DetectTenantContext::class,

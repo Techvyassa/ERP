@@ -87,13 +87,6 @@
                             <span x-show="sidebarOpen" class="font-medium">BOM </span>
                         </a>
                     </li>
-                    <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/bom-detail' : "/org/{$organization->org_slug}/bom-detail") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.bom-detail.*') ? 'bg-orange-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">format_list_numbered</span>
-                            <span x-show="sidebarOpen" class="font-medium">BOM Detail</span>
-                        </a>
-                    </li>
                 </ul>
             </nav>
 

@@ -17,9 +17,7 @@ use Illuminate\Support\Facades\DB;
  */
 class StockQueryService
 {
-    public function __construct(protected StockService $stockService)
-    {
-    }
+    public function __construct(protected StockService $stockService) {}
 
     /**
      * getAvailableStock — ATP (Available to Promise) check.
@@ -98,7 +96,7 @@ class StockQueryService
                     'on_hand'       => $rows->sum(fn($r) => (float) $r->qty_on_hand),
                     'available'     => $rows->where('bucket', 'AVAILABLE')->sum(fn($r) => $r->available_qty),
                     'qc_hold'       => $rows->where('bucket', 'QC_HOLD')->sum(fn($r) => (float) $r->qty_on_hand),
-                    'putaway_pending'=> $rows->where('bucket', 'PUTAWAY_PENDING')->sum(fn($r) => (float) $r->qty_on_hand),
+                    'putaway_pending' => $rows->where('bucket', 'PUTAWAY_PENDING')->sum(fn($r) => (float) $r->qty_on_hand),
                     'blocked'       => $rows->where('bucket', 'BLOCKED')->sum(fn($r) => (float) $r->qty_on_hand),
                     'reserved'      => $rows->sum(fn($r) => (float) $r->qty_reserved),
                 ];
@@ -144,7 +142,7 @@ class StockQueryService
         if ($available < $requiredQty) {
             throw new \Exception(
                 "Insufficient stock for material #{$materialId}. " .
-                "Required: {$requiredQty}, Available: {$available}"
+                    "Required: {$requiredQty}, Available: {$available}"
             );
         }
     }

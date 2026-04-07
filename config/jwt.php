@@ -101,7 +101,7 @@ return [
     |
     */
 
-    'ttl' => env('JWT_TTL', 60),
+    'ttl' => env('JWT_TTL', 1440), // 24 hours (must match TokenService::ACCESS_TOKEN_TTL)
 
     /*
     |--------------------------------------------------------------------------

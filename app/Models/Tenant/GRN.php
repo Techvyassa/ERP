@@ -126,7 +126,7 @@ class GRN extends Model
     {
         // Allow editing in PROVISIONAL, QC_PENDING, and post-QC statuses (ACCEPTED/REJECTED/PARTIALLY_ACCEPTED)
         // Store/QC departments can adjust quantities after QC decision but before final putaway completion
-        return in_array($this->status, ['PROVISIONAL', 'QC_PENDING', 'ACCEPTED', 'REJECTED', 'PARTIALLY_ACCEPTED']);
+        return in_array($this->status, ['PROVISIONAL', 'QC_PENDING', 'PUTAWAY_IN_PROGRESS', 'ACCEPTED', 'REJECTED', 'PARTIALLY_ACCEPTED']);
     }
 
     /**

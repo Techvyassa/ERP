@@ -447,12 +447,6 @@
                     </div>
                 </div>
                 <div class="p-6 space-y-6 text-sm" x-show="selectedGRN" id="grnPrintContent">
-                    <!-- Watermark -->
-                    <div class="fixed inset-0 flex items-center justify-center pointer-events-none opacity-10 z-0" style="transform: rotate(-45deg);">
-                        <div class="text-center">
-                            <p class="text-6xl font-bold text-gray-400" x-text="'Downloaded: ' + new Date().toLocaleString('en-IN')"></p>
-                        </div>
-                    </div>
 
                     <!-- Header Info -->
                     <div class="grid grid-cols-4 gap-4 pb-4 border-b border-gray-200">
@@ -466,7 +460,7 @@
                         </div>
                         <div>
                             <p class="text-xs text-gray-500 font-semibold">Gate Entry No</p>
-                            <p class="font-medium" x-text="selectedGRN?.gate_entry?.ge_number || '—'"></p>
+                            <p class="font-medium" x-text="selectedGRN?.gate_entry?.ge_number || selectedGRN?.material_receipt?.mr_number || '—'"></p>
                         </div>
                         <div>
                             <p class="text-xs text-gray-500 font-semibold">PO Number</p>
@@ -503,8 +497,6 @@
                                     <tr>
                                         <th class="text-left px-3 py-2 font-semibold text-gray-700">Item Description</th>
                                         <th class="text-left px-3 py-2 font-semibold text-gray-700">HSN Code</th>
-                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Ordered Qty</th>
-                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Received Qty</th>
                                         <th class="text-right px-3 py-2 font-semibold text-gray-700">Accepted Qty</th>
                                         <th class="text-right px-3 py-2 font-semibold text-gray-700">Rejected Qty</th>
                                         <th class="text-left px-3 py-2 font-semibold text-gray-700">Unit</th>
@@ -512,7 +504,6 @@
                                         <th class="text-right px-3 py-2 font-semibold text-gray-700">Amount</th>
                                         <th class="text-left px-3 py-2 font-semibold text-gray-700">Batch</th>
                                         <th class="text-left px-3 py-2 font-semibold text-gray-700">Bin</th>
-                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">QC Result</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
@@ -520,33 +511,21 @@
                                         <tr class="hover:bg-gray-50">
                                             <td class="px-3 py-2" x-text="line.material?.material_name || line.material_name || '—'"></td>
                                             <td class="px-3 py-2" x-text="line.material?.hsn_code?.hsn_code || line.hsn_code || '—'"></td>
-                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.po_line_item?.ordered_qty || line.ordered_qty || '—'"></td>
-                                            <td class="px-3 py-2 text-right" x-text="line.mr_line_item?.received_qty || line.received_qty || '—'"></td>
                                             <td class="px-3 py-2 text-right font-semibold text-green-600" x-text="line.accepted_qty !== null && line.accepted_qty !== undefined ? parseFloat(line.accepted_qty).toFixed(3) : '—'"></td>
                                             <td class="px-3 py-2 text-right text-red-600" x-text="line.rejected_qty !== null && line.rejected_qty !== undefined ? parseFloat(line.rejected_qty).toFixed(3) : '—'"></td>
                                             <td class="px-3 py-2" x-text="line.uom?.uom_code || line.uom_code || '—'"></td>
                                             <td class="px-3 py-2 text-right" x-text="'₹' + parseFloat(line.unit_price || 0).toFixed(2)"></td>
                                             <td class="px-3 py-2 text-right font-semibold" x-text="'₹' + parseFloat(line.line_value || 0).toFixed(2)"></td>
                                             <td class="px-3 py-2" x-text="line.batch_number || '—'"></td>
-                                            <td class="px-3 py-2" x-text="line.warehouse_bin?.bin_code || line.bin_code || '—'"></td>
-                                            <td class="px-3 py-2">
-                                                <span class="px-2 py-0.5 rounded-full text-[10px] font-bold"
-                                                    :class="{
-                                                        'bg-green-100 text-green-700': line.stock_status === 'UNRESTRICTED',
-                                                        'bg-red-100 text-red-700': line.stock_status === 'BLOCKED',
-                                                        'bg-amber-100 text-amber-700': line.stock_status === 'RESTRICTED' || !line.stock_status
-                                                    }"
-                                                    x-text="line.stock_status ? line.stock_status.replace(/_/g, ' ') : 'PENDING'">
-                                                </span>
-                                            </td>
+                                            <td class="px-3 py-2" x-text="line.warehouse_bin?.bin_code || 'Not Assigned'"></td>
                                         </tr>
                                     </template>
                                 </tbody>
                                 <tfoot class="bg-gray-50 border-t-2 border-gray-300">
                                     <tr>
-                                        <td colspan="8" class="px-3 py-2 text-right font-bold">Total:</td>
+                                        <td colspan="6" class="px-3 py-2 text-right font-bold">Total:</td>
                                         <td class="px-3 py-2 text-right font-bold" x-text="'₹' + parseFloat(selectedGRN?.grand_total || 0).toFixed(2)"></td>
-                                        <td colspan="3"></td>
+                                        <td colspan="2"></td>
                                     </tr>
                                 </tfoot>
                             </table>
@@ -636,7 +615,10 @@ function grnData() {
                     // Client-side filter by gate entry number if specified
                     if (this.filters.ge_number) {
                         const needle = this.filters.ge_number.toLowerCase();
-                        grns = grns.filter(g => g.gate_entry?.ge_number?.toLowerCase().includes(needle));
+                        grns = grns.filter(g => 
+                            g.gate_entry?.ge_number?.toLowerCase().includes(needle) ||
+                            g.material_receipt?.mr_number?.toLowerCase().includes(needle)
+                        );
                     }
                     this.grns = grns;
                     this.pagination = { current_page: data.data.current_page, last_page: data.data.last_page, from: data.data.from || 0, to: data.data.to || 0, total: data.data.total || 0 };

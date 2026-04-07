@@ -17,15 +17,15 @@ class ProductController extends Controller
         try {
             $query = Product::with(['packUom', 'hsnCode']);
 
-            if ($request->has('is_active')) {
+            if ($request->filled('is_active')) {
                 $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
             }
 
-            if ($request->has('product_category')) {
+            if ($request->filled('product_category')) {
                 $query->where('product_category', $request->input('product_category'));
             }
 
-            if ($request->has('search')) {
+            if ($request->filled('search')) {
                 $search = $request->input('search');
                 $query->where(function ($q) use ($search) {
                     $q->where('product_code', 'like', "%{$search}%")
@@ -190,50 +190,73 @@ class ProductController extends Controller
     {
         $requestId = Str::uuid()->toString();
 
-        // Auto-generate product code if not provided or auto_generate_code is checked
-        $productCode = $request->input('product_code');
-        $autoGenerate = $request->input('auto_generate_code');
-        $productCategory = $request->input('product_category');
-        
-        \Log::info('Product creation debug:', [
-            'product_code_input' => $productCode,
-            'auto_generate_code' => $autoGenerate,
-            'product_category' => $productCategory,
-            'all_request_data' => $request->all()
-        ]);
-        
-        if (empty($productCode) || $autoGenerate) {
-            $productCode = $this->generateProductCode($productCategory);
-            \Log::info('Generated product code: ' . $productCode);
+        \DB::beginTransaction();
+        try {
+            // Auto-generate product code if not provided or auto_generate_code is checked
+            $productCode = $request->input('product_code');
+            $autoGenerate = $request->input('auto_generate_code');
+            $productCategory = $request->input('product_category');
             
-            // Override the request data with generated code
-            $request->merge(['product_code' => $productCode]);
+            if (empty($productCode) || $autoGenerate) {
+                $productCode = $this->generateProductCode($productCategory ?: 'DEFAULT');
+                $request->merge(['product_code' => $productCode]);
+            }
+            
+            $validator = Validator::make($request->all(), [
+                'product_code' => 'required|string|max:30|unique:tenant.product_master,product_code',
+                'product_name' => 'required|string|max:200',
+                'product_category' => 'nullable|string|max:60',
+                'pack_size' => 'required|numeric|min:0',
+                'pack_uom_id' => 'required|integer|exists:tenant.uom_master,id',
+                'hsn_code_id' => 'required|integer|exists:tenant.hsn_codes,id',
+                'standard_cost' => 'nullable|numeric|min:0',
+                'mrp' => 'nullable|numeric|min:0',
+            ]);
+
+            if ($validator->fails()) {
+                \DB::rollBack();
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                    'message' => 'Validation failed',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 422);
+            }
+
+            $product = Product::create($request->all());
+            
+            \DB::commit();
+            return response()->json(['success' => true, 'data' => ['product' => $product], 'message' => 'Product created successfully', 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 201);
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to create product: ' . $e->getMessage(), 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 500);
         }
-        
-        \Log::info('Final request data before validation:', $request->all());
+    }
+
+    /**
+     * Bulk create products
+     * POST /api/v1/products/bulk
+     */
+    public function bulkStore(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
 
         $validator = Validator::make($request->all(), [
-            'product_code' => 'sometimes|string|max:30|unique:tenant.product_master,product_code',
-            'product_name' => 'required|string|max:200',
-            'product_category' => 'nullable|string|max:60',
-            'pack_size' => 'required|numeric|min:0',
-            'pack_uom_id' => 'required|integer|exists:tenant.uom_master,id',
-            'hsn_code_id' => 'required|integer|exists:tenant.hsn_codes,id',
-            'standard_cost' => 'nullable|numeric|min:0',
-            'mrp' => 'nullable|numeric|min:0',
-            'auto_generate_code' => 'sometimes|boolean',
-            'manual_prefix' => 'nullable|string|max:10',
-            'manual_number' => 'nullable|string|max:10',
+            'products' => 'required|array|min:1|max:50',
+            'products.*.product_name' => 'required|string|max:200',
+            'products.*.product_category' => 'nullable|string|max:60',
+            'products.*.pack_size' => 'required|numeric|min:0',
+            'products.*.pack_uom_id' => 'required|integer|exists:tenant.uom_master,id',
+            'products.*.hsn_code_id' => 'required|integer|exists:tenant.hsn_codes,id',
+            'products.*.standard_cost' => 'nullable|numeric|min:0',
+            'products.*.mrp' => 'nullable|numeric|min:0',
         ]);
 
         if ($validator->fails()) {
-            \Log::error('Product validation failed:', $validator->errors()->toArray());
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'VALIDATION_ERROR',
-                    'details' => $validator->errors()
-                ],
+                'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
                 'message' => 'Validation failed',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String()
@@ -241,31 +264,48 @@ class ProductController extends Controller
         }
 
         try {
-            $product = Product::create(array_merge(
-                $request->all(),
-                ['is_active' => true]
-            ));
+            $created = [];
+            $errors = [];
+            \DB::beginTransaction();
 
-            return response()->json([
-                'success' => true,
-                'data' => [
-                    'product' => $product
-                ],
-                'message' => 'Product created successfully',
-                'request_id' => $requestId,
-                'timestamp' => now()->toIso8601String()
-            ], 201);
+            $typeCounters = [];
+
+            foreach ($request->input('products') as $index => $item) {
+                try {
+                    $category = $item['product_category'] ?? 'DEFAULT';
+                    if (!isset($typeCounters[$category])) {
+                        $typeCounters[$category] = 0;
+                    }
+                    $offset = $typeCounters[$category];
+                    $typeCounters[$category]++;
+
+                    $productCode = $this->generateProductCode($category, $offset);
+
+                    $product = Product::create(array_merge($item, [
+                        'product_code' => $productCode,
+                        'is_active' => true
+                    ]));
+
+                    $created[] = $product;
+                } catch (\Exception $e) {
+                    $errors[] = [
+                        'row' => $index + 1,
+                        'name' => $item['product_name'] ?? 'Unknown',
+                        'error' => $e->getMessage()
+                    ];
+                }
+            }
+
+            if (!empty($errors) && empty($created)) {
+                \DB::rollBack();
+                return response()->json(['success' => false, 'error' => ['code' => 'BULK_CREATE_FAILED', 'details' => $errors], 'message' => 'All products failed to create', 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 422);
+            }
+
+            \DB::commit();
+            return response()->json(['success' => true, 'data' => ['created' => $created, 'created_count' => count($created), 'errors' => $errors, 'error_count' => count($errors)], 'message' => count($created) . ' product(s) created successfully', 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 201);
         } catch (\Exception $e) {
-            return response()->json([
-                'success' => false,
-                'error' => [
-                    'code' => 'PRODUCT_CREATION_FAILED',
-                    'details' => []
-                ],
-                'message' => 'Failed to create product: ' . $e->getMessage(),
-                'request_id' => $requestId,
-                'timestamp' => now()->toIso8601String()
-            ], 500);
+            \DB::rollBack();
+            return response()->json(['success' => false, 'message' => 'Failed to bulk create products: ' . $e->getMessage(), 'request_id' => $requestId, 'timestamp' => now()->toIso8601String()], 500);
         }
     }
 
@@ -354,41 +394,43 @@ class ProductController extends Controller
         }
     }
 
-    private function generateProductCode(string $productCategory): string
+    private function generateProductCode(string $productCategory, int $offset = 0): string
     {
-        $prefix = match($productCategory) {
+        $prefix = match(strtoupper($productCategory)) {
+            'AGRICULTURE' => 'AGRO',
+            'SPICES' => 'SPCE',
+            'PULSES' => 'PULS',
+            'GRAINS' => 'GRIN',
+            'SEEDS' => 'SEED',
             'ELECTRONICS' => 'ELEC',
-            'CLOTHING' => 'CLO',
-            'FOOD' => 'FD',
-            'BEVERAGES' => 'BEV',
-            'FURNITURE' => 'FUR',
-            'TOYS' => 'TOY',
-            'BOOKS' => 'BK',
-            'SPORTS' => 'SP',
-            'BEAUTY' => 'BEA',
-            'AUTOMOTIVE' => 'AUTO',
+            'FOOD' => 'FOOD',
             default => 'PROD'
         };
 
-        \Log::info('Generating product code for category: ' . $productCategory . ' with prefix: ' . $prefix);
+        // Fetch all codes with this prefix to correctly find the maximum serial number
+        $existingCodes = Product::where('product_code', 'like', $prefix . '-%')
+            ->pluck('product_code')
+            ->toArray();
 
-        // Get the last product code for this category
-        $lastCode = Product::where('product_code', 'like', $prefix . '-%')
-            ->orderBy('product_code', 'desc')
-            ->value('product_code');
-
-        \Log::info('Last product code found: ' . ($lastCode ?? 'none'));
-
-        $nextNumber = 1;
-        if ($lastCode) {
-            $parts = explode('-', $lastCode);
-            if (isset($parts[1]) && is_numeric($parts[1])) {
-                $nextNumber = (int)$parts[1] + 1;
+        $maxNumber = 0;
+        foreach ($existingCodes as $code) {
+            $parts = explode('-', $code);
+            if (count($parts) >= 2 && is_numeric($parts[1])) {
+                $num = (int)$parts[1];
+                if ($num > $maxNumber) $maxNumber = $num;
             }
         }
 
-        $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
-        \Log::info('Final generated product code: ' . $generatedCode);
+        $nextNumber = $maxNumber + 1 + $offset;
+
+        // Ensure absolutely unique code by brute-force checking in a loop (handles gaps/concurrency)
+        do {
+            $generatedCode = $prefix . '-' . str_pad($nextNumber, 4, '0', STR_PAD_LEFT);
+            $exists = Product::where('product_code', $generatedCode)->exists();
+            if ($exists) {
+                $nextNumber++;
+            }
+        } while ($exists);
 
         return $generatedCode;
     }

@@ -11,9 +11,15 @@ class InspectionLot extends Model
 
     protected $fillable = [
         'lot_number',
+        'source_type',
         'grn_id',
         'grn_line_id',
+        'production_order_id',
         'material_id',
+        'product_id',
+        'warehouse_id',
+        'bin_id',
+        'batch_number',
         'lot_qty',
         'sample_size',
         'sampling_method',
@@ -43,6 +49,11 @@ class InspectionLot extends Model
         return $this->belongsTo(GRN::class, 'grn_id');
     }
 
+    public function productionOrder()
+    {
+        return $this->belongsTo(ProductionOrder::class, 'production_order_id');
+    }
+
     /**
      * Get the GRN line item
      */
@@ -65,6 +76,21 @@ class InspectionLot extends Model
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_id');
+    }
+
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
+    }
+
+    public function warehouse()
+    {
+        return $this->belongsTo(Warehouse::class, 'warehouse_id');
+    }
+
+    public function bin()
+    {
+        return $this->belongsTo(BinLocation::class, 'bin_id');
     }
 
     /**
@@ -177,5 +203,10 @@ class InspectionLot extends Model
     public function scopeByGRN($query, int $grnId)
     {
         return $query->where('grn_id', $grnId);
+    }
+
+    public function scopeByProductionOrder($query, int $productionOrderId)
+    {
+        return $query->where('production_order_id', $productionOrderId);
     }
 }

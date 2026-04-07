@@ -30,7 +30,9 @@ class QCController extends Controller
         try {
             $query = InspectionLot::with([
                 'grn',
+                'productionOrder.product',
                 'material',
+                'product',
                 'assignedTechnician',
                 'testResults',
                 'usageDecision.decisionMaker'
@@ -78,7 +80,9 @@ class QCController extends Controller
             $lot = InspectionLot::with([
                 'grn.lineItems',
                 'grnLineItem.material',
+                'productionOrder.product',
                 'material',
+                'product',
                 'assignedTechnician',
                 'testResults',
                 'usageDecision'
@@ -253,8 +257,10 @@ class QCController extends Controller
             // Validate manually
             $validator = \Validator::make($jsonData, [
                 'decision' => 'required|in:ACCEPTED,REJECTED,CONDITIONALLY_ACCEPTED,REWORK_REQUIRED',
-                'accepted_qty' => 'nullable|numeric|gt:0',
-                'rejected_qty' => 'nullable|numeric|gt:0',
+                'accepted_qty' => 'nullable|numeric|gte:0',
+                'rejected_qty' => 'nullable|numeric|gte:0',
+                'return_qty' => 'nullable|numeric|gte:0',
+                'return_remarks' => 'nullable|string|max:500',
                 'override_approved_by' => 'nullable|integer',
                 'override_reason' => 'nullable|string|max:500',
                 'coa_file_path' => 'nullable|string|max:500',
@@ -298,7 +304,7 @@ class QCController extends Controller
     public function pending(): JsonResponse
     {
         try {
-            $lots = InspectionLot::with(['grn', 'material', 'assignedTechnician'])
+            $lots = InspectionLot::with(['grn', 'productionOrder.product', 'material', 'product', 'assignedTechnician'])
                 ->pending()
                 ->get();
             
@@ -320,7 +326,7 @@ class QCController extends Controller
     public function inProgress(): JsonResponse
     {
         try {
-            $lots = InspectionLot::with(['grn', 'material', 'assignedTechnician', 'testResults'])
+            $lots = InspectionLot::with(['grn', 'productionOrder.product', 'material', 'product', 'assignedTechnician', 'testResults'])
                 ->inProgress()
                 ->get();
             
@@ -342,7 +348,7 @@ class QCController extends Controller
     public function completed(): JsonResponse
     {
         try {
-            $lots = InspectionLot::with(['grn', 'material', 'assignedTechnician', 'testResults', 'usageDecision'])
+            $lots = InspectionLot::with(['grn', 'productionOrder.product', 'material', 'product', 'assignedTechnician', 'testResults', 'usageDecision'])
                 ->completed()
                 ->get();
             
@@ -364,7 +370,7 @@ class QCController extends Controller
     public function byGRN(int $grnId): JsonResponse
     {
         try {
-            $lots = InspectionLot::with(['grn', 'material', 'testResults', 'usageDecision'])
+            $lots = InspectionLot::with(['grn', 'productionOrder.product', 'material', 'product', 'testResults', 'usageDecision'])
                 ->byGRN($grnId)
                 ->get();
             
@@ -376,6 +382,25 @@ class QCController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to fetch inspection lots: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    public function byProductionOrder(int $productionOrderId): JsonResponse
+    {
+        try {
+            $lots = InspectionLot::with(['productionOrder.product', 'product', 'testResults', 'usageDecision'])
+                ->byProductionOrder($productionOrderId)
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $lots,
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch production inspection lots: ' . $e->getMessage(),
             ], 500);
         }
     }

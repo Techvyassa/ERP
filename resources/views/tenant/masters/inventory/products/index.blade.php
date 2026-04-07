@@ -1,194 +1,149 @@
 @extends('tenant.layouts.inventory')
 
-@section('title', 'Products')
+@section('title', 'Product Master')
 @section('page-title', 'Product Master')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:opsz,wght,FILL@20..48,100..700,0..1" rel="stylesheet">
 <style>
- .barcode-container {
-     text-align: center;
-     padding: 20px;
-     border: 1px solid #ccc;
-     display: inline-block;
- }
- div.b128 {
-     border-left: 1px solid black;
-     height: 30px;
-     margin-left: 1px;
-     width: 2px;
-     display: inline-block;
- }
- .product-name {
-     font-size: 16px;
-     font-weight: bold;
-     margin-bottom: 10px;
- }
- .product-code {
-     font-size: 14px;
-     margin-top: 8px;
-     color: #666;
- }
- @media print {
-     body { margin: 0; }
-     .barcode-container { border: none; }
- }
+    .card { background: white; border-radius: 12px; border: 1px solid #e5e7eb; box-shadow: 0 1px 3px rgba(0,0,0,0.05); }
+    .status-active { background: #ecfdf5; color: #065f46; border: 1px solid #d1fae5; }
+    .status-inactive { background: #fef2f2; color: #991b1b; border: 1px solid #fee2e2; }
+    [x-cloak] { display: none !important; }
 </style>
 @endpush
 
 @section('content')
-<div x-data="productData()" x-init="loadData()">
-    <!-- Barcode Modal -->
-    <div x-show="barcodeModal.show"
-         x-cloak
-         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
-         @click.self="closeBarcodeModal()">
-        <div class="bg-white rounded-lg shadow-xl max-w-md w-full mx-4" @click.stop>
-            <div class="p-6">
-                <div class="flex items-center justify-between mb-4">
-                    <h3 class="text-lg font-semibold text-gray-900">Product Barcode</h3>
-                    <button @click="closeBarcodeModal()" class="text-gray-400 hover:text-gray-600">
-                        <i class="fas fa-times"></i>
-                    </button>
-                </div>
-
-                <div id="barcode-content" class="barcode-container">
-                    <template x-if="barcodeModal.product">
-                        <div>
-                            <div class="product-name" x-text="barcodeModal.product.product_name"></div>
-                            <div x-show="barcodeModal.loading" class="text-sm text-gray-500">Generating barcode...</div>
-                            <div x-show="!barcodeModal.loading && barcodeModal.error" class="text-sm text-red-600" x-text="barcodeModal.error"></div>
-                            <div class="mt-3" x-show="!barcodeModal.loading && !barcodeModal.error" x-html="barcodeModal.barcodeHtml"></div>
-                            <div class="product-code" x-show="!barcodeModal.loading && !barcodeModal.error" x-text="barcodeModal.product.product_code"></div>
-                        </div>
-                    </template>
-                </div>
-
-                <div class="flex justify-end space-x-3 mt-6">
-                    <button @click="closeBarcodeModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                        Cancel
-                    </button>
-                    <button @click="printBarcode()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
-                        <i class="fas fa-print mr-2"></i>
-                        Print Barcode
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
-
+<div x-data="productDashboard()" x-init="loadData()" class="space-y-6 max-w-[1600px] mx-auto">
     <!-- Header -->
-    <div class="bg-white rounded-xl shadow p-6 mb-6">
-        <div class="flex items-center justify-between">
-            <div>
-                <h2 class="text-2xl font-bold text-gray-900">Product Master</h2>
-                <p class="text-gray-600 mt-1">Manage finished goods and product catalog</p>
-            </div>
+    <div class="flex items-center justify-between mb-2">
+        <div>
+            <h1 class="text-2xl font-bold text-gray-900">Product Master</h1>
+            <p class="text-gray-500 text-sm">Manage finished goods and pricing</p>
+        </div>
+        <div class="flex items-center gap-3">
+            <button @click="loadData()" class="px-4 py-2 text-sm font-medium text-gray-600 hover:bg-gray-100 rounded-lg transition-all">
+                Refresh
+            </button>
             <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/products/create' : '/org/' . $organization->org_slug . '/products/create') }}" 
-               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                <i class="fas fa-plus mr-2"></i>Add Product
+               class="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-lg flex items-center gap-2 transition-all">
+                <span class="material-symbols-outlined text-lg">add</span>
+                New Product
             </a>
         </div>
     </div>
 
+    <!-- Metrics Bar -->
+    <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
+        <div class="card p-5">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Items</p>
+            <h3 class="text-2xl font-bold text-gray-900 mt-1" x-text="pagination.total">0</h3>
+        </div>
+        <div class="card p-5 bg-blue-50/30">
+            <p class="text-xs font-bold text-blue-600 uppercase tracking-widest">Active Only</p>
+            <h3 class="text-2xl font-bold text-blue-700 mt-1" x-text="activeCount">0</h3>
+        </div>
+        <div class="card p-5 cursor-pointer hover:border-blue-400 transition-all border-dashed">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Reports</p>
+            <div class="flex items-center gap-1 mt-1 text-blue-600 font-bold text-sm">
+                <span class="material-symbols-outlined text-lg">file_download</span> Export CSV
+            </div>
+        </div>
+        <div class="card p-5 cursor-pointer hover:border-blue-400 transition-all border-dashed">
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Bulk Actions</p>
+            <div class="flex items-center gap-1 mt-1 text-gray-600 font-bold text-sm">
+                <span class="material-symbols-outlined text-lg">upload_file</span> Import Data
+            </div>
+        </div>
+    </div>
+
     <!-- Filters -->
-    <div class="bg-white rounded-xl shadow p-6 mb-6">
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input type="text" x-model="filters.search" @input="loadData"
-                   placeholder="Search by code or name..." 
-                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <input type="text" x-model="filters.product_category" @input="loadData"
-                   placeholder="Filter by category..." 
-                   class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-            <select x-model="filters.is_active" @change="loadData"
-                    class="px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                <option value="">All Status</option>
-                <option value="1">Active</option>
-                <option value="0">Inactive</option>
-            </select>
-            <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <i class="fas fa-redo mr-2"></i>Reset
-            </button>
+    <div class="card p-4">
+        <div class="flex flex-col md:flex-row gap-4 items-center">
+            <div class="flex-1 relative">
+                <span class="material-symbols-outlined absolute left-3 top-2.5 text-gray-400">search</span>
+                <input type="text" x-model="filters.search" @input.debounce.300ms="loadData()"
+                       placeholder="Search products..." 
+                       class="w-full pl-10 pr-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all">
+            </div>
+            <div class="w-full md:w-48">
+                <select x-model="filters.product_category" @change="loadData()"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all bg-white text-sm">
+                    <option value="">All Categories</option>
+                    <template x-for="cat in categories" :key="cat">
+                        <option :value="cat" x-text="cat"></option>
+                    </template>
+                </select>
+            </div>
+            <div class="w-full md:w-48">
+                <select x-model="filters.is_active" @change="loadData()"
+                        class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500 transition-all bg-white text-sm">
+                    <option value="">Status: All</option>
+                    <option value="1">Active</option>
+                    <option value="0">Inactive</option>
+                </select>
+            </div>
+            <button @click="resetFilters" class="px-4 py-2 text-sm font-bold text-blue-600 hover:bg-blue-50 rounded-lg">Reset</button>
         </div>
     </div>
 
     <!-- Table -->
-    <div class="bg-white rounded-xl shadow overflow-hidden">
+    <div class="card overflow-hidden">
         <div class="overflow-x-auto">
-            <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
+            <table class="w-full text-left">
+                <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Category</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Pack Size</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">MRP</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Product</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Category & HSN</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Weight / Unit</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Pricing</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider">Status</th>
+                        <th class="px-6 py-4 text-xs font-bold text-gray-500 uppercase tracking-wider text-right">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="divide-y divide-gray-100">
                     <template x-if="loading">
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
-                                <p class="text-gray-600 mt-2">Loading products...</p>
-                            </td>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-400">Loading products...</td>
                         </tr>
                     </template>
                     <template x-if="!loading && items.length === 0">
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <i class="fas fa-box-open text-6xl text-gray-300 mb-4"></i>
-                                <p class="text-gray-600">No products found. Click "Add Product" to create one.</p>
-                            </td>
+                            <td colspan="6" class="px-6 py-12 text-center text-gray-500">No products found.</td>
                         </tr>
                     </template>
                     <template x-for="item in items" :key="item.id">
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="text-sm font-medium text-gray-900" x-text="item.product_code"></span>
+                        <tr class="hover:bg-gray-50 transition-colors">
+                            <td class="px-6 py-4">
+                                <span class="text-xs font-bold text-blue-600 font-mono block" x-text="item.product_code"></span>
+                                <span class="text-sm font-bold text-gray-900" x-text="item.product_name"></span>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="text-sm text-gray-900" x-text="item.product_name"></span>
+                                <span class="text-xs font-bold text-gray-500 block" x-text="item.product_category || 'Uncategorized'"></span>
+                                <span class="text-[10px] text-gray-400" x-text="item.hsn_code ? 'HSN: ' + item.hsn_code.hsn_code : 'No HSN'"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.product_category || '-'"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                <template x-if="item.packUom">
-                                    <span x-text="item.pack_size"></span> <span x-text="item.packUom.uom_name"></span>
-                                </template>
-                                <template x-if="!item.packUom">
-                                    <span x-text="item.pack_size"></span>
-                                </template>
+                            <td class="px-6 py-4">
+                                <span class="text-sm font-bold text-gray-700" x-text="item.pack_size"></span>
+                                <span class="text-xs text-gray-400" x-text="item.pack_uom ? item.pack_uom.uom_name : 'Units'"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                                ₹<span x-text="item.mrp ? parseFloat(item.mrp).toFixed(2) : '-'"></span>
+                            <td class="px-6 py-4">
+                                <div class="text-xs">
+                                    <div class="flex justify-between w-24"><span class="text-gray-400">Cost:</span> <span class="font-bold" x-text="'₹' + item.standard_cost"></span></div>
+                                    <div class="flex justify-between w-24 text-green-600 font-bold"><span class="text-green-500 font-bold">MRP:</span> <span x-text="'₹' + item.mrp"></span></div>
+                                </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs rounded-full" 
-                                      :class="item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'"
-                                      x-text="item.is_active ? 'Active' : 'Inactive'"></span>
+                            <td class="px-6 py-4">
+                                <span x-text="item.is_active ? 'Active' : 'Inactive'" 
+                                      class="px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                                      :class="item.is_active ? 'status-active' : 'status-inactive'"></span>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
-                                <button @click="edit(item)" class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" title="Edit">
-                                    <i class="fas fa-edit mr-1"></i>
-                                    Edit
+                            <td class="px-6 py-4 text-right space-x-1">
+                                <button @click="edit(item)" class="p-2 text-indigo-600 hover:bg-indigo-50 rounded-lg transition-all" title="Edit">
+                                    <span class="material-symbols-outlined text-lg">edit</span>
                                 </button>
-                                <template x-if="item.is_active">
-                                    <button @click="deactivateItem(item)" class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors ml-2" title="Deactivate">
-                                        <i class="fas fa-ban mr-1"></i>
-                                        Deactivate
-                                    </button>
-                                </template>
-                                <template x-if="!item.is_active">
-                                    <button @click="activateItem(item)" class="inline-flex items-center px-3 py-1.5 bg-green-50 text-green-600 hover:bg-green-100 rounded transition-colors ml-2" title="Activate">
-                                        <i class="fas fa-check mr-1"></i>
-                                        Activate
-                                    </button>
-                                </template>
-                                <button @click="showBarcodeModal(item)" class="inline-flex items-center px-3 py-1.5 bg-purple-50 text-purple-600 hover:bg-purple-100 rounded transition-colors ml-2" title="Barcode">
-                                    <i class="fas fa-barcode mr-1"></i>
-                                    Barcode
+                                <button @click="showBarcode(item)" class="p-2 text-gray-500 hover:bg-gray-50 rounded-lg transition-all" title="Barcode">
+                                    <span class="material-symbols-outlined text-lg">barcode_scanner</span>
                                 </button>
                             </td>
                         </tr>
@@ -197,266 +152,103 @@
             </table>
         </div>
         
-        <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <div class="text-sm text-gray-600">
-                Showing <span x-text="pagination.from"></span> to <span x-text="pagination.to"></span> of <span x-text="pagination.total"></span> products
-            </div>
-            <div class="flex space-x-2">
-                <button @click="loadPage(pagination.current_page - 1)" 
-                        :disabled="pagination.current_page === 1"
-                        :class="pagination.current_page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
-                        class="px-3 py-1 border border-gray-300 rounded">
-                    Previous
-                </button>
-                <span class="px-3 py-1 text-sm text-gray-600">
-                    Page <span x-text="pagination.current_page"></span> of <span x-text="pagination.last_page"></span>
-                </span>
-                <button @click="loadPage(pagination.current_page + 1)" 
-                        :disabled="pagination.current_page === pagination.last_page"
-                        :class="pagination.current_page === pagination.last_page ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
-                        class="px-3 py-1 border border-gray-300 rounded">
-                    Next
-                </button>
+    <!-- Barcode Modal -->
+    <div x-show="barcodeModal" x-cloak 
+         class="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/40 backdrop-blur-sm"
+         @click.away="barcodeModal = false">
+        <div class="bg-white rounded-3xl shadow-2xl max-w-sm w-full overflow-hidden animate-in fade-in zoom-in duration-200">
+            <div class="p-6 text-center space-y-6">
+                <div class="flex justify-between items-center mb-2">
+                    <h3 class="text-sm font-black text-slate-400 uppercase tracking-widest">Product Label</h3>
+                    <button @click="barcodeModal = false" class="text-slate-300 hover:text-slate-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                
+                <div class="bg-slate-50 p-8 rounded-2xl border border-dashed border-slate-200 flex flex-col items-center">
+                    <p class="text-xs font-black text-blue-600 mb-1" x-text="activeProduct?.product_code"></p>
+                    <p class="text-sm font-bold text-slate-800 mb-6" x-text="activeProduct?.product_name"></p>
+                    <svg id="barcodeCanvas" class="max-w-full"></svg>
+                </div>
+
+                <div class="grid grid-cols-2 gap-3">
+                    <button @click="window.print()" class="px-4 py-3 bg-slate-100 hover:bg-slate-200 text-slate-600 font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                        <span class="material-symbols-outlined text-lg">print</span> Print
+                    </button>
+                    <button @click="downloadBarcode()" class="px-4 py-3 bg-blue-600 hover:bg-blue-700 text-white font-bold rounded-xl text-xs flex items-center justify-center gap-2 transition-all">
+                        <span class="material-symbols-outlined text-lg">download</span> Save JPG
+                    </button>
+                </div>
             </div>
         </div>
     </div>
 </div>
 
+<script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.5/dist/JsBarcode.all.min.js"></script>
 <script>
-function productData() {
+function productDashboard() {
     return {
-        items: [],
-        loading: false,
-        filters: {
-            search: '',
-            product_category: '',
-            is_active: ''
-        },
-        pagination: {
-            current_page: 1,
-            last_page: 1,
-            per_page: 15,
-            total: 0,
-            from: 0,
-            to: 0
-        },
-        barcodeModal: {
-            show: false,
-            product: null,
-            barcodeHtml: '',
-            loading: false,
-            error: ''
-        },
-        
+        items: [], categories: [], loading: false, activeCount: 0,
+        barcodeModal: false, activeProduct: null,
+        filters: { search: '', product_category: '', is_active: '' },
+        pagination: { current_page: 1, last_page: 1, per_page: 15, total: 0 },
+
         async loadData() {
             this.loading = true;
             try {
-                const params = new URLSearchParams();
-                if (this.filters.search) params.append('search', this.filters.search);
-                if (this.filters.product_category) params.append('product_category', this.filters.product_category);
-                if (this.filters.is_active) params.append('is_active', this.filters.is_active);
-                
-                const response = await fetch(`/api/v1/products?${params}`, {
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
+                const params = new URLSearchParams({...this.filters, page: this.pagination.current_page});
+                const response = await fetch(`/api/v1/products?${params}`, { headers: { 'Accept': 'application/json' } });
+                const result = await response.json();
+                if (result.success && result.data) {
+                    this.items = result.data.products || [];
+                    this.pagination = result.data.pagination || this.pagination;
+                    this.activeCount = this.items.filter(i => i.is_active).length;
+                    if(!this.categories.length) this.categories = [...new Set(this.items.map(i => i.product_category).filter(Boolean))];
+                }
+            } catch (error) { console.error('Load failed', error); } finally { this.loading = false; }
+        },
+        
+        loadPage(p) { if(p >= 1 && p <= this.pagination.last_page) { this.pagination.current_page = p; this.loadData(); } },
+        resetFilters() { this.filters = { search: '', product_category: '', is_active: '' }; this.pagination.current_page = 1; this.loadData(); },
+        edit(item) { window.location.href = `{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}/${item.id}/edit`; },
+        
+        showBarcode(item) {
+            this.activeProduct = item;
+            this.barcodeModal = true;
+            this.$nextTick(() => {
+                JsBarcode("#barcodeCanvas", item.product_code, {
+                    format: "CODE128",
+                    lineColor: "#0f172a",
+                    width: 2,
+                    height: 80,
+                    displayValue: true,
+                    fontSize: 14,
+                    fontOptions: "bold"
                 });
-                if (!response.ok) throw new Error('Failed to load products');
-                
-                const data = await response.json();
-                // Handle both array and nested object response formats
-                if (Array.isArray(data)) {
-                    this.items = data;
-                } else if (data.data) {
-                    this.items = Array.isArray(data.data) ? data.data : (data.data.products || []);
-                    this.pagination = data.data.pagination || { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
-                } else {
-                    this.items = [];
-                }
-            } catch (error) {
-                console.error('Failed to load products:', error);
-                this.showNotification('Failed to load products', 'error');
-            } finally {
-                this.loading = false;
-            }
-        },
-        
-        loadPage(page) {
-            if (page >= 1 && page <= this.pagination.last_page) {
-                this.pagination.current_page = page;
-                this.loadData();
-            }
-        },
-        
-        resetFilters() {
-            this.filters = { search: '', product_category: '', is_active: '' };
-            this.loadData();
-        },
-        
-        openCreateModal() {
-            alert('Create product form - Coming soon');
-        },
-        
-        edit(item) {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/products' : '/org/' . $organization->org_slug . '/products') }}';
-            window.location.href = `${baseUrl}/${item.id}/edit`;
+            });
         },
 
-        async showBarcodeModal(item) {
-            this.barcodeModal.product = item;
-            this.barcodeModal.barcodeHtml = '';
-            this.barcodeModal.error = '';
-            this.barcodeModal.loading = true;
-            this.barcodeModal.show = true;
-
-            try {
-                const response = await fetch(`/api/v1/products/barcode?code=${encodeURIComponent(item.product_code)}`, {
-                    credentials: 'same-origin',
-                    headers: {
-                        'Accept': 'application/json'
-                    }
-                });
-                const data = await response.json();
-
-                if (!response.ok || !data || data.success !== true) {
-                    this.barcodeModal.error = (data && data.message) ? data.message : 'Failed to generate barcode';
-                    return;
-                }
-
-                const html = (data && data.data && data.data.html) ? data.data.html : '';
-                this.barcodeModal.barcodeHtml = html;
-                if (!html) {
-                    this.barcodeModal.error = 'Barcode HTML not returned';
-                }
-            } catch (e) {
-                console.error('Barcode generation failed:', e);
-                this.barcodeModal.error = 'Network error while generating barcode';
-            } finally {
-                this.barcodeModal.loading = false;
-            }
-        },
-
-        closeBarcodeModal() {
-            this.barcodeModal.show = false;
-            this.barcodeModal.product = null;
-            this.barcodeModal.barcodeHtml = '';
-            this.barcodeModal.loading = false;
-            this.barcodeModal.error = '';
-        },
-
-        printBarcode() {
-            const printContent = document.getElementById('barcode-content').innerHTML;
-            const printWindow = window.open('', '_blank');
-            printWindow.document.write(`
-                <html>
-                    <head>
-                        <title>Product Barcode</title>
-                        <style>
-                            body { font-family: Arial, sans-serif; margin: 20px; }
-                            .barcode-container { text-align: center; padding: 20px; border: 1px solid #ccc; display: inline-block; }
-                            div.b128 { border-left: 1px solid black; height: 30px; margin-left: 1px; width: 2px; display: inline-block; }
-                            .product-name { font-size: 16px; font-weight: bold; margin-bottom: 10px; }
-                            .product-code { font-size: 14px; margin-top: 8px; color: #666; }
-                            @media print { body { margin: 0; } .barcode-container { border: none; } }
-                        </style>
-                    </head>
-                    <body>
-                        ${printContent}
-                    </body>
-                </html>
-            `);
-            printWindow.document.close();
-            printWindow.print();
-        },
-        
-        async deactivateItem(item) {
-            if (confirm('Are you sure you want to deactivate product: ' + item.product_code + '?')) {
-                try {
-                    const response = await fetch(`/api/v1/products/${item.id}`, {
-                        method: 'PUT',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            ...item,
-                            is_active: false
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to deactivate product', 'error');
-                        return;
-                    }
-                    
-                    this.showNotification('Product deactivated successfully', 'success');
-                    this.loadData(); // Refresh the list
-                } catch (error) {
-                    console.error('Failed to deactivate product:', error);
-                    this.showNotification('Network error. Please try again.', 'error');
-                }
-            }
-        },
-
-        async activateItem(item) {
-            if (confirm('Are you sure you want to activate product: ' + item.product_code + '?')) {
-                try {
-                    const response = await fetch(`/api/v1/products/${item.id}`, {
-                        method: 'PUT',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            ...item,
-                            is_active: true
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to activate product', 'error');
-                        return;
-                    }
-                    
-                    this.showNotification('Product activated successfully', 'success');
-                    this.loadData(); // Refresh the list
-                } catch (error) {
-                    console.error('Failed to activate product:', error);
-                    this.showNotification('Network error. Please try again.', 'error');
-                }
-            }
-        },
-        
-        showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500 text-white' : 
-                type === 'error' ? 'bg-red-500 text-white' : 
-                'bg-blue-500 text-white'
-            }`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
+        downloadBarcode() {
+            const svg = document.getElementById("barcodeCanvas");
+            const svgData = new XMLSerializer().serializeToString(svg);
+            const canvas = document.createElement("canvas");
+            const ctx = canvas.getContext("2d");
+            const img = new Image();
+            img.onload = () => {
+                canvas.width = img.width + 40;
+                canvas.height = img.height + 40;
+                ctx.fillStyle = "white";
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+                ctx.drawImage(img, 20, 20);
+                const url = canvas.toDataURL("image/jpeg");
+                const a = document.createElement("a");
+                a.href = url;
+                a.download = `barcode-${this.activeProduct.product_code}.jpg`;
+                a.click();
+            };
+            img.src = "data:image/svg+xml;base64," + btoa(svgData);
         }
-    }
+    };
 }
 </script>
 @endsection

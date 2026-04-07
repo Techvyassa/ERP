@@ -4,23 +4,24 @@ namespace Database\Seeders\Tenant;
 
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
+use App\Models\Tenant\Role;
+use App\Models\Tenant\Department;
 
 class RbacSeeder extends Seeder
 {
     /**
-     * Seed all ERP departments, roles, dept_role_map, and role_permissions.
-     * Safe to re-run — uses updateOrCreate / insertOrIgnore.
+     * Updated RBAC Seeder to match simplified departmental architecture.
+     * Removes legacy specialized roles (PROC_EXE, STOREKEEPER, etc.) 
+     * and consolidates into departmental silos.
      */
     public function run(): void
     {
-        $this->command->info('Seeding Departments...');
-        $this->seedDepartments();
+        DB::connection('tenant')->transaction(function () {
+            $this->command->info('Cleaning up legacy RBAC data...');
+            $this->cleanupLegacy();
 
-        $this->command->info('Seeding Roles...');
-        $this->seedRoles();
-
-        $this->command->info('Seeding Dept-Role Map...');
-        $this->seedDeptRoleMap();
+            $this->command->info('Syncing default roles...');
+            $this->call(DefaultRoleSeeder::class);
 
         $this->command->info('Seeding Role Permissions...');
         $this->seedRolePermissions();
@@ -42,6 +43,9 @@ class RbacSeeder extends Seeder
             ['dept_code' => 'PPC',   'dept_name' => 'Production Planning & Control'],
             ['dept_code' => 'PROD',  'dept_name' => 'Production'],
             ['dept_code' => 'ADMIN', 'dept_name' => 'IT / Admin'],
+            ['dept_code' => 'SALES', 'dept_name' => 'Sales'],
+            ['dept_code' => 'CUST',  'dept_name' => 'Customer Relations'],
+            ['dept_code' => 'MAINT', 'dept_name' => 'Maintenance'],
         ];
 
         foreach ($departments as $dept) {
@@ -155,6 +159,39 @@ class RbacSeeder extends Seeder
                 'description'   => 'Full system access across all modules',
                 'is_system_role'=> true,
             ],
+            // Sales
+            [
+                'role_code'     => 'SALES_EXE',
+                'role_name'     => 'Sales Executive',
+                'description'   => 'Creates and manages sales orders',
+                'is_system_role'=> true,
+            ],
+            [
+                'role_code'     => 'SALES_MGR',
+                'role_name'     => 'Sales Manager',
+                'description'   => 'Approves sales orders and manages customers',
+                'is_system_role'=> true,
+            ],
+            // Customer Relations
+            [
+                'role_code'     => 'CUST_EXE',
+                'role_name'     => 'Customer Relations Executive',
+                'description'   => 'Manages customer accounts and complaints',
+                'is_system_role'=> true,
+            ],
+            // Maintenance
+            [
+                'role_code'     => 'MAINT_TECH',
+                'role_name'     => 'Maintenance Technician',
+                'description'   => 'Executes work orders and PM tasks',
+                'is_system_role'=> true,
+            ],
+            [
+                'role_code'     => 'MAINT_MGR',
+                'role_name'     => 'Maintenance Manager',
+                'description'   => 'Approves work orders and manages assets',
+                'is_system_role'=> true,
+            ],
         ];
 
         foreach ($roles as $role) {
@@ -186,6 +223,9 @@ class RbacSeeder extends Seeder
             'PPC'   => ['PPC_USER'],
             'PROD'  => ['PRODUCTION'],
             'ADMIN' => ['ADMIN'],
+            'SALES' => ['SALES_EXE', 'SALES_MGR'],
+            'CUST'  => ['CUST_EXE'],
+            'MAINT' => ['MAINT_TECH', 'MAINT_MGR'],
         ];
 
         foreach ($map as $deptCode => $roleCodes) {
@@ -297,6 +337,7 @@ class RbacSeeder extends Seeder
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [false, false, false, false, false],
                 'BOM'        => [false, false, false, false, false],
+                'SALES'      => [true,  false, false, false, false],
             ],
             'STORE_MGR' => [
                 'PO'         => [false, false, false, false, false],
@@ -308,6 +349,7 @@ class RbacSeeder extends Seeder
                 'STOCK'      => [true,  false, false, false, false],
                 'REPORTS'    => [true,  false, false, false, false],
                 'BOM'        => [false, false, false, false, false],
+                'SALES'      => [true,  true,  true,  true,  false],
             ],
             // ── Quality ───────────────────────────────────────────────────
             'QC_TECH' => [
@@ -393,16 +435,50 @@ class RbacSeeder extends Seeder
             ],
             // ── Admin ─────────────────────────────────────────────────────
             'ADMIN' => [
-                'PO'         => [true, true, true, true, true],
-                'GATE_ENTRY' => [true, true, true, true, true],
-                'MR_GRN'     => [true, true, true, true, true],
-                'QC'         => [true, true, true, true, true],
-                'INVOICE'    => [true, true, true, true, true],
-                'PAYMENT'    => [true, true, true, true, true],
-                'STOCK'      => [true, true, true, true, true],
-                'REPORTS'    => [true, true, true, true, true],
-                'BOM'        => [true, true, true, true, true],
-                'PRODUCTION' => [true, true, true, true, true],
+                'PO'          => [true, true, true, true, true],
+                'GATE_ENTRY'  => [true, true, true, true, true],
+                'MR_GRN'      => [true, true, true, true, true],
+                'QC'          => [true, true, true, true, true],
+                'INVOICE'     => [true, true, true, true, true],
+                'PAYMENT'     => [true, true, true, true, true],
+                'STOCK'       => [true, true, true, true, true],
+                'REPORTS'     => [true, true, true, true, true],
+                'BOM'         => [true, true, true, true, true],
+                'PRODUCTION'  => [true, true, true, true, true],
+                'SALES'       => [true, true, true, true, true],
+                'CUSTOMER'    => [true, true, true, true, true],
+                'MAINTENANCE' => [true, true, true, true, true],
+                'ADMIN'       => [true, true, true, true, true],
+            ],
+            // ── Sales ─────────────────────────────────────────────────────
+            'SALES_EXE' => [
+                'SALES'    => [true,  true,  true,  false, false],
+                'CUSTOMER' => [true,  false, false, false, false],
+                'STOCK'    => [true,  false, false, false, false],
+                'REPORTS'  => [false, false, false, false, false],
+            ],
+            'SALES_MGR' => [
+                'SALES'    => [true,  true,  true,  true,  false],
+                'CUSTOMER' => [true,  true,  true,  false, false],
+                'STOCK'    => [true,  false, false, false, false],
+                'REPORTS'  => [true,  false, false, false, false],
+            ],
+            // ── Customer Relations ─────────────────────────────────────────
+            'CUST_EXE' => [
+                'CUSTOMER' => [true,  true,  true,  false, false],
+                'SALES'    => [true,  false, false, false, false],
+                'REPORTS'  => [false, false, false, false, false],
+            ],
+            // ── Maintenance ────────────────────────────────────────────────
+            'MAINT_TECH' => [
+                'MAINTENANCE' => [true,  true,  true,  false, false],
+                'STOCK'       => [true,  false, false, false, false],
+                'REPORTS'     => [false, false, false, false, false],
+            ],
+            'MAINT_MGR' => [
+                'MAINTENANCE' => [true,  true,  true,  true,  false],
+                'STOCK'       => [true,  false, false, false, false],
+                'REPORTS'     => [true,  false, false, false, false],
             ],
         ];
 

@@ -309,7 +309,7 @@
                  if (this.filters.search) params.append('search', this.filters.search);
                  if (this.filters.is_active !== '' && this.filters.is_active !== null) params.append('is_active', this.filters.is_active);
 
-                 const response = await fetch(`/api/v1/users?${params.toString()}`, {
+                 const response = await fetch(`{{ url('api/v1/users') }}?${params.toString()}`, {
                      credentials: 'same-origin',
                      headers: { 'Accept': 'application/json' }
                  });
@@ -365,7 +365,7 @@
              this.viewModal.user = null;
 
              try {
-                 const response = await fetch(`/api/v1/users/${item.id}`, {
+                 const response = await fetch(`{{ url('api/v1/users') }}/${item.id}`, {
                      credentials: 'same-origin',
                      headers: { 'Accept': 'application/json' }
                  });
@@ -398,7 +398,7 @@
              if (!confirm('Are you sure you want to deactivate user: ' + (item.email || item.employee_code) + '?')) return;
 
              try {
-                 const response = await fetch(`/api/v1/users/${item.id}`, {
+                 const response = await fetch(`{{ url('api/v1/users') }}/${item.id}`, {
                      method: 'DELETE',
                      credentials: 'same-origin',
                      headers: {
@@ -430,6 +430,9 @@
              else if (name.includes('quality') || name.includes('qc')) portal = 'quality';
              else if (name.includes('security') || name.includes('guard')) portal = 'security';
              else if (name.includes('production') || name.includes('manufacturing') || name.includes('bom')) portal = 'production';
+             else if (name.includes('sales')) portal = 'sales';
+             else if (name.includes('customer')) portal = 'customer';
+             else if (name.includes('maintenance')) portal = 'maintenance';
              return this.baseUrl + '/' + portal + '/login';
          },
 
@@ -476,7 +479,7 @@
                      }
                  }, 200);
                  
-                 const response = await fetch('/api/v1/users/import', {
+                 const response = await fetch('{{ url("api/v1/users/import") }}', {
                      method: 'POST',
                      credentials: 'same-origin',
                      headers: {

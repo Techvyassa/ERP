@@ -5,326 +5,290 @@
 
 @section('content')
 <div x-data="qcInspectionDetail()" x-init="init()">
-
-    <!-- Header -->
     <div class="flex items-center justify-between mb-6">
         <div>
-            <h2 class="text-2xl font-bold text-gray-900">Inspection Lot <span x-text="'LOT-' + lot.id"></span></h2>
-            <p class="text-gray-500 text-sm">Record test results and manage QC inspection</p>
+            <button type="button" onclick="window.history.back()" class="inline-flex items-center gap-2 mb-3 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+                <span class="material-symbols-outlined text-base">arrow_back</span>
+                Back
+            </button>
+            <h2 class="text-2xl font-bold text-gray-900">Inspection Lot <span x-text="'LOT-' + (lot.id || '')"></span></h2>
+            <p class="text-sm text-gray-500">Record test results and submit the final QC decision.</p>
         </div>
         <div class="flex gap-2">
-            <button x-show="lot.status === 'PENDING'" @click="startInspection()" class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">
-                <span class="material-symbols-outlined inline mr-2">play_arrow</span> Start Inspection
-            </button>
-            <button x-show="lot.status === 'IN_PROGRESS'" @click="completeInspection()" class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">
-                <span class="material-symbols-outlined inline mr-2">check</span> Complete Inspection
-            </button>
+            <button x-show="lot.status === 'PENDING'" @click="startInspection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Start</button>
+            <button x-show="lot.status === 'IN_PROGRESS'" @click="completeInspection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Complete</button>
         </div>
     </div>
 
-    <!-- Lot Details -->
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
-        <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold mb-1">Material</p>
-            <p class="font-semibold text-gray-900" x-text="lot.material?.material_name || '—'"></p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold mb-1">GRN Number</p>
-            <p class="font-semibold text-gray-900" x-text="lot.grn?.grn_number || '—'"></p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold mb-1">Sample Size</p>
-            <p class="font-semibold text-gray-900" x-text="lot.sample_size"></p>
-        </div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4">
-            <p class="text-xs text-gray-500 font-semibold mb-1">Status</p>
-            <span class="px-2.5 py-1 rounded-full text-xs font-bold" :class="statusClass(lot.status)" x-text="lot.status?.replace(/_/g,' ')"></span>
-        </div>
+    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
+        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Source</p><p class="font-semibold text-gray-900" x-text="lot.source_type || 'GRN'"></p></div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Item</p><p class="font-semibold text-gray-900" x-text="lot.product?.product_name || lot.material?.material_name || '—'"></p></div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Reference</p><p class="font-semibold text-gray-900" x-text="lot.production_order?.order_no || lot.grn?.grn_number || '—'"></p></div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Batch</p><p class="font-semibold text-gray-900" x-text="lot.batch_number || lot.production_order?.fg_batch_number || '—'"></p></div>
+        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Status</p><span class="px-2.5 py-1 rounded-full text-xs font-bold" :class="statusClass(lot.status)" x-text="(lot.status || '').replace(/_/g, ' ')"></span></div>
     </div>
 
-    <!-- QC Parameters & Test Results Section -->
-    <div class="bg-white rounded-xl border border-gray-200 overflow-hidden mb-6">
-        <!-- Header with Parameters Info -->
-        <div class="px-6 py-4 border-b border-gray-200 bg-gradient-to-r from-blue-50 to-white">
-            <div class="flex items-center justify-between">
-                <div>
-                    <h3 class="font-bold text-gray-900">Test Parameters & Results</h3>
-                    <p class="text-sm text-gray-500 mt-1">
-                        <span class="material-symbols-outlined inline text-sm mr-1">info</span>
-                        <span x-text="qcParameters.length"></span> parameters configured for this material
-                    </p>
+    <div class="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-6">
+        <div class="space-y-6">
+            <div class="bg-white rounded-xl border border-gray-200 overflow-hidden">
+                <div class="px-5 py-4 border-b border-gray-200">
+                    <h3 class="font-semibold text-gray-900">Recorded Results</h3>
                 </div>
-                <button x-show="lot.status === 'IN_PROGRESS'" @click="showAddResultModal = true" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 transition-colors">
-                    <span class="material-symbols-outlined inline mr-1 text-sm">add_circle</span> Record Result
-                </button>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-sm">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Parameter</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Tolerance</th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Observed</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
+                                <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Remarks</th>
+                            </tr>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100">
+                            <template x-if="qcResults.length === 0">
+                                <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No test results recorded yet.</td></tr>
+                            </template>
+                            <template x-for="result in qcResults" :key="result.id">
+                                <tr>
+                                    <td class="px-4 py-3">
+                                        <div class="font-semibold text-gray-900" x-text="result.parameter_name"></div>
+                                        <div class="text-xs text-gray-400" x-text="result.parameter_code || 'Manual parameter'"></div>
+                                    </td>
+                                    <td class="px-4 py-3 text-gray-600" x-text="formatTolerance(result)"></td>
+                                    <td class="px-4 py-3 text-right font-semibold text-gray-900" x-text="result.observed_value + ' ' + (result.unit_of_measurement || '')"></td>
+                                    <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-bold" :class="result.is_pass ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" x-text="result.is_pass ? 'PASS' : 'FAIL'"></span></td>
+                                    <td class="px-4 py-3 text-gray-600" x-text="result.remarks || '—'"></td>
+                                </tr>
+                            </template>
+                        </tbody>
+                    </table>
+                </div>
             </div>
-        </div>
 
-        <!-- QC Parameters Reference Table -->
-        <div class="bg-gray-50 px-6 py-3 border-b border-gray-200">
-            <h4 class="text-xs font-bold text-gray-500 uppercase mb-2">Reference Specifications</h4>
-            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-3">
-                <template x-for="param in qcParameters" :key="param.id">
-                    <div class="bg-white rounded-lg border border-gray-200 p-3 shadow-sm">
-                        <div class="flex items-start justify-between">
-                            <div>
-                                <div class="flex items-center gap-2">
-                                    <h5 class="font-semibold text-gray-900 text-sm" x-text="param.parameter_name"></h5>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700" x-text="param.parameter_code"></span>
-                                </div>
-                                <p class="text-xs text-gray-500 mt-1" x-text="param.parameter_category"></p>
-                            </div>
-                            <span class="text-xs font-medium" :class="param.is_critical ? 'text-red-600 bg-red-50 px-1.5 py-0.5 rounded' : 'text-gray-400'" x-text="param.is_critical ? 'CRITICAL' : 'Standard'"></span>
-                        </div>
-                        
-                        <!-- Tolerance Info -->
-                        <div class="mt-2 text-xs text-gray-600 space-y-1">
-                            <div class="flex items-center gap-1.5" x-show="param.tolerance_type === 'RANGE'">
-                                <span class="material-symbols-outlined text-gray-400 text-xs">trending_up</span>
-                                <span class="font-mono" x-text="param.standard_min + ' to ' + param.standard_max + ' ' + (param.unit_of_measurement || '')"></span>
-                            </div>
-                            <div class="flex items-center gap-1.5" x-show="param.tolerance_type === 'MIN_ONLY'">
-                                <span class="material-symbols-outlined text-gray-400 text-xs">arrow_downward</span>
-                                <span class="font-mono" x-text="'> ' + param.standard_min + ' ' + (param.unit_of_measurement || '')"></span>
-                            </div>
-                            <div class="flex items-center gap-1.5" x-show="param.tolerance_type === 'MAX_ONLY'">
-                                <span class="material-symbols-outlined text-gray-400 text-xs">arrow_upward</span>
-                                <span class="font-mono" x-text="'< ' + param.standard_max + ' ' + (param.unit_of_measurement || '')"></span>
-                            </div>
-                            <div class="flex items-center gap-1.5" x-show="param.tolerance_type === 'EXACT'">
-                                <span class="material-symbols-outlined text-gray-400 text-xs">center_focus_strong</span>
-                                <span class="font-mono" x-text="param.standard_value + ' ' + (param.unit_of_measurement || '')"></span>
-                            </div>
-                        </div>
-                        
-                        <!-- Test Method -->
-                        <div class="mt-2 pt-2 border-t border-gray-100">
-                            <p class="text-xs text-gray-400 flex items-center gap-1.5">
-                                <span class="material-symbols-outlined text-xs">test_tube</span>
-                                <span x-text="param.test_method || 'Standard method'"></span>
-                            </p>
-                        </div>
-                    </div>
-                </template>
-            </div>
-        </div>
+            <div x-show="lot.status === 'IN_PROGRESS'" class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
+                <div>
+                    <h3 class="font-semibold text-gray-900">Record Test Result</h3>
+                    <p class="text-sm text-gray-500">Select a configured parameter or enter manual test details.</p>
+                </div>
 
-        <!-- Test Results Table -->
-        <div class="overflow-x-auto">
-            <table class="w-full">
-                <thead class="bg-gray-100">
-                    <tr>
-                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-600 uppercase">Parameter</th>
-                        <th class="text-center py-3 px-5 text-xs font-bold text-gray-600 uppercase">Tolerance</th>
-                        <th class="text-right py-3 px-5 text-xs font-bold text-gray-600 uppercase">Standard</th>
-                        <th class="text-right py-3 px-5 text-xs font-bold text-gray-600 uppercase">Observed</th>
-                        <th class="text-center py-3 px-5 text-xs font-bold text-gray-600 uppercase">Result</th>
-                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-600 uppercase">Status</th>
-                        <th class="text-left py-3 px-5 text-xs font-bold text-gray-600 uppercase">Remarks</th>
-                    </tr>
-                </thead>
-                <tbody class="divide-y divide-gray-100">
-                    <template x-if="qcResults.length === 0">
-                        <tr>
-                            <td colspan="7" class="py-10 text-center">
-                                <div class="flex flex-col items-center justify-center text-gray-400">
-                                    <span class="material-symbols-outlined text-4xl mb-3 opacity-50">not_listed_location</span>
-                                    <p class="text-sm">No test results recorded yet</p>
-                                    <p class="text-xs mt-1 text-gray-500">Click "Record Result" to add test results</p>
-                                </div>
-                            </td>
-                        </tr>
-                    </template>
-                    <template x-for="result in qcResults" :key="result.id">
-                        <tr class="hover:bg-gray-50 transition-colors">
-                            <td class="py-3 px-5">
-                                <div class="flex items-center gap-2">
-                                    <span class="font-semibold text-gray-900 text-sm" x-text="result.parameter_name"></span>
-                                    <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-gray-100 text-gray-600" x-text="result.parameter_code"></span>
-                                </div>
-                            </td>
-                            <td class="py-3 px-5 text-center">
-                                <span class="text-xs text-gray-500" x-text="result.tolerance_type || '—'"></span>
-                            </td>
-                            <td class="py-3 px-5 text-right">
-                                <div class="text-xs text-gray-600 space-y-0.5">
-                                    <p x-show="result.tolerance_type === 'RANGE'" class="font-mono text-gray-700" x-text="result.standard_min + ' - ' + result.standard_max"></p>
-                                    <p x-show="result.tolerance_type === 'MIN_ONLY'" class="font-mono text-gray-700" x-text="'> ' + result.standard_min"></p>
-                                    <p x-show="result.tolerance_type === 'MAX_ONLY'" class="font-mono text-gray-700" x-text="'< ' + result.standard_max"></p>
-                                    <p x-show="result.tolerance_type === 'EXACT'" class="font-mono text-gray-700" x-text="result.standard_value"></p>
-                                </div>
-                            </td>
-                            <td class="py-3 px-5 text-right">
-                                <span class="font-bold text-gray-900 text-sm" x-text="result.observed_value"></span>
-                                <span class="text-xs text-gray-400 ml-1" x-text="result.unit_of_measurement || ''"></span>
-                            </td>
-                            <td class="py-3 px-5 text-center">
-                                <span class="inline-flex items-center justify-center w-6 h-6 rounded-full" :class="result.is_pass === true ? 'bg-green-100 text-green-600' : (result.is_pass === false ? 'bg-red-100 text-red-600' : 'bg-gray-100 text-gray-400')">
-                                    <span class="material-symbols-outlined text-xs" x-text="result.is_pass === true ? 'check' : (result.is_pass === false ? 'close' : 'help')"></span>
-                                </span>
-                            </td>
-                            <td class="py-3 px-5">
-                                <span class="px-2.5 py-1 rounded text-xs font-bold" :class="result.is_pass === true ? 'bg-green-100 text-green-700' : (result.is_pass === false ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600')" x-text="result.is_pass === true ? 'PASS' : (result.is_pass === false ? 'FAIL' : '—')"></span>
-                            </td>
-                            <td class="py-3 px-5">
-                                <span class="text-xs text-gray-500 truncate max-w-[150px]" x-text="result.remarks || '—'"></span>
-                            </td>
-                        </tr>
-                    </template>
-                </tbody>
-            </table>
-        </div>
-    </div>
-
-    <!-- Usage Decision Section -->
-    <div x-show="lot.status === 'COMPLETED'" class="bg-white rounded-xl border border-gray-200 p-6">
-        <h3 class="font-bold text-gray-900 mb-4">Usage Decision</h3>
-        <div class="space-y-4">
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Decision *</label>
-                <select x-model="decision.decision" required
-                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                    <option value="">Select decision</option>
-                    <option value="ACCEPTED">Accepted - Stock Released</option>
-                    <option value="REJECTED">Rejected - Return to Vendor</option>
-                    <option value="CONDITIONAL">Conditional - Requires Approval</option>
-                </select>
-            </div>
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Remarks</label>
-                <textarea x-model="decision.remarks" rows="3"
-                    class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                    placeholder="Add any remarks or notes..."></textarea>
-            </div>
-            <div class="flex justify-end gap-3">
-                <button @click="makeDecision()" :disabled="!decision.decision || saving"
-                    class="px-5 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 disabled:opacity-50">
-                    <span x-show="!saving">Make Decision</span>
-                    <span x-show="saving">Processing...</span>
-                </button>
-            </div>
-        </div>
-    </div>
-
-    <!-- Add Test Result Section (Inline Form) -->
-    <div x-show="lot.status === 'IN_PROGRESS'" class="bg-white rounded-xl border border-gray-200 p-6 mb-6">
-        <h3 class="font-bold text-gray-900 mb-4 flex items-center gap-2">
-            <span class="material-symbols-outlined text-blue-600">add_circle</span>
-            Record New Test Result
-        </h3>
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <!-- Parameter Selection -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Select Parameter *</label>
-                <div class="relative">
-                    <select x-model="selectedParameterId" @change="onParameterChange" required
-                        class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-600 appearance-none">
-                        <option value="">Select a parameter</option>
+                <!-- Configured Parameter Selection -->
+                <div x-show="qcParameters.length > 0">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Configured Parameter</label>
+                    <select x-model="selectedParameterId" @change="onParameterChange()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                        <option value="">— Select from list —</option>
                         <template x-for="param in qcParameters" :key="param.id">
-                            <option :value="param.id" 
-                                :data-standard_min="param.standard_min"
-                                :data-standard_max="param.standard_max"
-                                :data-standard_value="param.standard_value"
-                                :data-tolerance_type="param.tolerance_type"
-                                :data-unit_of_measurement="param.unit_of_measurement"
-                                :data-parameter_name="param.parameter_name"
-                                :data-parameter_code="param.parameter_code"
-                                :data-is_critical="param.is_critical">
-                                <span class="font-medium" x-text="param.parameter_name"></span>
-                                <span class="text-xs text-gray-500 ml-2" x-text="param.parameter_code"></span>
-                                <span class="text-xs text-gray-400 ml-2" x-text="param.tolerance_type"></span>
-                            </option>
+                            <option :value="param.id" x-text="param.parameter_name + ' • ' + param.parameter_code"></option>
                         </template>
                     </select>
-                    <span class="absolute right-3 top-2.5 text-gray-400 pointer-events-none">
-                        <span class="material-symbols-outlined text-sm">keyboard_arrow_down</span>
-                    </span>
                 </div>
-                
-                <!-- Parameter Details Preview -->
-                <div x-show="selectedParameterId" class="mt-3 p-3 bg-blue-50 rounded-lg border border-blue-100">
-                    <div class="flex items-start justify-between">
+
+                <!-- Manual Parameter Entry (when no configured parameters or user wants manual entry) -->
+                <div x-show="!selectedParameterId && qcParameters.length > 0" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
+                    <p class="text-xs text-amber-800">
+                        <span class="font-semibold">Note:</span> No parameter selected. You can manually enter parameter details below or select a configured parameter above.
+                    </p>
+                </div>
+
+                <!-- Selected Parameter Details -->
+                <div x-show="selectedParameterId" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
+                    <h4 class="text-sm font-bold text-blue-900 mb-3">Parameter Configuration (Auto-loaded)</h4>
+                    <div class="grid grid-cols-2 gap-3 text-xs">
                         <div>
-                            <h5 class="font-semibold text-blue-900 text-sm" x-text="selectedParameter?.parameter_name || ''"></h5>
-                            <div class="flex items-center gap-2 mt-1">
-                                <span class="px-1.5 py-0.5 rounded text-[10px] font-bold bg-blue-100 text-blue-700" x-text="selectedParameter?.parameter_code || ''"></span>
-                                <span class="text-xs text-blue-600" x-text="selectedParameter?.parameter_category || ''"></span>
-                                <span x-show="selectedParameter?.is_critical" class="text-xs font-bold text-red-600 bg-red-100 px-1.5 py-0.5 rounded">CRITICAL</span>
-                            </div>
+                            <span class="text-blue-600 font-semibold">Name:</span>
+                            <span class="text-gray-800 ml-1" x-text="newResult.parameter_name || '—'"></span>
                         </div>
-                        <span class="text-xs text-blue-400" x-text="selectedParameter?.test_method || ''"></span>
-                    </div>
-                    
-                    <!-- Expected Range Display -->
-                    <div class="mt-2 pt-2 border-t border-blue-100">
-                        <p class="text-xs text-blue-700 font-medium mb-1">Expected Range:</p>
-                        <div class="flex flex-wrap gap-2 text-xs">
-                            <span x-show="selectedParameter?.tolerance_type === 'RANGE'" class="font-mono bg-white px-2 py-1 rounded border border-blue-200" x-text="selectedParameter?.standard_min + ' to ' + selectedParameter?.standard_max + ' ' + (selectedParameter?.unit_of_measurement || '')"></span>
-                            <span x-show="selectedParameter?.tolerance_type === 'MIN_ONLY'" class="font-mono bg-white px-2 py-1 rounded border border-blue-200" x-text="'> ' + selectedParameter?.standard_min + ' ' + (selectedParameter?.unit_of_measurement || '')"></span>
-                            <span x-show="selectedParameter?.tolerance_type === 'MAX_ONLY'" class="font-mono bg-white px-2 py-1 rounded border border-blue-200" x-text="'< ' + selectedParameter?.standard_max + ' ' + (selectedParameter?.unit_of_measurement || '')"></span>
-                            <span x-show="selectedParameter?.tolerance_type === 'EXACT'" class="font-mono bg-white px-2 py-1 rounded border border-blue-200" x-text="selectedParameter?.standard_value + ' ' + (selectedParameter?.unit_of_measurement || '')"></span>
+                        <div>
+                            <span class="text-blue-600 font-semibold">Code:</span>
+                            <span class="text-gray-800 ml-1" x-text="newResult.parameter_code || '—'"></span>
+                        </div>
+                        <div>
+                            <span class="text-blue-600 font-semibold">Type:</span>
+                            <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 ml-1" x-text="newResult.tolerance_type"></span>
+                        </div>
+                        <div>
+                            <span class="text-blue-600 font-semibold">Unit:</span>
+                            <span class="text-gray-800 ml-1" x-text="newResult.unit_of_measurement || '—'"></span>
+                        </div>
+                        <div x-show="newResult.tolerance_type === 'RANGE'">
+                            <span class="text-blue-600 font-semibold">Tolerance Range:</span>
+                            <span class="text-gray-800 ml-1" x-text="newResult.standard_min + ' to ' + newResult.standard_max"></span>
+                        </div>
+                        <div x-show="newResult.tolerance_type === 'MIN_ONLY'">
+                            <span class="text-blue-600 font-semibold">Min Value:</span>
+                            <span class="text-gray-800 ml-1" x-text="newResult.standard_min || '—'"></span>
+                        </div>
+                        <div x-show="newResult.tolerance_type === 'MAX_ONLY'">
+                            <span class="text-blue-600 font-semibold">Max Value:</span>
+                            <span class="text-gray-800 ml-1" x-text="newResult.standard_max || '—'"></span>
+                        </div>
+                        <div x-show="newResult.tolerance_type === 'EXACT'">
+                            <span class="text-blue-600 font-semibold">Target Value:</span>
+                            <span class="text-gray-800 ml-1" x-text="newResult.standard_value || '—'"></span>
                         </div>
                     </div>
                 </div>
-            </div>
 
-            <!-- Observed Value Input -->
-            <div>
-                <label class="block text-sm font-semibold text-gray-700 mb-2">Observed Value *</label>
-                <div class="relative">
-                    <input type="number" x-model="newResult.observed_value" step="0.0001" required
-                        class="w-full px-3 py-2.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-600"
-                        placeholder="Enter observed value">
-                    <span class="absolute right-3 top-2.5 text-gray-400" x-text="selectedParameter?.unit_of_measurement || ''"></span>
+                <!-- Manual Entry Info -->
+                <div x-show="!selectedParameterId" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
+                    <h4 class="text-sm font-bold text-gray-700 mb-3">Manual Parameter Entry</h4>
+                    <p class="text-xs text-gray-600 mb-2">Enter parameter details manually. You must provide:</p>
+                    <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
+                        <li><strong>Parameter Name</strong> - What are you testing? (e.g., "Moisture")</li>
+                        <li><strong>Tolerance Type</strong> - How will you judge it? (Range, Min Only, Max Only, or Exact)</li>
+                        <li><strong>Standard Values</strong> - What is acceptable? (e.g., 10 to 20)</li>
+                        <li><strong>Observed Value</strong> - What did you measure?</li>
+                    </ul>
+                    <p class="text-xs text-gray-500 mt-3"><strong>Note:</strong> Tolerance = The acceptable range/limit for your test.</p>
                 </div>
 
-                <!-- Result Status Preview -->
-                <div x-show="selectedParameterId && newResult.observed_value" class="mt-3 p-3 rounded-lg border border-gray-200">
-                    <p class="text-xs font-semibold text-gray-600 mb-2">Result Status:</p>
-                    <div class="flex items-center gap-3">
-                        <div class="flex-1">
-                            <p class="text-xs text-gray-500 mb-1">Tolerance Type</p>
-                            <p class="text-sm font-medium text-gray-900" x-text="selectedParameter?.tolerance_type || '—'"></p>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs text-gray-500 mb-1">Standard Value</p>
-                            <p class="text-sm font-medium text-gray-900" x-text="getStandardValueDisplay()"></p>
-                        </div>
-                        <div class="flex-1">
-                            <p class="text-xs text-gray-500 mb-1">Status</p>
-                            <div class="flex items-center gap-1.5">
-                                <span class="w-2 h-2 rounded-full" :class="getResultStatusColor()"></span>
-                                <p class="text-sm font-bold" :class="getResultStatusColor()" x-text="getResultStatusText()"></p>
-                            </div>
+                <!-- Duplicate Warning -->
+                <div x-show="hasDuplicate()" class="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
+                    <div class="flex items-start gap-2">
+                        <span class="text-red-600 text-xl">⚠️</span>
+                        <div>
+                            <h4 class="text-sm font-bold text-red-800 mb-1">Duplicate Result Detected!</h4>
+                            <p class="text-xs text-red-700" x-text="getDuplicateMessage()"></p>
                         </div>
                     </div>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Parameter fields - editable when no parameter selected, readonly when configured parameter is selected -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Parameter Name <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="newResult.parameter_name" :placeholder="selectedParameterId ? 'From configuration' : 'Parameter name'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Parameter Code</label>
+                        <input type="text" x-model="newResult.parameter_code" :placeholder="selectedParameterId ? 'From configuration' : 'Parameter code'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tolerance Type <span class="text-red-500">*</span></label>
+                        <select x-model="newResult.tolerance_type" :disabled="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                            <option value="RANGE">Range</option>
+                            <option value="MIN_ONLY">Min Only</option>
+                            <option value="MAX_ONLY">Max Only</option>
+                            <option value="EXACT">Exact</option>
+                        </select>
+                    </div>
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Unit</label>
+                        <input type="text" x-model="newResult.unit_of_measurement" :placeholder="selectedParameterId ? 'From configuration' : 'Unit'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                    </div>
+                    <!-- Standard values -->
+                    <div x-show="['RANGE', 'MIN_ONLY'].includes(newResult.tolerance_type)">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Min</label>
+                        <input type="text" x-model="newResult.standard_min" :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 10.5'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                    </div>
+                    <div x-show="['RANGE', 'MAX_ONLY'].includes(newResult.tolerance_type)">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Max</label>
+                        <input type="text" x-model="newResult.standard_max" :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 20.5'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                    </div>
+                    <div x-show="newResult.tolerance_type === 'EXACT'">
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Value</label>
+                        <input type="text" x-model="newResult.standard_value" :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 15.0'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                    </div>
+                    <!-- Observed value (always editable) -->
+                    <div>
+                        <label class="block text-xs font-semibold text-gray-600 mb-1">Observed Value <span class="text-red-500">*</span></label>
+                        <input type="number" step="0.0001" x-model="newResult.observed_value" placeholder="Enter measured value" class="px-3 py-2 border border-primary/30 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                    </div>
+                </div>
+
+                <div>
+                    <label class="block text-xs font-semibold text-gray-600 mb-1">Remarks</label>
+                    <textarea x-model="newResult.remarks" rows="2" placeholder="Optional remarks about this test result" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"></textarea>
+                </div>
+
+                <div class="flex justify-end">
+                    <button @click="addResult()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Record Result</button>
                 </div>
             </div>
         </div>
 
-        <!-- Remarks -->
-        <div class="mt-4">
-            <label class="block text-sm font-semibold text-gray-700 mb-2">Remarks (Optional)</label>
-            <textarea x-model="newResult.remarks" rows="2"
-                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-blue-200 focus:border-blue-600"
-                placeholder="Add any remarks or notes..."></textarea>
-        </div>
+        <div class="space-y-6">
+            <!-- Trigger button to open decision modal -->
+            <div class="bg-white rounded-xl border border-gray-200 p-5" x-show="lot.status === 'COMPLETED' && !showDecisionModal">
+                <h3 class="font-semibold text-gray-900 mb-4">Usage Decision Required</h3>
+                <p class="text-sm text-gray-600 mb-4">All test results have been recorded. Please make the final usage decision.</p>
+                <button @click="openDecisionModal()" class="w-full px-4 py-3 bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 font-semibold transition flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined">assignment_turned_in</span>
+                    Make Usage Decision
+                </button>
+            </div>
 
-        <!-- Action Buttons -->
-        <div class="mt-6 flex items-center justify-end gap-3">
-            <button @click="clearNewResultForm" type="button"
-                class="px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 text-gray-700">
-                <span class="material-symbols-outlined inline mr-1 text-sm">clear</span> Clear
-            </button>
-            <button @click="addResult" :disabled="!selectedParameterId || !newResult.observed_value || saving"
-                class="px-5 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2">
-                <span x-show="!saving" class="material-symbols-outlined">save</span>
-                <span x-show="!saving">Record Result</span>
-                <span x-show="saving">Saving...</span>
-            </button>
+            <!-- Decision Modal -->
+            <div x-show="showDecisionModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+                <div class="flex items-center justify-center min-h-screen px-4">
+                    <div class="fixed inset-0 bg-gray-900/50" @click="showDecisionModal = false"></div>
+                    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl">
+                        <div class="sticky top-0 bg-white flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                            <h3 class="text-lg font-bold text-gray-900">Make Usage Decision</h3>
+                            <button @click="showDecisionModal = false"><span class="material-symbols-outlined text-gray-400">close</span></button>
+                        </div>
+                        <form @submit.prevent="makeDecision()" class="p-6 space-y-4">
+                            <!-- Info Banner -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 text-xs text-blue-800">
+                                <strong>Important:</strong> This decision will determine the final stock status and cannot be easily reversed.
+                            </div>
+
+                            <!-- Decision Type -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Decision <span class="text-red-500">*</span></label>
+                                <select x-model="decision.decision" @change="applyDecisionDefaults()" required class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <option value="">Select decision</option>
+                                    <option value="ACCEPTED">✅ Accepted - Stock released to unrestricted use</option>
+                                    <option value="REJECTED">❌ Rejected - Stock blocked, RTV initiated</option>
+                                    <option value="CONDITIONALLY_ACCEPTED">⚠️ Conditionally Accepted - Stock restricted (requires override approval)</option>
+                                    <option value="REWORK_REQUIRED">🔄 Rework Required - Material needs reprocessing</option>
+                                </select>
+                            </div>
+
+                            <!-- Quantity Fields -->
+                            <div class="grid grid-cols-2 gap-4">
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Accepted Qty <span class="text-red-500">*</span></label>
+                                    <input type="number" step="0.001" min="0" x-model="decision.accepted_qty" @input="syncDecisionQty('accepted')" @blur="normalizeDecisionQty('accepted')" required placeholder="e.g., 100.000" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <p class="text-xs text-gray-500 mt-1">Quantity approved for use</p>
+                                </div>
+                                <div>
+                                    <label class="block text-sm font-semibold text-gray-700 mb-2">Rejected Qty <span class="text-red-500">*</span></label>
+                                    <input type="number" step="0.001" min="0" x-model="decision.rejected_qty" @input="syncDecisionQty('rejected')" @blur="normalizeDecisionQty('rejected')" required placeholder="e.g., 0.000" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                    <p class="text-xs text-gray-500 mt-1">Quantity to be returned</p>
+                                </div>
+                            </div>
+
+                            <!-- Remarks -->
+                            <div>
+                                <label class="block text-sm font-semibold text-gray-700 mb-2">Remarks <span class="text-red-500">*</span></label>
+                                <textarea x-model="decision.remarks" required rows="3" placeholder="Provide justification for this decision..." class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary"></textarea>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex gap-3 pt-4 border-t border-gray-100">
+                                <button type="button" @click="showDecisionModal = false" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50 transition">Cancel</button>
+                                <button type="submit" :disabled="saving" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 disabled:opacity-50 transition">
+                                    <span x-show="!saving">Submit Decision</span>
+                                    <span x-show="saving">Processing...</span>
+                                </button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+
+            <div class="bg-white rounded-xl border border-gray-200 p-5" x-show="lot.usage_decision">
+                <h3 class="font-semibold text-gray-900 mb-4">Decision Summary</h3>
+                <div class="space-y-3 text-sm">
+                    <div class="flex items-center justify-between"><span class="text-gray-500">Decision</span><span class="font-semibold text-gray-900" x-text="lot.usage_decision?.decision || '—'"></span></div>
+                    <div class="flex items-center justify-between"><span class="text-gray-500">Accepted Qty</span><span class="font-semibold text-gray-900" x-text="lot.usage_decision?.accepted_qty || '0'"></span></div>
+                    <div class="flex items-center justify-between"><span class="text-gray-500">Rejected Qty</span><span class="font-semibold text-gray-900" x-text="lot.usage_decision?.rejected_qty || '0'"></span></div>
+                    <div><p class="text-gray-500 mb-1">Remarks</p><p class="text-gray-900" x-text="lot.usage_decision?.remarks || '—'"></p></div>
+                </div>
+            </div>
         </div>
     </div>
-
 </div>
 
 <script>
@@ -332,302 +296,404 @@ function qcInspectionDetail() {
     const token = () => localStorage.getItem('access_token');
     const orgSlug = '{{ $organization->org_slug }}';
     const lotId = {{ $lotId }};
-    const headers = () => ({ 'Authorization': `Bearer ${token()}`, 'Accept': 'application/json', 'X-Org-Slug': orgSlug });
+    const headers = () => ({ 'Authorization': `Bearer ${token()}`, 'Accept': 'application/json', 'X-Org-Slug': orgSlug, 'Content-Type': 'application/json' });
 
     return {
         lot: {},
         qcResults: [],
         qcParameters: [],
-        showAddResultModal: false,
-        saving: false,
         selectedParameterId: '',
-        newResult: { 
-            parameter_id: '', 
-            parameter_name: '', 
-            parameter_code: '', 
-            observed_value: '', 
-            remarks: '',
-            standard_min: '',
-            standard_max: '',
-            standard_value: '',
-            unit_of_measurement: '',
-            tolerance_type: ''
-        },
-        decision: { decision: '', remarks: '' },
+        newResult: { parameter_name: '', parameter_code: '', standard_min: '', standard_max: '', standard_value: '', unit_of_measurement: '', tolerance_type: 'RANGE', observed_value: '', remarks: '' },
+        decision: { decision: '', accepted_qty: '', rejected_qty: '', remarks: '' },
+        showDecisionModal: false,
+        saving: false,
 
-        async init() {
-            await this.loadLot();
-        },
+        async init() { await this.loadLot(); },
 
         async loadLot() {
-            try {
-                const res = await fetch(`/api/v1/qc/${lotId}`, { headers: headers() });
-                const data = await res.json();
-                if (data.success) {
-                    this.lot = data.data || {};
-                    await this.loadResults();
-                    await this.loadParameters();
-                }
-            } catch (e) {
-                console.error('Failed to load lot:', e);
+            const res = await fetch(`/api/v1/qc/${lotId}`, { headers: headers() });
+            const data = await res.json();
+            this.lot = data.data || {};
+            this.qcResults = this.lot.test_results || [];
+            if (this.lot.material_id) {
+                const paramRes = await fetch(`/api/v1/qc/parameters/${this.lot.material_id}`, { headers: headers() });
+                const paramData = await paramRes.json();
+                this.qcParameters = paramData.data || [];
+            } else {
+                this.qcParameters = [];
             }
-        },
-
-        async loadResults() {
-            try {
-                const res = await fetch(`/api/v1/qc/${lotId}`, { headers: headers() });
-                const data = await res.json();
-                this.qcResults = data.data?.test_results || [];
-            } catch (e) {
-                console.error('Failed to load results:', e);
-            }
-        },
-
-        async loadParameters() {
-            try {
-                const materialId = this.lot.material_id;
-                if (!materialId) return;
-                
-                const res = await fetch(`/api/v1/qc/parameters/${materialId}`, { headers: headers() });
-                const data = await res.json();
-                this.qcParameters = data.data || [];
-            } catch (e) {
-                console.error('Failed to load parameters:', e);
-            }
-        },
-
-        async startInspection() {
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/qc/${lotId}/start`, { method: 'PATCH', headers: headers() });
-                const data = await res.json();
-                if (data.success) {
-                    this.lot = data.data;
-                    alert('Inspection started successfully');
-                } else {
-                    alert(data.message || 'Failed to start inspection');
-                }
-            } finally { this.saving = false; }
-        },
-
-        async completeInspection() {
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/qc/${lotId}/complete`, { method: 'PATCH', headers: headers() });
-                const data = await res.json();
-                if (data.success) {
-                    this.lot = data.data;
-                    alert('Inspection completed successfully');
-                } else {
-                    alert(data.message || 'Failed to complete inspection');
-                }
-            } finally { this.saving = false; }
-        },
-
-        async addResult() {
-            if (!this.selectedParameterId || !this.newResult.observed_value) {
-                alert('Please select a parameter and enter an observed value');
-                return;
-            }
-
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/qc/${lotId}/test-results`, {
-                    method: 'POST',
-                    headers: headers(),
-                    body: JSON.stringify({
-                        parameter_id: parseInt(this.selectedParameterId),
-                        parameter_name: this.newResult.parameter_name,
-                        parameter_code: this.newResult.parameter_code,
-                        standard_min: this.newResult.standard_min,
-                        standard_max: this.newResult.standard_max,
-                        standard_value: this.newResult.standard_value,
-                        unit_of_measurement: this.newResult.unit_of_measurement,
-                        tolerance_type: this.newResult.tolerance_type,
-                        observed_value: parseFloat(this.newResult.observed_value),
-                        remarks: this.newResult.remarks
-                    })
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.newResult = { 
-                        parameter_id: '', 
-                        parameter_name: '', 
-                        parameter_code: '', 
-                        observed_value: '', 
-                        remarks: '',
-                        standard_min: '',
-                        standard_max: '',
-                        standard_value: '',
-                        unit_of_measurement: '',
-                        tolerance_type: ''
-                    };
-                    this.selectedParameterId = '';
-                    await this.loadResults();
-                    alert('Test result recorded successfully');
-                } else {
-                    alert(data.message || 'Failed to record result');
-                }
-            } catch (e) {
-                console.error('Error recording result:', e);
-                alert('Failed to record result: ' + e.message);
-            } finally { 
-                this.saving = false; 
-            }
-        },
-
-        async makeDecision() {
-            this.saving = true;
-            try {
-                const res = await fetch(`/api/v1/qc/${lotId}/decision`, {
-                    method: 'POST',
-                    headers: headers(),
-                    body: JSON.stringify(this.decision)
-                });
-                const data = await res.json();
-                if (data.success) {
-                    this.lot = data.data;
-                    alert('Decision made successfully');
-                    setTimeout(() => {
-                        window.location.reload();
-                    }, 1000);
-                } else {
-                    alert(data.message || 'Failed to make decision');
-                }
-            } finally { this.saving = false; }
         },
 
         onParameterChange() {
-            const select = document.querySelector('select[x-model="selectedParameterId"]');
-            const option = select.options[select.selectedIndex];
+            const param = this.qcParameters.find(item => item.id == this.selectedParameterId);
+            if (!param) return;
+            this.newResult = {
+                parameter_name: param.parameter_name || '',
+                parameter_code: param.parameter_code || '',
+                standard_min: param.standard_min || '',
+                standard_max: param.standard_max || '',
+                standard_value: param.standard_value || '',
+                unit_of_measurement: param.unit_of_measurement || '',
+                tolerance_type: param.tolerance_type || 'RANGE',
+                observed_value: '',
+                remarks: ''
+            };
+        },
+
+        async startInspection() {
+            const res = await fetch(`/api/v1/qc/${lotId}/start`, { method: 'PATCH', headers: headers() });
+            const data = await res.json();
+            if (!data.success) return alert(data.message || 'Failed to start inspection');
+            await this.loadLot();
+        },
+
+        async completeInspection() {
+            const res = await fetch(`/api/v1/qc/${lotId}/complete`, { method: 'PATCH', headers: headers() });
+            const data = await res.json();
+            if (!data.success) return alert(data.message || 'Failed to complete inspection');
+            await this.loadLot();
+        },
+
+        async addResult() {
+            // Validate observed value before sending
+            if (!this.newResult.observed_value || this.newResult.observed_value === '') {
+                return alert('Please enter an observed value');
+            }
             
-            if (option) {
-                this.newResult = {
-                    parameter_id: parseInt(this.selectedParameterId),
-                    parameter_name: option.dataset.parameter_name || '',
-                    parameter_code: option.dataset.parameter_code || '',
-                    standard_min: option.dataset.standard_min || '',
-                    standard_max: option.dataset.standard_max || '',
-                    standard_value: option.dataset.standard_value || '',
-                    unit_of_measurement: option.dataset.unit_of_measurement || '',
-                    tolerance_type: option.dataset.tolerance_type || '',
-                    remarks: ''
+            // Validate parameter name
+            if (!this.newResult.parameter_name || this.newResult.parameter_name === '') {
+                return alert('Please enter a parameter name');
+            }
+            
+            // Validate tolerance type
+            if (!this.newResult.tolerance_type || this.newResult.tolerance_type === '') {
+                return alert('Please select a tolerance type (Range, Min Only, Max Only, or Exact)');
+            }
+            
+            // Validate standard values based on tolerance type
+            if (this.newResult.tolerance_type === 'RANGE') {
+                if (!this.newResult.standard_min && !this.newResult.standard_max) {
+                    return alert('For RANGE tolerance, please enter at least Standard Min OR Standard Max');
+                }
+            } else if (this.newResult.tolerance_type === 'MIN_ONLY') {
+                if (!this.newResult.standard_min) {
+                    return alert('For MIN ONLY tolerance, please enter Standard Min value');
+                }
+            } else if (this.newResult.tolerance_type === 'MAX_ONLY') {
+                if (!this.newResult.standard_max) {
+                    return alert('For MAX ONLY tolerance, please enter Standard Max value');
+                }
+            } else if (this.newResult.tolerance_type === 'EXACT') {
+                if (!this.newResult.standard_value) {
+                    return alert('For EXACT tolerance, please enter Standard Value');
+                }
+            }
+            
+            // DUPLICATE CHECK: Prevent re-entering the same parameter with same observed value
+            const isDuplicate = this.qcResults.some(result => {
+                const sameParameter = result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase();
+                const sameValue = parseFloat(result.observed_value) === parseFloat(this.newResult.observed_value);
+                return sameParameter && sameValue;
+            });
+            
+            if (isDuplicate) {
+                return alert(`⚠️ Duplicate Result!\n\nYou have already recorded a test result for "${this.newResult.parameter_name}" with observed value ${this.newResult.observed_value}.\n\nPlease enter a different parameter name or a different observed value.`);
+            }
+            
+            const payload = { 
+                ...this.newResult, 
+                observed_value: parseFloat(this.newResult.observed_value) 
+            };
+            
+            // Remove empty/null fields to avoid validation issues
+            if (!payload.parameter_code) delete payload.parameter_code;
+            if (!payload.standard_min) delete payload.standard_min;
+            if (!payload.standard_max) delete payload.standard_max;
+            if (!payload.standard_value) delete payload.standard_value;
+            if (!payload.unit_of_measurement) delete payload.unit_of_measurement;
+            if (!payload.remarks) delete payload.remarks;
+            
+            const res = await fetch(`/api/v1/qc/${lotId}/test-results`, {
+                method: 'POST',
+                headers: headers(),
+                body: JSON.stringify(payload)
+            });
+            const data = await res.json();
+            if (!data.success) {
+                // Show detailed error message
+                let errorMsg = data.message || 'Failed to record result';
+                if (data.error?.details) {
+                    Object.entries(data.error.details).forEach(([field, errors]) => {
+                        errorMsg += '\n\n' + field + ':\n  - ' + (Array.isArray(errors) ? errors.join('\n  - ') : errors);
+                    });
+                }
+                return alert(errorMsg);
+            }
+            this.selectedParameterId = '';
+            this.newResult = { parameter_name: '', parameter_code: '', standard_min: '', standard_max: '', standard_value: '', unit_of_measurement: '', tolerance_type: 'RANGE', observed_value: '', remarks: '' };
+            await this.loadLot();
+        },
+
+        async makeDecision() {
+            // Validate decision
+            if (!this.decision.decision) {
+                return alert('Please select a decision');
+            }
+            
+            // Validate quantities
+            const acceptedQty = parseFloat(this.decision.accepted_qty) || 0;
+            const rejectedQty = parseFloat(this.decision.rejected_qty) || 0;
+            
+            if (acceptedQty < 0 || rejectedQty < 0) {
+                return alert('Quantities cannot be negative');
+            }
+            
+            if (acceptedQty === 0 && rejectedQty === 0) {
+                return alert('At least one of Accepted Qty or Rejected Qty must be greater than zero');
+            }
+            
+            if (!this.decision.remarks || this.decision.remarks.trim() === '') {
+                return alert('Please provide remarks for your decision');
+            }
+            
+            this.saving = true;
+            
+            try {
+                const payload = {
+                    ...this.decision,
+                    accepted_qty: acceptedQty,
+                    rejected_qty: rejectedQty,
                 };
+                
+                const res = await fetch(`/api/v1/qc/${lotId}/decision`, {
+                    method: 'POST',
+                    headers: headers(),
+                    body: JSON.stringify(payload)
+                });
+                const data = await res.json();
+                
+                if (!data.success) {
+                    let errorMsg = data.message || 'Failed to make decision';
+                    if (data.error?.details) {
+                        Object.entries(data.error.details).forEach(([field, errors]) => {
+                            errorMsg += '\n\n' + field + ':\n  - ' + (Array.isArray(errors) ? errors.join('\n  - ') : errors);
+                        });
+                    }
+                    return alert(errorMsg);
+                }
+                
+                // Success - show confirmation and close modal
+                alert('✅ Usage decision recorded successfully!\n\nDecision: ' + this.decision.decision.replace(/_/g, ' ') + '\nAccepted: ' + acceptedQty + '\nRejected: ' + rejectedQty);
+                
+                this.showDecisionModal = false;
+                await this.loadLot();
+            } catch (error) {
+                console.error('Decision error:', error);
+                alert('An error occurred while submitting the decision');
+            } finally {
+                this.saving = false;
             }
         },
 
-        getStandardValueDisplay() {
-            if (!this.selectedParameter) return '';
+        openDecisionModal() {
+            // Reset decision form
+            this.decision = { decision: '', accepted_qty: '', rejected_qty: '', remarks: '' };
             
-            const type = this.selectedParameter.tolerance_type;
-            const unit = this.selectedParameter.unit_of_measurement || '';
+            // Auto-calculate quantities from test results
+            this.calculateDefaultQuantities();
             
-            if (type === 'RANGE') return `${this.selectedParameter.standard_min} - ${this.selectedParameter.standard_max} ${unit}`;
-            if (type === 'MIN_ONLY') return `> ${this.selectedParameter.standard_min} ${unit}`;
-            if (type === 'MAX_ONLY') return `< ${this.selectedParameter.standard_max} ${unit}`;
-            if (type === 'EXACT') return `${this.selectedParameter.standard_value} ${unit}`;
-            
-            return '';
+            this.showDecisionModal = true;
         },
 
-        getResultStatusColor() {
-            if (!this.selectedParameter || !this.newResult.observed_value) return 'bg-gray-300';
-            
-            const value = parseFloat(this.newResult.observed_value);
-            const type = this.selectedParameter.tolerance_type;
-            
-            if (type === 'RANGE') {
-                const min = parseFloat(this.selectedParameter.standard_min);
-                const max = parseFloat(this.selectedParameter.standard_max);
-                if (value >= min && value <= max) return 'bg-green-500 text-green-700';
-                return 'bg-red-500 text-red-700';
+        calculateDefaultQuantities() {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            if (lotQty <= 0) {
+                return;
             }
             
-            if (type === 'MIN_ONLY') {
-                const min = parseFloat(this.selectedParameter.standard_min);
-                if (value >= min) return 'bg-green-500 text-green-700';
-                return 'bg-red-500 text-red-700';
-            }
+            const passCount = this.qcResults.filter(r => r.is_pass === true).length;
+            const failCount = this.qcResults.filter(r => r.is_pass === false).length;
+            const totalCount = this.qcResults.length;
             
-            if (type === 'MAX_ONLY') {
-                const max = parseFloat(this.selectedParameter.standard_max);
-                if (value <= max) return 'bg-green-500 text-green-700';
-                return 'bg-red-500 text-red-700';
+            // If all results PASS → Set as accepted
+            if (passCount === totalCount && passCount > 0) {
+                this.decision.decision = 'ACCEPTED';
+                this.decision.accepted_qty = lotQty.toFixed(3);
+                this.decision.rejected_qty = '0.000';
             }
-            
-            if (type === 'EXACT') {
-                const exact = parseFloat(this.selectedParameter.standard_value);
-                const tolerance = 0.05; // 5% tolerance
-                const lower = exact * (1 - tolerance);
-                const upper = exact * (1 + tolerance);
-                if (value >= lower && value <= upper) return 'bg-green-500 text-green-700';
-                return 'bg-red-500 text-red-700';
+            // If all results FAIL → Set as rejected
+            else if (failCount === totalCount && failCount > 0) {
+                this.decision.decision = 'REJECTED';
+                this.decision.accepted_qty = '0.000';
+                this.decision.rejected_qty = lotQty.toFixed(3);
             }
-            
-            return 'bg-gray-300';
+            // Mixed results → Split based on pass/fail ratio
+            else {
+                this.decision.decision = totalCount > 0 ? 'CONDITIONALLY_ACCEPTED' : 'ACCEPTED';
+                this.decision.accepted_qty = lotQty.toFixed(3);
+                this.decision.rejected_qty = '0.000';
+            }
+            this.applyDecisionDefaults();
         },
 
-        getResultStatusText() {
-            if (!this.selectedParameter || !this.newResult.observed_value) return '—';
-            
-            const value = parseFloat(this.newResult.observed_value);
-            const type = this.selectedParameter.tolerance_type;
-            
-            if (type === 'RANGE') {
-                const min = parseFloat(this.selectedParameter.standard_min);
-                const max = parseFloat(this.selectedParameter.standard_max);
-                return (value >= min && value <= max) ? 'PASS' : 'FAIL';
+        applyDecisionDefaults() {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            const currentRemarks = (this.decision.remarks || '').trim();
+            const hasManualRemarks = currentRemarks !== '' && !this.isAutoDecisionRemark(currentRemarks);
+
+            if (this.decision.decision === 'ACCEPTED') {
+                this.decision.accepted_qty = lotQty.toFixed(3);
+                this.decision.rejected_qty = '0.000';
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('ACCEPTED');
+            } else if (this.decision.decision === 'REJECTED') {
+                this.decision.accepted_qty = '0.000';
+                this.decision.rejected_qty = lotQty.toFixed(3);
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REJECTED');
+            } else if (this.decision.decision === 'CONDITIONALLY_ACCEPTED') {
+                if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                    this.decision.accepted_qty = lotQty.toFixed(3);
+                    this.decision.rejected_qty = '0.000';
+                }
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('CONDITIONALLY_ACCEPTED');
+            } else if (this.decision.decision === 'REWORK_REQUIRED') {
+                if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                    this.decision.accepted_qty = '0.000';
+                    this.decision.rejected_qty = lotQty.toFixed(3);
+                }
+                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REWORK_REQUIRED');
+            }
+        },
+
+        getDefaultDecisionRemark(decision) {
+            return {
+                ACCEPTED: 'Accepted after QC inspection.',
+                REJECTED: 'Rejected after QC inspection.',
+                CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
+                REWORK_REQUIRED: 'Rework required based on QC inspection.'
+            }[decision] || '';
+        },
+
+        isAutoDecisionRemark(remarks) {
+            return Object.values({
+                ACCEPTED: 'Accepted after QC inspection.',
+                REJECTED: 'Rejected after QC inspection.',
+                CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
+                REWORK_REQUIRED: 'Rework required based on QC inspection.'
+            }).includes(remarks);
+        },
+
+        syncDecisionQty(changedField) {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            if (lotQty <= 0) {
+                return;
+            }
+
+            if (changedField === 'rejected') {
+                let rejectedQty = parseFloat(this.decision.rejected_qty);
+                if (!Number.isFinite(rejectedQty)) {
+                    this.decision.accepted_qty = lotQty.toFixed(3);
+                    return;
+                }
+                rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
+                this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
+                return;
+            }
+
+            let acceptedQty = parseFloat(this.decision.accepted_qty);
+            if (!Number.isFinite(acceptedQty)) {
+                this.decision.rejected_qty = lotQty.toFixed(3);
+                return;
+            }
+            acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
+            this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
+        },
+
+        normalizeDecisionQty(changedField) {
+            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+            if (lotQty <= 0) {
+                return;
+            }
+
+            if (changedField === 'rejected') {
+                let rejectedQty = parseFloat(this.decision.rejected_qty);
+                rejectedQty = Number.isFinite(rejectedQty) ? rejectedQty : 0;
+                rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
+                this.decision.rejected_qty = rejectedQty.toFixed(3);
+                this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
+                return;
+            }
+
+            let acceptedQty = parseFloat(this.decision.accepted_qty);
+            acceptedQty = Number.isFinite(acceptedQty) ? acceptedQty : 0;
+            acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
+            this.decision.accepted_qty = acceptedQty.toFixed(3);
+            this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
+        },
+
+        formatTolerance(result) {
+            // If no tolerance type, show "No tolerance set"
+            if (!result.tolerance_type || result.tolerance_type === '') {
+                return 'No tolerance set';
             }
             
-            if (type === 'MIN_ONLY') {
-                const min = parseFloat(this.selectedParameter.standard_min);
-                return (value >= min) ? 'PASS' : 'FAIL';
+            // Show based on tolerance type
+            if (result.tolerance_type === 'RANGE') {
+                if (result.standard_min && result.standard_max) {
+                    return `${result.standard_min} to ${result.standard_max}`;
+                }
+                return 'Range not set';
             }
-            
-            if (type === 'MAX_ONLY') {
-                const max = parseFloat(this.selectedParameter.standard_max);
-                return (value <= max) ? 'PASS' : 'FAIL';
+            if (result.tolerance_type === 'MIN_ONLY') {
+                if (result.standard_min) {
+                    return `>= ${result.standard_min}`;
+                }
+                return 'Min not set';
             }
-            
-            if (type === 'EXACT') {
-                const exact = parseFloat(this.selectedParameter.standard_value);
-                const tolerance = 0.05;
-                const lower = exact * (1 - tolerance);
-                const upper = exact * (1 + tolerance);
-                return (value >= lower && value <= upper) ? 'PASS' : 'FAIL';
+            if (result.tolerance_type === 'MAX_ONLY') {
+                if (result.standard_max) {
+                    return `<= ${result.standard_max}`;
+                }
+                return 'Max not set';
             }
-            
+            if (result.tolerance_type === 'EXACT') {
+                if (result.standard_value) {
+                    return result.standard_value;
+                }
+                return 'Target not set';
+            }
             return '—';
         },
 
-        clearNewResultForm() {
-            this.newResult = { 
-                parameter_id: '', 
-                parameter_name: '', 
-                parameter_code: '', 
-                observed_value: '', 
-                remarks: '',
-                standard_min: '',
-                standard_max: '',
-                standard_value: '',
-                unit_of_measurement: '',
-                tolerance_type: ''
-            };
-            this.selectedParameterId = '';
+        statusClass(value) {
+            return {
+                'PENDING': 'bg-amber-100 text-amber-700',
+                'IN_PROGRESS': 'bg-blue-100 text-blue-700',
+                'COMPLETED': 'bg-green-100 text-green-700',
+                'DECISION_MADE': 'bg-purple-100 text-purple-700'
+            }[value] || 'bg-gray-100 text-gray-600';
         },
 
-        get selectedParameter() {
-            return this.qcParameters.find(p => p.id == this.selectedParameterId);
+        // Check if the current input is a duplicate
+        hasDuplicate() {
+            if (!this.newResult.parameter_name || !this.newResult.observed_value) {
+                return false;
+            }
+            
+            return this.qcResults.some(result => {
+                const sameParameter = result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase();
+                const sameValue = parseFloat(result.observed_value) === parseFloat(this.newResult.observed_value);
+                return sameParameter && sameValue;
+            });
         },
 
-        statusClass(s) {
-            return { 
-                'PENDING': 'bg-amber-100 text-amber-700', 
-                'IN_PROGRESS': 'bg-blue-100 text-blue-700', 
-                'COMPLETED': 'bg-green-100 text-green-700', 
-                'DECISION_MADE': 'bg-purple-100 text-purple-700' 
-            }[s] || 'bg-gray-100 text-gray-600';
-        },
+        // Get duplicate warning message
+        getDuplicateMessage() {
+            if (!this.newResult.parameter_name || !this.newResult.observed_value) {
+                return '';
+            }
+            
+            return `You have already recorded "${this.newResult.parameter_name}" with observed value ${this.newResult.observed_value}. Please enter a different value or parameter.`;
+        }
     };
 }
 </script>

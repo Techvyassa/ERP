@@ -6,11 +6,52 @@ use App\Models\Tenant\InspectionLot;
 use App\Models\Tenant\QCResult;
 use App\Models\Tenant\QCDecision;
 use App\Models\Tenant\GRN;
+use App\Models\Tenant\ProductionOrder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 class QCService
 {
+    public function createInspectionLotForProduction(ProductionOrder $order, float $lotQty, int $userId): InspectionLot
+    {
+        $existing = InspectionLot::where('source_type', 'PRODUCTION')
+            ->where('production_order_id', $order->id)
+            ->first();
+
+        if ($existing) {
+            return $existing;
+        }
+
+        return DB::connection('tenant')->transaction(function () use ($order, $lotQty, $userId) {
+            $sampleSize = max(1, (int) ceil($lotQty * 0.1));
+            $lotNumber = 'IL-' . now()->format('y') . '-' . str_pad(InspectionLot::count() + 1, 4, '0', STR_PAD_LEFT);
+
+            $lot = InspectionLot::create([
+                'lot_number' => $lotNumber,
+                'source_type' => 'PRODUCTION',
+                'production_order_id' => $order->id,
+                'product_id' => $order->product_id,
+                'warehouse_id' => $order->fg_warehouse_id,
+                'bin_id' => $order->fg_bin_id,
+                'batch_number' => $order->fg_batch_number,
+                'lot_qty' => $lotQty,
+                'sample_size' => $sampleSize,
+                'sampling_method' => 'FG',
+                'status' => 'PENDING',
+                'created_by' => $userId,
+            ]);
+
+            Log::info('[QCService] FG inspection lot created', [
+                'lot_id' => $lot->id,
+                'production_order_id' => $order->id,
+                'product_id' => $order->product_id,
+                'lot_qty' => $lotQty,
+            ]);
+
+            return $lot->load(['productionOrder', 'product']);
+        });
+    }
+
     /**
      * Create inspection lot for a specific GRN line item (new flow: one lot per GRN line).
      * Enforces single-lot-per-line via DB unique constraint on grn_line_id.
@@ -239,10 +280,22 @@ class QCService
         }
 
         return DB::connection('tenant')->transaction(function () use ($lot, $data, $userId) {
+            $lotQty = (float) $lot->lot_qty;
+            $acceptedQty = array_key_exists('accepted_qty', $data) ? (float) $data['accepted_qty'] : null;
+            $rejectedQty = array_key_exists('rejected_qty', $data) ? (float) $data['rejected_qty'] : null;
 
-            // Auto-calculate quantities if they are not specifically provided
-            $acceptedQty = $data['accepted_qty'] ?? ($data['decision'] === 'ACCEPTED' ? $lot->lot_qty : 0);
-            $rejectedQty = $data['rejected_qty'] ?? ($data['decision'] === 'REJECTED' ? $lot->lot_qty : 0);
+            if ($acceptedQty === null && $rejectedQty === null) {
+                $acceptedQty = in_array($data['decision'], ['ACCEPTED', 'CONDITIONALLY_ACCEPTED'], true) ? $lotQty : 0;
+                $rejectedQty = $lotQty - $acceptedQty;
+            } elseif ($acceptedQty === null) {
+                $acceptedQty = max(0, $lotQty - $rejectedQty);
+            } elseif ($rejectedQty === null) {
+                $rejectedQty = max(0, $lotQty - $acceptedQty);
+            }
+
+            if (round($acceptedQty + $rejectedQty, 3) > round($lotQty, 3)) {
+                throw new \Exception('Accepted and rejected quantities exceed lot quantity.');
+            }
 
             // Create decision
             $decision = QCDecision::create([
@@ -255,8 +308,52 @@ class QCService
                 'decided_at' => now(),
             ]);
 
-            // Apply QC decision to GRN line items (writeback + status transition)
-            try {
+            if ($lot->source_type === 'PRODUCTION') {
+                $stockService = app(\App\Services\StockService::class);
+                $productionOrder = $lot->productionOrder()->with('bom')->firstOrFail();
+                $item = [
+                    'product_id' => $productionOrder->product_id,
+                    'uom_id' => $productionOrder->bom?->output_uom_id,
+                    'warehouse_id' => $lot->warehouse_id ?: $productionOrder->fg_warehouse_id,
+                    'batch_number' => $lot->batch_number ?: $productionOrder->fg_batch_number,
+                ];
+                $fromBinId = $lot->bin_id ?: $productionOrder->fg_bin_id;
+
+                if ($acceptedQty > 0) {
+                    $stockService->transfer(
+                        item: $item,
+                        fromBucket: 'QC_HOLD',
+                        toBucket: 'AVAILABLE',
+                        qty: $acceptedQty,
+                        transactionType: 'QC_PASS',
+                        referenceType: 'InspectionLot',
+                        referenceId: $lot->id,
+                        referenceNumber: $lot->lot_number,
+                        userId: $userId,
+                        fromBinId: $fromBinId,
+                        toBinId: $fromBinId,
+                        remarks: 'FG QC accepted'
+                    );
+                }
+
+                if ($rejectedQty > 0) {
+                    $stockService->transfer(
+                        item: $item,
+                        fromBucket: 'QC_HOLD',
+                        toBucket: 'BLOCKED',
+                        qty: $rejectedQty,
+                        transactionType: 'QC_REJECT',
+                        referenceType: 'InspectionLot',
+                        referenceId: $lot->id,
+                        referenceNumber: $lot->lot_number,
+                        userId: $userId,
+                        fromBinId: $fromBinId,
+                        toBinId: $fromBinId,
+                        remarks: 'FG QC rejected'
+                    );
+                }
+            } else {
+                // Apply QC decision to GRN line items (writeback + status transition)
                 $grnService = app(\App\Services\GRNService::class);
                 $qcDecisions = [
                     $lot->grn_line_id => [
@@ -268,12 +365,6 @@ class QCService
                     ],
                 ];
                 $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);
-            } catch (\Exception $e) {
-                Log::warning('[QCService] applyQCDecision failed, continuing', [
-                    'lot_id' => $lot->id,
-                    'error' => $e->getMessage(),
-                ]);
-                // Don't fail the decision if writeback fails
             }
 
             // Update lot status

@@ -208,6 +208,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
                 Route::get('/barcode', [App\Http\Controllers\WarehouseController::class, 'barcode']);
+                Route::get('/all-stock', [App\Http\Controllers\WarehouseController::class, 'allWarehouseStock']);
                 Route::get('/{id}', [App\Http\Controllers\WarehouseController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\WarehouseController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\WarehouseController::class, 'update']);
@@ -232,6 +233,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/search', [App\Http\Controllers\MaterialController::class, 'search']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
+                Route::post('/bulk', [App\Http\Controllers\MaterialController::class, 'bulkStore']);
                 Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\MaterialController::class, 'destroy']); // Deactivate
             });
@@ -242,6 +244,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/barcode', [App\Http\Controllers\ProductController::class, 'barcode']);
                 Route::get('/{id}', [App\Http\Controllers\ProductController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\ProductController::class, 'store']);
+                Route::post('/bulk', [App\Http\Controllers\ProductController::class, 'bulkStore']);
                 Route::put('/{id}', [App\Http\Controllers\ProductController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\ProductController::class, 'destroy']); // Deactivate
             });
@@ -285,19 +288,19 @@ Route::prefix('v1')->group(function () {
             // Purchase Requisition Endpoints
             Route::prefix('purchase-requisitions')->group(function () {
                 // Master data lookups for PR form
-                Route::get('/master/materials',  [App\Http\Controllers\PurchaseRequisitionController::class, 'getMaterials']);
-                Route::get('/master/uoms',        [App\Http\Controllers\PurchaseRequisitionController::class, 'getUoms']);
-                Route::get('/master/warehouses',  [App\Http\Controllers\PurchaseRequisitionController::class, 'getWarehouses']);
-                Route::get('/master/users',       [App\Http\Controllers\PurchaseRequisitionController::class, 'getUsers']);
+                Route::get('/master/materials', [App\Http\Controllers\PurchaseRequisitionController::class, 'getMaterials']);
+                Route::get('/master/uoms', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUoms']);
+                Route::get('/master/warehouses', [App\Http\Controllers\PurchaseRequisitionController::class, 'getWarehouses']);
+                Route::get('/master/users', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUsers']);
                 // CRUD
-                Route::get('/',      [App\Http\Controllers\PurchaseRequisitionController::class, 'index']);
-                Route::post('/',     [App\Http\Controllers\PurchaseRequisitionController::class, 'store']);
-                Route::get('/{id}',  [App\Http\Controllers\PurchaseRequisitionController::class, 'show']);
-                Route::put('/{id}',  [App\Http\Controllers\PurchaseRequisitionController::class, 'update']);
+                Route::get('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'store']);
+                Route::get('/{id}', [App\Http\Controllers\PurchaseRequisitionController::class, 'show']);
+                Route::put('/{id}', [App\Http\Controllers\PurchaseRequisitionController::class, 'update']);
                 // Status transitions
-                Route::patch('/{id}/submit',  [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
+                Route::patch('/{id}/submit', [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
                 Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseRequisitionController::class, 'approve']);
-                Route::patch('/{id}/reject',  [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
+                Route::patch('/{id}/reject', [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
                 // Send to vendor
                 Route::post('/{id}/send-to-vendor', [App\Http\Controllers\PurchaseRequisitionController::class, 'sendToVendor']);
             });
@@ -440,6 +443,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/in-progress', [App\Http\Controllers\QCController::class, 'inProgress']);
                 Route::get('/completed', [App\Http\Controllers\QCController::class, 'completed']);
                 Route::get('/by-grn/{grnId}', [App\Http\Controllers\QCController::class, 'byGRN']);
+                Route::get('/by-production-order/{productionOrderId}', [App\Http\Controllers\QCController::class, 'byProductionOrder']);
                 Route::get('/parameters/{materialId}', [App\Http\Controllers\QCController::class, 'getParameters']);
 
                 // Resource routes
@@ -512,6 +516,9 @@ Route::prefix('v1')->group(function () {
 
                 // Bucket drill-down: all balance rows for a material in one bucket
                 Route::get('/bucket/{materialId}/{bucket}', [App\Http\Controllers\StockController::class, 'byBucket']);
+
+
+                Route::post('/adjust', [App\Http\Controllers\StockController::class, 'adjust']);
             });
         });
 
@@ -520,6 +527,7 @@ Route::prefix('v1')->group(function () {
             // BOM Header
             Route::prefix('bom-headers')->group(function () {
                 Route::get('/', [App\Http\Controllers\BOMHeaderController::class, 'index']);
+                Route::get('/next-code', [App\Http\Controllers\BOMHeaderController::class, 'getNextCode']);
                 Route::get('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\BOMHeaderController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\BOMHeaderController::class, 'update']);
@@ -541,19 +549,215 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // Production Orders & Material Issue Requests
-        Route::prefix('production-orders')->group(function () {
-            Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
-            Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
-            Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
+        // ── PRODUCTION Module ─────────────────────────────────────────────
+        Route::middleware(['check.module.permission:PRODUCTION'])->group(function () {
+            // Production Orders & Material Issue Requests
+            Route::prefix('production-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
+                Route::get('/for-packing', [App\Http\Controllers\ProductionOrderController::class, 'forPacking']);
+                Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
+                Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
+                Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);
+                Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
+                Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
+            });
+
+            Route::prefix('material-issue-requests')->group(function () {
+                Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
+                Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
+                Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
+                Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
+            });
+
+            Route::prefix('packing-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PackingOrderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PackingOrderController::class, 'store']);
+                Route::post('/{id}/cartons', [App\Http\Controllers\PackingOrderController::class, 'createCarton']);
+                Route::post('/{id}/cartons/{cartonId}/scan', [App\Http\Controllers\PackingOrderController::class, 'scanIntoCarton']);
+                Route::post('/{id}/cartons/{cartonId}/seal', [App\Http\Controllers\PackingOrderController::class, 'sealCarton']);
+                Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
+            });
         });
 
-        Route::prefix('material-issue-requests')->group(function () {
-            Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
-            Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
-            Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
-            Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
-            Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
+
+        // ── Lookup routes for Sales Order creation (no module-permission gate) ──
+        Route::get('/lookup/customers', function (\Illuminate\Http\Request $request) {
+            // Switch to tenant DB (normally done by CheckModulePermission, must do manually here)
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+
+            $customers = \App\Models\Tenant\Customer::where('is_active', true)
+                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%' . $request->search . '%'))
+                ->orderBy('customer_name')
+                ->get(['id', 'customer_name', 'customer_code', 'phone', 'email'])
+                ->map(fn($c) => ['id' => 'c_' . $c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
+
+            $users = \App\Models\Tenant\User::where('is_active', true)
+                ->when($request->filled('search'), fn($q) => $q->where(
+                    fn($q2) =>
+                    $q2->where('first_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('last_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('email', 'like', '%' . $request->search . '%')
+                ))
+                ->orderBy('first_name')
+                ->get(['id', 'first_name', 'last_name', 'email', 'employee_code'])
+                ->map(fn($u) => ['id' => 'u_' . $u->id, 'label' => trim($u->first_name . ' ' . $u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
+
+            $merged = $customers->concat($users)->sortBy('label')->values();
+            return response()->json(['success' => true, 'data' => $merged]);
+        });
+
+        Route::post('/lookup/customers', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+                'customer_name' => 'required|string|max:200',
+            ]);
+            if ($validator->fails()) {
+                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+            }
+            $customer = \App\Models\Tenant\Customer::create([
+                'customer_name' => $request->customer_name,
+                'customer_code' => \App\Models\Tenant\Customer::generateCode(),
+                'created_by' => $request->input('auth_user_id'),
+            ]);
+            return response()->json(['success' => true, 'data' => $customer], 201);
+        });
+
+        Route::get('/lookup/products', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            $products = \App\Models\Tenant\Product::where('is_active', true)
+                ->when($request->filled('search'), fn($q) => $q->where(
+                    fn($q2) =>
+                    $q2->where('product_name', 'like', '%' . $request->search . '%')
+                        ->orWhere('product_code', 'like', '%' . $request->search . '%')
+                ))
+                ->orderBy('product_name')
+                ->get(['id', 'product_code', 'product_name', 'pack_size', 'pack_uom_id', 'standard_cost', 'mrp']);
+            return response()->json(['success' => true, 'data' => $products]);
+        });
+
+        Route::get('/lookup/uoms', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            return response()->json(['success' => true, 'data' => \App\Models\Tenant\UOM::where('is_active', true)->orderBy('uom_name')->get(['id', 'uom_code', 'uom_name'])]);
+        });
+
+        Route::get('/lookup/stock-bins', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            $productId = $request->input('product_id');
+            if (!$productId) {
+                return response()->json(['success' => false, 'message' => 'product_id required'], 422);
+            }
+            $bins = \DB::connection('tenant')
+                ->table('stock_balances as sb')
+                ->join('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
+                ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
+                ->where('sb.product_id', $productId)
+                ->where('sb.bucket', 'AVAILABLE')
+                ->whereRaw('(sb.qty_on_hand - sb.qty_reserved) > 0')
+                ->select(
+                    'bl.bin_code',
+                    'wm.warehouse_name',
+                    \DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available')
+                )
+                ->orderByDesc('qty_available')
+                ->get();
+            return response()->json(['success' => true, 'data' => $bins]);
+        });
+
+        // Sales Order Endpoints (Outward Flow)
+        // Status Flow: DRAFT → CONFIRMED → STOCK_CHECKED → PICKING → PACKED → DISPATCHED → DELIVERED
+        Route::middleware(['check.module.permission:SALES'])->group(function () {
+            // Customer Master (accessible to sales users)
+            Route::prefix('customers')->group(function () {
+                Route::get('/', [App\Http\Controllers\CustomerController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\CustomerController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\CustomerController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\CustomerController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\CustomerController::class, 'destroy']);
+            });
+
+            // Sales Orders
+            Route::prefix('sales-orders')->group(function () {
+                Route::get('/dashboard-stats', [App\Http\Controllers\SalesOrderController::class, 'dashboardStats']);
+                Route::get('/', [App\Http\Controllers\SalesOrderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\SalesOrderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\SalesOrderController::class, 'store']);
+                Route::patch('/{id}/confirm', [App\Http\Controllers\SalesOrderController::class, 'confirm']);
+                Route::patch('/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
+                Route::patch('/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
+                Route::post('/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
+            });
+        });
+
+        // ── SALES Module ─────────────────────────────────────────────────
+        Route::middleware(['check.module.permission:SALES'])->group(function () {
+            Route::prefix('sales')->group(function () {
+                Route::get('/dashboard-stats', [App\Http\Controllers\SalesOrderController::class, 'dashboardStats']);
+                Route::get('/orders', [App\Http\Controllers\SalesOrderController::class, 'index']);
+                Route::get('/orders/{id}', [App\Http\Controllers\SalesOrderController::class, 'show']);
+                Route::post('/orders', [App\Http\Controllers\SalesOrderController::class, 'store']);
+                Route::patch('/orders/{id}/confirm', [App\Http\Controllers\SalesOrderController::class, 'confirm']);
+                Route::patch('/orders/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
+                Route::patch('/orders/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
+                Route::post('/orders/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/orders/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
+            });
+        });
+
+        // ── CUSTOMER Module ───────────────────────────────────────────────
+        Route::middleware(['check.module.permission:CUSTOMER'])->group(function () {
+            Route::prefix('customer-mgmt')->group(function () {
+                Route::get('/', [App\Http\Controllers\CustomerController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\CustomerController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\CustomerController::class, 'store']);
+                Route::put('/{id}', [App\Http\Controllers\CustomerController::class, 'update']);
+                Route::delete('/{id}', [App\Http\Controllers\CustomerController::class, 'destroy']);
+            });
+        });
+
+        // ── MAINTENANCE Module ────────────────────────────────────────────
+        Route::middleware(['check.module.permission:MAINTENANCE'])->group(function () {
+            Route::prefix('maintenance')->group(function () {
+                // Work Orders
+                Route::get('/work-orders', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Work orders endpoint — coming soon']));
+                Route::post('/work-orders', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Work order created — coming soon'], 201));
+                Route::patch('/work-orders/{id}/close', fn() => response()->json(['success' => true, 'message' => 'Work order closed — coming soon']));
+                // Assets
+                Route::get('/assets', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Assets endpoint — coming soon']));
+                Route::post('/assets', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Asset created — coming soon'], 201));
+                // PM Schedule
+                Route::get('/schedule', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'PM schedule endpoint — coming soon']));
+                // Spare Parts
+                Route::get('/spare-parts', fn() => response()->json(['success' => true, 'data' => [], 'message' => 'Spare parts endpoint — coming soon']));
+            });
         });
 
         // Admin-only feature control endpoints (require admin authentication)

@@ -1,0 +1,397 @@
+<!DOCTYPE html>
+<html class="dark" lang="en">
+<head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>Material Issue Requests</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght@100..700,0..1&display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+tailwind.config = {
+  darkMode: "class",
+  theme: {
+    extend: {
+      colors: { "primary": "#193261", "background-light": "#f6f7f8", "background-dark": "#13171f" },
+      fontFamily: { "display": ["Inter"] },
+      borderRadius: { "DEFAULT": "0.25rem", "lg": "0.5rem", "xl": "0.75rem", "full": "9999px" },
+    },
+  },
+}
+</script>
+<style>
+.material-symbols-outlined { font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24; }
+body { font-family: 'Inter', sans-serif; }
+.badge-PENDING  { background:#fef9c3; color:#a16207; }
+.badge-APPROVED { background:#dbeafe; color:#1d4ed8; }
+.badge-REJECTED { background:#fee2e2; color:#b91c1c; }
+.badge-ISSUED   { background:#dcfce7; color:#15803d; }
+.dark .badge-PENDING  { background:#422006; color:#fbbf24; }
+.dark .badge-APPROVED { background:#1e3a5f; color:#60a5fa; }
+.dark .badge-REJECTED { background:#450a0a; color:#f87171; }
+.dark .badge-ISSUED   { background:#14532d; color:#4ade80; }
+.scan-PENDING { background:#f1f5f9; color:#64748b; }
+.scan-ISSUED  { background:#dcfce7; color:#15803d; }
+.dark .scan-PENDING { background:#1e293b; color:#94a3b8; }
+.dark .scan-ISSUED  { background:#14532d; color:#4ade80; }
+</style>
+</head>
+<body class="bg-background-light dark:bg-background-dark text-slate-900 dark:text-slate-100 min-h-screen">
+<div class="relative flex flex-col min-h-screen w-full overflow-x-hidden">
+
+<!-- Header -->
+<header class="flex items-center justify-between border-b border-slate-200 dark:border-slate-800 bg-white dark:bg-background-dark px-6 py-4 sticky top-0 z-50">
+  <div class="flex items-center gap-4">
+    <div class="bg-primary p-2 rounded-lg text-white">
+      <span class="material-symbols-outlined block">precision_manufacturing</span>
+    </div>
+    <div>
+      <h2 class="text-lg font-bold leading-tight tracking-tight">Production Module</h2>
+      <p class="text-xs text-slate-500 dark:text-slate-400">Manufacturing Execution System</p>
+    </div>
+  </div>
+  <button class="flex items-center justify-center rounded-lg h-10 w-10 bg-slate-100 dark:bg-slate-800 text-slate-600 dark:text-slate-300 hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+    <span class="material-symbols-outlined">account_circle</span>
+  </button>
+</header>
+
+<!-- Sub-nav -->
+<nav class="bg-white dark:bg-background-dark border-b border-slate-200 dark:border-slate-800 px-6">
+  <div class="flex gap-1 max-w-7xl mx-auto">
+    <a href="production_orders.html" class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 border-b-2 border-transparent hover:border-slate-300 transition-all">Production Orders</a>
+    <a href="mir_management.html" class="px-4 py-3 text-sm font-semibold text-primary border-b-2 border-primary">Material Issue (MIR)</a>
+    <a href="fg_confirmation.html" class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 border-b-2 border-transparent hover:border-slate-300 transition-all">FG Confirmation</a>
+    <a href="variance_report.html" class="px-4 py-3 text-sm font-medium text-slate-500 hover:text-slate-900 dark:hover:text-slate-100 border-b-2 border-transparent hover:border-slate-300 transition-all">Variance Report</a>
+  </div>
+</nav>
+
+<main class="flex-1 max-w-7xl mx-auto w-full p-4 md:p-8">
+  <div class="mb-6">
+    <h1 class="text-2xl font-bold mb-1">Material Issue Requests</h1>
+    <p class="text-slate-500 dark:text-slate-400 text-sm">Store team approves MIRs and operators scan RM bins to issue materials to production.</p>
+  </div>
+
+  <!-- Filters -->
+  <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl p-4 mb-6 flex flex-col md:flex-row gap-3">
+    <div class="relative flex-1">
+      <input id="search-input" type="text" placeholder="Search by MIR no, order no, product..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+      <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">search</span>
+    </div>
+    <select id="status-filter" class="bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none">
+      <option value="">All Statuses</option>
+      <option value="PENDING">Pending</option>
+      <option value="APPROVED">Approved</option>
+      <option value="REJECTED">Rejected</option>
+    </select>
+    <button onclick="loadMIRs()" class="flex items-center gap-2 bg-slate-100 dark:bg-slate-800 text-slate-700 dark:text-slate-300 px-4 py-2.5 rounded-lg text-sm font-semibold hover:bg-slate-200 dark:hover:bg-slate-700 transition-colors">
+      <span class="material-symbols-outlined text-sm">refresh</span> Refresh
+    </button>
+  </div>
+
+  <!-- MIR Cards -->
+  <div id="mir-list" class="space-y-4">
+    <div class="text-center py-16 text-slate-400">
+      <span class="material-symbols-outlined text-4xl block mb-2">hourglass_empty</span>
+      Loading MIRs...
+    </div>
+  </div>
+</main>
+
+<!-- Scan Modal -->
+<div id="scan-modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeScanModal()"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
+        <div>
+          <h3 class="text-lg font-bold">Scan Material</h3>
+          <p class="text-xs text-slate-500 mt-0.5" id="scan-line-info">Line details</p>
+        </div>
+        <button onclick="closeScanModal()" class="text-slate-400 hover:text-slate-600 dark:hover:text-slate-200">
+          <span class="material-symbols-outlined">close</span>
+        </button>
+      </div>
+      <div class="p-6 space-y-4">
+        <div class="bg-slate-50 dark:bg-slate-950 rounded-xl p-4 border border-slate-200 dark:border-slate-800">
+          <p class="text-xs text-slate-500 uppercase font-bold tracking-wider mb-1">Expected Material</p>
+          <p class="font-semibold" id="scan-material-name">—</p>
+          <p class="text-sm text-slate-500" id="scan-required-qty">—</p>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1.5">Bin Barcode <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <input id="scan-bin" type="text" placeholder="Scan or enter bin barcode" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">qr_code_scanner</span>
+          </div>
+        </div>
+        <div>
+          <label class="block text-sm font-semibold mb-1.5">Material Barcode <span class="text-red-500">*</span></label>
+          <div class="relative">
+            <input id="scan-material" type="text" placeholder="Scan or enter material barcode" class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 pr-10 text-sm focus:ring-2 focus:ring-primary outline-none"/>
+            <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 text-slate-400 text-sm">inventory_2</span>
+          </div>
+        </div>
+        <div id="scan-error" class="hidden bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 rounded-lg p-3 text-sm text-red-600 dark:text-red-400"></div>
+        <div id="scan-success" class="hidden bg-green-50 dark:bg-green-900/20 border border-green-200 dark:border-green-800 rounded-lg p-3 text-sm text-green-600 dark:text-green-400 flex items-center gap-2">
+          <span class="material-symbols-outlined text-sm">check_circle</span>
+          <span>Material issued successfully. Stock deducted.</span>
+        </div>
+      </div>
+      <div class="p-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+        <button onclick="closeScanModal()" class="flex-1 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold hover:bg-slate-50 dark:hover:bg-slate-800 transition-colors">Cancel</button>
+        <button onclick="submitScan()" id="scan-btn" class="flex-1 py-2.5 rounded-lg bg-primary text-white text-sm font-semibold hover:bg-primary/90 transition-colors flex items-center justify-center gap-2">
+          <span class="material-symbols-outlined text-sm">qr_code_scanner</span> Issue Material
+        </button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Reject Modal -->
+<div id="reject-modal" class="fixed inset-0 z-50 hidden">
+  <div class="absolute inset-0 bg-black/50 backdrop-blur-sm" onclick="closeRejectModal()"></div>
+  <div class="absolute inset-0 flex items-center justify-center p-4">
+    <div class="bg-white dark:bg-slate-900 rounded-2xl shadow-2xl w-full max-w-md">
+      <div class="flex items-center justify-between p-6 border-b border-slate-200 dark:border-slate-800">
+        <h3 class="text-lg font-bold">Reject MIR</h3>
+        <button onclick="closeRejectModal()" class="text-slate-400 hover:text-slate-600"><span class="material-symbols-outlined">close</span></button>
+      </div>
+      <div class="p-6">
+        <label class="block text-sm font-semibold mb-1.5">Rejection Reason <span class="text-red-500">*</span></label>
+        <textarea id="reject-reason" rows="3" placeholder="Explain why this MIR is being rejected..." class="w-full bg-slate-50 dark:bg-slate-950 border border-slate-200 dark:border-slate-800 rounded-lg px-4 py-2.5 text-sm focus:ring-2 focus:ring-primary outline-none resize-none"></textarea>
+      </div>
+      <div class="p-6 border-t border-slate-200 dark:border-slate-800 flex gap-3">
+        <button onclick="closeRejectModal()" class="flex-1 py-2.5 rounded-lg border border-slate-200 dark:border-slate-700 text-sm font-semibold">Cancel</button>
+        <button onclick="submitReject()" class="flex-1 py-2.5 rounded-lg bg-red-600 text-white text-sm font-semibold hover:bg-red-700 transition-colors">Reject MIR</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" class="fixed bottom-6 right-6 z-50 hidden">
+  <div class="flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-sm font-medium bg-green-700 text-white">
+    <span id="toast-icon" class="material-symbols-outlined text-sm">check_circle</span>
+    <span id="toast-msg"></span>
+  </div>
+</div>
+
+<script>
+const API_BASE = '/api/v1';
+const TENANT_DB = localStorage.getItem('tenant_db_name') || '';
+const AUTH_USER = localStorage.getItem('auth_user_id') || '1';
+
+let activeMirId = null, activeLineId = null;
+let rejectMirId = null;
+
+function apiHeaders() { return { 'Content-Type': 'application/json', 'Accept': 'application/json' }; }
+function apiBody(data) { return JSON.stringify({ ...data, tenant_db_name: TENANT_DB, auth_user_id: AUTH_USER }); }
+
+function showToast(msg, type = 'success') {
+  const t = document.getElementById('toast');
+  document.getElementById('toast-msg').textContent = msg;
+  t.querySelector('div').className = `flex items-center gap-3 px-5 py-3 rounded-xl shadow-2xl text-sm font-medium ${type === 'success' ? 'bg-green-700 text-white' : 'bg-red-700 text-white'}`;
+  t.classList.remove('hidden');
+  setTimeout(() => t.classList.add('hidden'), 3500);
+}
+
+function badge(status, map) {
+  const cls = map[status] || 'bg-slate-100 text-slate-600';
+  return `<span class="${cls} text-xs font-bold px-2.5 py-1 rounded-full">${status}</span>`;
+}
+
+async function loadMIRs() {
+  const search = document.getElementById('search-input').value;
+  const status = document.getElementById('status-filter').value;
+  let url = `${API_BASE}/material-issue-requests?tenant_db_name=${TENANT_DB}`;
+  if (search) url += `&search=${encodeURIComponent(search)}`;
+  if (status) url += `&status=${status}`;
+
+  try {
+    const res = await fetch(url, { headers: apiHeaders() });
+    const json = await res.json();
+    const mirs = json.data?.mirs || [];
+    const container = document.getElementById('mir-list');
+
+    if (!mirs.length) {
+      container.innerHTML = `<div class="text-center py-16 text-slate-400"><span class="material-symbols-outlined text-4xl block mb-2">inbox</span>No MIRs found.</div>`;
+      return;
+    }
+
+    container.innerHTML = mirs.map(m => {
+      const issuedCount = m.lines.filter(l => l.scan_status === 'ISSUED').length;
+      const totalLines = m.lines.length;
+      const progress = totalLines > 0 ? Math.round((issuedCount / totalLines) * 100) : 0;
+
+      return `
+      <div class="bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-xl overflow-hidden shadow-sm">
+        <div class="p-5 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div class="flex items-start gap-4">
+            <div class="bg-primary/10 dark:bg-primary/20 p-3 rounded-xl">
+              <span class="material-symbols-outlined text-primary">assignment</span>
+            </div>
+            <div>
+              <div class="flex items-center gap-2 mb-1">
+                <span class="font-mono font-bold text-primary">${m.mir_no}</span>
+                <span class="badge-${m.status} text-xs font-bold px-2.5 py-1 rounded-full">${m.status}</span>
+              </div>
+              <p class="text-sm font-medium">${m.product_name || '—'} <span class="text-slate-500">(${m.order_no || '—'})</span></p>
+              <p class="text-xs text-slate-500 mt-0.5">Target: ${m.target_qty || '—'} ${m.uom || ''} &bull; ${m.lines.length} RM lines</p>
+              ${m.rejection_reason ? `<p class="text-xs text-red-500 mt-1 flex items-center gap-1"><span class="material-symbols-outlined text-xs">error</span>${m.rejection_reason}</p>` : ''}
+            </div>
+          </div>
+          <div class="flex items-center gap-3">
+            ${m.status === 'PENDING' ? `
+              <button onclick="approveMIR(${m.id})" class="flex items-center gap-1.5 bg-green-600 text-white px-4 py-2 rounded-lg text-sm font-semibold hover:bg-green-700 transition-colors">
+                <span class="material-symbols-outlined text-sm">check_circle</span> Approve
+              </button>
+              <button onclick="openRejectModal(${m.id})" class="flex items-center gap-1.5 border border-red-200 dark:border-red-800 text-red-600 dark:text-red-400 px-4 py-2 rounded-lg text-sm font-semibold hover:bg-red-50 dark:hover:bg-red-900/20 transition-colors">
+                <span class="material-symbols-outlined text-sm">cancel</span> Reject
+              </button>` : ''}
+          </div>
+        </div>
+
+        ${m.status === 'APPROVED' ? `
+        <div class="px-5 pb-2">
+          <div class="flex items-center justify-between text-xs text-slate-500 mb-1">
+            <span>Scan Progress</span><span>${issuedCount}/${totalLines} issued</span>
+          </div>
+          <div class="h-2 bg-slate-100 dark:bg-slate-800 rounded-full overflow-hidden">
+            <div class="h-full bg-primary rounded-full transition-all" style="width:${progress}%"></div>
+          </div>
+        </div>` : ''}
+
+        <div class="border-t border-slate-100 dark:border-slate-800">
+          <table class="w-full text-sm">
+            <thead>
+              <tr class="bg-slate-50 dark:bg-slate-950">
+                <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Material</th>
+                <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Required Qty</th>
+                <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Scan Status</th>
+                <th class="text-left px-5 py-2.5 text-xs font-bold text-slate-500 uppercase tracking-wider">Bin</th>
+                ${m.status === 'APPROVED' ? '<th class="px-5 py-2.5"></th>' : ''}
+              </tr>
+            </thead>
+            <tbody>
+              ${m.lines.map(l => `
+              <tr class="border-t border-slate-100 dark:border-slate-800 hover:bg-slate-50 dark:hover:bg-slate-800/30 transition-colors">
+                <td class="px-5 py-3">
+                  <p class="font-medium">${l.material_name || '—'}</p>
+                  <p class="text-xs text-slate-500">${l.material_code || ''}</p>
+                </td>
+                <td class="px-5 py-3 font-medium">${l.required_qty} <span class="text-xs text-slate-500">${l.uom || ''}</span></td>
+                <td class="px-5 py-3"><span class="scan-${l.scan_status} text-xs font-bold px-2.5 py-1 rounded-full">${l.scan_status}</span></td>
+                <td class="px-5 py-3 text-xs font-mono text-slate-500">${l.bin_barcode || '—'}</td>
+                ${m.status === 'APPROVED' ? `
+                <td class="px-5 py-3">
+                  ${l.scan_status !== 'ISSUED' ? `
+                  <button onclick="openScanModal(${m.id}, ${l.id}, '${l.material_name}', ${l.required_qty}, '${l.uom || ''}')"
+                    class="flex items-center gap-1 text-xs font-semibold text-primary hover:underline">
+                    <span class="material-symbols-outlined text-sm">qr_code_scanner</span> Scan
+                  </button>` : `<span class="text-xs text-green-600 flex items-center gap-1"><span class="material-symbols-outlined text-sm">check_circle</span>Issued</span>`}
+                </td>` : ''}
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        </div>
+      </div>`;
+    }).join('');
+  } catch (e) {
+    showToast('Failed to load MIRs', 'error');
+  }
+}
+
+async function approveMIR(id) {
+  try {
+    const res = await fetch(`${API_BASE}/material-issue-requests/${id}/approve`, {
+      method: 'POST', headers: apiHeaders(), body: apiBody({})
+    });
+    const json = await res.json();
+    if (json.success) { showToast('MIR approved. Operator can now scan bins.'); loadMIRs(); }
+    else showToast(json.message || 'Failed to approve', 'error');
+  } catch (e) { showToast('Network error', 'error'); }
+}
+
+function openRejectModal(id) {
+  rejectMirId = id;
+  document.getElementById('reject-reason').value = '';
+  document.getElementById('reject-modal').classList.remove('hidden');
+}
+function closeRejectModal() { document.getElementById('reject-modal').classList.add('hidden'); }
+
+async function submitReject() {
+  const reason = document.getElementById('reject-reason').value.trim();
+  if (!reason) { showToast('Rejection reason is required', 'error'); return; }
+  try {
+    const res = await fetch(`${API_BASE}/material-issue-requests/${rejectMirId}/reject`, {
+      method: 'POST', headers: apiHeaders(), body: apiBody({ reason })
+    });
+    const json = await res.json();
+    if (json.success) { closeRejectModal(); showToast('MIR rejected.'); loadMIRs(); }
+    else showToast(json.message || 'Failed to reject', 'error');
+  } catch (e) { showToast('Network error', 'error'); }
+}
+
+function openScanModal(mirId, lineId, materialName, requiredQty, uom) {
+  activeMirId = mirId;
+  activeLineId = lineId;
+  document.getElementById('scan-line-info').textContent = `MIR Line #${lineId}`;
+  document.getElementById('scan-material-name').textContent = materialName;
+  document.getElementById('scan-required-qty').textContent = `Required: ${requiredQty} ${uom}`;
+  document.getElementById('scan-bin').value = '';
+  document.getElementById('scan-material').value = '';
+  document.getElementById('scan-error').classList.add('hidden');
+  document.getElementById('scan-success').classList.add('hidden');
+  document.getElementById('scan-modal').classList.remove('hidden');
+  setTimeout(() => document.getElementById('scan-bin').focus(), 100);
+}
+function closeScanModal() { document.getElementById('scan-modal').classList.add('hidden'); loadMIRs(); }
+
+async function submitScan() {
+  const binBarcode = document.getElementById('scan-bin').value.trim();
+  const materialBarcode = document.getElementById('scan-material').value.trim();
+  const errEl = document.getElementById('scan-error');
+  const successEl = document.getElementById('scan-success');
+  errEl.classList.add('hidden');
+  successEl.classList.add('hidden');
+
+  if (!binBarcode || !materialBarcode) {
+    errEl.textContent = 'Both bin barcode and material barcode are required.';
+    errEl.classList.remove('hidden');
+    return;
+  }
+
+  const btn = document.getElementById('scan-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="material-symbols-outlined text-sm animate-spin">progress_activity</span> Issuing...';
+
+  try {
+    const res = await fetch(`${API_BASE}/material-issue-requests/${activeMirId}/lines/${activeLineId}/scan`, {
+      method: 'POST', headers: apiHeaders(), body: apiBody({ bin_barcode: binBarcode, material_barcode: materialBarcode })
+    });
+    const json = await res.json();
+    if (json.success) {
+      successEl.classList.remove('hidden');
+      if (json.data?.all_issued) {
+        successEl.querySelector('span:last-child').textContent = 'All materials issued! Production order is now IN PROGRESS.';
+      }
+      setTimeout(() => closeScanModal(), 1800);
+    } else {
+      errEl.textContent = json.message || 'Scan failed.';
+      errEl.classList.remove('hidden');
+    }
+  } catch (e) {
+    errEl.textContent = 'Network error. Please try again.';
+    errEl.classList.remove('hidden');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '<span class="material-symbols-outlined text-sm">qr_code_scanner</span> Issue Material';
+  }
+}
+
+document.getElementById('search-input').addEventListener('keydown', e => { if (e.key === 'Enter') loadMIRs(); });
+document.getElementById('status-filter').addEventListener('change', loadMIRs);
+loadMIRs();
+</script>
+</body>
+</html>
