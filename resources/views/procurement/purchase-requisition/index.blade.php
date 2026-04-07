@@ -106,6 +106,12 @@
                                     </tr>
                                 </template>
                             </tbody>
+                            <tfoot class="bg-gray-50 border-t-2 border-gray-300">
+                                <tr>
+                                    <td colspan="5" class="px-3 py-3 text-right font-bold text-gray-900">Grand Total:</td>
+                                    <td class="px-3 py-3 text-right font-bold text-primary text-lg" x-text="'₹ ' + calculatePRTotal().toFixed(2)"></td>
+                                </tr>
+                            </tfoot>
                         </table>
                     </div>
                 </div>
@@ -372,6 +378,17 @@ function purchaseRequisitionData() {
             if (!val) return '—';
             const d = new Date(val);
             return isNaN(d) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        },
+
+        calculatePRTotal() {
+            if (!this.viewData.line_items || this.viewData.line_items.length === 0) {
+                return 0;
+            }
+            return this.viewData.line_items.reduce((sum, line) => {
+                const qty = parseFloat(line.quantity) || 0;
+                const price = parseFloat(line.estimated_unit_price) || 0;
+                return sum + (qty * price);
+            }, 0);
         },
 
         async sendForApproval(id) {

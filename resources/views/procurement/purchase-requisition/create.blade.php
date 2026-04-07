@@ -213,18 +213,22 @@
                                 </div>
 
                                 <!-- UOM -->
-                                <div>
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">
-                                        UOM <span class="text-red-500">*</span>
-                                    </label>
-                                    <select x-model="item.uom_id" required
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
-                                        <option value="">Select UOM</option>
-                                        <template x-for="u in uoms" :key="u.id">
-                                            <option :value="u.id" x-text="u.uom_name"></option>
-                                        </template>
-                                    </select>
-                                </div>
+                              <div>
+    <label class="block text-xs font-medium text-gray-600 mb-1">
+        UOM <span class="text-red-500">*</span>
+    </label>
+
+    <input 
+        type="text" 
+        :value="getUOMName(item.uom_id)" 
+        readonly
+        placeholder="Auto-filled from material"
+        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100 cursor-not-allowed"
+    >
+
+    <!-- Hidden field to store UOM ID -->
+    <input type="hidden" x-model="item.uom_id">
+</div>
 
                                 <!-- Estimated Unit Price -->
                                 <div>
@@ -409,6 +413,12 @@ function createPR() {
 
         formatCurrency(val) {
             return '₹ ' + (parseFloat(val) || 0).toFixed(2);
+        },
+
+        getUOMName(uomId) {
+            if (!uomId) return '';
+            const uom = this.uoms.find(u => u.id == uomId);
+            return uom ? uom.uom_name : '';
         },
 
         async submitForm(status) {

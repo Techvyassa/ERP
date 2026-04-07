@@ -118,8 +118,14 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">PR Number *</label>
-                        <input type="text" x-model="uploadForm.pr_number" required 
-                               class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <select x-model="uploadForm.pr_number" required 
+                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <option value="">Select Approved PR</option>
+                            <template x-for="pr in approvedPRs" :key="pr.id">
+                                <option :value="pr.pr_number" x-text="pr.pr_number"></option>
+                            </template>
+                        </select>
+                        <p class="text-xs text-gray-500 mt-1">Only APPROVED purchase requisitions are shown</p>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Vendor *</label>
@@ -149,7 +155,14 @@
 
                 <!-- CSV Upload -->
                 <div x-show="uploadForm.upload_type === 'csv'">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">CSV File *</label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-semibold text-gray-700">CSV File *</label>
+                        <button type="button" @click="downloadCSVTemplate()" 
+                                class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                            Download Template
+                        </button>
+                    </div>
                     <input type="file" @change="uploadForm.csv_file = $event.target.files[0]" accept=".csv" 
                            class="w-full px-4 py-2 border border-gray-200 rounded-lg">
                     <p class="text-xs text-gray-500 mt-1">Format: item_name, quantity, unit_price, delivery_date, remarks</p>
@@ -167,8 +180,13 @@
                     <div class="space-y-3 max-h-60 overflow-y-auto">
                         <template x-for="(item, index) in uploadForm.quotations" :key="index">
                             <div class="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-lg">
-                                <input type="text" x-model="item.item_name" placeholder="Item Name" required 
-                                       class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
+                                <select x-model="item.item_name" required 
+                                        class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
+                                    <option value="">Select Material</option>
+                                    <template x-for="material in materials" :key="material.id">
+                                        <option :value="material.material_name" x-text="material.material_code + ' - ' + material.material_name"></option>
+                                    </template>
+                                </select>
                                 <input type="number" x-model="item.quantity" placeholder="Qty" required min="0.001" step="0.001" 
                                        class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.unit_price" placeholder="Price" required min="0" step="0.01" 
@@ -214,6 +232,8 @@ function quotationComparisonData() {
     return {
         items: [],
         vendors: [],
+        approvedPRs: [],
+        materials: [],
         loading: false,
         uploading: false,
         search: '',
@@ -228,7 +248,7 @@ function quotationComparisonData() {
         toast: { show: false, message: '', type: 'success' },
 
         async init() {
-            await Promise.all([this.loadData(), this.loadVendors()]);
+            await Promise.all([this.loadData(), this.loadVendors(), this.loadApprovedPRs(), this.loadMaterials()]);
         },
 
         async loadData() {
@@ -262,6 +282,36 @@ function quotationComparisonData() {
                 }
             } catch (error) {
                 console.error('Error loading vendors:', error);
+            }
+        },
+
+        async loadApprovedPRs() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/v1/purchase-requisitions?status=APPROVED', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.approvedPRs = data.data.data || [];
+                }
+            } catch (error) {
+                console.error('Error loading approved PRs:', error);
+            }
+        },
+
+        async loadMaterials() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/v1/purchase-requisitions/master/materials', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.materials = data.data.materials || [];
+                }
+            } catch (error) {
+                console.error('Error loading materials:', error);
             }
         },
 
@@ -357,6 +407,29 @@ function quotationComparisonData() {
             if (!val) return '—';
             const d = new Date(val);
             return isNaN(d) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        },
+
+        downloadCSVTemplate() {
+            // Create CSV content with headers and sample row
+            const csvContent = [
+                'item_name,quantity,unit_price,delivery_date,remarks',
+                'Sample Item,10,100.50,2026-04-15,Sample remarks here'
+            ].join('\n');
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'quotation_upload_template.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showToast('CSV template downloaded', 'success');
         },
 
         showToast(message, type = 'success') {
