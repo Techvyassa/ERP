@@ -16,6 +16,8 @@ use App\Models\Tenant\PurchaseOrder;
 use App\Models\Tenant\QCParameter;
 use App\Models\Tenant\QCTestType;
 use App\Models\Tenant\Role;
+use App\Models\Tenant\SalesOrder;
+use App\Models\Tenant\StockBalance;
 use App\Models\Tenant\UOM;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Vendor;
@@ -37,18 +39,24 @@ class MasterDashboardController extends Controller
             $this->switchTenantDb($request);
 
             $data = [
+                'overview' => [
+                    'total_revenue' => $this->safeSum(fn() => SalesOrder::where('status', 'CONFIRMED')->sum('grand_total')),
+                    'active_production' => $this->safeCount(fn() => ProductionOrder::where('status', 'IN_PROGRESS')->count()),
+                    'pending_purchases' => $this->safeCount(fn() => PurchaseOrder::whereIn('status', ['DRAFT', 'PENDING_APPROVAL', 'OPEN'])->count()),
+                    'low_stock_count' => $this->safeCount(fn() => StockBalance::where('bucket', 'AVAILABLE')->whereRaw('qty_on_hand <= 10')->count()),
+                ],
                 'organization' => $this->organizationStats(),
                 'inventory' => $this->inventoryStats(),
                 'vendor' => $this->vendorStats(),
-                'tax' => $this->taxStats(),
-                'bom' => $this->bomStats(),
-                'quality' => $this->qualityStats(),
+                'sales' => $this->salesStats(),
+                'production' => $this->productionStats(),
+                'recent_activity' => $this->recentActivity(),
             ];
 
             return response()->json([
                 'success' => true,
                 'data' => $data,
-                'message' => 'Master dashboard statistics retrieved successfully',
+                'message' => 'Dashboard statistics retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ], 200);
@@ -59,7 +67,7 @@ class MasterDashboardController extends Controller
                     'code' => 'FETCH_FAILED',
                     'details' => [],
                 ],
-                'message' => 'Failed to retrieve master dashboard statistics: ' . $e->getMessage(),
+                'message' => 'Failed to retrieve dashboard statistics: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ], 500);
@@ -110,43 +118,62 @@ class MasterDashboardController extends Controller
         ];
     }
 
-    private function taxStats(): array
+    private function salesStats(): array
     {
-        $baseCurrency = null;
+        return [
+            'total_orders' => $this->safeCount(fn() => SalesOrder::count()),
+            'pending_orders' => $this->safeCount(fn() => SalesOrder::whereIn('status', ['DRAFT', 'CONFIRMED'])->count()),
+            'dispatched_today' => $this->safeCount(fn() => SalesOrder::whereDate('dispatched_at', now())->count()),
+        ];
+    }
 
+    private function productionStats(): array
+    {
+        return [
+            'total_orders' => $this->safeCount(fn() => ProductionOrder::count()),
+            'in_progress' => $this->safeCount(fn() => ProductionOrder::where('status', 'IN_PROGRESS')->count()),
+            'completed_today' => $this->safeCount(fn() => ProductionOrder::where('status', 'COMPLETED')->whereDate('updated_at', now())->count()),
+        ];
+    }
+
+    private function recentActivity(): array
+    {
         try {
-            $baseCurrency = DB::connection('tenant')
-                ->table('currency_master')
-                ->where('is_base_currency', true)
-                ->value('currency_code');
+            $activities = [];
+
+            // Recent Sales Orders
+            $sos = SalesOrder::with('customer')->orderBy('created_at', 'desc')->take(3)->get();
+            foreach ($sos as $so) {
+                $activities[] = [
+                    'type' => 'sales_order',
+                    'title' => 'New Sales Order ' . $so->so_number,
+                    'description' => 'For ' . ($so->customer->customer_name ?? 'Unknown'),
+                    'time' => $so->created_at->diffForHumans(),
+                    'icon' => 'shopping_cart',
+                    'color' => 'blue'
+                ];
+            }
+
+            // Recent Production Orders
+            $pos = ProductionOrder::with('product')->orderBy('created_at', 'desc')->take(3)->get();
+            foreach ($pos as $po) {
+                $activities[] = [
+                    'type' => 'production_order',
+                    'title' => 'Production Order ' . $po->order_no,
+                    'description' => 'Product: ' . ($po->product->product_name ?? 'N/A'),
+                    'time' => $po->created_at->diffForHumans(),
+                    'icon' => 'factory',
+                    'color' => 'green'
+                ];
+            }
+
+            usort($activities, fn($a, $b) => strcmp($b['time'], $a['time'])); // Simple sort by time string (not perfect but okay for now)
+            
+            return array_slice($activities, 0, 5);
         } catch (\Throwable $e) {
             report($e);
+            return [];
         }
-
-        return [
-            'hsnCodes' => $this->safeCount(fn() => HSNCode::count()),
-            'gstTaxes' => $this->safeCount(fn() => GSTTax::count()),
-            'currencies' => $this->safeCount(fn() => DB::connection('tenant')->table('currency_master')->count()),
-            'baseCurrency' => $baseCurrency ?: 'INR',
-        ];
-    }
-
-    private function bomStats(): array
-    {
-        return [
-            'bomHeaders' => $this->safeCount(fn() => BOMHeader::count()),
-            'bomDetails' => $this->safeCount(fn() => BOMDetail::count()),
-            'productionOrders' => $this->safeCount(fn() => ProductionOrder::count()),
-            'products' => $this->safeCount(fn() => Product::whereHas('bomHeaders')->count()),
-        ];
-    }
-
-    private function qualityStats(): array
-    {
-        return [
-            'testTypes' => $this->safeCount(fn() => QCTestType::count()),
-            'parameters' => $this->safeCount(fn() => QCParameter::count()),
-        ];
     }
 
     private function safeCount(callable $resolver): int
@@ -155,8 +182,17 @@ class MasterDashboardController extends Controller
             return (int) $resolver();
         } catch (\Throwable $e) {
             report($e);
-
             return 0;
+        }
+    }
+
+    private function safeSum(callable $resolver): float
+    {
+        try {
+            return (float) $resolver();
+        } catch (\Throwable $e) {
+            report($e);
+            return 0.0;
         }
     }
 }
