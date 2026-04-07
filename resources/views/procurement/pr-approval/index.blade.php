@@ -157,6 +157,13 @@
                                             class="p-1.5 text-gray-500 hover:text-red-600 hover:bg-red-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed" title="Reject">
                                         <span class="material-symbols-outlined text-[18px]">cancel</span>
                                     </button>
+                                    <!-- Send to Vendor (APPROVED only) -->
+                                    <button @click="openSendToVendorModal(pr)"
+                                            :disabled="pr.status !== 'APPROVED'"
+                                            class="p-1.5 text-gray-500 hover:text-indigo-600 hover:bg-indigo-50 rounded-lg transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                                            :title="pr.status === 'APPROVED' ? 'Send PR to Vendor' : 'Approve PR first to enable sending'">
+                                        <span class="material-symbols-outlined text-[18px]">send</span>
+                                    </button>
                                 </div>
                             </td>
                         </tr>
@@ -347,6 +354,57 @@
         </div>
     </div>
 
+    <!-- Send to Vendor Modal -->
+    <div x-show="showSendToVendorModal" x-cloak
+         class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
+         @click.self="showSendToVendorModal = false">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="p-6 border-b border-gray-100">
+                <h2 class="text-lg font-bold text-gray-900">Send PR to Vendor</h2>
+                <p class="text-sm text-gray-500 mt-1" x-text="'PR: ' + (sendingPR ? sendingPR.pr_number : '')"></p>
+            </div>
+            <div class="p-6 space-y-4">
+                <!-- Suggested Vendor (if available) -->
+                <div x-show="sendingPR && sendingPR.suggested_vendor">
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Suggested Vendor</label>
+                    <div class="p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                        <p class="text-sm font-medium text-blue-900" x-text="sendingPR?.suggested_vendor?.vendor_name || ''"></p>
+                        <p class="text-xs text-blue-600 mt-1" x-text="sendingPR?.suggested_vendor?.email || ''"></p>
+                    </div>
+                </div>
+                
+                <!-- Vendor Selection -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Vendor(s) <span class="text-red-500">*</span></label>
+                    <select x-model="selectedVendors" multiple size="5" required
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400">
+                        <template x-for="vendor in vendors" :key="vendor.id">
+                            <option :value="vendor.id" x-text="vendor.vendor_name + ' (' + (vendor.email || 'No email') + ')'"></option>
+                        </template>
+                    </select>
+                    <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple vendors</p>
+                </div>
+                
+                <!-- Email Message -->
+                <div>
+                    <label class="block text-sm font-semibold text-gray-700 mb-2">Email Message (Optional)</label>
+                    <textarea x-model="emailMessage" rows="3" placeholder="Additional message to include in the email..."
+                              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 resize-none"></textarea>
+                </div>
+            </div>
+            <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl">
+                <button @click="showSendToVendorModal = false"
+                        class="px-4 py-2 text-sm border border-gray-200 rounded-lg text-gray-600 hover:bg-white transition-colors">Cancel</button>
+                <button @click="confirmSendToVendor()" :disabled="selectedVendors.length === 0 || sendingToVendor"
+                        class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-1.5">
+                    <span class="material-symbols-outlined text-base" x-show="!sendingToVendor">send</span>
+                    <span class="material-symbols-outlined text-base animate-spin" x-show="sendingToVendor">hourglass_top</span>
+                    <span x-text="sendingToVendor ? 'Sending...' : 'Send to Vendor(s)'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Toast -->
     <div x-show="toast.show" x-cloak
          x-transition:enter="transition ease-out duration-200"
@@ -376,10 +434,16 @@ function prApprovalData() {
         showRejectModal: false,
         rejectingPR: null,
         rejectReason: '',
+        showSendToVendorModal: false,
+        sendingPR: null,
+        selectedVendors: [],
+        emailMessage: '',
+        sendingToVendor: false,
+        vendors: [],
         toast: { show: false, message: '', type: 'success' },
 
         async init() {
-            await Promise.all([this.loadData(), this.loadStats()]);
+            await Promise.all([this.loadData(), this.loadStats(), this.loadVendors()]);
         },
 
         csrfToken() {
@@ -535,6 +599,75 @@ function prApprovalData() {
             if (!val) return '—';
             const d = new Date(val);
             return isNaN(d) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        },
+
+        async loadVendors() {
+            try {
+                const json = await this.apiFetch('/api/v1/vendors?per_page=1000&is_active=1');
+                if (json.success && json.data) {
+                    this.vendors = json.data.vendors?.data || json.data.vendors || [];
+                }
+            } catch (error) {
+                console.error('Error loading vendors:', error);
+            }
+        },
+
+        async openSendToVendorModal(pr) {
+            this.sendingPR = null;
+            this.selectedVendors = [];
+            this.emailMessage = '';
+            this.showSendToVendorModal = true;
+            
+            // Load full PR details to get suggested vendor
+            try {
+                const json = await this.apiFetch('/api/v1/purchase-requisitions/' + pr.id);
+                if (json.success) {
+                    this.sendingPR = json.data.purchase_requisition;
+                    
+                    // Pre-select suggested vendor if available
+                    if (this.sendingPR.suggested_vendor && this.sendingPR.suggested_vendor.id) {
+                        this.selectedVendors = [this.sendingPR.suggested_vendor.id];
+                    }
+                }
+            } catch (e) {
+                console.error('Error loading PR details:', e);
+                this.sendingPR = pr; // Fallback to basic PR data
+            }
+        },
+
+        async confirmSendToVendor() {
+            if (this.selectedVendors.length === 0) {
+                this.showToast('Please select at least one vendor', 'error');
+                return;
+            }
+
+            this.sendingToVendor = true;
+            try {
+                const json = await this.apiFetch(`/api/v1/purchase-requisitions/${this.sendingPR.id}/send-to-vendor`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'X-CSRF-TOKEN': this.csrfToken()
+                    },
+                    body: JSON.stringify({
+                        vendor_ids: this.selectedVendors,
+                        message: this.emailMessage
+                    })
+                });
+                
+                if (json.success) {
+                    this.showToast('PR sent to vendor(s) successfully via email', 'success');
+                    this.showSendToVendorModal = false;
+                    await this.loadData();
+                } else {
+                    this.showToast(json.message || 'Failed to send PR to vendor', 'error');
+                }
+            } catch (e) {
+                console.error('Error sending to vendor:', e);
+                this.showToast('Network error. Please try again.', 'error');
+            } finally {
+                this.sendingToVendor = false;
+            }
         },
 
         showToast(message, type = 'success') {

@@ -125,7 +125,7 @@
                             <div class="grid grid-cols-2 gap-4 text-sm">
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">Target Quantity</p>
-                                    <p class="font-bold text-gray-900" x-text="viewModal.order.target_qty + ' ' + (viewModal.order.uom || '')"></p>
+                                    <p class="font-bold text-gray-900" x-text="viewModal.order.target_qty + ' ' + (viewModal.order.bom?.output_uom?.uom_name || viewModal.order.uom?.uom_name || '')"></p>
                                 </div>
                                 <div class="bg-gray-50 rounded-lg p-3">
                                     <p class="text-xs text-gray-500 mb-1">Planned Date</p>
@@ -179,7 +179,7 @@
                                                     <td class="px-4 py-2 text-gray-900 font-medium" x-text="line.material_name"></td>
                                                     <td class="px-4 py-2 text-gray-500 text-xs" x-text="line.material_code"></td>
                                                     <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
-                                                    <td class="px-4 py-2 text-gray-500" x-text="line.uom"></td>
+                                                    <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                                 </tr>
                                             </template>
                                         </tbody>
@@ -333,7 +333,8 @@
                             <input type="date"
                                 x-model="form.planned_date"
                                 :min="today"
-                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 transition-all font-semibold text-gray-900 shadow-inner">
+                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 transition-all font-semibold text-gray-900 shadow-inner"
+                                :value="form.planned_date">
                         </div>
                     </div>
 
@@ -365,7 +366,7 @@
                                             <td class="px-4 py-2 text-gray-900 font-medium" x-text="line.material_name"></td>
                                             <td class="px-4 py-2 text-gray-500 text-xs" x-text="line.material_code"></td>
                                             <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
-                                            <td class="px-4 py-2 text-gray-500" x-text="line.uom"></td>
+                                            <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                         </tr>
                                     </template>
                                 </tbody>
@@ -498,9 +499,9 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Order No</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Product</th>
-                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Target Qty</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Order & Product</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Target / Actual</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Yield & Batch</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Planned Date</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">MIR Status</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
@@ -527,58 +528,86 @@
                     <template x-for="order in orders" :key="order.id">
                         <tr class="group hover:bg-orange-50/30 transition-colors">
                             <td class="px-5 py-4">
-                                <span class="text-sm font-bold text-slate-800" x-text="order.order_no"></span>
-                                <p class="text-[10px] text-gray-400 uppercase font-medium mt-0.5" x-text="order.created_at"></p>
-                            </td>
-                            <td class="px-5 py-4">
-                                <div class="flex items-center gap-3">
-                                    <div class="w-8 h-8 bg-gray-100 rounded-lg flex items-center justify-center text-gray-400">
-                                        <span class="material-symbols-outlined text-lg">package_2</span>
+                                <div class="flex items-start gap-3">
+                                    <div class="mt-1 w-8 h-8 bg-indigo-50 rounded-lg flex items-center justify-center text-indigo-600">
+                                        <span class="material-symbols-outlined text-lg">precision_manufacturing</span>
                                     </div>
                                     <div>
-                                        <div class="text-sm font-semibold text-gray-900" x-text="order.product_name"></div>
-                                        <div class="text-[11px] text-gray-400 font-mono" x-text="order.product_code"></div>
+                                        <span class="text-sm font-bold text-slate-800" x-text="order.order_no"></span>
+                                        <div class="text-sm font-medium text-gray-500" x-text="order.product_name"></div>
+                                        <div class="text-[10px] text-gray-400 font-mono tracking-tight uppercase" x-text="order.product_code"></div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-5 py-4">
-                                <div class="flex items-center gap-1.5 font-bold text-gray-900">
-                                    <span x-text="order.target_qty"></span>
-                                    <span class="text-[10px] text-gray-400 font-normal uppercase" x-text="order.uom"></span>
+                            <td class="px-5 py-4">
+                                <div class="space-y-1">
+                                    <div class="flex items-center gap-1.5 font-bold text-gray-400 text-xs">
+                                        <span>Target:</span>
+                                        <span class="text-gray-900" x-text="order.target_qty"></span>
+                                        <span class="text-[10px] font-normal uppercase" x-text="order.uom"></span>
+                                    </div>
+                                    <template x-if="order.actual_qty && order.actual_qty > 0">
+                                        <div class="flex items-center gap-1.5 font-bold text-blue-600 text-xs">
+                                            <span>Actual:</span>
+                                            <span x-text="order.actual_qty"></span>
+                                            <span class="text-[10px] font-normal uppercase" x-text="order.uom"></span>
+                                        </div>
+                                    </template>
                                 </div>
                             </td>
-                            <td class="px-5 py-4 text-sm text-gray-600" x-text="order.planned_date"></td>
+                            <td class="px-5 py-4">
+                                <div class="space-y-1">
+                                    <template x-if="order.yield_percent">
+                                        <div class="flex items-center gap-2">
+                                            <div class="w-16 h-1.5 bg-gray-100 rounded-full overflow-hidden">
+                                                <div class="h-full bg-green-500 rounded-full" :style="'width: ' + Math.min(order.yield_percent, 100) + '%'"></div>
+                                            </div>
+                                            <span class="text-xs font-black text-green-700" x-text="order.yield_percent + '%'"></span>
+                                        </div>
+                                    </template>
+                                    <template x-if="order.fg_batch_number">
+                                        <div class="flex items-center gap-1 text-gray-400">
+                                            <span class="material-symbols-outlined text-[10px]">qr_code_2</span>
+                                            <span class="text-[10px] font-bold uppercase tracking-widest text-gray-600" x-text="order.fg_batch_number"></span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </td>
+                            <td class="px-5 py-4 text-sm text-gray-600">
+                                <div class="font-bold" x-text="order.planned_date"></div>
+                                <div x-show="order.actual_end_at" class="text-[10px] text-gray-400 mt-0.5" x-text="'Done: ' + order.actual_end_at"></div>
+                            </td>
                             <td class="px-5 py-4">
                                 <div class="flex flex-col gap-1">
                                     <template x-if="order.mir_status === 'PENDING'">
-                                        <span class="px-2 py-1 text-[10px] font-bold rounded bg-amber-50 text-amber-700 border border-amber-200">PENDING ISSUE</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-amber-50 text-amber-700 border border-amber-200">
+                                            <span class="w-1 h-1 bg-amber-500 rounded-full"></span> PENDING ISSUE
+                                        </span>
                                     </template>
                                     <template x-if="order.mir_status === 'APPROVED'">
-                                        <span class="px-2 py-1 text-[10px] font-bold rounded bg-emerald-50 text-emerald-700 border border-emerald-200 tracking-tight">MIR ISSUED</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
+                                            <span class="w-1 h-1 bg-emerald-500 rounded-full"></span> ISSUED
+                                        </span>
                                     </template>
                                     <template x-if="order.mir_status === 'REJECTED'">
-                                        <span class="px-2 py-1 text-[10px] font-bold rounded bg-rose-50 text-rose-700 border border-rose-200">MIR REJECTED</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-rose-50 text-rose-700 border border-rose-200">
+                                            <span class="w-1 h-1 bg-rose-500 rounded-full"></span> REJECTED
+                                        </span>
                                     </template>
                                     <template x-if="!order.mir_status">
-                                        <span class="px-2 py-1 text-[10px] font-bold rounded bg-gray-50 text-gray-500 border border-gray-200">NO MIR</span>
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-gray-50 text-gray-400 border border-gray-200">NO MIR</span>
                                     </template>
                                 </div>
                             </td>
                             <td class="px-5 py-4">
-                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-xs font-bold rounded-full ring-1 ring-inset"
+                                <span class="inline-flex items-center gap-1.5 px-2.5 py-1 text-[10px] font-black rounded-full ring-1 ring-inset uppercase tracking-wide"
                                     :class="{
                                           'bg-slate-50 text-slate-700 ring-slate-200': order.status === 'DRAFT',
                                           'bg-blue-50 text-blue-700 ring-blue-200': order.status === 'IN_PROGRESS',
                                           'bg-emerald-50 text-emerald-700 ring-emerald-200': order.status === 'COMPLETED',
                                           'bg-rose-50 text-rose-700 ring-rose-200': order.status === 'CANCELLED'
                                       }">
-                                    <span class="w-1.5 h-1.5 rounded-full"
-                                        :class="{
-                                              'bg-slate-400': order.status === 'DRAFT',
-                                              'bg-blue-500': order.status === 'IN_PROGRESS',
-                                              'bg-emerald-500': order.status === 'COMPLETED',
-                                              'bg-rose-500': order.status === 'CANCELLED'
-                                          }"></span>
                                     <span x-text="order.status"></span>
                                 </span>
                             </td>
@@ -651,7 +680,7 @@
                 product_id: '',
                 bom_id: '',
                 target_qty: '',
-                planned_date: ''
+                planned_date: new Date().toISOString().split('T')[0]
             },
 
             async init() {
@@ -730,7 +759,10 @@
                         material_code: d.material?.material_code || '',
                         // effective_qty is a DB generated column (qty_required * (1 + scrap/100))
                         required_qty: (parseFloat(d.effective_qty ?? d.qty_required) * this.multiplier).toFixed(3),
-                        uom: d.uom?.uom_code || ''
+                        uom: d.uom ? {
+                            uom_code: d.uom.uom_code,
+                            uom_name: d.uom.uom_name
+                        } : (d.uom_code || '')
                     }));
                 } catch (e) {
                     console.error('RM calculation failed', e);
@@ -812,7 +844,10 @@
                             material_name: l.material?.material_name || '—',
                             material_code: l.material?.material_code || '',
                             required_qty: l.required_qty,
-                            uom: l.uom?.uom_code || ''
+                            uom: l.uom ? {
+                                uom_code: l.uom.uom_code,
+                                uom_name: l.uom.uom_name
+                            } : (l.uom_code || '')
                         }));
                     }
                 } catch (e) {

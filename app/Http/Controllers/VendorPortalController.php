@@ -22,6 +22,17 @@ class VendorPortalController extends Controller
     }
 
     /**
+     * Generate a signed token for vendor PR access.
+     * Format: base64(orgSlug:PR:prId:hmac)
+     */
+    public static function generatePRToken(string $orgSlug, int $prId): string
+    {
+        $payload = $orgSlug . ':PR:' . $prId;
+        $hmac    = hash_hmac('sha256', $payload, config('app.key'));
+        return base64_encode($payload . ':' . $hmac);
+    }
+
+    /**
      * Decode and validate a vendor token.
      * Returns ['org_slug' => ..., 'po_id' => ...] or null if invalid.
      */
@@ -39,6 +50,28 @@ class VendorPortalController extends Controller
         if (!hash_equals($expected, $hmac)) return null;
 
         return ['org_slug' => $orgSlug, 'po_id' => (int) $poId];
+    }
+
+    /**
+     * Decode and validate a vendor PR token.
+     * Returns ['org_slug' => ..., 'pr_id' => ...] or null if invalid.
+     */
+    private function decodePRToken(string $token): ?array
+    {
+        $decoded = base64_decode($token, true);
+        if (!$decoded) return null;
+
+        $parts = explode(':', $decoded, 4);
+        if (count($parts) !== 4) return null;
+
+        [$orgSlug, $type, $prId, $hmac] = $parts;
+        if ($type !== 'PR') return null;
+
+        $expected = hash_hmac('sha256', $orgSlug . ':PR:' . $prId, config('app.key'));
+
+        if (!hash_equals($expected, $hmac)) return null;
+
+        return ['org_slug' => $orgSlug, 'pr_id' => (int) $prId];
     }
 
     /**
@@ -88,6 +121,31 @@ class VendorPortalController extends Controller
             'lineItemsData'  => $lineItemsData->toJson(),
             'vendorApproved' => false,
             'vendorRejected' => false,
+        ]);
+    }
+
+    /**
+     * View PR — vendor opens the link to view purchase requisition details.
+     */
+    public function viewPR(string $token)
+    {
+        $data = $this->decodePRToken($token);
+        if (!$data) abort(404, 'Invalid or expired link.');
+
+        $org = Organization::where('org_slug', $data['org_slug'])->firstOrFail();
+
+        // Switch to tenant DB
+        config(['database.connections.tenant.database' => $org->tenant_db_name]);
+        DB::purge('tenant');
+
+        $pr = \App\Models\Tenant\PurchaseRequisition::on('tenant')
+            ->with(['lineItems.material', 'lineItems.uom', 'requestedBy', 'department', 'suggestedVendor'])
+            ->findOrFail($data['pr_id']);
+
+        return view('vendor.pr-view', [
+            'pr'      => $pr,
+            'token'   => $token,
+            'orgName' => $org->org_name,
         ]);
     }
 

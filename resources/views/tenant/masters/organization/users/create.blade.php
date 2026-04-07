@@ -257,7 +257,7 @@
 
             async loadDepartments() {
                 try {
-                    const response = await fetch('/api/v1/departments', {
+                    const response = await fetch('{{ url("api/v1/departments") }}', {
                         credentials: 'same-origin',
                         headers: { 
                             'Accept': 'application/json',
@@ -294,7 +294,7 @@
                 if (!deptId) return;
                 
                 try {
-                    const response = await fetch(`/api/v1/departments/${deptId}/roles`, {
+                    const response = await fetch(`{{ url('api/v1/departments') }}/${deptId}/roles`, {
                         credentials: 'same-origin',
                         headers: { 
                             'Accept': 'application/json',
@@ -326,7 +326,7 @@
                 }
 
                 try {
-                    const response = await fetch(`/api/v1/roles/${this.form.role_id}/permissions`, {
+                    const response = await fetch(`{{ url('api/v1/roles') }}/${this.form.role_id}/permissions`, {
                         credentials: 'same-origin',
                         headers: { 
                             'Accept': 'application/json',
@@ -413,15 +413,14 @@
                         is_active: this.form.is_active
                     };
 
-                    // Add employee code - if auto-generate is enabled, generate a temporary one
+                    // Add employee code - if auto-generate is enabled, don't send code (backend will generate)
                     if (this.form.auto_generate_code) {
-                        // Generate a temporary code - backend should handle this properly
-                        formData.employee_code = 'AUTO-' + Date.now();
+                        delete formData.employee_code;
                     } else {
                         formData.employee_code = this.form.employee_code;
                     }
 
-                    const response = await fetch('/api/v1/users', {
+                    const response = await fetch('{{ url("api/v1/users") }}', {
                         method: 'POST',
                         credentials: 'same-origin',
                         headers: {

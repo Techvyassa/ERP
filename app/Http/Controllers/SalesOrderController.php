@@ -62,7 +62,7 @@ class SalesOrderController extends Controller
             'line_items.*.qty'             => 'required|numeric|min:0.001',
             'line_items.*.uom_id'          => 'required|integer',
             'line_items.*.unit_price'      => 'nullable|numeric|min:0',
-            'line_items.*.discount_percent'=> 'nullable|numeric|min:0|max:100',
+            'line_items.*.discount_percent' => 'nullable|numeric|min:0|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -333,7 +333,7 @@ class SalesOrderController extends Controller
         $stats = [
             'total_open'          => SalesOrder::whereIn('status', ['CONFIRMED', 'STOCK_CHECKED', 'PICKING', 'PACKED'])->count(),
             'due_today'           => SalesOrder::whereDate('required_delivery_date', $today)
-                                        ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])->count(),
+                ->whereNotIn('status', ['DELIVERED', 'CANCELLED'])->count(),
             'stock_available'     => SalesOrder::where('stock_status', 'AVAILABLE')->whereNotIn('status', ['DELIVERED', 'CANCELLED'])->count(),
             'stock_partial'       => SalesOrder::where('stock_status', 'PARTIAL')->whereNotIn('status', ['DELIVERED', 'CANCELLED'])->count(),
             'pending_stock_check' => SalesOrder::whereIn('status', ['DRAFT', 'CONFIRMED'])->count(),

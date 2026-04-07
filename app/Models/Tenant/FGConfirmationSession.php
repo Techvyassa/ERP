@@ -14,6 +14,7 @@ class FGConfirmationSession extends Model
         'confirmed_qty',
         'rejected_qty',
         'rejection_reason_code',
+        'rejection_reason_note',
         'fg_batch_number',
         'fg_warehouse_id',
         'fg_bin_id',

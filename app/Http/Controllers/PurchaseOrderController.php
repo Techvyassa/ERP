@@ -520,6 +520,62 @@ class PurchaseOrderController extends Controller
             ], 500);
         }
     }
+    /**
+     * Reject the purchase order (PENDING_APPROVAL → DRAFT).
+     * PATCH /api/v1/purchase-orders/{id}/reject
+     */
+    public function reject(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
+            'rejection_reason' => 'required|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                'message' => 'Rejection reason is required.',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        try {
+            $purchaseOrder = PurchaseOrder::findOrFail($id);
+
+            if ($purchaseOrder->status !== 'PENDING_APPROVAL') {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'INVALID_STATUS_TRANSITION', 'details' => ['current_status' => $purchaseOrder->status]],
+                    'message' => 'Only PENDING_APPROVAL purchase orders can be rejected.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            $purchaseOrder->status = 'DRAFT';
+            $purchaseOrder->save();
+
+            return response()->json([
+                'success' => true,
+                'data' => ['purchase_order' => $purchaseOrder],
+                'message' => 'Purchase order rejected and returned to DRAFT.',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'PO_REJECT_FAILED', 'details' => []],
+                'message' => 'Failed to reject purchase order: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
 
     /**
      * Cancel the purchase order.

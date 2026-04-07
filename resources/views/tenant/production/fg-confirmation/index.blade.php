@@ -8,18 +8,18 @@
 
     {{-- ── Confirmation Modal ─────────────────────────────────────────── --}}
     <div x-show="modal.show"
-         x-transition:enter="transition ease-out duration-300"
-         x-transition:enter-start="opacity-0"
-         x-transition:enter-end="opacity-100"
-         x-transition:leave="transition ease-in duration-200"
-         x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
+        x-transition:enter="transition ease-out duration-300"
+        x-transition:enter-start="opacity-0"
+        x-transition:enter-end="opacity-100"
+        x-transition:leave="transition ease-in duration-200"
+        x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
         <div class="flex items-center justify-center min-h-screen px-4 py-8">
             <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="closeModal()"></div>
             <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl z-10 overflow-hidden"
-                 x-transition:enter="transition ease-out duration-300"
-                 x-transition:enter-start="opacity-0 scale-95"
-                 x-transition:enter-end="opacity-100 scale-100"
-                 @click.stop>
+                x-transition:enter="transition ease-out duration-300"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100"
+                @click.stop>
 
                 <div class="bg-gradient-to-r from-emerald-700 to-emerald-900 px-6 py-5 flex items-center justify-between">
                     <div class="flex items-center gap-3">
@@ -40,72 +40,101 @@
                 <div class="px-6 pt-6">
                     <div class="flex items-center justify-between text-[10px] font-black uppercase tracking-tighter text-gray-400 mb-2">
                         <span>Quantity Tracker</span>
-                        <span x-text="modal.order?.confirmed_qty_total + ' / ' + modal.order?.target_qty + ' ' + (modal.order?.uom || '')"></span>
+                        <span x-text="modal.order?.confirmed_qty_total + ' / ' + modal.order?.target_qty + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"></span>
                     </div>
                     <div class="w-full bg-gray-100 rounded-full h-3 overflow-hidden shadow-inner">
                         <div class="bg-emerald-500 h-full transition-all duration-700"
-                             :style="'width:' + Math.min(100, ((modal.order?.confirmed_qty_total / modal.order?.target_qty) * 100) || 0) + '%'"></div>
+                            :style="'width:' + Math.min(100, ((modal.order?.confirmed_qty_total / modal.order?.target_qty) * 100) || 0) + '%'"></div>
                     </div>
                     <div class="flex justify-between text-xs mt-2 font-semibold">
                         <span class="text-emerald-600" x-text="'Produced: ' + (modal.order?.confirmed_qty_total || 0)"></span>
-                        <span class="text-orange-600" x-text="'Open: ' + (modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
+                        <span class="text-orange-600" x-text="'Remaining: ' + (modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
                     </div>
                 </div>
 
                 <div class="px-6 py-5 space-y-5">
+                    <!-- Auto-calculated fields -->
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Produced (This Session) <span class="text-red-500">*</span></label>
-                            <input type="number" min="0.001" step="0.001"
-                                   x-model="form.confirmed_qty"
-                                   :max="modal.order?.remaining_qty"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-emerald-500 font-bold text-gray-900 shadow-inner">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Total Target</label>
+                            <input type="text" readonly
+                                :value="modal.order?.target_qty + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejected</label>
-                            <input type="number" min="0" step="0.001"
-                                   x-model="form.rejected_qty"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
-                            <select x-model="form.rejection_reason_code"
-                                    class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-inner">
-                                <option value="">— None —</option>
-                                <option value="DEFECT_VISUAL">Visual Defect</option>
-                                <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
-                                <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
-                                <option value="CONTAMINATION">Contamination</option>
-                                <option value="PACKAGING_DAMAGE">Packaging Damage</option>
-                                <option value="OTHER">Other</option>
-                            </select>
-                        </div>
-                        <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Identity</label>
-                            <input type="text" x-model="form.fg_batch_number"
-                                   placeholder="Auto or Manual"
-                                   class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-inner">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Already Confirmed</label>
+                            <input type="text" readonly
+                                :value="(modal.order?.confirmed_qty_total ?? 0) + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                     </div>
 
-                    {{-- Completion status --}}
-                    <div class="grid grid-cols-2 gap-4">
-                        <button @click="form.completion_status = 'PARTIALLY_COMPLETED'"
-                                :class="form.completion_status === 'PARTIALLY_COMPLETED'
-                                    ? 'bg-amber-500 text-white ring-4 ring-amber-100 shadow-lg translate-y--0.5'
-                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
-                                class="flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl transition-all duration-300 text-center group">
-                            <span class="material-symbols-outlined text-2xl" :class="form.completion_status === 'PARTIALLY_COMPLETED' ? 'text-white' : 'text-amber-500'">pending</span>
-                            <span class="font-bold text-xs uppercase tracking-widest">Partial</span>
-                        </button>
-                        <button @click="form.completion_status = 'COMPLETED'"
-                                :class="form.completion_status === 'COMPLETED'
-                                    ? 'bg-emerald-600 text-white ring-4 ring-emerald-100 shadow-lg translate-y--0.5'
-                                    : 'bg-gray-50 text-gray-500 hover:bg-gray-100'"
-                                class="flex flex-col items-center gap-1.5 px-4 py-4 rounded-2xl transition-all duration-300 text-center group">
-                            <span class="material-symbols-outlined text-2xl" :class="form.completion_status === 'COMPLETED' ? 'text-white' : 'text-emerald-500'">check_circle</span>
-                            <span class="font-bold text-xs uppercase tracking-widest">Finalize</span>
-                        </button>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Accept (Auto-filled)</label>
+                            <input type="number" min="0.001" step="0.001"
+                                x-model="form.confirmed_qty"
+                                :max="modal.order?.remaining_qty"
+                                readonly
+                                class="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold shadow-inner cursor-not-allowed">
+                            <p class="text-[10px] text-emerald-600">Auto-calculated from remaining quantity</p>
+                        </div>
+                        <div class="space-y-1.5">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Reject (Optional)</label>
+                            <input type="number" min="0" step="0.001"
+                                x-model="form.rejected_qty"
+                                @input="syncStatus()"
+                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
+                        </div>
+                    </div>
+
+                    <div class="p-4 bg-slate-50 rounded-2xl border border-slate-100 flex items-center justify-between">
+                        <div class="flex items-center gap-3">
+                            <div class="p-2 rounded-lg" :class="form.completion_status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-700' : 'bg-blue-100 text-blue-700'">
+                                <span class="material-symbols-outlined text-sm" x-text="form.completion_status === 'COMPLETED' ? 'task_alt' : 'pending_actions'"></span>
+                            </div>
+                            <div>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter leading-none mb-1">Batch Close Logic</p>
+                                <p class="text-xs font-black uppercase tracking-widest" :class="form.completion_status === 'COMPLETED' ? 'text-emerald-700' : 'text-blue-700'"
+                                    x-text="form.completion_status.replace('_', ' ')"></p>
+                            </div>
+                        </div>
+                        <p class="text-[10px] font-medium text-gray-500 italic max-w-[180px] text-right">
+                            <span x-show="form.completion_status === 'COMPLETED'">Full batch target met. Order will be marked as Finished for Packing.</span>
+                            <span x-show="form.completion_status !== 'COMPLETED'">Target not fully met. Order remains Open for more recordings.</span>
+                        </p>
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
+                        <select x-model="form.rejection_reason_code"
+                            class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-inner">
+                            <option value="">— None —</option>
+                            <option value="DEFECT_VISUAL">Visual Defect</option>
+                            <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
+                            <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
+                            <option value="CONTAMINATION">Contamination</option>
+                            <option value="PACKAGING_DAMAGE">Packaging Damage</option>
+                            <option value="OTHER">Other</option>
+                        </select>
+                    </div>
+
+                    <div x-show="form.rejection_reason_code === 'OTHER'"
+                        x-transition:enter="transition ease-out duration-200"
+                        x-transition:enter-start="opacity-0 -translate-y-2"
+                        x-transition:enter-end="opacity-100 translate-y-0"
+                        class="space-y-1.5">
+                        <label class="block text-xs font-bold text-orange-500 uppercase tracking-wider">Specify Manual Reason</label>
+                        <input type="text" x-model="form.rejection_reason_note"
+                            placeholder="Type details about the rejection reason..."
+                            class="w-full px-4 py-2.5 bg-orange-50/50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 shadow-inner">
+                    </div>
+
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Identity</label>
+                        <input type="text" x-model="form.fg_batch_number"
+                            placeholder="Auto-generated"
+                            class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-inner">
                     </div>
 
                     <label class="flex items-center gap-3 rounded-2xl bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800 cursor-pointer border border-emerald-100 hover:bg-emerald-50 transition-colors">
@@ -116,55 +145,52 @@
                         </div>
                     </label>
 
-                    <div x-show="modal.error" 
-                         x-transition:enter="transition ease-out duration-300"
-                         x-transition:enter-start="opacity-0 -translate-y-2"
-                         class="p-4 bg-red-50 border border-red-100 text-red-700 text-xs font-bold rounded-xl flex items-center gap-2">
-                         <span class="material-symbols-outlined text-sm">error</span>
-                         <span x-text="modal.error"></span>
+                    <div x-show="modal.error"
+                        x-transition:enter="transition ease-out duration-300"
+                        x-transition:enter-start="opacity-0 -translate-y-2"
+                        class="p-4 bg-red-50 border border-red-100 text-red-700 text-xs font-bold rounded-xl flex items-center gap-2">
+                        <span class="material-symbols-outlined text-sm">error</span>
+                        <span x-text="modal.error"></span>
                     </div>
                 </div>
 
                 <div class="px-6 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/30">
                     <button @click="closeModal()" class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all shadow-sm">Cancel</button>
                     <button @click="submitConfirmation()"
-                            :disabled="modal.submitting || !form.confirmed_qty"
-                            :class="(!modal.submitting && form.confirmed_qty) ? 'bg-emerald-600 shadow-emerald-200 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'"
-                            class="px-6 py-2.5 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg flex items-center gap-2 active:scale-95">
+                        :disabled="modal.submitting || !form.confirmed_qty"
+                        :class="(!modal.submitting && form.confirmed_qty) ? 'bg-emerald-600 shadow-emerald-200 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'"
+                        class="px-6 py-2.5 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg flex items-center gap-2 active:scale-95">
                         <span class="material-symbols-outlined text-lg"
-                              :class="modal.submitting ? 'animate-spin' : ''"
-                              x-text="modal.submitting ? 'progress_activity' : 'task_alt'"></span>
+                            :class="modal.submitting ? 'animate-spin' : ''"
+                            x-text="modal.submitting ? 'progress_activity' : 'task_alt'"></span>
                         <span x-text="modal.submitting ? 'Processing...' : 'Confirm Output'"></span>
                     </button>
                 </div>
             </div>
         </div>
     </div>
-            </div>
-        </div>
-    </div>
 
     {{-- ── Sessions History Drawer ────────────────────────────────────── --}}
     <div x-show="drawer.show" x-cloak class="fixed inset-0 z-50 overflow-hidden" style="display:none;">
-        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
-             x-show="drawer.show" 
-             x-transition:enter="ease-out duration-300"
-             x-transition:enter-start="opacity-0"
-             x-transition:enter-end="opacity-100"
-             x-transition:leave="ease-in duration-200"
-             x-transition:leave-start="opacity-100"
-             x-transition:leave-end="opacity-0"
-             @click="drawer.show = false"></div>
-        
+        <div class="absolute inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+            x-show="drawer.show"
+            x-transition:enter="ease-out duration-300"
+            x-transition:enter-start="opacity-0"
+            x-transition:enter-end="opacity-100"
+            x-transition:leave="ease-in duration-200"
+            x-transition:leave-start="opacity-100"
+            x-transition:leave-end="opacity-0"
+            @click="drawer.show = false"></div>
+
         <div class="absolute right-0 top-0 h-full w-full max-w-lg bg-white shadow-2xl flex flex-col"
-             x-show="drawer.show"
-             x-transition:enter="transform transition ease-out duration-300"
-             x-transition:enter-start="translate-x-full"
-             x-transition:enter-end="translate-x-0"
-             x-transition:leave="transform transition ease-in duration-200"
-             x-transition:leave-start="translate-x-0"
-             x-transition:leave-end="translate-x-full">
-            
+            x-show="drawer.show"
+            x-transition:enter="transform transition ease-out duration-300"
+            x-transition:enter-start="translate-x-full"
+            x-transition:enter-end="translate-x-0"
+            x-transition:leave="transform transition ease-in duration-200"
+            x-transition:leave-start="translate-x-0"
+            x-transition:leave-end="translate-x-full">
+
             <div class="flex items-center justify-between px-6 py-5 bg-gradient-to-r from-slate-800 to-slate-900 border-b border-gray-200">
                 <div class="flex items-center gap-3">
                     <div class="p-2 bg-white/10 rounded-lg text-slate-200">
@@ -173,9 +199,9 @@
                     <div>
                         <h3 class="text-lg font-bold text-white tracking-tight">Batch Analysis</h3>
                         <div class="flex items-center gap-2">
-                             <p class="text-xs text-slate-300 font-mono" x-text="drawer.order?.order_no"></p>
-                             <span class="text-slate-500 text-xs">•</span>
-                             <p class="text-xs text-slate-300 font-medium" x-text="drawer.order?.product_name"></p>
+                            <p class="text-xs text-slate-300 font-mono" x-text="drawer.order?.order_no"></p>
+                            <span class="text-slate-500 text-xs">•</span>
+                            <p class="text-xs text-slate-300 font-medium" x-text="drawer.order?.product_name"></p>
                         </div>
                     </div>
                 </div>
@@ -200,7 +226,7 @@
                         <p class="font-black text-orange-600 text-base" x-text="drawer.summary?.remaining_qty ?? '—'"></p>
                     </div>
                 </div>
-                
+
                 <div class="grid grid-cols-3 gap-3">
                     <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm text-center border-l-4 border-l-red-500">
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 font-black">Rejected</p>
@@ -213,8 +239,8 @@
                     <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm text-center">
                         <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Variance</p>
                         <p class="font-black text-base"
-                           :class="(drawer.summary?.variance ?? 0) < 0 ? 'text-red-700' : 'text-emerald-700'"
-                           x-text="(drawer.summary?.variance ?? 0) > 0 ? '+' + drawer.summary?.variance : drawer.summary?.variance ?? '—'"></p>
+                            :class="(drawer.summary?.variance ?? 0) < 0 ? 'text-red-700' : 'text-emerald-700'"
+                            x-text="(drawer.summary?.variance ?? 0) > 0 ? '+' + drawer.summary?.variance : drawer.summary?.variance ?? '—'"></p>
                     </div>
                 </div>
             </div>
@@ -233,7 +259,7 @@
                 <template x-if="!drawer.loading && drawer.sessions.length === 0">
                     <div class="flex flex-col items-center justify-center py-12 text-gray-300">
                         <div class="p-4 bg-gray-50 rounded-full mb-4">
-                             <span class="material-symbols-outlined text-4xl">history</span>
+                            <span class="material-symbols-outlined text-4xl">history</span>
                         </div>
                         <p class="text-sm font-bold tracking-tight uppercase tracking-widest">No activity recorded</p>
                     </div>
@@ -250,10 +276,10 @@
                                 </div>
                             </div>
                             <span class="px-2 py-1 text-[10px] rounded-lg font-black uppercase tracking-wider"
-                                  :class="s.completion_status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
-                                  x-text="s.completion_status"></span>
+                                :class="s.completion_status === 'COMPLETED' ? 'bg-emerald-100 text-emerald-800' : 'bg-amber-100 text-amber-800'"
+                                x-text="s.completion_status"></span>
                         </div>
-                        
+
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-gray-50/50 rounded-xl p-3 border border-transparent group-hover:border-emerald-50 transition-colors">
                                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Confirmed</p>
@@ -263,14 +289,14 @@
                                 <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Rejected</p>
                                 <p class="text-sm font-black text-red-700" x-text="s.rejected_qty"></p>
                             </div>
-                            
+
                             <template x-if="s.rejection_reason_code">
                                 <div class="col-span-2 bg-red-50/30 rounded-xl p-3 border border-red-50">
                                     <p class="text-[10px] font-black text-red-400 uppercase tracking-tighter mb-1">Rejection Basis</p>
                                     <p class="text-xs font-bold text-red-800" x-text="s.rejection_reason_code"></p>
                                 </div>
                             </template>
-                            
+
                             <template x-if="s.fg_batch_number">
                                 <div class="col-span-2 bg-indigo-50/30 rounded-xl p-3 border border-indigo-50">
                                     <p class="text-[10px] font-black text-indigo-400 uppercase tracking-tighter mb-1">Assigned Batch Tag</p>
@@ -381,25 +407,29 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-50">
                     <template x-if="loading">
-                        <tr><td colspan="7" class="px-6 py-16 text-center">
-                            <div class="flex flex-col items-center gap-4">
-                                <span class="material-symbols-outlined text-4xl animate-spin text-emerald-500">progress_activity</span>
-                                <p class="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">Hydrating Data...</p>
-                            </div>
-                        </td></tr>
+                        <tr>
+                            <td colspan="7" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-4">
+                                    <span class="material-symbols-outlined text-4xl animate-spin text-emerald-500">progress_activity</span>
+                                    <p class="text-xs font-black text-gray-400 uppercase tracking-widest leading-none">Hydrating Data...</p>
+                                </div>
+                            </td>
+                        </tr>
                     </template>
                     <template x-if="!loading && orders.length === 0">
-                        <tr><td colspan="7" class="px-6 py-16 text-center">
-                            <div class="flex flex-col items-center gap-4 text-gray-300">
-                                <div class="p-4 bg-gray-50 rounded-full">
-                                     <span class="material-symbols-outlined text-5xl">task_alt</span>
+                        <tr>
+                            <td colspan="7" class="px-6 py-16 text-center">
+                                <div class="flex flex-col items-center gap-4 text-gray-300">
+                                    <div class="p-4 bg-gray-50 rounded-full">
+                                        <span class="material-symbols-outlined text-5xl">task_alt</span>
+                                    </div>
+                                    <div>
+                                        <p class="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">No active batches</p>
+                                        <p class="text-xs text-gray-400 mt-1">Initialize production orders to begin confirmation.</p>
+                                    </div>
                                 </div>
-                                <div>
-                                    <p class="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">No active batches</p>
-                                    <p class="text-xs text-gray-400 mt-1">Initialize production orders to begin confirmation.</p>
-                                </div>
-                            </div>
-                        </td></tr>
+                            </td>
+                        </tr>
                     </template>
                     <template x-for="order in orders" :key="order.id">
                         <tr class="hover:bg-slate-50/50 transition-all group">
@@ -414,41 +444,41 @@
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <span class="text-xs font-extrabold text-slate-600"
-                                      x-text="order.target_qty + ' ' + (order.uom || '')"></span>
+                                    x-text="order.target_qty + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <div class="inline-flex flex-col items-end gap-1">
                                     <span class="text-xs font-black text-emerald-600"
-                                          x-text="(order.confirmed_qty_total ?? 0) + ' ' + (order.uom || '')"></span>
+                                        x-text="(order.confirmed_qty_total ?? 0) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                                     <div class="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
-                                         <div class="bg-emerald-500 h-full transition-all duration-1000" :style="'width: ' + ((order.confirmed_qty_total / order.target_qty) * 100) + '%'"></div>
+                                        <div class="bg-emerald-500 h-full transition-all duration-1000" :style="'width: ' + ((order.confirmed_qty_total / order.target_qty) * 100) + '%'"></div>
                                     </div>
                                 </div>
                             </td>
                             <td class="px-6 py-4 text-right font-black leading-none">
                                 <span class="text-xs"
-                                      :class="remainingQty(order) > 0 ? 'text-orange-600' : 'text-gray-400'"
-                                      x-text="remainingQty(order) + ' ' + (order.uom || '')"></span>
+                                    :class="remainingQty(order) > 0 ? 'text-orange-600' : 'text-gray-400'"
+                                    x-text="remainingQty(order) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
                             </td>
                             <td class="px-6 py-4 text-center leading-none">
                                 <span class="px-3 py-1 text-[10px] rounded-full font-black uppercase tracking-widest"
-                                      :class="{
+                                    :class="{
                                           'bg-blue-50 text-blue-700 ring-1 ring-blue-100': order.status === 'IN_PROGRESS',
                                           'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100': order.status === 'COMPLETED',
                                           'bg-slate-50 text-slate-700 ring-1 ring-slate-100': order.status === 'DRAFT',
                                           'bg-red-50 text-red-700 ring-1 ring-red-100': order.status === 'CANCELLED'
                                       }"
-                                      x-text="order.status.replace('_', ' ')"></span>
+                                    x-text="order.status.replace('_', ' ')"></span>
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <div class="inline-flex items-center gap-2">
                                     <button @click="openSessions(order)"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-white border border-slate-200 text-slate-600 hover:bg-slate-50 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-sm active:scale-95">
                                         <span class="material-symbols-outlined text-sm">history</span> History
                                     </button>
                                     <button x-show="order.status === 'IN_PROGRESS'"
-                                            @click="openModal(order)"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 shadow-emerald-100">
+                                        @click="openModal(order)"
+                                        class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-emerald-600 text-white hover:bg-emerald-700 rounded-xl text-[10px] font-black uppercase tracking-widest transition-all shadow-md active:scale-95 shadow-emerald-100">
                                         <span class="material-symbols-outlined text-sm">task_alt</span> Confirm
                                     </button>
                                 </div>
@@ -460,150 +490,191 @@
         </div>
     </div>
 </div>
-            </table>
-        </div>
-    </div>
-</div>
 
 <script>
-function fgConfirmation(orgSlug) {
-    return {
-        orgSlug,
-        loading: false,
-        orders: [],
-        filters: { search: '', status: 'IN_PROGRESS' },
+    function fgConfirmation(orgSlug) {
+        return {
+            orgSlug,
+            loading: false,
+            orders: [],
+            filters: {
+                search: '',
+                status: 'IN_PROGRESS'
+            },
 
-        modal: { show: false, submitting: false, order: null, error: '' },
-        form: {
-            confirmed_qty: '',
-            rejected_qty: 0,
-            rejection_reason_code: '',
-            fg_batch_number: '',
-            completion_status: 'PARTIALLY_COMPLETED',
-            qc_required: false,
-        },
-
-        drawer: { show: false, loading: false, order: null, sessions: [], summary: null },
-
-        async init() {
-            await this.loadOrders();
-        },
-
-        remainingQty(order) {
-            const confirmed = parseFloat(order.confirmed_qty_total ?? 0);
-            const target    = parseFloat(order.target_qty ?? 0);
-            return Math.max(0, target - confirmed).toFixed(3).replace(/\.?0+$/, '') || '0';
-        },
-
-        async loadOrders() {
-            this.loading = true;
-            try {
-                const params = new URLSearchParams();
-                if (this.filters.search) params.append('search', this.filters.search);
-                if (this.filters.status) params.append('status', this.filters.status);
-                const res  = await this._fetch(`/api/v1/production-orders?${params}`);
-                const data = await res.json();
-                this.orders = data?.data?.orders || data?.data || [];
-            } catch (e) {
-                console.error('Failed to load orders', e);
-                this.orders = [];
-            } finally {
-                this.loading = false;
-            }
-        },
-
-        async openModal(order) {
-            // Fetch latest session totals
-            this.modal.error = '';
-            this.modal.order = order;
-            try {
-                const res  = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
-                const data = await res.json();
-                if (data.success) {
-                    this.modal.order = { ...order, ...data.data.order };
-                }
-            } catch (e) { /* use cached order data */ }
-
-            const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
-            this.form = {
-                confirmed_qty: remaining > 0 ? remaining : '',
+            modal: {
+                show: false,
+                submitting: false,
+                order: null,
+                error: ''
+            },
+            form: {
+                confirmed_qty: '',
                 rejected_qty: 0,
                 rejection_reason_code: '',
+                rejection_reason_note: '',
                 fg_batch_number: '',
                 completion_status: 'PARTIALLY_COMPLETED',
-                qc_required: false,
-            };
-            this.modal.show = true;
-        },
+                qc_required: true,
+            },
 
-        closeModal() {
-            this.modal = { show: false, submitting: false, order: null, error: '' };
-        },
+            drawer: {
+                show: false,
+                loading: false,
+                order: null,
+                sessions: [],
+                summary: null
+            },
 
-        async submitConfirmation() {
-            this.modal.error = '';
-            if (!this.form.confirmed_qty || parseFloat(this.form.confirmed_qty) <= 0) {
-                this.modal.error = 'Confirmed qty must be greater than 0.';
-                return;
-            }
-            this.modal.submitting = true;
-            try {
-                const payload = {
-                    confirmed_qty:         parseFloat(this.form.confirmed_qty),
-                    rejected_qty:          parseFloat(this.form.rejected_qty || 0),
-                    rejection_reason_code: this.form.rejection_reason_code || null,
-                    fg_batch_number:       this.form.fg_batch_number || null,
-                    completion_status:     this.form.completion_status,
-                    qc_required:           !!this.form.qc_required,
-                };
-                const res  = await this._fetch(`/api/v1/production-orders/${this.modal.order.id}/confirm-fg`, {
-                    method: 'POST',
-                    body: JSON.stringify(payload),
-                });
-                const data = await res.json();
-                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to confirm FG');
-                this.closeModal();
+            async init() {
                 await this.loadOrders();
-            } catch (e) {
-                this.modal.error = e.message || 'An error occurred. Please try again.';
-            } finally {
-                this.modal.submitting = false;
-            }
-        },
+            },
 
-        async openSessions(order) {
-            this.drawer.show    = true;
-            this.drawer.loading = true;
-            this.drawer.order   = order;
-            this.drawer.sessions = [];
-            this.drawer.summary  = null;
-            try {
-                const res  = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
-                const data = await res.json();
-                if (data.success) {
-                    this.drawer.sessions = data.data.sessions || [];
-                    this.drawer.summary  = data.data.order;
+            remainingQty(order) {
+                const confirmed = parseFloat(order.confirmed_qty_total ?? 0);
+                const target = parseFloat(order.target_qty ?? 0);
+                return Math.max(0, target - confirmed).toFixed(3).replace(/\.?0+$/, '') || '0';
+            },
+
+            async loadOrders() {
+                this.loading = true;
+                try {
+                    const params = new URLSearchParams();
+                    if (this.filters.search) params.append('search', this.filters.search);
+                    if (this.filters.status) params.append('status', this.filters.status);
+                    const res = await this._fetch(`/api/v1/production-orders?${params}`);
+                    const data = await res.json();
+                    this.orders = data?.data?.orders || data?.data || [];
+                } catch (e) {
+                    console.error('Failed to load orders', e);
+                    this.orders = [];
+                } finally {
+                    this.loading = false;
                 }
-            } catch (e) {
-                console.error('Failed to load sessions', e);
-            } finally {
-                this.drawer.loading = false;
-            }
-        },
+            },
 
-        _fetch(url, options = {}) {
-            return fetch(url, {
-                credentials: 'same-origin',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'Accept': 'application/json',
-                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
-                    'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || ''),
-                },
-                ...options,
-            });
-        },
+            async openModal(order) {
+                // Fetch latest session totals
+                this.modal.error = '';
+                this.modal.order = order;
+                try {
+                    const res = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
+                    const data = await res.json();
+                    if (data.success) {
+                        this.modal.order = {
+                            ...order,
+                            ...data.data.order
+                        };
+                    }
+                } catch (e) {
+                    /* use cached order data */
+                }
+
+                const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
+                this.form = {
+                    confirmed_qty: remaining > 0 ? remaining : '',
+                    rejected_qty: 0,
+                    rejection_reason_code: '',
+                    rejection_reason_note: '',
+                    fg_batch_number: '',
+                    completion_status: remaining > 0 ? 'COMPLETED' : 'PARTIALLY_COMPLETED',
+                    qc_required: true,
+                };
+                this.modal.show = true;
+            },
+
+            syncStatus() {
+                // Auto-adjust confirmed_qty when reject_qty changes
+                const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
+                const rejectQty = parseFloat(this.form.rejected_qty || 0);
+                const maxAccept = Math.max(0, remaining - rejectQty);
+
+                if (parseFloat(this.form.confirmed_qty || 0) > maxAccept) {
+                    this.form.confirmed_qty = maxAccept;
+                }
+
+                const sessionTotal = parseFloat(this.form.confirmed_qty || 0) + rejectQty;
+                if (sessionTotal >= remaining - 0.001) {
+                    this.form.completion_status = 'COMPLETED';
+                } else {
+                    this.form.completion_status = 'PARTIALLY_COMPLETED';
+                }
+            },
+
+            closeModal() {
+                this.modal = {
+                    show: false,
+                    submitting: false,
+                    order: null,
+                    error: ''
+                };
+            },
+
+            async submitConfirmation() {
+                this.modal.error = '';
+                if (!this.form.confirmed_qty || parseFloat(this.form.confirmed_qty) <= 0) {
+                    this.modal.error = 'Confirmed qty must be greater than 0.';
+                    return;
+                }
+                this.modal.submitting = true;
+                try {
+                    const payload = {
+                        confirmed_qty: parseFloat(this.form.confirmed_qty),
+                        rejected_qty: parseFloat(this.form.rejected_qty || 0),
+                        rejection_reason_code: this.form.rejection_reason_code || null,
+                        rejection_reason_note: this.form.rejection_reason_code === 'OTHER' ? this.form.rejection_reason_note : null,
+                        fg_batch_number: this.form.fg_batch_number || null,
+                        completion_status: this.form.completion_status,
+                        qc_required: !!this.form.qc_required,
+                    };
+                    const res = await this._fetch(`/api/v1/production-orders/${this.modal.order.id}/confirm-fg`, {
+                        method: 'POST',
+                        body: JSON.stringify(payload),
+                    });
+                    const data = await res.json();
+                    if (!res.ok || !data.success) throw new Error(data.message || 'Failed to confirm FG');
+                    this.closeModal();
+                    await this.loadOrders();
+                } catch (e) {
+                    this.modal.error = e.message || 'An error occurred. Please try again.';
+                } finally {
+                    this.modal.submitting = false;
+                }
+            },
+
+            async openSessions(order) {
+                this.drawer.show = true;
+                this.drawer.loading = true;
+                this.drawer.order = order;
+                this.drawer.sessions = [];
+                this.drawer.summary = null;
+                try {
+                    const res = await this._fetch(`/api/v1/production-orders/${order.id}/fg-sessions`);
+                    const data = await res.json();
+                    if (data.success) {
+                        this.drawer.sessions = data.data.sessions || [];
+                        this.drawer.summary = data.data.order;
+                    }
+                } catch (e) {
+                    console.error('Failed to load sessions', e);
+                } finally {
+                    this.drawer.loading = false;
+                }
+            },
+
+            _fetch(url, options = {}) {
+                return fetch(url, {
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                        'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || ''),
+                    },
+                    ...options,
+                });
+            },
+        }
     }
-}
 </script>
 @endsection

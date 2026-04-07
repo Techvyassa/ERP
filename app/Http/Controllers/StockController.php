@@ -6,6 +6,7 @@ use App\Services\StockQueryService;
 use App\Services\StockService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -177,6 +178,133 @@ class StockController extends Controller
         } catch (\Exception $e) {
             Log::error('[StockController] byBucket() failed', ['error' => $e->getMessage()]);
             return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+
+    /**
+     * Manually adjust stock (add or subtract).
+     * 
+     * POST /api/v1/stock/adjust
+     * Body: {
+     *   "material_id": 3,
+     *   "warehouse_id": 1,
+     *   "bin_id": null,
+     *   "qty": 500,
+     *   "type": "add", // or "subtract"
+     *   "batch_number": "BATCH-TEST-001",
+     *   "reason": "Manual adjustment for testing"
+     * }
+     */
+    public function adjust(Request $request): JsonResponse
+    {
+        try {
+            // Validate required fields (basic validation)
+            $validated = $request->validate([
+                'material_id' => 'required|integer|min:1',
+                'warehouse_id' => 'required|integer|min:1',
+                'bin_id' => 'nullable|integer|min:1',
+                'qty' => 'required|numeric|min:0.001',
+                'type' => 'required|in:add,subtract',
+                'batch_number' => 'nullable|string|max:50',
+                'reason' => 'nullable|string|max:255',
+            ]);
+
+            $materialId = $validated['material_id'];
+            $warehouseId = $validated['warehouse_id'];
+            $binId = $validated['bin_id'] ?? null;
+            $qty = (float) $validated['qty'];
+            $type = $validated['type'];
+            $batchNumber = $validated['batch_number'] ?? null;
+            $reason = $validated['reason'] ?? 'Manual stock adjustment';
+
+            // Get material details from TENANT database for UOM and cost
+            $material = DB::connection('tenant')
+                ->table('material_master')
+                ->where('id', $materialId)
+                ->first();
+
+            if (!$material) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Material not found in tenant database',
+                ], 404);
+            }
+
+            // Validate warehouse exists in tenant database
+            $warehouse = DB::connection('tenant')
+                ->table('warehouse_master')
+                ->where('id', $warehouseId)
+                ->first();
+
+            if (!$warehouse) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Warehouse not found in tenant database',
+                ], 404);
+            }
+
+            // Validate bin if provided
+            if ($binId) {
+                $bin = DB::connection('tenant')
+                    ->table('bin_locations')
+                    ->where('id', $binId)
+                    ->first();
+
+                if (!$bin) {
+                    return response()->json([
+                        'success' => false,
+                        'message' => 'Bin location not found in tenant database',
+                    ], 404);
+                }
+            }
+
+            $qtyChange = $type === 'add' ? $qty : -$qty;
+            $userId = auth()->id() ?? 1; // Default to admin if not authenticated
+
+            $stockService = app(StockService::class);
+
+            $txn = $stockService->post(
+                item: [
+                    'material_id' => $materialId,
+                    'uom_id' => $material->uom_id,
+                    'warehouse_id' => $warehouseId,
+                    'batch_number' => $batchNumber,
+                ],
+                bucket: 'AVAILABLE',
+                qtyChange: $qtyChange,
+                transactionType: 'STOCK_ADJUSTMENT',
+                referenceType: 'ManualAdjustment',
+                referenceId: 999,
+                referenceNumber: 'MANUAL/' . date('YmdHis'),
+                userId: $userId,
+                binId: $binId,
+                unitCost: $material->standard_cost,
+                remarks: $reason
+            );
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Stock adjusted successfully',
+                'data' => [
+                    'transaction_id' => $txn->id,
+                    'material_id' => $materialId,
+                    'qty_change' => $qtyChange,
+                    'bucket' => 'AVAILABLE',
+                ],
+            ]);
+        } catch (\Illuminate\Validation\ValidationException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Validation failed',
+                'errors' => $e->errors(),
+            ], 422);
+        } catch (\Exception $e) {
+            Log::error('[StockController] adjust() failed', ['error' => $e->getMessage()]);
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 500);
         }
     }
 }

@@ -101,13 +101,18 @@
                         <div class="bg-white rounded-xl border border-gray-200 p-4">
                             <div class="flex items-center justify-between mb-3">
                                 <h4 class="font-semibold text-gray-900">Cartons</h4>
-                                <button @click="createCarton()" class="text-sm text-orange-600 font-semibold">Open Carton</button>
+                                <div class="flex items-center gap-2">
+                                    <button @click="showAllCartons = !showAllCartons" class="text-xs text-gray-600 hover:text-orange-600 font-medium">
+                                        <span x-text="showAllCartons ? 'Show Open Only' : 'Show All'"></span>
+                                    </button>
+                                    <button @click="createCarton()" :disabled="hasOpenCarton" class="text-sm text-orange-600 font-semibold" :class="hasOpenCarton ? 'opacity-50 cursor-not-allowed' : ''">Open Carton</button>
+                                </div>
                             </div>
                             <div class="space-y-3 max-h-[28rem] overflow-y-auto">
                                 <template x-if="!selectedOrder.cartons || selectedOrder.cartons.length === 0">
                                     <div class="text-sm text-gray-400">No cartons yet.</div>
                                 </template>
-                                <template x-for="carton in selectedOrder.cartons" :key="carton.id">
+                                <template x-for="carton in filteredCartons" :key="carton.id">
                                     <button @click="selectedCartonId = carton.id"
                                             class="w-full text-left rounded-lg border px-3 py-3 transition"
                                             :class="selectedCartonId === carton.id ? 'border-orange-300 bg-orange-50' : 'border-gray-200 hover:border-gray-300'">
@@ -142,11 +147,11 @@
                                     <div class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-5">
                                         <input type="text" x-model="scanForm.product_barcode"
                                                placeholder="Scan / enter FG barcode"
-                                               class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
+                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent">
                                         <input type="number" min="0.001" step="0.001" x-model="scanForm.qty"
-                                               class="px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                                        <button @click="scanIntoCarton()" :disabled="selectedCarton.status !== 'OPEN'"
-                                                class="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 disabled:opacity-50">
+                                               class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-500 focus:border-transparent">
+                                        <button @click="openScanModal()" :disabled="selectedCarton.status !== 'OPEN'"
+                                                class="px-4 py-2 bg-orange-500 text-white rounded-lg text-sm hover:bg-orange-600 disabled:opacity-50 disabled:cursor-not-allowed">
                                             Scan Into Carton
                                         </button>
                                     </div>
@@ -196,6 +201,63 @@
             </template>
         </div>
     </div>
+
+    <!-- Scan Modal -->
+    <div x-show="scanModal.show"
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-200"
+         x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display:none;">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="fixed inset-0 bg-slate-900/60 backdrop-blur-sm" @click="closeScanModal()"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md z-10 overflow-hidden"
+                 x-transition:enter="transition ease-out duration-300"
+                 x-transition:enter-start="opacity-0 scale-95"
+                 x-transition:enter-end="opacity-100 scale-100"
+                 @click.stop>
+                <div class="bg-gradient-to-r from-orange-600 to-orange-700 px-6 py-5 flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-bold text-white">Scan FG into Carton</h3>
+                        <p class="text-xs text-white/70" x-text="scanModal.carton?.carton_barcode"></p>
+                    </div>
+                    <button @click="closeScanModal()" class="text-white/60 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                <div class="px-6 py-5 space-y-5">
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Product Barcode</label>
+                        <input type="text" x-model="scanForm.product_barcode"
+                               placeholder="Scan / enter FG barcode"
+                               class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 font-bold text-gray-900 shadow-inner">
+                    </div>
+                    <div class="space-y-1.5">
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Quantity</label>
+                        <input type="number" min="0.001" step="0.001" x-model="scanForm.qty"
+                               class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-500 font-bold text-gray-900 shadow-inner">
+                    </div>
+                    <div x-show="scanModal.error" 
+                         class="p-3 bg-red-50 border border-red-100 text-red-700 text-xs font-bold rounded-xl flex items-center gap-2">
+                         <span class="material-symbols-outlined text-sm">error</span>
+                         <span x-text="scanModal.error"></span>
+                    </div>
+                </div>
+                <div class="px-6 py-4 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/30">
+                    <button @click="closeScanModal()" class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all shadow-sm">Cancel</button>
+                    <button @click="submitScan()"
+                            :disabled="scanModal.submitting || !scanForm.product_barcode"
+                            :class="(!scanModal.submitting && scanForm.product_barcode) ? 'bg-orange-600 shadow-orange-200 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'"
+                            class="px-6 py-2.5 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg flex items-center gap-2 active:scale-95">
+                        <span class="material-symbols-outlined text-lg"
+                              :class="scanModal.submitting ? 'animate-spin' : ''"
+                              x-text="scanModal.submitting ? 'progress_activity' : 'check'"></span>
+                        <span x-text="scanModal.submitting ? 'Scanning...' : 'Scan Into Carton'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -213,16 +275,67 @@ function packingOrders(orgSlug) {
         completedOrders: [],
         selectedOrder: null,
         selectedCartonId: null,
+        showAllCartons: false,
         creatingOrder: false,
         newPackingOrder: { production_order_id: '' },
         scanForm: { product_barcode: '', qty: 1 },
+        scanModal: { show: false, carton: null, submitting: false, error: '' },
 
         async init() {
             await Promise.all([this.loadCompletedOrders(), this.loadPackingOrders()]);
         },
 
+        openScanModal() {
+            if (!this.selectedCarton) return;
+            this.scanModal = { show: true, carton: this.selectedCarton };
+        },
+
+        closeScanModal() {
+            this.scanModal = { show: false, carton: null };
+            this.scanForm = { product_barcode: '', qty: 1 };
+        },
+
+        async submitScan() {
+            this.scanModal.error = '';
+            if (!this.scanForm.product_barcode || this.scanForm.product_barcode.trim() === '') {
+                this.scanModal.error = 'Please enter or scan the product barcode first.';
+                return;
+            }
+            if (!this.scanForm.qty || parseFloat(this.scanForm.qty) <= 0) {
+                this.scanModal.error = 'Please enter a valid quantity.';
+                return;
+            }
+            this.scanModal.submitting = true;
+            try {
+                const res = await fetch(`/api/v1/packing-orders/${this.selectedOrder.id}/cartons/${this.selectedCartonId}/scan`, {
+                    method: 'POST',
+                    headers: headers(),
+                    body: JSON.stringify(this.scanForm)
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to scan FG into carton');
+                this.closeScanModal();
+                await this.selectOrder(this.selectedOrder.id);
+            } catch (error) {
+                this.scanModal.error = error.message || 'An error occurred. Please try again.';
+            } finally {
+                this.scanModal.submitting = false;
+            }
+        },
+
         get selectedCarton() {
             return this.selectedOrder?.cartons?.find(c => c.id === this.selectedCartonId) || null;
+        },
+
+        get filteredCartons() {
+            if (this.showAllCartons) {
+                return this.selectedOrder?.cartons || [];
+            }
+            return (this.selectedOrder?.cartons || []).filter(c => c.status === 'OPEN');
+        },
+
+        get hasOpenCarton() {
+            return (this.selectedOrder?.cartons || []).some(c => c.status === 'OPEN');
         },
 
         packedQty(order) {
@@ -232,7 +345,7 @@ function packingOrders(orgSlug) {
         },
 
         async loadCompletedOrders() {
-            const res = await fetch('/api/v1/production-orders?status=COMPLETED', { headers: headers() });
+            const res = await fetch('/api/v1/production-orders/for-packing', { headers: headers() });
             const data = await res.json();
             this.completedOrders = data.data?.orders || [];
         },
@@ -247,7 +360,18 @@ function packingOrders(orgSlug) {
             const res = await fetch(`/api/v1/packing-orders/${id}`, { headers: headers() });
             const data = await res.json();
             this.selectedOrder = data.data?.packing_order || null;
-            this.selectedCartonId = this.selectedOrder?.cartons?.[0]?.id || null;
+            
+            // Preserve selected carton if it still exists in the updated order
+            const existingCarton = this.selectedOrder?.cartons?.find(c => c.id === this.selectedCartonId);
+            if (existingCarton) {
+                this.selectedCartonId = existingCarton.id;
+            } else if (this.selectedOrder?.cartons?.length > 0) {
+                // If no existing carton, select the first open one, or first carton if none open
+                const openCarton = this.selectedOrder.cartons.find(c => c.status === 'OPEN');
+                this.selectedCartonId = openCarton ? openCarton.id : this.selectedOrder.cartons[0].id;
+            } else {
+                this.selectedCartonId = null;
+            }
         },
 
         async createPackingOrder() {
@@ -271,18 +395,30 @@ function packingOrders(orgSlug) {
         },
 
         async createCarton() {
-            const res = await fetch(`/api/v1/packing-orders/${this.selectedOrder.id}/cartons`, {
-                method: 'POST',
-                headers: headers(),
-                body: JSON.stringify({ carton_type: 'OUTER' })
-            });
-            const data = await res.json();
-            if (!res.ok || !data.success) return alert(data.message || 'Failed to create carton');
-            await this.selectOrder(this.selectedOrder.id);
-            this.selectedCartonId = data.data.carton.id;
+            try {
+                const res = await fetch(`/api/v1/packing-orders/${this.selectedOrder.id}/cartons`, {
+                    method: 'POST',
+                    headers: headers(),
+                    body: JSON.stringify({ carton_type: 'OUTER' })
+                });
+                const data = await res.json();
+                if (!res.ok || !data.success) {
+                    return alert(data.message || 'Failed to create carton');
+                }
+                await this.selectOrder(this.selectedOrder.id);
+                this.selectedCartonId = data.data.carton.id;
+            } catch (error) {
+                alert(error.message || 'An error occurred while creating the carton');
+            }
         },
 
         async scanIntoCarton() {
+            if (!this.scanForm.product_barcode || this.scanForm.product_barcode.trim() === '') {
+                return alert('Please enter or scan the product barcode first.');
+            }
+            if (!this.scanForm.qty || parseFloat(this.scanForm.qty) <= 0) {
+                return alert('Please enter a valid quantity.');
+            }
             const res = await fetch(`/api/v1/packing-orders/${this.selectedOrder.id}/cartons/${this.selectedCartonId}/scan`, {
                 method: 'POST',
                 headers: headers(),

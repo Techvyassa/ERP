@@ -127,7 +127,6 @@ class UserController extends Controller
         $requestId = Str::uuid()->toString();
 
         $validator = Validator::make($request->all(), [
-            'employee_code' => 'required|string|max:50|unique:tenant.users,employee_code',
             'email' => 'required|email|max:255|unique:tenant.users,email',
             'password' => 'required|string|min:8',
             'first_name' => 'required|string|max:100',
@@ -198,9 +197,24 @@ class UserController extends Controller
                 }
             }
 
+            // Generate employee code if not provided
+            $employeeCode = $request->input('employee_code');
+            if (empty($employeeCode)) {
+                $deptName = '';
+                if ($deptId) {
+                    $dept = Department::find($deptId);
+                    $deptName = $dept?->dept_name ?? $dept?->dept_code ?? '';
+                }
+                $employeeCode = generateEmployeeCode(
+                    $deptName,
+                    $request->input('first_name'),
+                    $request->input('last_name')
+                );
+            }
+
             // Create user - use 'password' to trigger the setPasswordHashAttribute mutator
             $user = User::create([
-                'employee_code' => $request->input('employee_code'),
+                'employee_code' => $employeeCode,
                 'email' => $request->input('email'),
                 'password' => $request->input('password'),
                 'first_name' => $request->input('first_name'),

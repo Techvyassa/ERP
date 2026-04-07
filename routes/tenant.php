@@ -227,6 +227,10 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
             ]);
         })->name('index');
         
+        // Stock Management Dashboard
+        Route::get('/stock-management', [App\Http\Controllers\WarehouseController::class, 'stockManagementPage'])
+            ->name('stock-management');
+        
         Route::get('/create', function () {
             $org = request()->get('tenant_organization');
             return view('tenant.masters.inventory.warehouses.create', [
