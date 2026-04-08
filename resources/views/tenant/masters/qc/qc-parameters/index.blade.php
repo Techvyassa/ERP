@@ -167,9 +167,9 @@
                                         <i class="fas fa-edit"></i>
                                         <span class="hidden sm:inline">Edit</span>
                                     </button>
-                                    <button @click="deleteParameter(item)" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-800">
-                                        <i class="fas fa-trash"></i>
-                                        <span class="hidden sm:inline">Delete</span>
+                                    <button @click="deactivateParameter(item)" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-800">
+                                        <i class="fas fa-ban"></i>
+                                        <span class="hidden sm:inline">Deactivate</span>
                                     </button>
                                 </div>
                             </td>
@@ -180,8 +180,8 @@
         </div>
     </div>
 
-    <div x-show="showModal" x-cloak class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
+    <div x-show="showModal" x-cloak @click.self="closeModal()" class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-2xl max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between px-6 py-5 border-b border-gray-200">
                 <div>
                     <h3 class="text-xl font-semibold text-gray-900" x-text="editId ? 'Edit QC Parameter' : 'Create QC Parameter'"></h3>
@@ -207,9 +207,29 @@
                 <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-2xl border border-gray-200 p-5">
                     <div class="md:col-span-2">
                         <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Basic Details</h4>
+                        <div class="mt-3 flex flex-wrap gap-2">
+                            <a :href="masterLinks.products" target="_blank"
+                               class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-box"></i>Open products
+                            </a>
+                            <a :href="masterLinks.materials" target="_blank"
+                               class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-cubes"></i>Open materials
+                            </a>
+                            <a :href="masterLinks.testTypes" target="_blank"
+                               class="inline-flex items-center gap-2 rounded-full border border-gray-200 bg-gray-50 px-3 py-1.5 text-xs font-semibold text-gray-700 hover:bg-gray-100">
+                                <i class="fas fa-flask"></i>Open test types
+                            </a>
+                        </div>
                     </div>
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Material *</label>
+                        <div class="mb-1 flex items-center justify-between gap-3">
+                            <label class="block text-sm font-medium text-gray-700">Material *</label>
+                            <a :href="masterLinks.materials" target="_blank"
+                               class="text-xs font-semibold text-sky-700 hover:text-sky-900">
+                                <i class="fas fa-plus mr-1"></i>Add new material
+                            </a>
+                        </div>
                         <select x-model="form.material_id" required
                                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                             <option value="">Select material</option>
@@ -217,10 +237,17 @@
                                 <option :value="material.id" x-text="`${material.material_code} - ${material.material_name}`"></option>
                             </template>
                         </select>
+                        <p class="mt-1 text-xs text-gray-500">Missing material? Add it in the material master, then come back here.</p>
                     </div>
 
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
+                        <div class="mb-1 flex items-center justify-between gap-3">
+                            <label class="block text-sm font-medium text-gray-700">Test Type</label>
+                            <a :href="masterLinks.testTypes" target="_blank"
+                               class="text-xs font-semibold text-sky-700 hover:text-sky-900">
+                                <i class="fas fa-plus mr-1"></i>Add new test type
+                            </a>
+                        </div>
                         <select x-model="form.test_type_id" @change="syncCategoryFromTestType()"
                                 class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                             <option value="">Select test type</option>
@@ -228,6 +255,7 @@
                                 <option :value="testType.id" x-text="`${testType.type_code} - ${testType.type_name}`"></option>
                             </template>
                         </select>
+                        <p class="mt-1 text-xs text-gray-500">Use test types to keep QC categories consistent across parameters.</p>
                     </div>
 
                     <div>
@@ -351,6 +379,7 @@
 function qcParameterData() {
     const orgSlug = '{{ $organization->org_slug }}';
     const token = () => localStorage.getItem('access_token');
+    const baseUrl = '{{ $tenantType }}' === 'subdomain' ? '' : `/org/${orgSlug}`;
     const headers = () => ({
         'Authorization': `Bearer ${token()}`,
         'Accept': 'application/json',
@@ -375,6 +404,11 @@ function qcParameterData() {
             search: '',
             material_id: '',
             test_type_id: ''
+        },
+        masterLinks: {
+            materials: `${baseUrl}/materials`,
+            testTypes: `${baseUrl}/qc-test-types`,
+            products: `${baseUrl}/products`
         },
         presets: [
             { key: 'range_numeric', label: 'Numeric Range', icon: 'fas fa-ruler-combined', help: 'For pH, moisture, dimensions, assay.', data_type: 'NUMERIC', tolerance_type: 'RANGE', parameter_category: 'PHYSICAL' },
@@ -608,9 +642,9 @@ function qcParameterData() {
             }
         },
 
-        async deleteParameter(item) {
+        async deactivateParameter(item) {
             const label = item?.parameter_name || item?.parameter_code || 'this QC parameter';
-            if (!confirm(`Delete "${label}"?\n\nThis will permanently remove the QC parameter master record.`)) return;
+            if (!confirm(`Deactivate "${label}"?\n\nThis will keep the QC parameter in history but make it inactive.`)) return;
 
             try {
                 const response = await fetch(`/api/v1/qc-parameters/${item.id}`, {
@@ -621,13 +655,13 @@ function qcParameterData() {
 
                 if (data.success) {
                     await this.loadParameters();
-                    this.showToast(data.message || 'QC parameter deleted successfully');
+                    this.showToast(data.message || 'QC parameter deactivated successfully');
                 } else {
-                    this.showToast(data.message || 'Failed to delete QC parameter', 'error');
+                    this.showToast(data.message || 'Failed to deactivate QC parameter', 'error');
                 }
             } catch (error) {
-                console.error('Failed to delete QC parameter:', error);
-                this.showToast('Failed to delete QC parameter', 'error');
+                console.error('Failed to deactivate QC parameter:', error);
+                this.showToast('Failed to deactivate QC parameter', 'error');
             }
         },
 

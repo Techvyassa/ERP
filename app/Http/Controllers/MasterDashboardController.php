@@ -50,6 +50,7 @@ class MasterDashboardController extends Controller
                 'vendor' => $this->vendorStats(),
                 'sales' => $this->salesStats(),
                 'production' => $this->productionStats(),
+                'quality' => $this->qualityStats(),
                 'recent_activity' => $this->recentActivity(),
             ];
 
@@ -133,6 +134,17 @@ class MasterDashboardController extends Controller
             'total_orders' => $this->safeCount(fn() => ProductionOrder::count()),
             'in_progress' => $this->safeCount(fn() => ProductionOrder::where('status', 'IN_PROGRESS')->count()),
             'completed_today' => $this->safeCount(fn() => ProductionOrder::where('status', 'COMPLETED')->whereDate('updated_at', now())->count()),
+        ];
+    }
+
+    private function qualityStats(): array
+    {
+        return [
+            'testTypes' => $this->safeCount(fn() => QCTestType::count()),
+            'parameters' => $this->safeCount(fn() => QCParameter::count()),
+            'activeTestTypes' => $this->safeCount(fn() => QCTestType::where('is_active', true)->count()),
+            'activeParameters' => $this->safeCount(fn() => QCParameter::where('is_active', true)->count()),
+            'materialsCovered' => $this->safeCount(fn() => QCParameter::where('is_active', true)->distinct('material_id')->count('material_id')),
         ];
     }
 

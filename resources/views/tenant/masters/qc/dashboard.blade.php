@@ -66,6 +66,16 @@
                     <p class="mt-2 text-3xl font-bold text-cyan-900" x-text="stats.parameters">0</p>
                 </div>
             </div>
+            <div class="mt-4 grid grid-cols-2 gap-4">
+                <div class="rounded-2xl bg-emerald-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-emerald-700">Active Types</p>
+                    <p class="mt-2 text-2xl font-bold text-emerald-900" x-text="stats.activeTestTypes">0</p>
+                </div>
+                <div class="rounded-2xl bg-amber-50 p-4">
+                    <p class="text-xs font-semibold uppercase tracking-[0.2em] text-amber-700">Materials Covered</p>
+                    <p class="mt-2 text-2xl font-bold text-amber-900" x-text="stats.materialsCovered">0</p>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -122,7 +132,10 @@ function qualityMasterDashboard() {
     return {
         stats: {
             testTypes: 0,
-            parameters: 0
+            parameters: 0,
+            activeTestTypes: 0,
+            activeParameters: 0,
+            materialsCovered: 0
         },
 
         async init() {
