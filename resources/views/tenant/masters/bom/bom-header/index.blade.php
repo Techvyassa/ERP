@@ -22,11 +22,23 @@
                     <p class="text-sm text-gray-500 mt-0.5">Manage product BOMs, versions, and component recipes</p>
                 </div>
             </div>
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header/create' : '/org/' . $organization->org_slug . '/bom-header/create') }}" 
-               class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg font-medium">
-                <span class="material-symbols-outlined text-lg">add</span>
-                Create BOM
-            </a>
+            <div class="flex items-center gap-3">
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header/bulk-upload' : '/org/' . $organization->org_slug . '/bom-header/bulk-upload') }}" 
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-50 transition-all shadow-sm font-medium">
+                    <span class="material-symbols-outlined text-lg">upload_file</span>
+                    Bulk Upload CSV
+                </a>
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header/multiple-create' : '/org/' . $organization->org_slug . '/bom-header/multiple-create') }}" 
+                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-50 transition-all shadow-sm font-medium">
+                    <span class="material-symbols-outlined text-lg">library_add</span>
+                    Multiple Create
+                </a>
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header/create' : '/org/' . $organization->org_slug . '/bom-header/create') }}" 
+                   class="inline-flex items-center gap-2 px-5 py-2.5 bg-gradient-to-r from-orange-500 to-orange-600 text-white rounded-lg hover:from-orange-600 hover:to-orange-700 transition-all shadow-md hover:shadow-lg font-medium">
+                    <span class="material-symbols-outlined text-lg">add</span>
+                    Create BOM
+                </a>
+            </div>
         </div>
     </div>
 

@@ -48,7 +48,7 @@ Route::get('/auth/google', function () {
 })->name('auth.google');
 
 Route::get('/auth/google/callback', function () {
-    return redirect()->route('dashboard');
+    return redirect('/'); // Redirect back to home or a logical entry point after OAuth
 })->name('auth.google.callback');
 
 // ============================================================================
@@ -60,9 +60,7 @@ Route::middleware(['web.jwt'])->group(function () {
     // ------------------------------------------------------------------------
     // MAIN DASHBOARD (Entry Point)
     // ------------------------------------------------------------------------
-    Route::get('/dashboard', function () {
-        return view('dashboard.main');
-    })->name('dashboard');
+
 
     // ------------------------------------------------------------------------
     // SUPER ADMIN / CONTROL PANEL ROUTES
@@ -442,6 +440,22 @@ Route::middleware(['web.jwt'])->group(function () {
                 'tenantType' => $tenantType
             ]);
         })->name('bom-header.create');
+
+        Route::get('/bom-header/multiple-create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-header.multiple-create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('bom-header.multiple-create');
+
+        Route::get('/bom-header/bulk-upload', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-header.bulk-upload', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('bom-header.bulk-upload');
 
         Route::get('/bom-header/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
