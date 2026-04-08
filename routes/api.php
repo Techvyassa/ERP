@@ -260,6 +260,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/', [App\Http\Controllers\VendorController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\VendorController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\VendorController::class, 'destroy']); // Blacklist vendor
+                Route::post('/{id}/send-email', [App\Http\Controllers\VendorController::class, 'sendEmail']);
             });
 
             // Vendor Contacts

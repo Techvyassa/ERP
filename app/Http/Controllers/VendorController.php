@@ -8,7 +8,9 @@ use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Mail\VendorDirectMail;
 
 class VendorController extends Controller
 {
@@ -389,6 +391,74 @@ class VendorController extends Controller
                 'success' => false,
                 'error' => ['code' => 'VENDOR_DELETE_FAILED', 'details' => []],
                 'message' => 'Failed to blacklist vendor: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Send direct email to vendor
+     * POST /api/v1/vendors/{id}/send-email
+     */
+    public function sendEmail(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'subject' => 'required|string|max:200',
+            'message' => 'required|string',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        try {
+            $vendor = Vendor::with('contacts')->findOrFail($id);
+            
+            // Get primary contact email or fallback to first contact
+            $contact = $vendor->contacts()->where('is_primary', true)->first() 
+                      ?? $vendor->contacts()->first();
+
+            if (!$contact || empty($contact->email)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'CONTACT_EMAIL_MISSING', 'details' => []],
+                    'message' => 'Vendor has no contact email address defined.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 400);
+            }
+
+            $org = $request->input('tenant_organization');
+            $orgName = $org ? $org->org_name : 'ERP System';
+
+            Mail::to($contact->email)->send(new VendorDirectMail(
+                $request->input('subject'),
+                $request->input('message'),
+                $vendor->vendor_name,
+                $orgName
+            ));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email sent successfully to ' . $contact->email,
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'EMAIL_SEND_FAILED', 'details' => []],
+                'message' => 'Failed to send email: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ], 500);
