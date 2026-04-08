@@ -10,16 +10,27 @@ use Illuminate\Support\Facades\DB;
 class DefaultRolePermissionSeeder extends Seeder
 {
     private const MODULES = [
-        'ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION', 'SALES', 'CUSTOMER', 'MAINTENANCE'
+        'ADMIN',
+        'USER',
+        'MANAGER',
+        'VIEWER',
+        'SECURITY',
+        'STORE',
+        'QC',
+        'PROCUREMENT',
+        'PRODUCTION',
+        'SALES',
+        'CUSTOMER',
+        'MAINTENANCE'
     ];
 
     public function run(): void
     {
         DB::connection('tenant')->transaction(function () {
-            $roles = Role::whereIn('role_code', ['ADMIN', 'USER', 'MANAGER', 'SECURITY', 'STORE', 'QC', 'PROCUREMENT', 'PRODUCTION', 'SALES', 'CUSTOMER', 'MAINTENANCE'])->get();
+            $roles = Role::get();
 
             if ($roles->isEmpty()) {
-                echo "✗ Default roles not found. Please run DefaultRoleSeeder first.\n";
+                echo "✗ Roles not found. Please run DefaultRoleSeeder first.\n";
                 return;
             }
 
@@ -44,6 +55,7 @@ class DefaultRolePermissionSeeder extends Seeder
                         ]
                     );
                 }
+                echo "✓ Permissions updated for role: {$role->role_code}\n";
             }
 
             echo "✓ Default role permissions seeded successfully\n";
@@ -65,14 +77,31 @@ class DefaultRolePermissionSeeder extends Seeder
             return [
                 'scope' => 'global',
                 'view_cross_department' => true,
-                'can_view' => true, 'can_create' => true, 'can_edit' => true, 'can_approve' => true, 'can_delete' => true,
+                'can_view' => true,
+                'can_create' => true,
+                'can_edit' => true,
+                'can_approve' => true,
+                'can_delete' => true,
+            ];
+        }
+
+        // VIEWER: read-only across all modules
+        if ($roleCode === 'VIEWER') {
+            return [
+                'scope' => 'department',
+                'view_cross_department' => false,
+                'can_view' => true,
+                'can_create' => false,
+                'can_edit' => false,
+                'can_approve' => false,
+                'can_delete' => false,
             ];
         }
 
         // Roles map to their identically named modules (Departmental Roles)
         if ($roleCode === $moduleCode) {
             $can_view = $can_create = $can_edit = $can_approve = true;
-        } 
+        }
         // Widespread base roles (MANAGER/USER)
         elseif (in_array($roleCode, ['MANAGER', 'USER'])) {
             $can_view = true;

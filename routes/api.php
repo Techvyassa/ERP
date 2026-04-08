@@ -251,8 +251,8 @@ Route::prefix('v1')->group(function () {
         });
 
         // PROCUREMENT (Vendor Master Data) Endpoints
-        // Roles: ADMIN (all)
-        Route::middleware(['check.module.permission:ADMIN'])->group(function () {
+        // Roles: PROCUREMENT (all), ADMIN (all)
+        Route::middleware(['check.module.permission:PROCUREMENT'])->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
                 Route::get('/', [App\Http\Controllers\VendorController::class, 'index']);
@@ -283,9 +283,9 @@ Route::prefix('v1')->group(function () {
         });
 
         // PO Management Endpoints
-        // Roles: PROC_EXE (create/edit), PROC_MGR (approve), ADMIN (all)
+        // Roles: PROCUREMENT
         // Status Flow: DRAFT → PENDING_APPROVAL → APPROVED → OPEN → PARTIAL → CLOSED/CANCELLED
-        Route::middleware(['check.module.permission:STORE'])->group(function () {
+        Route::middleware(['check.module.permission:PROCUREMENT'])->group(function () {
             // Purchase Requisition Endpoints
             Route::prefix('purchase-requisitions')->group(function () {
                 // Master data lookups for PR form
@@ -318,7 +318,7 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        Route::middleware(['check.module.permission:STORE'])->group(function () {
+        Route::middleware(['check.module.permission:PROCUREMENT'])->group(function () {
             Route::prefix('purchase-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\PurchaseOrderController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\PurchaseOrderController::class, 'show']);
