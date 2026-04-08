@@ -118,16 +118,23 @@ class QCParameterController extends Controller
     {
         try {
             $parameter = QCParameter::findOrFail($id);
+            $parameterName = $parameter->parameter_name;
             $parameter->update(['is_active' => false]);
 
             return response()->json([
                 'success' => true,
                 'message' => 'QC parameter deactivated successfully',
+                'data' => [
+                    'id' => $id,
+                    'parameter_name' => $parameterName,
+                    'is_active' => false,
+                ],
             ]);
         } catch (\Exception $e) {
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to deactivate QC parameter: ' . $e->getMessage(),
+                'error' => ['code' => 'QC_PARAMETER_DELETE_FAILED', 'details' => []],
             ], 500);
         }
     }

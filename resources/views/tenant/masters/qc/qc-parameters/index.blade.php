@@ -5,68 +5,71 @@
 
 @section('content')
 <div x-data="qcParameterData()" x-init="init()">
-    <div class="bg-gradient-to-r from-sky-600 via-cyan-600 to-teal-500 rounded-2xl p-6 mb-6 text-white shadow-lg">
-        <div class="flex flex-col gap-6 lg:flex-row lg:items-end lg:justify-between">
-            <div class="max-w-3xl">
-                <div class="inline-flex items-center gap-2 rounded-full bg-white/15 px-3 py-1 text-xs font-semibold uppercase tracking-[0.2em]">
-                    <span class="material-symbols-outlined text-base">biotech</span>
-                    QC Parameter Master
-                </div>
-                <h2 class="mt-4 text-3xl font-bold">Create material specifications quickly</h2>
-                <p class="mt-2 text-sm text-cyan-50">Use filters, presets, and smart field visibility to add QC specs with fewer clicks.</p>
+    <div x-show="toast.show" x-cloak
+         x-transition:enter="transition ease-out duration-300"
+         x-transition:enter-start="opacity-0 translate-y-2"
+         x-transition:enter-end="opacity-100 translate-y-0"
+         x-transition:leave="transition ease-in duration-200"
+         x-transition:leave-start="opacity-100 translate-y-0"
+         x-transition:leave-end="opacity-0 translate-y-2"
+         class="fixed top-5 right-5 z-[60] max-w-sm rounded-2xl px-4 py-3 shadow-xl text-white"
+         :class="toast.type === 'success' ? 'bg-emerald-600' : 'bg-red-600'">
+        <div class="flex items-start gap-3">
+            <i class="fas" :class="toast.type === 'success' ? 'fa-circle-check' : 'fa-circle-exclamation'"></i>
+            <div class="text-sm font-medium" x-text="toast.message"></div>
+        </div>
+    </div>
+
+    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6 mb-6">
+        <div class="flex flex-col gap-5 lg:flex-row lg:items-center lg:justify-between">
+            <div>
+                <p class="text-sm font-semibold text-sky-700">Quality Control</p>
+                <h2 class="mt-1 text-2xl font-bold text-gray-900">QC Parameter Master</h2>
+                <p class="mt-2 text-sm text-gray-500">Maintain clean, reusable inspection parameters for each material.</p>
             </div>
             <div class="flex flex-wrap gap-3">
                 <a href="{{ url($tenantType === 'subdomain' ? '/quality-dashboard' : "/org/{$organization->org_slug}/quality-dashboard") }}"
-                   class="px-4 py-3 border border-white/20 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors">
+                   class="px-4 py-2.5 border border-gray-300 text-gray-700 rounded-xl hover:bg-gray-50 transition-colors">
                     <i class="fas fa-arrow-left mr-2"></i>Back
                 </a>
                 <button @click="openCreateModal()"
-                    class="px-4 py-3 bg-white text-sky-700 rounded-xl hover:bg-sky-50 transition-colors font-semibold">
-                    <i class="fas fa-plus mr-2"></i>Add QC Parameter
+                    class="px-4 py-2.5 bg-sky-600 text-white rounded-xl hover:bg-sky-700 transition-colors font-semibold">
+                    <i class="fas fa-plus mr-2"></i>Add Parameter
                 </button>
             </div>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
         <div class="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Total Specs</p>
-            <p class="mt-3 text-3xl font-bold text-gray-900" x-text="items.length">0</p>
+            <p class="text-sm text-gray-500">Total</p>
+            <p class="mt-2 text-3xl font-bold text-gray-900" x-text="items.length">0</p>
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Critical</p>
-            <p class="mt-3 text-3xl font-bold text-red-600" x-text="criticalCount()">0</p>
+            <p class="text-sm text-gray-500">Active</p>
+            <p class="mt-2 text-3xl font-bold text-emerald-600" x-text="activeCount()">0</p>
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Materials Covered</p>
-            <p class="mt-3 text-3xl font-bold text-cyan-700" x-text="coveredMaterialCount()">0</p>
+            <p class="text-sm text-gray-500">Critical</p>
+            <p class="mt-2 text-3xl font-bold text-red-600" x-text="criticalCount()">0</p>
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm ring-1 ring-gray-100">
-            <p class="text-xs font-semibold uppercase tracking-[0.2em] text-gray-500">Active</p>
-            <p class="mt-3 text-3xl font-bold text-emerald-600" x-text="activeCount()">0</p>
+            <p class="text-sm text-gray-500">Materials</p>
+            <p class="mt-2 text-3xl font-bold text-sky-700" x-text="coveredMaterialCount()">0</p>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 xl:grid-cols-[1.6fr_1fr] gap-6 mb-6">
-    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6">
-        <div class="flex flex-col gap-4 lg:flex-row lg:items-end lg:justify-between mb-4">
-            <div>
-                <h3 class="text-lg font-semibold text-gray-900">Find or Prefill</h3>
-                <p class="text-sm text-gray-500 mt-1">Use current filters, then open the form with those selections already filled in.</p>
+    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-5 mb-6">
+        <div class="flex flex-col gap-4 lg:flex-row lg:items-center">
+            <div class="relative flex-1">
+                <i class="fas fa-search absolute left-4 top-1/2 -translate-y-1/2 text-gray-400"></i>
+                <input type="text" x-model="filters.search" @input.debounce.300ms="loadParameters()"
+                       placeholder="Search parameter code, name, or method"
+                       class="w-full pl-11 pr-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
             </div>
-            <button @click="openCreateModal(true)"
-                class="px-4 py-2.5 border border-sky-200 bg-sky-50 text-sky-700 rounded-xl hover:bg-sky-100 transition-colors font-semibold">
-                <i class="fas fa-wand-magic-sparkles mr-2"></i>Quick Add From Filters
-            </button>
-        </div>
-
-        <div class="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <input type="text" x-model="filters.search" @input.debounce.300ms="loadParameters()"
-                   placeholder="Search by code, name, or method..."
-                   class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent md:col-span-2">
 
             <select x-model="filters.material_id" @change="loadParameters()"
-                    class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent lg:min-w-64">
                 <option value="">All Materials</option>
                 <template x-for="material in materials" :key="material.id">
                     <option :value="material.id" x-text="`${material.material_code} - ${material.material_name}`"></option>
@@ -74,47 +77,25 @@
             </select>
 
             <select x-model="filters.test_type_id" @change="loadParameters()"
-                    class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                    class="px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent lg:min-w-56">
                 <option value="">All Test Types</option>
                 <template x-for="testType in testTypes" :key="testType.id">
                     <option :value="testType.id" x-text="`${testType.type_code} - ${testType.type_name}`"></option>
                 </template>
             </select>
-        </div>
-        <div class="mt-4">
-            <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors">
-                <i class="fas fa-redo mr-2"></i>Reset
+
+            <button @click="resetFilters"
+                class="px-4 py-3 border border-gray-300 rounded-xl hover:bg-gray-50 transition-colors font-medium">
+                <i class="fas fa-rotate-right mr-2"></i>Reset
             </button>
         </div>
-    </div>
-
-    <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 p-6">
-        <h3 class="text-lg font-semibold text-gray-900">Fast Entry Presets</h3>
-        <p class="text-sm text-gray-500 mt-1">Start with a pattern and then only edit the values that differ.</p>
-        <div class="mt-4 space-y-3">
-            <template x-for="preset in presets" :key="preset.key">
-                <button @click="openCreateWithPreset(preset)"
-                    class="w-full text-left rounded-2xl border border-gray-200 px-4 py-4 hover:border-sky-300 hover:bg-sky-50 transition-colors">
-                    <div class="flex items-start gap-3">
-                        <div class="h-10 w-10 rounded-xl bg-sky-100 text-sky-700 flex items-center justify-center">
-                            <i :class="preset.icon"></i>
-                        </div>
-                        <div>
-                            <div class="text-sm font-semibold text-gray-900" x-text="preset.label"></div>
-                            <div class="text-xs text-gray-500 mt-1" x-text="preset.help"></div>
-                        </div>
-                    </div>
-                </button>
-            </template>
-        </div>
-    </div>
     </div>
 
     <div class="bg-white rounded-2xl shadow-sm ring-1 ring-gray-100 overflow-hidden">
         <div class="border-b border-gray-100 px-6 py-4 flex items-center justify-between gap-4">
             <div>
                 <h3 class="text-lg font-semibold text-gray-900">QC Specifications</h3>
-                <p class="text-sm text-gray-500">Material, limit, and control flags are visible without opening each record.</p>
+                <p class="text-sm text-gray-500">Review each parameter, its limits, and update it only when needed.</p>
             </div>
             <div class="rounded-full bg-gray-100 px-3 py-1 text-xs font-semibold text-gray-600">
                 <span x-text="items.length"></span> records
@@ -124,18 +105,17 @@
             <table class="min-w-full divide-y divide-gray-200">
                 <thead class="bg-gray-50">
                     <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material / Parameter</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Test Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Tolerance</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Method</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Flags</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Parameter</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Material</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Specification</th>
+                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-if="loading">
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="5" class="px-6 py-12 text-center">
                                 <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
                                 <p class="text-gray-600 mt-2">Loading QC parameters...</p>
                             </td>
@@ -143,10 +123,10 @@
                     </template>
                     <template x-if="!loading && items.length === 0">
                         <tr>
-                            <td colspan="6" class="px-6 py-12 text-center">
+                            <td colspan="5" class="px-6 py-12 text-center">
                                 <i class="fas fa-flask text-5xl text-gray-300 mb-4"></i>
                                 <p class="text-gray-900 font-semibold">No QC parameters found.</p>
-                                <p class="text-gray-500 mt-1">Start with a preset and then adjust only the required limits.</p>
+                                <p class="text-gray-500 mt-1">Create your first parameter to start building QC standards.</p>
                                 <button @click="openCreateModal()" class="mt-4 px-4 py-2 bg-sky-600 text-white rounded-xl hover:bg-sky-700 transition-colors">
                                     Create First Parameter
                                 </button>
@@ -154,24 +134,24 @@
                         </tr>
                     </template>
                     <template x-for="item in items" :key="item.id">
-                        <tr>
+                        <tr class="hover:bg-gray-50/70 transition-colors">
                             <td class="px-6 py-4 align-top">
-                                <div class="font-medium text-gray-900" x-text="item.material?.material_name || '-'"></div>
-                                <div class="text-xs text-gray-500" x-text="item.material?.material_code || '-'"></div>
-                                <div class="mt-3 rounded-xl bg-gray-50 px-3 py-2">
-                                    <div class="font-semibold text-blue-700 text-xs font-mono" x-text="item.parameter_code"></div>
-                                    <div class="text-sm text-gray-900" x-text="item.parameter_name"></div>
-                                    <div class="text-xs text-gray-500" x-text="item.parameter_category || 'No category'"></div>
-                                </div>
+                                <div class="font-semibold text-gray-900" x-text="item.parameter_name"></div>
+                                <div class="mt-1 text-xs font-mono text-sky-700" x-text="item.parameter_code"></div>
+                                <div class="mt-2 text-xs text-gray-500" x-text="item.parameter_category || 'No category'"></div>
                             </td>
-                            <td class="px-6 py-4 align-top text-sm text-gray-700" x-text="item.test_type?.type_name || 'Unassigned'"></td>
-                            <td class="px-6 py-4 align-top text-sm text-gray-700" x-text="formatTolerance(item)"></td>
                             <td class="px-6 py-4 align-top text-sm text-gray-700">
-                                <div x-text="item.test_method || 'No test method'"></div>
-                                <div class="text-xs text-gray-500 mt-1">Order: <span x-text="item.display_order ?? 0"></span></div>
+                                <div class="font-medium text-gray-900" x-text="item.material?.material_name || '-'"></div>
+                                <div class="text-xs text-gray-500 mt-1" x-text="item.material?.material_code || '-'"></div>
+                                <div class="text-xs text-gray-500 mt-2" x-text="item.test_type?.type_name || 'Unassigned'"></div>
+                            </td>
+                            <td class="px-6 py-4 align-top text-sm text-gray-700">
+                                <div class="font-medium text-gray-900" x-text="formatTolerance(item)"></div>
+                                <div class="text-xs text-gray-500 mt-1" x-text="item.test_method || 'No test method'"></div>
+                                <div class="text-xs text-gray-400 mt-1">Order: <span x-text="item.display_order ?? 0"></span></div>
                             </td>
                             <td class="px-6 py-4 align-top">
-                                <div class="flex flex-wrap gap-2">
+                                <div class="flex flex-wrap gap-2 mb-2">
                                     <span class="px-2.5 py-1 rounded-full text-xs font-medium"
                                           :class="item.is_critical ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'"
                                           x-text="item.is_critical ? 'Critical' : 'Standard'"></span>
@@ -179,17 +159,17 @@
                                           :class="item.is_active ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-600'"
                                           x-text="item.is_active ? 'Active' : 'Inactive'"></span>
                                 </div>
+                                <div class="text-xs text-gray-500" x-text="item.data_type + ' / ' + item.tolerance_type"></div>
                             </td>
                             <td class="px-6 py-4 text-right">
                                 <div class="flex items-center justify-end gap-3">
-                                    <button @click="duplicateItem(item)" class="text-gray-500 hover:text-sky-700" title="Duplicate">
-                                        <i class="fas fa-copy"></i>
-                                    </button>
-                                    <button @click="openEditModal(item)" class="text-blue-600 hover:text-blue-800">
+                                    <button @click="openEditModal(item)" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-blue-600 hover:bg-blue-50 hover:text-blue-800">
                                         <i class="fas fa-edit"></i>
+                                        <span class="hidden sm:inline">Edit</span>
                                     </button>
-                                    <button x-show="item.is_active" @click="deactivate(item.id)" class="text-red-600 hover:text-red-800">
-                                        <i class="fas fa-ban"></i>
+                                    <button @click="deleteParameter(item)" class="inline-flex items-center gap-2 rounded-lg px-3 py-2 text-sm text-red-600 hover:bg-red-50 hover:text-red-800">
+                                        <i class="fas fa-trash"></i>
+                                        <span class="hidden sm:inline">Delete</span>
                                     </button>
                                 </div>
                             </td>
@@ -201,12 +181,11 @@
     </div>
 
     <div x-show="showModal" x-cloak class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-3xl shadow-xl w-full max-w-5xl max-h-[92vh] overflow-y-auto">
+        <div class="bg-white rounded-3xl shadow-xl w-full max-w-4xl max-h-[92vh] overflow-y-auto">
             <div class="flex items-center justify-between px-6 py-5 border-b border-gray-200">
                 <div>
-                    <div class="text-xs font-semibold uppercase tracking-[0.2em] text-sky-600">Fast Create</div>
                     <h3 class="text-xl font-semibold text-gray-900" x-text="editId ? 'Edit QC Parameter' : 'Create QC Parameter'"></h3>
-                    <p class="text-sm text-gray-500 mt-1">Only relevant inputs stay visible based on the tolerance and data type you choose.</p>
+                    <p class="text-sm text-gray-500 mt-1">Enter the parameter details and define the inspection standard clearly.</p>
                 </div>
                 <button @click="closeModal()" class="text-gray-400 hover:text-gray-600">
                     <i class="fas fa-times"></i>
@@ -214,19 +193,25 @@
             </div>
 
             <form @submit.prevent="saveParameter()" class="p-6 space-y-6">
-                <div class="flex flex-wrap gap-2">
-                    <template x-for="preset in presets" :key="preset.key">
-                        <button type="button" @click="applyPreset(preset)"
-                            class="px-3 py-1.5 rounded-full border border-sky-200 text-xs font-semibold text-sky-700 hover:bg-sky-50 transition-colors"
-                            x-text="preset.label"></button>
-                    </template>
+                <div class="rounded-2xl border border-gray-200 bg-gray-50 px-4 py-3">
+                    <p class="text-sm font-medium text-gray-700">Quick presets</p>
+                    <div class="mt-3 flex flex-wrap gap-2">
+                        <template x-for="preset in presets" :key="preset.key">
+                            <button type="button" @click="applyPreset(preset)"
+                                class="px-3 py-1.5 rounded-full border border-sky-200 bg-white text-xs font-semibold text-sky-700 hover:bg-sky-50 transition-colors"
+                                x-text="preset.label"></button>
+                        </template>
+                    </div>
                 </div>
 
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-2xl border border-gray-200 p-5">
+                    <div class="md:col-span-2">
+                        <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Basic Details</h4>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Material *</label>
                         <select x-model="form.material_id" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                             <option value="">Select material</option>
                             <template x-for="material in materials" :key="material.id">
                                 <option :value="material.id" x-text="`${material.material_code} - ${material.material_name}`"></option>
@@ -237,7 +222,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Test Type</label>
                         <select x-model="form.test_type_id" @change="syncCategoryFromTestType()"
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                             <option value="">Select test type</option>
                             <template x-for="testType in testTypes" :key="testType.id">
                                 <option :value="testType.id" x-text="`${testType.type_code} - ${testType.type_name}`"></option>
@@ -249,34 +234,39 @@
                         <label class="block text-sm font-medium text-gray-700 mb-1">Parameter Code *</label>
                         <input type="text" x-model="form.parameter_code" maxlength="50" required
                                placeholder="e.g. MOISTURE"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl uppercase focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl uppercase focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Parameter Name *</label>
                         <input type="text" x-model="form.parameter_name" maxlength="100" required
                                placeholder="e.g. Moisture Content"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Category</label>
                         <input type="text" x-model="form.parameter_category" maxlength="50"
                                placeholder="PHYSICAL / CHEMICAL / MICROBIOLOGICAL"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Test Method</label>
                         <input type="text" x-model="form.test_method" maxlength="100"
                                placeholder="ASTM / IS / SOP reference"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
+                </div>
 
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4 rounded-2xl border border-gray-200 p-5">
+                    <div class="md:col-span-2">
+                        <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500">Specification Rule</h4>
+                    </div>
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Data Type *</label>
                         <select x-model="form.data_type" @change="onDataTypeChange()" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                             <option value="NUMERIC">Numeric</option>
                             <option value="TEXT">Text</option>
                             <option value="BOOLEAN">Boolean</option>
@@ -286,7 +276,7 @@
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Tolerance Type *</label>
                         <select x-model="form.tolerance_type" @change="onToleranceTypeChange()" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                             <option value="RANGE">Range</option>
                             <option value="MIN_ONLY">Min Only</option>
                             <option value="MAX_ONLY">Max Only</option>
@@ -297,63 +287,60 @@
                     <div x-show="showMinField()">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Standard Min</label>
                         <input type="text" x-model="form.standard_min" maxlength="50"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
 
                     <div x-show="showMaxField()">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Standard Max</label>
                         <input type="text" x-model="form.standard_max" maxlength="50"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
 
                     <div x-show="showExactField()">
                         <label class="block text-sm font-medium text-gray-700 mb-1">Standard Value</label>
                         <input type="text" x-model="form.standard_value" maxlength="100"
                                :placeholder="exactPlaceholder()"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Unit of Measurement</label>
                         <input type="text" x-model="form.unit_of_measurement" maxlength="30"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
 
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-1">Display Order</label>
                         <input type="number" min="0" max="65535" x-model="form.display_order"
-                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                               class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
                     </div>
                 </div>
 
-                <div class="flex flex-wrap gap-3">
-                    <button type="button" @click="form.is_critical = !form.is_critical"
-                        class="px-4 py-2 rounded-full text-sm font-semibold transition"
-                        :class="form.is_critical ? 'bg-red-100 text-red-700 ring-1 ring-red-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'">
-                        <i class="fas fa-triangle-exclamation mr-2"></i>Critical parameter
-                    </button>
-                    <button type="button" @click="form.is_active = !form.is_active"
-                        class="px-4 py-2 rounded-full text-sm font-semibold transition"
-                        :class="form.is_active ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'">
-                        <i class="fas fa-toggle-on mr-2"></i>Active
-                    </button>
+                <div class="rounded-2xl border border-gray-200 p-5">
+                    <h4 class="text-sm font-semibold uppercase tracking-wide text-gray-500 mb-4">Flags</h4>
+                    <div class="flex flex-wrap gap-3">
+                        <button type="button" @click="form.is_critical = !form.is_critical"
+                            class="px-4 py-2 rounded-full text-sm font-semibold transition"
+                            :class="form.is_critical ? 'bg-red-100 text-red-700 ring-1 ring-red-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'">
+                            <i class="fas fa-triangle-exclamation mr-2"></i>Critical parameter
+                        </button>
+                        <button type="button" @click="form.is_active = !form.is_active"
+                            class="px-4 py-2 rounded-full text-sm font-semibold transition"
+                            :class="form.is_active ? 'bg-emerald-100 text-emerald-700 ring-1 ring-emerald-200' : 'bg-gray-100 text-gray-700 ring-1 ring-gray-200'">
+                            <i class="fas fa-toggle-on mr-2"></i>Active
+                        </button>
+                    </div>
                 </div>
 
-                <div class="flex flex-col gap-3 sm:flex-row sm:justify-between sm:items-center pt-4 border-t border-gray-100">
-                    <label class="inline-flex items-center gap-2 text-sm text-gray-600">
-                        <input type="checkbox" x-model="saveAndAddAnother" class="rounded border-gray-300">
-                        Save and add another
-                    </label>
-                    <div class="flex justify-end gap-3">
+                <div class="flex justify-end gap-3 pt-4 border-t border-gray-100">
                     <button type="button" @click="closeModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50">
                         Cancel
                     </button>
                     <button type="submit" :disabled="saving"
-                            class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 disabled:opacity-50">
-                        <span x-show="!saving" x-text="editId ? 'Update Parameter' : 'Create Parameter'"></span>
+                            class="px-5 py-2.5 bg-sky-600 text-white rounded-lg hover:bg-sky-700 disabled:opacity-50">
+                        <span x-show="!saving" x-text="editId ? 'Update Parameter' : 'Save Parameter'"></span>
                         <span x-show="saving">Saving...</span>
                     </button>
-                    </div>
                 </div>
             </form>
         </div>
@@ -379,7 +366,11 @@ function qcParameterData() {
         saving: false,
         showModal: false,
         editId: null,
-        saveAndAddAnother: false,
+        toast: {
+            show: false,
+            message: '',
+            type: 'success'
+        },
         filters: {
             search: '',
             material_id: '',
@@ -420,6 +411,15 @@ function qcParameterData() {
                 display_order: 0,
                 is_active: true
             };
+        },
+
+        showToast(message, type = 'success') {
+            this.toast.message = message;
+            this.toast.type = type;
+            this.toast.show = true;
+            setTimeout(() => {
+                this.toast.show = false;
+            }, 3000);
         },
 
         async loadMaterials() {
@@ -464,17 +464,11 @@ function qcParameterData() {
 
         openCreateModal(fromFilters = false) {
             this.editId = null;
-            this.saveAndAddAnother = false;
             this.resetForm();
             if (fromFilters) {
                 this.applyFilterDefaults();
             }
             this.showModal = true;
-        },
-
-        openCreateWithPreset(preset) {
-            this.openCreateModal(true);
-            this.applyPreset(preset);
         },
 
         applyFilterDefaults() {
@@ -497,30 +491,8 @@ function qcParameterData() {
             this.onToleranceTypeChange();
         },
 
-        duplicateItem(item) {
-            this.openCreateModal();
-            this.form = {
-                material_id: item.material_id ?? '',
-                test_type_id: item.test_type_id ?? '',
-                parameter_code: `${item.parameter_code ?? ''}_COPY`,
-                parameter_name: item.parameter_name ?? '',
-                parameter_category: item.parameter_category ?? '',
-                data_type: item.data_type ?? 'NUMERIC',
-                tolerance_type: item.tolerance_type ?? 'RANGE',
-                standard_min: item.standard_min ?? '',
-                standard_max: item.standard_max ?? '',
-                standard_value: item.standard_value ?? '',
-                unit_of_measurement: item.unit_of_measurement ?? '',
-                test_method: item.test_method ?? '',
-                is_critical: Boolean(item.is_critical),
-                display_order: item.display_order ?? 0,
-                is_active: Boolean(item.is_active)
-            };
-        },
-
         openEditModal(item) {
             this.editId = item.id;
-            this.saveAndAddAnother = false;
             this.form = {
                 material_id: item.material_id ?? '',
                 test_type_id: item.test_type_id ?? '',
@@ -544,7 +516,6 @@ function qcParameterData() {
         closeModal() {
             this.showModal = false;
             this.editId = null;
-            this.saveAndAddAnother = false;
             this.resetForm();
         },
 
@@ -624,42 +595,39 @@ function qcParameterData() {
 
                 if (data.success) {
                     await this.loadParameters();
-                    if (this.saveAndAddAnother && !this.editId) {
-                        const preserved = {
-                            material_id: this.form.material_id,
-                            test_type_id: this.form.test_type_id,
-                            parameter_category: this.form.parameter_category,
-                            data_type: this.form.data_type,
-                            tolerance_type: this.form.tolerance_type,
-                            test_method: this.form.test_method,
-                            is_active: this.form.is_active
-                        };
-                        this.resetForm();
-                        Object.assign(this.form, preserved);
-                    } else {
-                        this.closeModal();
-                    }
+                    this.closeModal();
+                    this.showToast(data.message || (this.editId ? 'QC parameter updated successfully' : 'QC parameter created successfully'));
                 } else {
-                    alert(data.message || 'Failed to save QC parameter');
+                    this.showToast(data.message || 'Failed to save QC parameter', 'error');
                 }
+            } catch (error) {
+                console.error('Failed to save QC parameter:', error);
+                this.showToast('Failed to save QC parameter', 'error');
             } finally {
                 this.saving = false;
             }
         },
 
-        async deactivate(id) {
-            if (!confirm('Deactivate this QC parameter?')) return;
+        async deleteParameter(item) {
+            const label = item?.parameter_name || item?.parameter_code || 'this QC parameter';
+            if (!confirm(`Delete "${label}"?\n\nThis will permanently remove the QC parameter master record.`)) return;
 
-            const response = await fetch(`/api/v1/qc-parameters/${id}`, {
-                method: 'DELETE',
-                headers: headers()
-            });
-            const data = await response.json();
+            try {
+                const response = await fetch(`/api/v1/qc-parameters/${item.id}`, {
+                    method: 'DELETE',
+                    headers: headers()
+                });
+                const data = await response.json();
 
-            if (data.success) {
-                await this.loadParameters();
-            } else {
-                alert(data.message || 'Failed to deactivate QC parameter');
+                if (data.success) {
+                    await this.loadParameters();
+                    this.showToast(data.message || 'QC parameter deleted successfully');
+                } else {
+                    this.showToast(data.message || 'Failed to delete QC parameter', 'error');
+                }
+            } catch (error) {
+                console.error('Failed to delete QC parameter:', error);
+                this.showToast('Failed to delete QC parameter', 'error');
             }
         },
 
