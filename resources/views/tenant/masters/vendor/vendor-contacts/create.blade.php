@@ -167,7 +167,7 @@ function contactForm() {
                 this.vendors = (data && data.data && data.data.vendors) ? data.data.vendors : [];
             } catch (error) {
                 console.error('Failed to load vendors:', error);
-                alert('Failed to load vendors. Please refresh the page.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Failed to load vendors. Please refresh the page.', type: 'error' } }));
             }
         },
         
@@ -190,12 +190,14 @@ function contactForm() {
                     throw new Error((data && data.message) ? data.message : 'Failed to create contact');
                 }
 
-                alert('Vendor contact created successfully!');
-                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}';
-                window.location.href = baseUrl;
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Vendor contact created successfully!', type: 'success' } }));
+                const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}";
+                setTimeout(() => {
+                    window.location.href = baseUrl;
+                }, 1500);
             } catch (error) {
                 console.error('Failed to create contact:', error);
-                alert(error.message || 'Failed to create contact. Please try again.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to create contact. Please try again.', type: 'error' } }));
             } finally {
                 this.loading = false;
             }

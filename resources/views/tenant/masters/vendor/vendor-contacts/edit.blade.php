@@ -176,9 +176,11 @@ function contactEditForm() {
                 };
             } catch (error) {
                 console.error('Failed to load contact:', error);
-                alert(error.message || 'Failed to load contact. Please try again.');
-                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}';
-                window.location.href = baseUrl;
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to load contact. Please try again.', type: 'error' } }));
+                const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}";
+                setTimeout(() => {
+                    window.location.href = baseUrl;
+                }, 1500);
             } finally {
                 this.loading = false;
             }
@@ -210,12 +212,14 @@ function contactEditForm() {
                     throw new Error((data && data.message) ? data.message : 'Failed to update contact');
                 }
 
-                alert('Vendor contact updated successfully!');
-                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}';
-                window.location.href = baseUrl;
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Vendor contact updated successfully!', type: 'success' } }));
+                const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}";
+                setTimeout(() => {
+                    window.location.href = baseUrl;
+                }, 1500);
             } catch (error) {
                 console.error('Failed to update contact:', error);
-                alert(error.message || 'Failed to update contact. Please try again.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to update contact. Please try again.', type: 'error' } }));
             } finally {
                 this.saving = false;
             }

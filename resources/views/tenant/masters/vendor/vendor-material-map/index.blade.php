@@ -156,7 +156,7 @@ function mapData() {
                 }));
             } catch (error) {
                 console.error('Failed to load mappings:', error);
-                alert(error.message || 'Failed to load mappings. Please try again.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to load mappings. Please try again.', type: 'error' } }));
                 this.items = [];
             } finally {
                 this.loading = false;
@@ -169,37 +169,46 @@ function mapData() {
         },
         
         edit(item) {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}';
+            const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}";
             window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
-        async deleteItem(item) {
-            if (confirm('Are you sure you want to deactivate this vendor-material mapping?\n\nThis will set the mapping as inactive.')) {
-                try {
-                    const response = await fetch(`/api/v1/vendor-material-map/${item.id}`, {
-                        method: 'DELETE',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+        deleteItem(item) {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: {
+                    title: 'Deactivate Mapping',
+                    message: `Are you sure you want to deactivate this vendor-material mapping?\n\nThis will set the mapping as inactive.`,
+                    confirmText: 'Deactivate',
+                    cancelText: 'Cancel',
+                    confirmColor: 'red',
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`/api/v1/vendor-material-map/${item.id}`, {
+                                method: 'DELETE',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                }
+                            });
+                            const data = await response.json();
+
+                            if (!response.ok || !data || data.success !== true) {
+                                throw new Error((data && data.message) ? data.message : 'Failed to deactivate mapping');
+                            }
+
+                            // Remove item from display immediately
+                            this.items = this.items.filter(i => i.id !== item.id);
+                            
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Vendor-material mapping deactivated successfully', type: 'success' } }));
+                        } catch (error) {
+                            console.error('Failed to deactivate mapping:', error);
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to deactivate mapping. Please try again.', type: 'error' } }));
                         }
-                    });
-                    const data = await response.json();
-
-                    if (!response.ok || !data || data.success !== true) {
-                        throw new Error((data && data.message) ? data.message : 'Failed to deactivate mapping');
                     }
-
-                    // Remove item from display immediately
-                    this.items = this.items.filter(i => i.id !== item.id);
-                    
-                    alert('Vendor-material mapping deactivated successfully');
-                } catch (error) {
-                    console.error('Failed to deactivate mapping:', error);
-                    alert(error.message || 'Failed to deactivate mapping. Please try again.');
                 }
-            }
+            }));
         }
     }
 }

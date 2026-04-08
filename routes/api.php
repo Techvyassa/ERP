@@ -584,6 +584,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
             });
 
+            
+
+        // Material Issue Request Endpoints
+        // Roles: STOREKEEPER (view/scan), STORE_MGR (approve/reject), ADMIN (all)
+        // Status Flow: PENDING → APPROVED → SCANNING → ISSUED
+        Route::middleware(['check.module.permission:STORE'])->group(function () {
             Route::prefix('material-issue-requests')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
@@ -591,6 +597,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
                 Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
             });
+        });
 
             Route::prefix('packing-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
