@@ -193,6 +193,15 @@ class QCService
             throw new \Exception('Inspection lot must be in IN_PROGRESS status');
         }
 
+        // Guard: prevent duplicate parameter per lot
+        $alreadyExists = QCResult::where('lot_id', $lotId)
+            ->whereRaw('LOWER(parameter_name) = ?', [strtolower($data['parameter_name'])])
+            ->exists();
+
+        if ($alreadyExists) {
+            throw new \Exception("A test result for parameter \"{$data['parameter_name']}\" has already been recorded for this lot.");
+        }
+
         return DB::connection('tenant')->transaction(function () use ($lotId, $data, $userId) {
             $result = QCResult::create([
                 'lot_id' => $lotId,
@@ -275,7 +284,7 @@ class QCService
     {
         $lot = InspectionLot::findOrFail($lotId);
 
-        if ($lot->status !== 'COMPLETED') {
+        if (!in_array($lot->status, ['COMPLETED', 'DECISION_MADE'])) {
             throw new \Exception('Inspection lot must be COMPLETED before making decision');
         }
 
@@ -298,73 +307,98 @@ class QCService
             }
 
             // Create decision
-            $decision = QCDecision::create([
-                'lot_id' => $lot->id,
-                'decision' => $data['decision'],
-                'accepted_qty' => $acceptedQty,
-                'rejected_qty' => $rejectedQty,
-                'remarks' => $data['remarks'] ?? null,
-                'decided_by' => $userId,
-                'decided_at' => now(),
-            ]);
+            $returnQty = (float) ($data['return_qty'] ?? 0);
+            $scrapQty  = (float) ($data['scrap_qty'] ?? 0);
+
+            // If neither is specified, default all rejected to return
+            if ($returnQty === 0.0 && $scrapQty === 0.0 && $rejectedQty > 0) {
+                $returnQty = $rejectedQty;
+            }
+
+            if (round($returnQty + $scrapQty, 3) > round($rejectedQty, 3)) {
+                throw new \Exception('Return qty and scrap qty cannot exceed rejected qty.');
+            }
+
+            $decision = QCDecision::updateOrCreate(
+                ['lot_id' => $lot->id],
+                [
+                    'decision'       => $data['decision'],
+                    'accepted_qty'   => $acceptedQty,
+                    'rejected_qty'   => $rejectedQty,
+                    'return_qty'     => $returnQty,
+                    'scrap_qty'      => $scrapQty,
+                    'return_remarks' => $data['return_remarks'] ?? null,
+                    'scrap_remarks'  => $data['scrap_remarks'] ?? null,
+                    'remarks'        => $data['remarks'] ?? null,
+                    'decided_by'     => $userId,
+                    'decided_at'     => now(),
+                ]
+            );
+
+            $isNewDecision = $decision->wasRecentlyCreated;
 
             if ($lot->source_type === 'PRODUCTION') {
-                $stockService = app(\App\Services\StockService::class);
-                $productionOrder = $lot->productionOrder()->with('bom')->firstOrFail();
-                $item = [
-                    'product_id' => $productionOrder->product_id,
-                    'uom_id' => $productionOrder->bom?->output_uom_id,
-                    'warehouse_id' => $lot->warehouse_id ?: $productionOrder->fg_warehouse_id,
-                    'batch_number' => $lot->batch_number ?: $productionOrder->fg_batch_number,
-                ];
-                $fromBinId = $lot->bin_id ?: $productionOrder->fg_bin_id;
+                // Only run stock transfers on first decision
+                if ($isNewDecision) {
+                    $stockService = app(\App\Services\StockService::class);
+                    $productionOrder = $lot->productionOrder()->with('bom')->firstOrFail();
+                    $item = [
+                        'product_id' => $productionOrder->product_id,
+                        'uom_id' => $productionOrder->bom?->output_uom_id,
+                        'warehouse_id' => $lot->warehouse_id ?: $productionOrder->fg_warehouse_id,
+                        'batch_number' => $lot->batch_number ?: $productionOrder->fg_batch_number,
+                    ];
+                    $fromBinId = $lot->bin_id ?: $productionOrder->fg_bin_id;
 
-                if ($acceptedQty > 0) {
-                    $stockService->transfer(
-                        item: $item,
-                        fromBucket: 'QC_HOLD',
-                        toBucket: 'AVAILABLE',
-                        qty: $acceptedQty,
-                        transactionType: 'QC_PASS',
-                        referenceType: 'InspectionLot',
-                        referenceId: $lot->id,
-                        referenceNumber: $lot->lot_number,
-                        userId: $userId,
-                        fromBinId: $fromBinId,
-                        toBinId: $fromBinId,
-                        remarks: 'FG QC accepted'
-                    );
-                }
+                    if ($acceptedQty > 0) {
+                        $stockService->transfer(
+                            item: $item,
+                            fromBucket: 'QC_HOLD',
+                            toBucket: 'AVAILABLE',
+                            qty: $acceptedQty,
+                            transactionType: 'QC_PASS',
+                            referenceType: 'InspectionLot',
+                            referenceId: $lot->id,
+                            referenceNumber: $lot->lot_number,
+                            userId: $userId,
+                            fromBinId: $fromBinId,
+                            toBinId: $fromBinId,
+                            remarks: 'FG QC accepted'
+                        );
+                    }
 
-                if ($rejectedQty > 0) {
-                    $stockService->transfer(
-                        item: $item,
-                        fromBucket: 'QC_HOLD',
-                        toBucket: 'BLOCKED',
-                        qty: $rejectedQty,
-                        transactionType: 'QC_REJECT',
-                        referenceType: 'InspectionLot',
-                        referenceId: $lot->id,
-                        referenceNumber: $lot->lot_number,
-                        userId: $userId,
-                        fromBinId: $fromBinId,
-                        toBinId: $fromBinId,
-                        remarks: 'FG QC rejected'
-                    );
+                    if ($rejectedQty > 0) {
+                        $stockService->transfer(
+                            item: $item,
+                            fromBucket: 'QC_HOLD',
+                            toBucket: 'BLOCKED',
+                            qty: $rejectedQty,
+                            transactionType: 'QC_REJECT',
+                            referenceType: 'InspectionLot',
+                            referenceId: $lot->id,
+                            referenceNumber: $lot->lot_number,
+                            userId: $userId,
+                            fromBinId: $fromBinId,
+                            toBinId: $fromBinId,
+                            remarks: 'FG QC rejected'
+                        );
+                    }
                 }
             } else {
-                // Apply QC decision to GRN line items (writeback + status transition)
-                $grnService = app(\App\Services\GRNService::class);
-                $qcDecisions = [
-                    $lot->grn_line_id => [
-                        'accepted_qty' => $acceptedQty,
-                        'rejected_qty' => $rejectedQty,
-                        'return_qty' => $data['return_qty'] ?? 0,
-                        'return_remarks' => $data['return_remarks'] ?? null,
-                        'source_bin_id' => $lot->grnLineItem?->warehouse_bin_id,
-                    ],
-                ];
-                $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);
+                // Only run GRN writeback on first decision
+                if ($isNewDecision) {
+                    $grnService = app(\App\Services\GRNService::class);
+                    $qcDecisions = [
+                        $lot->grn_line_id => [
+                            'accepted_qty'   => $acceptedQty,
+                            'rejected_qty'   => $rejectedQty,
+                            'return_qty'     => $data['return_qty'] ?? 0,
+                            'return_remarks' => $data['return_remarks'] ?? null,
+                            'source_bin_id'  => $lot->grnLineItem?->warehouse_bin_id,
+                        ],
+                    ];
+                    $grnService->applyQCDecision($lot->grn, $qcDecisions, $userId);
+                }
             }
 
             // Update lot status

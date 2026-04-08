@@ -34,7 +34,9 @@ class QuotationComparisonController extends Controller
 
             // Get quotation counts per PR
             $data = $prNumbers->map(function ($item) {
-                $count = VendorQuotation::where('pr_number', $item->pr_number)->count();
+                $count = VendorQuotation::where('pr_number', $item->pr_number)
+                    ->distinct('vendor_id')
+                    ->count('vendor_id');
                 $vendors = VendorQuotation::where('pr_number', $item->pr_number)
                     ->with('vendor:id,vendor_name')
                     ->get()

@@ -36,7 +36,7 @@ class QCController extends Controller
                 'assignedTechnician',
                 'testResults',
                 'usageDecision.decisionMaker'
-            ]);
+            ])->excludeProvisionalGrn();
             
             // Filter by status
             if ($request->has('status')) {
@@ -256,15 +256,17 @@ class QCController extends Controller
             
             // Validate manually
             $validator = \Validator::make($jsonData, [
-                'decision' => 'required|in:ACCEPTED,REJECTED,CONDITIONALLY_ACCEPTED,REWORK_REQUIRED',
-                'accepted_qty' => 'nullable|numeric|gte:0',
-                'rejected_qty' => 'nullable|numeric|gte:0',
-                'return_qty' => 'nullable|numeric|gte:0',
-                'return_remarks' => 'nullable|string|max:500',
+                'decision'           => 'required|in:ACCEPTED,REJECTED,CONDITIONALLY_ACCEPTED,REWORK_REQUIRED',
+                'accepted_qty'       => 'nullable|numeric|gte:0',
+                'rejected_qty'       => 'nullable|numeric|gte:0',
+                'return_qty'         => 'nullable|numeric|gte:0',
+                'scrap_qty'          => 'nullable|numeric|gte:0',
+                'return_remarks'     => 'nullable|string|max:500',
+                'scrap_remarks'      => 'nullable|string|max:500',
                 'override_approved_by' => 'nullable|integer',
-                'override_reason' => 'nullable|string|max:500',
-                'coa_file_path' => 'nullable|string|max:500',
-                'remarks' => 'nullable|string|max:500',
+                'override_reason'    => 'nullable|string|max:500',
+                'coa_file_path'      => 'nullable|string|max:500',
+                'remarks'            => 'nullable|string|max:500',
             ]);
             
             if ($validator->fails()) {
@@ -305,6 +307,7 @@ class QCController extends Controller
     {
         try {
             $lots = InspectionLot::with(['grn', 'productionOrder.product', 'material', 'product', 'assignedTechnician'])
+                ->excludeProvisionalGrn()
                 ->pending()
                 ->get();
             
@@ -327,6 +330,7 @@ class QCController extends Controller
     {
         try {
             $lots = InspectionLot::with(['grn', 'productionOrder.product', 'material', 'product', 'assignedTechnician', 'testResults'])
+                ->excludeProvisionalGrn()
                 ->inProgress()
                 ->get();
             
@@ -349,6 +353,7 @@ class QCController extends Controller
     {
         try {
             $lots = InspectionLot::with(['grn', 'productionOrder.product', 'material', 'product', 'assignedTechnician', 'testResults', 'usageDecision'])
+                ->excludeProvisionalGrn()
                 ->completed()
                 ->get();
             

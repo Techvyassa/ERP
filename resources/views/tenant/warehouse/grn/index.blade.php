@@ -329,13 +329,25 @@
                                     <template x-if="lot.usage_decision">
                                         <div class="text-xs text-gray-600 space-y-1">
                                             <div class="flex justify-between">
-                                                <span>QC Acc. Qty:</span>
+                                                <span>Accepted Qty:</span>
                                                 <span class="font-semibold text-green-600" x-text="parseFloat(lot.usage_decision.accepted_qty).toFixed(3)"></span>
                                             </div>
                                             <div class="flex justify-between">
-                                                <span>QC Rej. Qty:</span>
+                                                <span>Rejected Qty:</span>
                                                 <span class="font-semibold text-red-600" x-text="parseFloat(lot.usage_decision.rejected_qty).toFixed(3)"></span>
                                             </div>
+                                            <template x-if="parseFloat(lot.usage_decision.rejected_qty) > 0">
+                                                <div class="pl-3 border-l-2 border-red-200 space-y-0.5 mt-1">
+                                                    <div class="flex justify-between">
+                                                        <span class="text-red-500">↩ Return:</span>
+                                                        <span class="font-semibold" x-text="parseFloat(lot.usage_decision.return_qty || 0).toFixed(3)"></span>
+                                                    </div>
+                                                    <div class="flex justify-between">
+                                                        <span class="text-orange-500">🗑 Scrap:</span>
+                                                        <span class="font-semibold" x-text="parseFloat(lot.usage_decision.scrap_qty || 0).toFixed(3)"></span>
+                                                    </div>
+                                                </div>
+                                            </template>
                                             <template x-if="lot.usage_decision.remarks">
                                                 <div class="mt-2 pt-2 border-t border-gray-200">
                                                     <span class="font-semibold">Remarks:</span> <span x-text="lot.usage_decision.remarks"></span>
@@ -362,32 +374,39 @@
                                         <th class="text-right px-3 py-2 font-semibold text-gray-700">Current Accepted</th>
                                         <th class="text-right px-3 py-2 font-semibold text-gray-700">New Accepted</th>
                                         <th class="text-right px-3 py-2 font-semibold text-gray-700">Rejected</th>
-                                        <th class="text-right px-3 py-2 font-semibold text-gray-700">Return Qty</th>
-                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Return Remarks</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700 text-red-600">↩ Return Qty</th>
+                                        <th class="text-right px-3 py-2 font-semibold text-gray-700 text-orange-600">🗑 Scrap Qty</th>
+                                        <th class="text-left px-3 py-2 font-semibold text-gray-700">Remarks</th>
                                         <th class="text-left px-3 py-2 font-semibold text-gray-700">Stock Status</th>
                                     </tr>
                                 </thead>
                                 <tbody class="divide-y divide-gray-100">
                                     <template x-for="(line, i) in postQCForm.line_items" :key="line.id">
                                         <tr class="hover:bg-gray-50">
-                                            <td class="px-3 py-2" x-text="line.material_name || '—'"></td>
-                                            <td class="px-3 py-2 text-right" x-text="line.current_accepted_qty || 0"></td>
+                                            <td class="px-3 py-2 font-medium" x-text="line.material_name || '—'"></td>
+                                            <td class="px-3 py-2 text-right text-gray-500" x-text="parseFloat(line.current_accepted_qty || 0).toFixed(3)"></td>
                                             <td class="px-3 py-2">
                                                 <input type="number" step="0.001" min="0" x-model.number="line.accepted_qty"
-                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                                    class="w-20 px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary">
                                             </td>
                                             <td class="px-3 py-2">
                                                 <input type="number" step="0.001" min="0" x-model.number="line.rejected_qty"
-                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                                    class="w-20 px-2 py-1 border border-red-200 rounded text-xs focus:ring-2 focus:ring-red-100 focus:border-red-400">
                                             </td>
                                             <td class="px-3 py-2">
                                                 <input type="number" step="0.001" min="0" x-model.number="line.return_qty"
-                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                                    class="w-20 px-2 py-1 border border-red-200 rounded text-xs focus:ring-2 focus:ring-red-100 focus:border-red-400"
+                                                    placeholder="0.000">
+                                            </td>
+                                            <td class="px-3 py-2">
+                                                <input type="number" step="0.001" min="0" x-model.number="line.scrap_qty"
+                                                    class="w-20 px-2 py-1 border border-orange-200 rounded text-xs focus:ring-2 focus:ring-orange-100 focus:border-orange-400"
+                                                    placeholder="0.000">
                                             </td>
                                             <td class="px-3 py-2">
                                                 <input type="text" x-model="line.return_remarks" maxlength="500"
-                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs focus:ring-2 focus:ring-primary/20 focus:border-primary"
-                                                    placeholder="RTV remarks">
+                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs"
+                                                    placeholder="Remarks">
                                             </td>
                                             <td class="px-3 py-2">
                                                 <span class="px-2 py-0.5 rounded-full text-xs font-bold"
@@ -708,39 +727,51 @@ function grnData() {
         },
 
         async openPostQCModal(grn) {
+            // Fetch full GRN detail to get line_items with all fields
+            let fullGrn = grn;
+            try {
+                const res = await fetch(`/api/v1/grn/${grn.id}`, { headers: headers() });
+                const data = await res.json();
+                if (data.success) fullGrn = data.data;
+            } catch (e) { console.error('Failed to fetch GRN detail', e); }
+
             this.postQCForm = {
-                grn_id: grn.id,
-                grn_number: grn.grn_number,
-                vendor_name: grn.vendor?.vendor_name || '',
-                status: grn.status,
-                remarks: grn.remarks || '',
-                line_items: (grn.line_items || []).map(l => ({
+                grn_id: fullGrn.id,
+                grn_number: fullGrn.grn_number,
+                vendor_name: fullGrn.vendor?.vendor_name || '',
+                status: fullGrn.status,
+                remarks: fullGrn.remarks || '',
+                line_items: (fullGrn.line_items || []).map(l => ({
                     id: l.id,
                     material_name: l.material?.material_name || l.material_name || '',
                     current_accepted_qty: l.accepted_qty || 0,
                     accepted_qty: l.accepted_qty || 0,
                     rejected_qty: l.rejected_qty || 0,
                     return_qty: l.return_qty || 0,
+                    scrap_qty: l.scrap_qty || 0,
                     return_remarks: l.return_remarks || '',
+                    scrap_remarks: l.scrap_remarks || '',
                 })),
                 qc_lots: []
             };
             
             try {
-                const res = await fetch(`/api/v1/qc/by-grn/${grn.id}`, { headers: headers() });
+                const res = await fetch(`/api/v1/qc/by-grn/${fullGrn.id}`, { headers: headers() });
                 const data = await res.json();
                 if (data.success) {
                     this.postQCForm.qc_lots = data.data;
                     
-                    // Add default input values according to QC result
+                    // Pre-populate line items from QC decision (return_qty + scrap_qty)
                     this.postQCForm.qc_lots.forEach(lot => {
                         if (lot.usage_decision) {
                             const line = this.postQCForm.line_items.find(l => l.id === lot.grn_line_id);
                             if (line) {
                                 line.accepted_qty = parseFloat(lot.usage_decision.accepted_qty) || 0;
                                 line.rejected_qty = parseFloat(lot.usage_decision.rejected_qty) || 0;
-                                // Automatically propose return for the rejected quantity
-                                line.return_qty = parseFloat(lot.usage_decision.rejected_qty) || 0;
+                                line.return_qty   = parseFloat(lot.usage_decision.return_qty)   || 0;
+                                line.scrap_qty    = parseFloat(lot.usage_decision.scrap_qty)    || 0;
+                                line.return_remarks = lot.usage_decision.return_remarks || '';
+                                line.scrap_remarks  = lot.usage_decision.scrap_remarks  || '';
                             }
                         }
                     });
@@ -760,8 +791,9 @@ function grnData() {
                         id: l.id,
                         accepted_qty: l.accepted_qty,
                         rejected_qty: l.rejected_qty,
-                        return_qty: l.return_qty,
-                        return_remarks: l.return_remarks,
+                        return_qty: l.return_qty   || 0,
+                        scrap_qty:  l.scrap_qty    || 0,
+                        return_remarks: l.return_remarks || null,
                     })),
                     remarks: this.postQCForm.remarks,
                 };
