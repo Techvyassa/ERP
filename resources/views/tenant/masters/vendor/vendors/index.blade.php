@@ -129,10 +129,10 @@
                                     <div class="flex items-center gap-0.5">
                                         <template x-for="i in 5">
                                             <span class="material-symbols-outlined text-[14px]" 
-                                                  :class="i <= (item.rating_score/20) ? 'text-amber-400' : 'text-gray-200'"
+                                                  :class="i <= (parseFloat(item.rating_score)/20) ? 'text-amber-400' : 'text-gray-200'"
                                                   style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20">star</span>
                                         </template>
-                                        <span class="text-xs font-bold text-gray-700 ml-1" x-text="(item.rating_score || 0).toFixed(1)"></span>
+                                        <span class="text-xs font-bold text-gray-700 ml-1" x-text="parseFloat(item.rating_score || 0).toFixed(1)"></span>
                                     </div>
                                     <div>
                                         <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
@@ -148,6 +148,9 @@
                                 <div class="flex items-center justify-end gap-2">
                                     <button @click="viewDetails(item)" class="p-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all" title="View Full Details">
                                         <span class="material-symbols-outlined text-xl">visibility</span>
+                                    </button>
+                                    <button @click="openEmailModal(item)" class="p-2 text-gray-600 hover:bg-emerald-50 hover:text-emerald-600 rounded-lg transition-all" title="Send Direct Email">
+                                        <span class="material-symbols-outlined text-xl">mail</span>
                                     </button>
                                     <button @click="edit(item)" class="p-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all" title="Edit Vendor">
                                         <span class="material-symbols-outlined text-xl">edit</span>
@@ -300,17 +303,17 @@
                                 <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100">
                                     <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Performance</h4>
                                     <div class="text-center mb-4">
-                                        <div class="text-4xl font-black text-blue-900" x-text="selectedItem?.rating_score?.toFixed(1)"></div>
+                                        <div class="text-4xl font-black text-blue-900" x-text="parseFloat(selectedItem?.rating_score || 0).toFixed(1)"></div>
                                         <div class="text-[10px] text-blue-400 font-bold uppercase">Vendor Score</div>
                                     </div>
                                     <div class="space-y-4">
                                         <div class="flex items-center justify-between text-xs">
                                             <span class="text-gray-600">Approval Status</span>
-                                            <span class="font-bold" :class="item.is_approved ? 'text-green-600' : 'text-orange-600'" x-text="selectedItem?.is_approved ? 'Approved' : 'Pending'"></span>
+                                            <span class="font-bold" :class="selectedItem?.is_approved ? 'text-green-600' : 'text-orange-600'" x-text="selectedItem?.is_approved ? 'Approved' : 'Pending'"></span>
                                         </div>
                                         <div class="flex items-center justify-between text-xs">
                                             <span class="text-gray-600">Blacklisted</span>
-                                            <span class="font-bold" :class="item.blacklisted ? 'text-red-600' : 'text-slate-400'" x-text="selectedItem?.blacklisted ? 'Yes' : 'No'"></span>
+                                            <span class="font-bold" :class="selectedItem?.blacklisted ? 'text-red-600' : 'text-slate-400'" x-text="selectedItem?.blacklisted ? 'Yes' : 'No'"></span>
                                         </div>
                                     </div>
                                 </div>
@@ -347,6 +350,64 @@
             </div>
         </div>
     </template>
+
+    <!-- Send Email Modal -->
+    <div x-show="emailModalOpen" x-cloak
+         class="fixed inset-0 z-[60] flex items-center justify-center p-4 bg-gray-900/60 backdrop-blur-sm"
+         x-transition:enter="transition ease-out duration-200"
+         x-transition:enter-start="opacity-0"
+         x-transition:enter-end="opacity-100"
+         x-transition:leave="transition ease-in duration-150"
+         x-transition:leave-start="opacity-100"
+         x-transition:leave-end="opacity-0">
+        <div @click.away="emailModalOpen = false"
+             x-transition:enter="transition ease-out duration-200"
+             x-transition:enter-start="opacity-0 scale-95"
+             x-transition:enter-end="opacity-100 scale-100"
+             class="bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden">
+            
+            <div class="px-8 py-6 border-b flex items-center justify-between bg-emerald-50/50">
+                <div class="flex items-center gap-3 text-emerald-700">
+                    <span class="material-symbols-outlined text-2xl">mail</span>
+                    <div>
+                        <h3 class="text-xl font-bold">Compose Email</h3>
+                    </div>
+                </div>
+                <button @click="emailModalOpen = false" class="text-gray-400 hover:text-gray-600 transition-colors">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+
+            <div class="p-8 space-y-6">
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Subject</label>
+                    <input type="text" x-model="emailForm.subject" placeholder="Enter email subject"
+                           class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-medium text-gray-700">
+                </div>
+
+                <div>
+                    <label class="block text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Message Content</label>
+                    <textarea x-model="emailForm.message" rows="6" placeholder="Type your message here..."
+                              class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-2xl focus:ring-2 focus:ring-emerald-500 focus:border-transparent outline-none transition-all font-medium text-gray-700 resize-none"></textarea>
+                </div>
+            </div>
+
+            <div class="px-8 py-6 bg-gray-50 border-t flex items-center justify-end gap-3">
+                <button @click="emailModalOpen = false" class="px-6 py-2.5 text-sm font-bold text-gray-500 hover:text-gray-700 transition-colors">Cancel</button>
+                <template x-if="!emailForm.to_email">
+                    <p class="text-xs text-red-500 font-medium mr-auto">
+                        <span class="material-symbols-outlined text-sm align-middle">warning</span>
+                        No email address found for this vendor's contacts.
+                    </p>
+                </template>
+                <button @click="openMailClient" :disabled="!emailForm.to_email"
+                        class="px-8 py-2.5 bg-emerald-600 text-white rounded-2xl text-sm font-bold hover:bg-emerald-700 transition-all hover:shadow-lg disabled:opacity-40 disabled:cursor-not-allowed flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">open_in_new</span>
+                    <span>Open in Mail App</span>
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -355,7 +416,10 @@ function vendorData() {
         items: [],
         loading: false,
         viewModalOpen: false,
+        emailModalOpen: false,
         selectedItem: null,
+        emailForm: { id: null, subject: '', message: '', vendor_name: '', to_email: '' },
+        sendingEmail: false,
         filters: { search: '', vendor_type: '', is_approved: '' },
         pagination: { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 },
         
@@ -463,6 +527,40 @@ function vendorData() {
                     }
                 }
             }));
+        },
+
+        openEmailModal(item) {
+            // Find primary contact email, fallback to first contact with email
+            const primaryContact = (item.contacts || []).find(c => c.is_primary && c.email);
+            const anyContact = (item.contacts || []).find(c => c.email);
+            const toEmail = primaryContact?.email || anyContact?.email || '';
+
+            this.emailForm = { 
+                id: item.id, 
+                to_email: toEmail,
+                subject: `Important update from ERP — Vendor Panel`,
+                message: `Dear ${item.vendor_name},\n\n`,
+                vendor_name: item.vendor_name
+            };
+            this.emailModalOpen = true;
+        },
+
+        openMailClient() {
+            const to = encodeURIComponent(this.emailForm.to_email);
+            const subject = encodeURIComponent(this.emailForm.subject);
+            const body = encodeURIComponent(this.emailForm.message);
+            const mailtoLink = `mailto:${to}?subject=${subject}&body=${body}`;
+            window.open(mailtoLink, '_blank');
+            this.emailModalOpen = false;
+        },
+
+        async sendDirectEmail() {
+            // Kept for API-based sending if needed in future
+            if (!this.emailForm.subject || !this.emailForm.message) {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Subject and Message are required.', type: 'error' } }));
+                return;
+            }
+            this.openMailClient();
         }
     }
 }
