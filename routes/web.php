@@ -441,6 +441,22 @@ Route::middleware(['web.jwt'])->group(function () {
             ]);
         })->name('bom-header.create');
 
+        Route::get('/bom-header/multiple-create', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-header.multiple-create', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('bom-header.multiple-create');
+
+        Route::get('/bom-header/bulk-upload', function ($orgSlug) use ($getOrg) {
+            extract($getOrg($orgSlug));
+            return view('tenant.masters.bom.bom-header.bulk-upload', [
+                'organization' => $org,
+                'tenantType' => $tenantType
+            ]);
+        })->name('bom-header.bulk-upload');
+
         Route::get('/bom-header/{id}/edit', function ($orgSlug, $id) use ($getOrg) {
             extract($getOrg($orgSlug));
             return view('tenant.masters.bom.bom-header.edit', [

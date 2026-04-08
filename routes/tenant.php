@@ -482,6 +482,22 @@ Route::middleware(['web', 'detect.tenant', 'web.jwt'])->group(function () {
                 'tenantType' => request()->get('tenant_type')
             ]);
         })->name('create');
+
+        Route::get('/multiple-create', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.bom.bom-header.multiple-create', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('multiple-create');
+
+        Route::get('/bulk-upload', function () {
+            $org = request()->get('tenant_organization');
+            return view('tenant.masters.bom.bom-header.bulk-upload', [
+                'organization' => $org,
+                'tenantType' => request()->get('tenant_type')
+            ]);
+        })->name('bulk-upload');
     });
     
     // BOM Detail Management
