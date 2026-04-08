@@ -371,10 +371,6 @@
                     <span class="material-symbols-outlined text-2xl">mail</span>
                     <div>
                         <h3 class="text-xl font-bold">Compose Email</h3>
-                        <p class="text-xs text-emerald-600 font-medium">
-                            To: <span x-text="emailForm.to_email || 'No email on record'"></span>
-                            &nbsp;·&nbsp; <span x-text="emailForm.vendor_name"></span>
-                        </p>
                     </div>
                 </div>
                 <button @click="emailModalOpen = false" class="text-gray-400 hover:text-gray-600 transition-colors">
