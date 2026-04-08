@@ -400,56 +400,58 @@ class VendorController extends Controller
      */
     private function generateVendorCode(string $vendorType, string $vendorName = ''): string
     {
-        $vendorTypeClean = strtoupper(trim($vendorType));
+        // 1. Generate Name Prefix (Up to 3 initials from first 3 significant words)
+        $namePrefix = '';
+        if (!empty($vendorName)) {
+            $words = explode(' ', strtoupper(trim($vendorName)));
+            $ignoredWords = ['AND', '&', 'PVT', 'LTD', 'LLP', 'CO', 'CORP', 'LIMITED', 'PRIVATE', 'INC', 'INDIA', 'LLC'];
+            $selectedWords = [];
 
-        // Determine prefix based on vendor type
-        if ($vendorTypeClean === 'SUPPLIER') {
-            $prefix = 'SUP';
-        } elseif (str_contains($vendorTypeClean, 'SERVICE')) {
-            $prefix = 'SRV';
-        } elseif ($vendorTypeClean === 'TRADER') {
-            $prefix = 'TRD';
-        } else {
-            // For custom types, generate a 3-letter prefix
-            $prefix = substr(preg_replace('/[^A-Z]/', '', $vendorTypeClean), 0, 3);
-
-            // Fallback to Vendor Name initials if type doesn't yield 3 letters
-            if (strlen($prefix) < 3 && !empty($vendorName)) {
-                $words = explode(' ', strtoupper(trim($vendorName)));
-                $prefix = '';
-                foreach ($words as $w) {
-                    if (preg_match('/[A-Z]/', $w, $m)) {
-                        $prefix .= $m[0];
-                    }
-                    if (strlen($prefix) >= 3) break;
+            foreach ($words as $w) {
+                // Remove non-alphanumeric characters
+                $cleanWord = preg_replace('/[^A-Z0-9]/', '', $w);
+                if (!empty($cleanWord) && !in_array($cleanWord, $ignoredWords) && strlen($cleanWord) > 1) {
+                    $selectedWords[] = substr($cleanWord, 0, 3);
                 }
+                if (count($selectedWords) >= 3) break;
             }
-
-            // Final fallback
-            if (strlen($prefix) == 0) {
-                $prefix = 'VND';
-            } else {
-                $prefix = str_pad($prefix, 3, 'X');
+            if (!empty($selectedWords)) {
+                $namePrefix = implode('-', $selectedWords);
             }
         }
 
-        // Get the last vendor with this prefix
-        $lastVendor = Vendor::where('vendor_code', 'like', $prefix . '-%')
-            ->orderBy(DB::raw('LENGTH(vendor_code)'), 'desc')
-            ->orderBy('vendor_code', 'desc')
+        // 2. Generate Type Prefix (3 chars)
+        $vendorTypeClean = strtoupper(trim($vendorType));
+        if ($vendorTypeClean === 'SUPPLIER') {
+            $typePrefix = 'SUP';
+        } elseif (str_contains($vendorTypeClean, 'SERVICE')) {
+            $typePrefix = 'SRV';
+        } elseif ($vendorTypeClean === 'TRADER') {
+            $typePrefix = 'TRD';
+        } else {
+            $typePrefix = substr(preg_replace('/[^A-Z]/', '', $vendorTypeClean), 0, 3);
+        }
+
+        if (empty($typePrefix)) $typePrefix = 'VND';
+
+        // 3. Combine into a Base Prefix for searching
+        $basePrefix = !empty($namePrefix) ? ($namePrefix . '-' . $typePrefix) : $typePrefix;
+
+        // 4. Find the next incremental number for this specific base
+        $lastVendor = Vendor::where('vendor_code', 'like', $basePrefix . '-%')
+            ->orderBy('id', 'desc')
             ->first();
 
+        $newNumber = 1;
         if ($lastVendor) {
-            // Extract number from last code (e.g., SUP-0123 -> 123)
-            $lastCode = $lastVendor->vendor_code;
-            $parts = explode('-', $lastCode);
-            $lastNumber = isset($parts[1]) ? intval($parts[1]) : 0;
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
+            $codeParts = explode('-', $lastVendor->vendor_code);
+            $lastPart = end($codeParts);
+            if (is_numeric($lastPart)) {
+                $newNumber = intval($lastPart) + 1;
+            }
         }
 
-        // Format with leading zeros (e.g., 0001)
-        return sprintf('%s-%04d', $prefix, $newNumber);
+        // 5. Return final formatted code (e.g., SAF-LAB-SER-SRV-001)
+        return sprintf('%s-%03d', $basePrefix, $newNumber);
     }
 }
