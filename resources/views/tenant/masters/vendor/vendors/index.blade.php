@@ -17,8 +17,8 @@
                 <p class="text-gray-600 mt-1">Manage suppliers and vendor information</p>
             </div>
             <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors/create' : '/org/' . $organization->org_slug . '/vendors/create') }}" 
-               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
-                <i class="fas fa-plus mr-2"></i>Add Vendor
+               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-shadow hover:shadow-lg inline-flex items-center">
+                <span class="material-symbols-outlined text-sm mr-2">add</span>Add Vendor
             </a>
         </div>
     </div>
@@ -43,88 +43,123 @@
                 <option value="0">Pending</option>
                 <option value="blacklisted">Blacklisted</option>
             </select>
-            <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
-                <i class="fas fa-redo mr-2"></i>Reset
+            <button @click="resetFilters" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors inline-flex items-center justify-center">
+                <span class="material-symbols-outlined text-sm mr-2">restart_alt</span>Reset
             </button>
         </div>
     </div>
 
-    <!-- Table -->
-    <div class="bg-white rounded-xl shadow overflow-hidden">
+    <!-- Table Section -->
+    <div class="bg-white rounded-xl shadow-sm border border-gray-100 overflow-hidden">
         <div class="overflow-x-auto">
             <table class="min-w-full divide-y divide-gray-200">
-                <thead class="bg-gray-50">
-                    <tr>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Code</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Name</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Type</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">GSTIN</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Payment Terms</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
-                        <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
+                <thead>
+                    <tr class="bg-gray-50/50">
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Vendor Info</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Type & Category</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Financials</th>
+                        <th class="px-6 py-4 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Rating & Status</th>
+                        <th class="px-6 py-4 text-right text-xs font-semibold text-gray-500 uppercase tracking-wider">Actions</th>
                     </tr>
                 </thead>
-                <tbody class="bg-white divide-y divide-gray-200">
+                <tbody class="bg-white divide-y divide-gray-100">
                     <template x-if="loading">
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <i class="fas fa-spinner fa-spin text-3xl text-gray-400"></i>
-                                <p class="text-gray-600 mt-2">Loading vendors...</p>
+                            <td colspan="5" class="px-6 py-12 text-center">
+                                <div class="flex flex-col items-center justify-center space-y-3">
+                                    <div class="w-10 h-10 border-4 border-blue-100 border-t-blue-600 rounded-full animate-spin"></div>
+                                    <p class="text-gray-500 font-medium">Fetching vendors...</p>
+                                </div>
                             </td>
                         </tr>
                     </template>
                     <template x-if="!loading && items.length === 0">
                         <tr>
-                            <td colspan="7" class="px-6 py-12 text-center">
-                                <i class="fas fa-handshake text-6xl text-gray-300 mb-4"></i>
-                                <p class="text-gray-600">No vendors found. Click "Add Vendor" to create one.</p>
+                            <td colspan="5" class="px-6 py-16 text-center">
+                                <div class="inline-flex items-center justify-center w-16 h-16 bg-gray-50 rounded-full mb-4">
+                                    <span class="material-symbols-outlined text-3xl text-gray-300">handshake</span>
+                                </div>
+                                <p class="text-gray-600 font-medium">No vendors found matching your criteria</p>
+                                <button @click="resetFilters" class="mt-2 text-blue-600 hover:underline text-sm font-medium">Clear all filters</button>
                             </td>
                         </tr>
                     </template>
                     <template x-for="item in items" :key="item.id">
-                        <tr class="hover:bg-gray-50">
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="text-sm font-medium text-gray-900" x-text="item.vendor_code"></span>
-                            </td>
+                        <tr class="hover:bg-blue-50/30 transition-colors group">
+                            <!-- Vendor Info -->
                             <td class="px-6 py-4">
-                                <span class="text-sm text-gray-900" x-text="item.vendor_name"></span>
+                                <div class="flex items-center">
+                                    <div class="flex-shrink-0 h-10 w-10 bg-blue-50 rounded-lg flex items-center justify-center text-blue-600 font-bold text-xs">
+                                        <span x-text="item.vendor_name.substring(0, 2).toUpperCase()"></span>
+                                    </div>
+                                    <div class="ml-4">
+                                        <div class="text-sm font-bold text-gray-900 leading-tight" x-text="item.vendor_name"></div>
+                                        <div class="text-xs text-blue-600 font-mono mt-0.5" x-text="item.vendor_code"></div>
+                                    </div>
+                                </div>
                             </td>
+                            <!-- Type & Category -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs rounded-full" 
-                                      :class="{
-                                          'bg-blue-100 text-blue-800': item.vendor_type === 'SUPPLIER',
-                                          'bg-green-100 text-green-800': item.vendor_type === 'SERVICE',
-                                          'bg-yellow-100 text-yellow-800': item.vendor_type === 'TRADER'
-                                      }"
-                                      x-text="item.vendor_type"></span>
+                                <div class="flex flex-col gap-1.5">
+                                    <span class="inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium border"
+                                          :class="{
+                                              'bg-blue-50 text-blue-700 border-blue-100': item.vendor_type === 'SUPPLIER',
+                                              'bg-emerald-50 text-emerald-700 border-emerald-100': item.vendor_type === 'SERVICE',
+                                              'bg-amber-50 text-amber-700 border-amber-100': item.vendor_type === 'TRADER',
+                                              'bg-slate-50 text-slate-700 border-slate-100': !['SUPPLIER', 'SERVICE', 'TRADER'].includes(item.vendor_type)
+                                          }">
+                                        <span class="material-symbols-outlined text-xs mr-1 opacity-60">label</span>
+                                        <span x-text="item.vendor_type"></span>
+                                    </span>
+                                    <template x-if="item.msme_category">
+                                        <span class="text-[10px] text-gray-500 italic">MSME: <span x-text="item.msme_category"></span></span>
+                                    </template>
+                                </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.gstin || '-'"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.payment_terms || '-'"></td>
+                            <!-- Financials -->
                             <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="px-2 py-1 text-xs rounded-full" 
-                                      :class="item.is_approved ? 'bg-green-100 text-green-800' : 'bg-yellow-100 text-yellow-800'"
-                                      x-text="item.is_approved ? 'Approved' : 'Pending'"></span>
+                                <div class="text-xs space-y-1">
+                                    <div class="text-gray-900"><span class="text-gray-400 font-medium">GST:</span> <span x-text="item.gstin || 'N/A'"></span></div>
+                                    <div class="text-gray-600"><span class="text-gray-400 font-medium">Terms:</span> <span x-text="item.payment_terms || 'Standard'"></span></div>
+                                </div>
                             </td>
-                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm font-medium">
+                            <!-- Rating & Status -->
+                            <td class="px-6 py-4 whitespace-nowrap">
+                                <div class="flex flex-col gap-2">
+                                    <div class="flex items-center gap-0.5">
+                                        <template x-for="i in 5">
+                                            <span class="material-symbols-outlined text-[14px]" 
+                                                  :class="i <= (item.rating_score/20) ? 'text-amber-400' : 'text-gray-200'"
+                                                  style="font-variation-settings: 'FILL' 1, 'wght' 400, 'GRAD' 0, 'opsz' 20">star</span>
+                                        </template>
+                                        <span class="text-xs font-bold text-gray-700 ml-1" x-text="(item.rating_score || 0).toFixed(1)"></span>
+                                    </div>
+                                    <div>
+                                        <span class="inline-flex items-center px-2 py-0.5 rounded-full text-[10px] font-bold uppercase tracking-wider"
+                                              :class="item.is_approved ? 'bg-green-100 text-green-700' : 'bg-orange-100 text-orange-700'">
+                                            <span class="material-symbols-outlined text-[10px] mr-1" style="font-variation-settings: 'FILL' 1">circle</span>
+                                            <span x-text="item.is_approved ? 'Approved' : 'Pending Approval'"></span>
+                                        </span>
+                                    </div>
+                                </div>
+                            </td>
+                            <!-- Actions -->
+                            <td class="px-6 py-4 whitespace-nowrap text-right text-sm">
                                 <div class="flex items-center justify-end gap-2">
-                                    <button @click="edit(item)" 
-                                            class="inline-flex items-center px-3 py-1.5 bg-blue-50 text-blue-600 hover:bg-blue-100 rounded transition-colors" 
-                                            title="Edit">
-                                        <i class="fas fa-edit mr-1"></i>
-                                        Edit
+                                    <button @click="viewDetails(item)" class="p-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all" title="View Full Details">
+                                        <span class="material-symbols-outlined text-xl">visibility</span>
+                                    </button>
+                                    <button @click="edit(item)" class="p-2 text-gray-600 hover:bg-blue-50 hover:text-blue-600 rounded-lg transition-all" title="Edit Vendor">
+                                        <span class="material-symbols-outlined text-xl">edit</span>
                                     </button>
                                     <template x-if="!item.blacklisted">
-                                        <button @click="blockVendor(item)" 
-                                                class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
-                                                title="Block Vendor">
-                                            <i class="fas fa-ban mr-1"></i>
-                                            Block
+                                        <button @click="blockVendor(item)" class="p-2 text-gray-400 hover:bg-red-50 hover:text-red-600 rounded-lg transition-all" title="Blacklist Vendor">
+                                            <span class="material-symbols-outlined text-xl">block</span>
                                         </button>
                                     </template>
                                     <template x-if="item.blacklisted">
-                                        <span class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded cursor-not-allowed" title="Vendor is Blacklisted">
-                                            <i class="fas fa-lock mr-1"></i>
-                                            Blocked
+                                        <span class="p-2 text-red-600 rounded-lg bg-red-50" title="This vendor is blacklisted">
+                                            <span class="material-symbols-outlined text-xl">warning</span>
                                         </span>
                                     </template>
                                 </div>
@@ -136,29 +171,182 @@
         </div>
         
         <!-- Pagination -->
-        <div class="px-6 py-4 border-t border-gray-200 flex items-center justify-between">
-            <div class="text-sm text-gray-600">
-                Showing <span x-text="pagination.from"></span> to <span x-text="pagination.to"></span> of <span x-text="pagination.total"></span> vendors
+        <div class="px-6 py-4 bg-gray-50/30 border-t border-gray-100 flex items-center justify-between">
+            <div class="text-xs font-medium text-gray-500">
+                Displaying <span class="text-gray-900" x-text="pagination.from"></span> - <span class="text-gray-900" x-text="pagination.to"></span> of <span class="text-gray-900" x-text="pagination.total"></span> records
             </div>
-            <div class="flex space-x-2">
+            <div class="flex items-center gap-2">
                 <button @click="loadPage(pagination.current_page - 1)" 
                         :disabled="pagination.current_page === 1"
-                        :class="pagination.current_page === 1 ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
-                        class="px-3 py-1 border border-gray-300 rounded">
-                    Previous
+                        class="p-2 border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-white transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined text-sm">chevron_left</span>
                 </button>
-                <span class="px-3 py-1 text-sm text-gray-600">
-                    Page <span x-text="pagination.current_page"></span> of <span x-text="pagination.last_page"></span>
-                </span>
+                <div class="px-3 py-1 bg-white border border-gray-200 rounded-lg text-xs font-bold text-gray-700">
+                    <span x-text="pagination.current_page"></span> / <span x-text="pagination.last_page"></span>
+                </div>
                 <button @click="loadPage(pagination.current_page + 1)" 
                         :disabled="pagination.current_page === pagination.last_page"
-                        :class="pagination.current_page === pagination.last_page ? 'opacity-50 cursor-not-allowed' : 'hover:bg-gray-100'"
-                        class="px-3 py-1 border border-gray-300 rounded">
-                    Next
+                        class="p-2 border border-gray-200 rounded-lg disabled:opacity-30 hover:bg-white transition-colors flex items-center justify-center">
+                    <span class="material-symbols-outlined text-sm">chevron_right</span>
                 </button>
             </div>
         </div>
     </div>
+
+    <!-- Vendor Detail Modal -->
+    <template x-if="viewModalOpen">
+        <div class="fixed inset-0 z-[60] overflow-y-auto" aria-labelledby="modal-title" role="dialog" aria-modal="true">
+            <div class="flex items-end justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+                <div class="fixed inset-0 bg-gray-500/75 transition-opacity" @click="viewModalOpen = false" aria-hidden="true"></div>
+
+                <span class="hidden sm:inline-block sm:align-middle sm:h-screen" aria-hidden="true">&#8203;</span>
+
+                <div class="inline-block align-bottom bg-white rounded-2xl text-left overflow-hidden shadow-2xl transform transition-all sm:my-8 sm:align-middle sm:max-w-4xl sm:w-full">
+                    <!-- Modal Header -->
+                    <div class="px-6 py-4 bg-gray-50 border-b flex items-center justify-between">
+                        <div class="flex items-center">
+                            <div class="w-12 h-12 bg-blue-600 rounded-xl flex items-center justify-center text-white mr-4 shadow-lg shadow-blue-200">
+                                <span class="material-symbols-outlined text-2xl">account_balance</span>
+                            </div>
+                            <div>
+                                <h3 class="text-xl font-bold text-gray-900" x-text="selectedItem?.vendor_name"></h3>
+                                <p class="text-sm text-blue-600 font-mono tracking-tight" x-text="selectedItem?.vendor_code"></p>
+                            </div>
+                        </div>
+                        <button @click="viewModalOpen = false" class="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
+                            <span class="material-symbols-outlined text-xl">close</span>
+                        </button>
+                    </div>
+
+                    <!-- Modal Body -->
+                    <div class="p-8">
+                        <div class="grid grid-cols-1 md:grid-cols-3 gap-8">
+                            <!-- Left: Main Details -->
+                            <div class="md:col-span-2 space-y-8">
+                                <section>
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center text-balance">
+                                        <span class="material-symbols-outlined text-sm mr-2">info</span> General Information
+                                    </h4>
+                                    <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">Vendor Type</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.vendor_type"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">MSME Category</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.msme_category || 'Not Specified'"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">GST Number</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.gstin || 'None'"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">PAN Number</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.pan_number || 'None'"></p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section>
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center text-balance">
+                                        <span class="material-symbols-outlined text-sm mr-2">account_balance_wallet</span> Financial & Compliance
+                                    </h4>
+                                    <div class="grid grid-cols-2 gap-y-4 gap-x-6 text-sm">
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">Payment Terms</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.payment_terms"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">Credit Days</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.credit_days + ' Days'"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">Currency</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.currency?.currency_code + ' - ' + selectedItem?.currency?.currency_name"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-gray-500 block mb-1">INCO Terms</label>
+                                            <p class="font-bold text-gray-900" x-text="selectedItem?.delivery_terms || 'N/A'"></p>
+                                        </div>
+                                    </div>
+                                </section>
+
+                                <section>
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4 flex items-center text-balance">
+                                        <span class="material-symbols-outlined text-sm mr-2">groups</span> Contact Persons
+                                    </h4>
+                                    <div class="space-y-3">
+                                        <template x-for="c in selectedItem?.contacts" :key="c.id">
+                                            <div class="flex items-center p-3 bg-gray-50 rounded-xl border border-gray-100">
+                                                <div class="w-8 h-8 rounded-full bg-white flex items-center justify-center text-blue-500 border shadow-sm mr-3">
+                                                    <span class="material-symbols-outlined text-lg" x-text="c.is_primary ? 'badge' : 'person'"></span>
+                                                </div>
+                                                <div class="flex-grow">
+                                                    <div class="text-sm font-bold text-gray-900" x-text="c.contact_name"></div>
+                                                    <div class="text-[10px] text-gray-500 uppercase font-semibold" x-text="c.contact_type"></div>
+                                                </div>
+                                                <div class="text-right">
+                                                    <div class="text-[11px] font-medium text-gray-700" x-text="c.phone || 'No Phone'"></div>
+                                                    <div class="text-[11px] text-blue-600 hover:underline" x-text="c.email || 'No Email'"></div>
+                                                </div>
+                                            </div>
+                                        </template>
+                                    </div>
+                                </section>
+                            </div>
+
+                            <!-- Right: Badges & Banking -->
+                            <div class="space-y-6">
+                                <div class="p-6 bg-blue-50 rounded-2xl border border-blue-100">
+                                    <h4 class="text-xs font-bold text-blue-400 uppercase tracking-widest mb-4">Performance</h4>
+                                    <div class="text-center mb-4">
+                                        <div class="text-4xl font-black text-blue-900" x-text="selectedItem?.rating_score?.toFixed(1)"></div>
+                                        <div class="text-[10px] text-blue-400 font-bold uppercase">Vendor Score</div>
+                                    </div>
+                                    <div class="space-y-4">
+                                        <div class="flex items-center justify-between text-xs">
+                                            <span class="text-gray-600">Approval Status</span>
+                                            <span class="font-bold" :class="item.is_approved ? 'text-green-600' : 'text-orange-600'" x-text="selectedItem?.is_approved ? 'Approved' : 'Pending'"></span>
+                                        </div>
+                                        <div class="flex items-center justify-between text-xs">
+                                            <span class="text-gray-600">Blacklisted</span>
+                                            <span class="font-bold" :class="item.blacklisted ? 'text-red-600' : 'text-slate-400'" x-text="selectedItem?.blacklisted ? 'Yes' : 'No'"></span>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div class="p-6 bg-gray-50 rounded-2xl border border-gray-100">
+                                    <h4 class="text-xs font-bold text-gray-400 uppercase tracking-widest mb-4">Bank Details</h4>
+                                    <div class="space-y-4">
+                                        <div>
+                                            <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Bank Name</label>
+                                            <p class="text-sm font-bold text-gray-900" x-text="selectedItem?.bank_name || '-'"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">Account Number</label>
+                                            <p class="text-sm font-bold text-gray-900" x-text="selectedItem?.bank_account_no || '-'"></p>
+                                        </div>
+                                        <div>
+                                            <label class="text-[10px] text-gray-400 font-bold uppercase block mb-1">IFSC Code</label>
+                                            <p class="text-sm font-bold text-gray-900 font-mono" x-text="selectedItem?.ifsc_code || '-'"></p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Modal Footer -->
+                    <div class="px-6 py-4 bg-gray-50 border-t flex items-center justify-end gap-3">
+                        <button @click="viewModalOpen = false" class="px-5 py-2 text-sm font-semibold text-gray-500 hover:text-gray-700 transition-colors">Close</button>
+                        <button @click="edit(selectedItem); viewModalOpen = false" class="px-5 py-2 bg-blue-600 text-white rounded-xl text-sm font-bold hover:bg-blue-700 transition-shadow hover:shadow-lg shadow-blue-200">
+                            Edit Vendor Profile
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </template>
 </div>
 
 <script>
@@ -166,6 +354,8 @@ function vendorData() {
     return {
         items: [],
         loading: false,
+        viewModalOpen: false,
+        selectedItem: null,
         filters: { search: '', vendor_type: '', is_approved: '' },
         pagination: { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 },
         
@@ -174,11 +364,10 @@ function vendorData() {
             try {
                 const params = new URLSearchParams();
                 
-                // Handle blacklisted filter
                 if (this.filters.is_approved === 'blacklisted') {
-                    params.append('blacklisted', '1'); // Show blacklisted vendors
+                    params.append('blacklisted', '1');
                 } else {
-                    params.append('blacklisted', '0'); // Exclude blacklisted vendors by default
+                    params.append('blacklisted', '0');
                 }
                 
                 if (this.filters.search) params.append('search', this.filters.search);
@@ -196,12 +385,11 @@ function vendorData() {
                 const data = await response.json();
 
                 if (!response.ok || !data || data.success !== true) {
-                    throw new Error((data && data.message) ? data.message : 'Failed to load vendors');
+                    throw new Error(data.message || 'Failed to load vendors');
                 }
 
                 this.items = (data && data.data && data.data.vendors) ? data.data.vendors : [];
                 
-                // Update pagination
                 if (data && data.data && data.data.pagination) {
                     this.pagination = {
                         current_page: data.data.pagination.current_page,
@@ -214,9 +402,8 @@ function vendorData() {
                 }
             } catch (error) {
                 console.error('Failed to load vendors:', error);
-                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to load vendors. Please try again.', type: 'error' } }));
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to load vendors.', type: 'error' } }));
                 this.items = [];
-                this.pagination = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
             } finally {
                 this.loading = false;
             }
@@ -231,11 +418,13 @@ function vendorData() {
         
         resetFilters() {
             this.filters = { search: '', vendor_type: '', is_approved: '' };
+            this.pagination.current_page = 1;
             this.loadData();
         },
         
-        openCreateModal() {
-            window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Create vendor form - Coming soon', type: 'info' } }));
+        viewDetails(item) {
+            this.selectedItem = item;
+            this.viewModalOpen = true;
         },
         
         edit(item) {
@@ -249,7 +438,6 @@ function vendorData() {
                     title: 'Block Vendor',
                     message: `Are you sure you want to block vendor "${item.vendor_name}"?\n\nThis action will prevent them from participating in new RFQs and POs.`,
                     confirmText: 'Block Vendor',
-                    cancelText: 'Cancel',
                     confirmColor: 'red',
                     onConfirm: async () => {
                         try {
@@ -263,7 +451,6 @@ function vendorData() {
                             });
                             
                             const data = await response.json();
-                            
                             if (response.ok && data.success) {
                                 window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Vendor blocked successfully.', type: 'success' } }));
                                 this.loadData();
@@ -271,8 +458,7 @@ function vendorData() {
                                 throw new Error(data.message || 'Failed to block vendor.');
                             }
                         } catch (error) {
-                            console.error('Error blocking vendor:', error);
-                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'An error occurred while blocking vendor.', type: 'error' } }));
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message, type: 'error' } }));
                         }
                     }
                 }

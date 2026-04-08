@@ -126,6 +126,12 @@ class VendorController extends Controller
             'contact_type'     => 'nullable|string|max:50',
             'contact_phone'    => 'nullable|string|max:20',
             'contact_email'    => 'nullable|email|max:100',
+            'contacts'               => 'nullable|array',
+            'contacts.*.contact_name' => 'nullable|string|max:100',
+            'contacts.*.contact_type' => 'nullable|string|max:50',
+            'contacts.*.contact_phone' => 'nullable|string|max:20',
+            'contacts.*.contact_email' => 'nullable|email|max:100',
+            'contacts.*.is_primary'  => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -143,7 +149,10 @@ class VendorController extends Controller
             // Auto-generate vendor code if not provided
             $vendorCode = $request->input('vendor_code');
             if (empty($vendorCode)) {
-                $vendorCode = $this->generateVendorCode($request->input('vendor_type', 'SUPPLIER'));
+                $vendorCode = $this->generateVendorCode(
+                    $request->input('vendor_type', 'SUPPLIER'),
+                    $request->input('vendor_name', '')
+                );
             }
 
             $vendor = Vendor::create(array_merge(
@@ -165,11 +174,27 @@ class VendorController extends Controller
                 [
                     'vendor_code' => $vendorCode,
                     'is_approved' => $request->input('is_approved', false),
-                    'blacklisted' => $request->input('blacklisted', false)
+                    'blacklisted' => $request->input('blacklisted', false),
+                    'approved_by' => $request->input('is_approved') ? $request->input('auth_user_id') : null,
+                    'approved_date' => $request->input('is_approved') ? now()->toDateString() : null,
                 ]
             ));
 
-            if ($request->filled('contact_name')) {
+            if ($request->has('contacts') && is_array($request->input('contacts'))) {
+                foreach ($request->input('contacts') as $contact) {
+                    if (!empty($contact['contact_name'])) {
+                        VendorContact::create([
+                            'vendor_id'    => $vendor->id,
+                            'contact_name' => $contact['contact_name'],
+                            'contact_type' => $contact['contact_type'] ?? 'PRIMARY',
+                            'phone'        => $contact['contact_phone'] ?? null,
+                            'email'        => $contact['contact_email'] ?? null,
+                            'is_primary'   => !empty($contact['is_primary']),
+                            'is_active'    => true,
+                        ]);
+                    }
+                }
+            } else if ($request->filled('contact_name')) {
                 VendorContact::create([
                     'vendor_id'    => $vendor->id,
                     'contact_name' => $request->input('contact_name'),
@@ -232,6 +257,12 @@ class VendorController extends Controller
             'contact_type'     => 'nullable|string|max:50',
             'contact_phone'    => 'nullable|string|max:20',
             'contact_email'    => 'nullable|email|max:100',
+            'contacts'               => 'nullable|array',
+            'contacts.*.contact_name' => 'nullable|string|max:100',
+            'contacts.*.contact_type' => 'nullable|string|max:50',
+            'contacts.*.contact_phone' => 'nullable|string|max:20',
+            'contacts.*.contact_email' => 'nullable|email|max:100',
+            'contacts.*.is_primary'  => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -283,8 +314,23 @@ class VendorController extends Controller
 
             $vendor->save();
 
-            // Update or Create Primary Contact
-            if ($request->has('contact_name')) {
+            if ($request->has('contacts') && is_array($request->input('contacts'))) {
+                // To safely update multiple, we overwrite existing for simplicity if an array is passed
+                VendorContact::where('vendor_id', $vendor->id)->delete();
+                foreach ($request->input('contacts') as $contact) {
+                    if (!empty($contact['contact_name'])) {
+                        VendorContact::create([
+                            'vendor_id'    => $vendor->id,
+                            'contact_name' => $contact['contact_name'],
+                            'contact_type' => $contact['contact_type'] ?? 'PRIMARY',
+                            'phone'        => $contact['contact_phone'] ?? null,
+                            'email'        => $contact['contact_email'] ?? null,
+                            'is_primary'   => !empty($contact['is_primary']),
+                            'is_active'    => true,
+                        ]);
+                    }
+                }
+            } else if ($request->has('contact_name')) {
                 VendorContact::updateOrCreate(
                     [
                         'vendor_id' => $vendor->id,
@@ -352,18 +398,44 @@ class VendorController extends Controller
     /**
      * Generate unique vendor code
      */
-    private function generateVendorCode(string $vendorType): string
+    private function generateVendorCode(string $vendorType, string $vendorName = ''): string
     {
+        $vendorTypeClean = strtoupper(trim($vendorType));
+
         // Determine prefix based on vendor type
-        $prefix = match($vendorType) {
-            'SUPPLIER' => 'SUP',
-            'SERVICE' => 'SRV',
-            'TRADER' => 'TRD',
-            default => 'VND'
-        };
+        if ($vendorTypeClean === 'SUPPLIER') {
+            $prefix = 'SUP';
+        } elseif (str_contains($vendorTypeClean, 'SERVICE')) {
+            $prefix = 'SRV';
+        } elseif ($vendorTypeClean === 'TRADER') {
+            $prefix = 'TRD';
+        } else {
+            // For custom types, generate a 3-letter prefix
+            $prefix = substr(preg_replace('/[^A-Z]/', '', $vendorTypeClean), 0, 3);
+
+            // Fallback to Vendor Name initials if type doesn't yield 3 letters
+            if (strlen($prefix) < 3 && !empty($vendorName)) {
+                $words = explode(' ', strtoupper(trim($vendorName)));
+                $prefix = '';
+                foreach ($words as $w) {
+                    if (preg_match('/[A-Z]/', $w, $m)) {
+                        $prefix .= $m[0];
+                    }
+                    if (strlen($prefix) >= 3) break;
+                }
+            }
+
+            // Final fallback
+            if (strlen($prefix) == 0) {
+                $prefix = 'VND';
+            } else {
+                $prefix = str_pad($prefix, 3, 'X');
+            }
+        }
 
         // Get the last vendor with this prefix
         $lastVendor = Vendor::where('vendor_code', 'like', $prefix . '-%')
+            ->orderBy(DB::raw('LENGTH(vendor_code)'), 'desc')
             ->orderBy('vendor_code', 'desc')
             ->first();
 
@@ -380,5 +452,4 @@ class VendorController extends Controller
         // Format with leading zeros (e.g., 0001)
         return sprintf('%s-%04d', $prefix, $newNumber);
     }
-
 }

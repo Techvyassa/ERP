@@ -115,13 +115,16 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Vendor Type <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.vendor_type" required
+                        <select x-model="temp.vendor_type" @change="form.vendor_type = $event.target.value === '_OTHER_' ? '' : $event.target.value" required
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select Type</option>
                             <option value="SUPPLIER">Supplier</option>
                             <option value="SERVICE">Service Provider</option>
                             <option value="TRADER">Trader</option>
+                            <option value="_OTHER_">Other (Type custom)</option>
                         </select>
+                        <input x-show="temp.vendor_type === '_OTHER_'" type="text" x-model="form.vendor_type" placeholder="Specify Vendor Type" required
+                            class="w-full mt-2 px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
 
                     <!-- GSTIN -->
@@ -149,13 +152,16 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             MSME Category
                         </label>
-                        <select x-model="form.msme_category"
+                        <select x-model="temp.msme_category" @change="form.msme_category = $event.target.value === '_OTHER_' ? '' : $event.target.value"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select Category</option>
                             <option value="MICRO">Micro</option>
                             <option value="SMALL">Small</option>
                             <option value="MEDIUM">Medium</option>
+                            <option value="_OTHER_">Other (Type custom)</option>
                         </select>
+                        <input x-show="temp.msme_category === '_OTHER_'" type="text" x-model="form.msme_category" placeholder="Specify MSME Category"
+                            class="w-full mt-2 px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                 </div>
             </div>
@@ -169,14 +175,17 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Payment Terms <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.payment_terms" required
+                        <select x-model="temp.payment_terms" @change="form.payment_terms = $event.target.value === '_OTHER_' ? '' : $event.target.value" required
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select Terms</option>
                             <option value="NET30">NET30</option>
                             <option value="NET60">NET60</option>
                             <option value="ADVANCE">Advance</option>
                             <option value="COD">Cash on Delivery</option>
+                            <option value="_OTHER_">Other (Type custom)</option>
                         </select>
+                        <input x-show="temp.payment_terms === '_OTHER_'" type="text" x-model="form.payment_terms" placeholder="Specify Payment Terms" required
+                            class="w-full mt-2 px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
 
                     <!-- Credit Days -->
@@ -195,13 +204,43 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             Currency <span class="text-red-500">*</span>
                         </label>
-                        <select x-model="form.currency_id" required
+                        <select x-model="temp.currency_id" @change="handleCurrencyChange" required
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select Currency</option>
                             <template x-for="curr in currencies" :key="curr.id">
                                 <option :value="curr.id" x-text="curr.currency_code + ' - ' + curr.currency_name"></option>
                             </template>
+                            <option value="_OTHER_">Other (Add New Currency)</option>
                         </select>
+
+                        <!-- Create New Currency Inline Form -->
+                        <div x-show="temp.currency_id === '_OTHER_'" class="mt-3 p-4 bg-gray-50 rounded-lg border border-gray-200">
+                            <h4 class="text-sm font-semibold mb-3">Add New Currency</h4>
+                            <div class="grid grid-cols-2 gap-3 mb-3">
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Code (e.g. GBP) *</label>
+                                    <input type="text" x-model="newCurrency.currency_code" maxlength="3"
+                                        class="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm">
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Symbol (e.g. £) *</label>
+                                    <input type="text" x-model="newCurrency.currency_symbol" maxlength="5"
+                                        class="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm">
+                                </div>
+                            </div>
+                            <div class="mb-3">
+                                <label class="block text-xs font-medium text-gray-700 mb-1">Name (e.g. British Pound) *</label>
+                                <input type="text" x-model="newCurrency.currency_name"
+                                    class="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm">
+                            </div>
+                            <div class="flex justify-end gap-2">
+                                <button type="button" @click="temp.currency_id = ''; form.currency_id = ''" class="px-3 py-1.5 text-xs border rounded-md hover:bg-gray-100">Cancel</button>
+                                <button type="button" @click="saveNewCurrency" :disabled="creatingCurrency" class="px-3 py-1.5 text-xs bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50">
+                                    <span x-show="!creatingCurrency">Save & Select</span>
+                                    <span x-show="creatingCurrency">Saving...</span>
+                                </button>
+                            </div>
+                        </div>
                     </div>
 
                     <!-- INCO Terms -->
@@ -209,51 +248,72 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">
                             INCO Terms
                         </label>
-                        <select x-model="form.delivery_terms"
+                        <select x-model="temp.delivery_terms" @change="form.delivery_terms = $event.target.value === '_OTHER_' ? '' : $event.target.value"
                             class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <option value="">Select Terms</option>
                             <option value="EXW">EXW - Ex Works</option>
                             <option value="DDP">DDP - Delivered Duty Paid</option>
                             <option value="CIF">CIF - Cost Insurance Freight</option>
                             <option value="FOB">FOB - Free on Board</option>
+                            <option value="_OTHER_">Other (Type custom)</option>
                         </select>
+                        <input x-show="temp.delivery_terms === '_OTHER_'" type="text" x-model="form.delivery_terms" placeholder="Specify INCO Terms"
+                            class="w-full mt-2 px-4 py-2 border border-blue-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
                 </div>
             </div>
 
-            <!-- Primary Contact -->
+            <!-- Contacts List -->
             <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Primary Contact (Optional)</h3>
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
-                    <!-- Contact Name -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Contact Name
-                        </label>
-                        <input type="text" x-model="form.contact_name" maxlength="100"
-                            placeholder="Cantact Name"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
+                <div class="flex items-center justify-between mb-4 pb-2 border-b">
+                    <h3 class="text-lg font-semibold text-gray-900">Contact Information</h3>
+                    <button type="button" @click="addContact" class="px-3 py-1.5 text-sm bg-blue-50 text-blue-600 rounded-md hover:bg-blue-100 transition-colors">
+                        <i class="fas fa-plus mr-1"></i> Add Contact
+                    </button>
+                </div>
 
-                    <!-- Contact Email -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Contact Email
-                        </label>
-                        <input type="email" x-model="form.contact_email" maxlength="100"
-                            placeholder="[EMAIL_ADDRESS]"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
+                <div class="space-y-4">
+                    <template x-for="(contact, index) in contacts" :key="contact.id">
+                        <div class="p-4 bg-gray-50 border border-gray-200 rounded-lg relative group">
+                            <!-- Header Action -->
+                            <div class="absolute top-4 right-4 flex items-center space-x-3">
+                                <label class="flex items-center space-x-2 text-sm cursor-pointer">
+                                    <input type="radio" name="primary_contact" :value="contact.id" x-model="primaryContactId" @change="setPrimaryContact(contact)" class="text-blue-600 focus:ring-blue-500 w-4 h-4">
+                                    <span class="font-medium text-gray-700">Default/Primary</span>
+                                </label>
+                                <button type="button" @click="removeContact(index)" x-show="contacts.length > 1" class="text-red-500 hover:text-red-700 bg-white p-1 rounded-full shadow-sm hover:bg-red-50">
+                                    <i class="fas fa-trash-alt px-1"></i>
+                                </button>
+                            </div>
 
-                    <!-- Contact Phone -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Contact Phone
-                        </label>
-                        <input type="text" x-model="form.contact_phone" maxlength="20"
-                            placeholder="+1 234 567 8900"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                    </div>
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mt-2 pr-24">
+                                <!-- Contact Name -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Contact Name</label>
+                                    <input type="text" x-model="contact.contact_name" maxlength="100" placeholder="Contact Name"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <!-- Contact Type -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Type/Role</label>
+                                    <input type="text" x-model="contact.contact_type" maxlength="50" placeholder="e.g. Sales, Finance, Technical"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <!-- Contact Email -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Email</label>
+                                    <input type="email" x-model="contact.contact_email" maxlength="100" placeholder="[EMAIL_ADDRESS]"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                                <!-- Contact Phone -->
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-700 mb-1">Phone</label>
+                                    <input type="text" x-model="contact.contact_phone" maxlength="20" placeholder="+1 234 567 8900"
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent text-sm">
+                                </div>
+                            </div>
+                        </div>
+                    </template>
                 </div>
             </div>
 
@@ -363,6 +423,28 @@
         return {
             loading: false,
             currencies: [],
+            temp: {
+                vendor_type: 'SUPPLIER',
+                msme_category: '',
+                payment_terms: 'NET30',
+                delivery_terms: '',
+                currency_id: ''
+            },
+            newCurrency: {
+                currency_code: '',
+                currency_symbol: '',
+                currency_name: ''
+            },
+            creatingCurrency: false,
+            primaryContactId: Date.now(),
+            contacts: [{
+                id: Date.now(),
+                contact_name: '',
+                contact_email: '',
+                contact_phone: '',
+                contact_type: 'PRIMARY',
+                is_primary: true
+            }],
             form: {
                 vendor_code: '',
                 vendor_name: '',
@@ -377,17 +459,13 @@
                 bank_name: '',
                 bank_account_no: '',
                 ifsc_code: '',
-                is_approved: false,
-                rating_score: '',
+                is_approved: true,
+                rating_score: 0,
                 blacklisted: false,
                 is_active: true,
                 auto_generate_code: false,
                 manual_prefix: 'VND',
-                manual_number: '001',
-                contact_name: '',
-                contact_type: 'PRIMARY',
-                contact_phone: '',
-                contact_email: ''
+                manual_number: '001'
             },
 
             handleAutoGenerateChange() {
@@ -404,6 +482,102 @@
                 const prefix = this.form.manual_prefix || 'VND';
                 const number = this.form.manual_number || '001';
                 this.form.vendor_code = `${prefix}-${number}`;
+            },
+
+            addContact() {
+                this.contacts.push({
+                    id: Date.now(),
+                    contact_name: '',
+                    contact_email: '',
+                    contact_phone: '',
+                    contact_type: 'SUPPORT',
+                    is_primary: false
+                });
+            },
+
+            removeContact(index) {
+                if (this.contacts.length > 1) {
+                    this.contacts.splice(index, 1);
+                }
+            },
+
+            setPrimaryContact(contact) {
+                this.contacts.forEach(c => {
+                    c.is_primary = false;
+                    if (c.contact_type === 'PRIMARY') c.contact_type = 'SUPPORT';
+                });
+                contact.is_primary = true;
+                contact.contact_type = 'PRIMARY';
+                this.primaryContactId = contact.id;
+            },
+
+            handleCurrencyChange() {
+                if (this.temp.currency_id === '_OTHER_') {
+                    this.form.currency_id = '';
+                } else {
+                    this.form.currency_id = this.temp.currency_id;
+                }
+            },
+
+            async saveNewCurrency() {
+                if (!this.newCurrency.currency_code || !this.newCurrency.currency_name) {
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: {
+                            message: 'Currency Code and Name are required.',
+                            type: 'error'
+                        }
+                    }));
+                    return;
+                }
+                this.creatingCurrency = true;
+                try {
+                    const response = await fetch('/api/v1/currencies', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify({
+                            currency_code: this.newCurrency.currency_code,
+                            currency_symbol: this.newCurrency.currency_symbol,
+                            currency_name: this.newCurrency.currency_name,
+                            is_active: true
+                        })
+                    });
+                    const data = await response.json();
+                    if (!response.ok || !data || data.success !== true) throw new Error((data && data.message) ? data.message : 'Error creating currency');
+
+                    const newCurr = (data.data && data.data.currency) ? data.data.currency : data.data;
+                    if (newCurr && newCurr.id) {
+                        this.currencies.push(newCurr);
+                        this.form.currency_id = newCurr.id;
+                        this.temp.currency_id = newCurr.id;
+                        this.newCurrency = {
+                            currency_code: '',
+                            currency_symbol: '',
+                            currency_name: ''
+                        };
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: 'Currency created dynamically.',
+                                type: 'success'
+                            }
+                        }));
+                    } else {
+                        throw new Error('Invalid response structure format after creation.');
+                    }
+                } catch (error) {
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: {
+                            message: error.message || 'Failed to create currency.',
+                            type: 'error'
+                        }
+                    }));
+                } finally {
+                    this.creatingCurrency = false;
+                }
             },
 
             async loadDropdowns() {
@@ -449,7 +623,8 @@
                 try {
                     // Prepare form data - remove helper fields
                     const submitData = {
-                        ...this.form
+                        ...this.form,
+                        contacts: this.contacts // include multiple contacts array
                     };
                     delete submitData.manual_prefix;
                     delete submitData.manual_number;
