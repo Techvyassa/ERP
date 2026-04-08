@@ -174,6 +174,20 @@ class InspectionLot extends Model
     }
 
     /**
+     * Scope: Exclude lots whose source GRN is still PROVISIONAL (not yet approved)
+     */
+    public function scopeExcludeProvisionalGrn($query)
+    {
+        return $query->where(function ($q) {
+            // PRODUCTION lots have no GRN — always include
+            $q->where('source_type', 'PRODUCTION')
+              ->orWhereNull('grn_id')
+              // GRN lots: only include when GRN is approved (not PROVISIONAL)
+              ->orWhereHas('grn', fn ($g) => $g->where('status', '!=', 'PROVISIONAL'));
+        });
+    }
+
+    /**
      * Scope: Pending lots
      */
     public function scopePending($query)

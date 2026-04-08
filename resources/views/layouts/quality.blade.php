@@ -27,6 +27,7 @@
         [x-cloak] { display: none !important; }
         body { font-family: 'Inter', sans-serif; }
     </style>
+    <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
 <body class="bg-gray-50" x-data="{ sidebarOpen: true, user: {} }" x-init="user = JSON.parse(localStorage.getItem('user') || '{}');">

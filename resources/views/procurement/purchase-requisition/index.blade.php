@@ -122,13 +122,83 @@
         </div>
     </div>
 
+    <!-- Merge Modal -->
+    <div x-show="showMergeModal" x-cloak class="fixed inset-0 z-50 flex items-center justify-center" style="display:none;">
+        <div class="fixed inset-0 bg-gray-900 bg-opacity-50" @click="showMergeModal = false"></div>
+        <div class="relative bg-white rounded-xl shadow-xl w-full max-w-2xl max-h-[90vh] overflow-y-auto z-10">
+            <div class="flex items-center justify-between p-6 border-b">
+                <div>
+                    <p class="text-xs text-gray-500 uppercase tracking-wider">Merge Purchase Requisitions</p>
+                    <p class="text-lg font-bold text-gray-800 mt-1">Select DRAFT PRs to merge</p>
+                </div>
+                <button @click="showMergeModal = false" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined text-2xl">close</span>
+                </button>
+            </div>
+            <div class="p-6 space-y-4">
+                <p class="text-sm text-gray-500">Select at least 2 DRAFT PRs. Items with the same material will have their quantities summed in the new merged PR. The original PRs will be hidden.</p>
+                <div class="border rounded-lg divide-y max-h-60 overflow-y-auto">
+                    <template x-for="pr in draftItems" :key="pr.id">
+                        <label class="flex items-center gap-3 px-4 py-3 hover:bg-gray-50 cursor-pointer">
+                            <input type="checkbox" :value="pr.id" x-model="mergeSelectedIds"
+                                   class="w-4 h-4 text-purple-600 rounded border-gray-300 focus:ring-purple-500">
+                            <div class="flex-1 min-w-0">
+                                <p class="text-sm font-semibold text-blue-600" x-text="pr.pr_number"></p>
+                                <p class="text-xs text-gray-500" x-text="pr.department_name + ' · ' + pr.priority + ' · ' + formatDate(pr.required_date)"></p>
+                            </div>
+                            <span class="text-xs bg-gray-100 text-gray-600 px-2 py-0.5 rounded-full" x-text="(pr.line_count || 0) + ' item(s)'"></span>
+                        </label>
+                    </template>
+                </div>
+                <div x-show="mergePreview.length > 0">
+                    <p class="text-sm font-semibold text-gray-700 mb-2">Preview — Merged Line Items</p>
+                    <div class="overflow-x-auto border rounded-lg">
+                        <table class="min-w-full text-xs divide-y divide-gray-200">
+                            <thead class="bg-gray-50">
+                                <tr>
+                                    <th class="px-3 py-2 text-left text-gray-500">Item</th>
+                                    <th class="px-3 py-2 text-right text-gray-500">Qty</th>
+                                    <th class="px-3 py-2 text-left text-gray-500">UOM</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <template x-for="(line, i) in mergePreview" :key="i">
+                                    <tr>
+                                        <td class="px-3 py-2 font-medium" x-text="line.item_name"></td>
+                                        <td class="px-3 py-2 text-right" x-text="line.quantity"></td>
+                                        <td class="px-3 py-2 text-gray-500" x-text="line.uom"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            <div class="p-4 border-t flex justify-end gap-3">
+                <button @click="showMergeModal = false" class="px-6 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">Cancel</button>
+                <button @click="confirmMerge()"
+                        :disabled="mergeSelectedIds.length < 2 || merging"
+                        class="px-6 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors disabled:opacity-50 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm" x-show="!merging">merge</span>
+                    <div x-show="merging" class="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span x-text="merging ? 'Merging...' : 'Merge ' + mergeSelectedIds.length + ' PRs'"></span>
+                </button>
+            </div>
+        </div>
+    </div>
+
     <div class="bg-white rounded-xl shadow p-6">
-        <div class="flex items-center justify-between mb-6">
             <div>
                 <h2 class="text-2xl font-bold text-gray-900">Purchase Requisitions</h2>
                 <p class="text-gray-600 mt-1">Manage purchase requisition requests</p>
             </div>
             <div class="flex items-center space-x-3">
+                <button @click="openMergeModal()"
+                        x-show="draftItems.length >= 2"
+                        x-cloak
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                    <span class="material-symbols-outlined mr-2">merge</span>Merge PRs
+                </button>
                 <a href="{{ url("/org/{$organization->org_slug}/procurement/purchase-requisition/create") }}"
                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center">
                     <span class="material-symbols-outlined mr-2">add</span>Create Requisition
@@ -244,6 +314,12 @@
                                             <span class="material-symbols-outlined text-sm mr-1">edit</span>Edit
                                         </a>
                                     </template>
+                                    <template x-if="item.status === 'REJECTED'">
+                                        <button @click="revertToDraft(item.id)"
+                                                class="inline-flex items-center px-3 py-1.5 bg-amber-50 text-amber-700 hover:bg-amber-100 rounded transition-colors" title="Move to Draft">
+                                            <span class="material-symbols-outlined text-sm mr-1">undo</span>Draft
+                                        </button>
+                                    </template>
                                 </td>
                             </tr>
                         </template>
@@ -278,6 +354,90 @@ function purchaseRequisitionData() {
         toastMessage: '',
         toastType: 'success',
 
+        // Merge state
+        showMergeModal: false,
+        mergeSelectedIds: [],
+        merging: false,
+        _draftDetails: {},   // id -> full PR with line_items (fetched on demand)
+
+        get draftItems() {
+            return this.items.filter(i => i.status === 'DRAFT');
+        },
+
+        get mergePreview() {
+            if (this.mergeSelectedIds.length < 2) return [];
+            const merged = {};
+            for (const id of this.mergeSelectedIds) {
+                const detail = this._draftDetails[id];
+                if (!detail) continue;
+                for (const line of (detail.line_items || [])) {
+                    const key = line.material_id ? 'mat_' + line.material_id : 'name_' + (line.item_name || '').toLowerCase().trim();
+                    if (merged[key]) {
+                        merged[key].quantity = parseFloat((merged[key].quantity + parseFloat(line.quantity)).toFixed(3));
+                    } else {
+                        merged[key] = {
+                            item_name: line.item_name,
+                            quantity: parseFloat(line.quantity),
+                            uom: line.uom?.uom_name || '',
+                        };
+                    }
+                }
+            }
+            return Object.values(merged);
+        },
+
+        async openMergeModal() {
+            this.mergeSelectedIds = [];
+            this._draftDetails = {};
+            this.showMergeModal = true;
+            // Pre-fetch details for all draft items so preview works
+            await Promise.all(this.draftItems.map(pr => this._fetchDraftDetail(pr.id)));
+        },
+
+        async _fetchDraftDetail(id) {
+            if (this._draftDetails[id]) return;
+            try {
+                const res = await fetch('/api/v1/purchase-requisitions/' + id, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const json = await res.json();
+                if (json.success) {
+                    this._draftDetails[id] = json.data.purchase_requisition;
+                }
+            } catch (e) { /* silent */ }
+        },
+
+        async confirmMerge() {
+            if (this.mergeSelectedIds.length < 2) return;
+            if (!confirm('Merge ' + this.mergeSelectedIds.length + ' PRs into a new PR? The original PRs will be hidden.')) return;
+            this.merging = true;
+            try {
+                const res = await fetch('/api/v1/purchase-requisitions/merge', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                    body: JSON.stringify({ pr_ids: this.mergeSelectedIds }),
+                });
+                const json = await res.json();
+                if (json.success) {
+                    this.toast(json.message, 'success');
+                    this.showMergeModal = false;
+                    this.loadData();
+                } else {
+                    this.toast(json.message || 'Merge failed', 'error');
+                }
+            } catch (e) {
+                this.toast('Network error. Please try again.', 'error');
+            } finally {
+                this.merging = false;
+            }
+        },
+
         async loadData() {
             this.loading = true;
             try {
@@ -306,6 +466,7 @@ function purchaseRequisitionData() {
                         required_date:    pr.required_date,
                         priority:         pr.priority,
                         status:           pr.status,
+                        line_count:       pr.line_items_count ?? (pr.line_items?.length ?? 0),
                     }));
                     this.pagination = {
                         current_page: paged.current_page,
@@ -399,6 +560,30 @@ function purchaseRequisitionData() {
                 }
             } catch (e) {
                 console.error('Failed to send for approval:', e);
+                this.toast('Network error. Please try again.', 'error');
+            }
+        },
+
+        async revertToDraft(id) {
+            if (!confirm('Move this rejected PR back to Draft?')) return;
+            try {
+                const res = await fetch('/api/v1/purchase-requisitions/' + id + '/revert-to-draft', {
+                    method: 'PATCH',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content'),
+                    },
+                });
+                const json = await res.json();
+                if (json.success) {
+                    this.toast('PR moved back to Draft', 'success');
+                    this.loadData();
+                } else {
+                    this.toast(json.message || 'Failed to revert to draft', 'error');
+                }
+            } catch (e) {
                 this.toast('Network error. Please try again.', 'error');
             }
         },

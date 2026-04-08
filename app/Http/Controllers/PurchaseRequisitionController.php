@@ -8,6 +8,7 @@ use App\Models\Tenant\Material;
 use App\Models\Tenant\UOM;
 use App\Models\Tenant\Warehouse;
 use App\Models\Tenant\User;
+use App\Models\Tenant\PoLineItem;
 use App\Models\Control\Organization;
 use App\Mail\PurchaseRequisitionMail;
 use Illuminate\Http\JsonResponse;
@@ -244,19 +245,19 @@ class PurchaseRequisitionController extends Controller
             ], 404);
         }
 
-        if ($pr->status !== 'DRAFT' && $pr->status !== 'PENDING_APPROVAL') {
+        if ($pr->status !== 'DRAFT' && $pr->status !== 'PENDING_APPROVAL' && $pr->status !== 'REJECTED') {
             return response()->json([
                 'success' => false,
                 'error'   => ['code' => 'NOT_EDITABLE', 'details' => []],
-                'message' => 'Only DRAFT or PENDING_APPROVAL purchase requisitions can be edited',
+                'message' => 'Only DRAFT, PENDING_APPROVAL, or REJECTED purchase requisitions can be edited',
                 'request_id' => $requestId,
                 'timestamp'  => now()->toIso8601String(),
             ], 422);
         }
 
         $validator = Validator::make($request->all(), [
-            'requested_by'        => 'required|integer|exists:tenant.users,id',
-            'department_id'       => 'required|integer|exists:tenant.department_master,id',
+            'requested_by'        => 'nullable|integer|exists:tenant.users,id',
+            'department_id'       => 'nullable|integer|exists:tenant.department_master,id',
             'required_date'       => 'required|date',
             'priority'            => 'required|in:LOW,MEDIUM,HIGH,EMERGENCY',
             'status'              => 'nullable|in:DRAFT,PENDING_APPROVAL,PENDING',
@@ -290,8 +291,8 @@ class PurchaseRequisitionController extends Controller
             DB::beginTransaction();
 
             $pr->update([
-                'requested_by'        => $request->input('requested_by'),
-                'department_id'       => $request->input('department_id'),
+                'requested_by'        => $request->input('requested_by') ?: $pr->requested_by,
+                'department_id'       => $request->input('department_id') ?: $pr->department_id,
                 'cost_center_code'    => $request->input('cost_center_code'),
                 'required_date'       => $request->input('required_date'),
                 'priority'            => $request->input('priority'),
@@ -342,6 +343,25 @@ class PurchaseRequisitionController extends Controller
                 'request_id' => $requestId,
                 'timestamp'  => now()->toIso8601String(),
             ], 500);
+        }
+    }
+
+    /**
+     * PATCH /api/v1/purchase-requisitions/{id}/revert-to-draft
+     * REJECTED → DRAFT
+     */
+    public function revertToDraft(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $pr = PurchaseRequisition::findOrFail($id);
+            if ($pr->status !== 'REJECTED') {
+                return response()->json(['success' => false, 'message' => 'Only REJECTED PRs can be reverted to Draft.', 'request_id' => $requestId], 422);
+            }
+            $pr->update(['status' => 'DRAFT']);
+            return response()->json(['success' => true, 'data' => ['purchase_requisition' => $pr], 'message' => 'PR reverted to Draft.', 'request_id' => $requestId]);
+        } catch (\Exception $e) {
+            return response()->json(['success' => false, 'message' => 'Failed: ' . $e->getMessage(), 'request_id' => $requestId], 500);
         }
     }
 
@@ -466,6 +486,48 @@ class PurchaseRequisitionController extends Controller
                 'success' => false,
                 'error'   => ['code' => 'FETCH_FAILED', 'details' => []],
                 'message' => 'Failed to retrieve materials: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp'  => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * GET /api/v1/purchase-requisitions/master/latest-po-price/{materialId}
+     * Returns uom_id, unit_price from the most recent PO line for a material (any status).
+     */
+    public function getLatestPoPrice(Request $request, int $materialId): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $line = PoLineItem::where('po_line_items.material_id', $materialId)
+                ->join('purchase_orders', 'purchase_orders.id', '=', 'po_line_items.po_id')
+                ->orderByDesc('purchase_orders.po_date')
+                ->orderByDesc('purchase_orders.id')
+                ->select(
+                    'po_line_items.uom_id',
+                    'po_line_items.unit_price',
+                    'purchase_orders.po_date',
+                    'purchase_orders.po_number'
+                )
+                ->first();
+
+            return response()->json([
+                'success' => true,
+                'data'    => $line ? [
+                    'uom_id'     => $line->uom_id,
+                    'unit_price' => $line->unit_price,
+                    'po_date'    => $line->po_date,
+                    'po_number'  => $line->po_number,
+                ] : null,
+                'request_id' => $requestId,
+                'timestamp'  => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error'   => ['code' => 'FETCH_FAILED', 'details' => []],
+                'message' => 'Failed to retrieve latest PO price: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp'  => now()->toIso8601String(),
             ], 500);
@@ -685,6 +747,140 @@ class PurchaseRequisitionController extends Controller
                 'message' => 'Failed to send PR: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Merge multiple DRAFT PRs into a new PR (same material_id → sum qty).
+     * Old PRs are soft-deleted (hidden).
+     * POST /api/v1/purchase-requisitions/merge
+     */
+    public function merge(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'pr_ids'   => 'required|array|min:2',
+            'pr_ids.*' => 'integer|exists:tenant.purchase_requisitions,id',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error'   => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp'  => now()->toIso8601String(),
+            ], 422);
+        }
+
+        try {
+            $prIds = $request->input('pr_ids');
+
+            // Load all selected PRs with line items
+            $prs = PurchaseRequisition::with(['lineItems.uom', 'lineItems.material'])
+                ->whereIn('id', $prIds)
+                ->get();
+
+            // Ensure all are DRAFT
+            $nonDraft = $prs->where('status', '!=', 'DRAFT');
+            if ($nonDraft->isNotEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error'   => ['code' => 'INVALID_STATUS', 'details' => ['non_draft_ids' => $nonDraft->pluck('id')]],
+                    'message' => 'Only DRAFT purchase requisitions can be merged',
+                    'request_id' => $requestId,
+                    'timestamp'  => now()->toIso8601String(),
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Use the first PR as the base for header fields
+            $base = $prs->first();
+
+            // Merge line items: group by material_id (if set) or item_name, sum qty
+            $mergedLines = [];
+            foreach ($prs as $pr) {
+                foreach ($pr->lineItems as $line) {
+                    $key = $line->material_id
+                        ? 'mat_' . $line->material_id
+                        : 'name_' . strtolower(trim($line->item_name));
+
+                    if (isset($mergedLines[$key])) {
+                        $mergedLines[$key]['quantity'] += (float) $line->quantity;
+                    } else {
+                        $mergedLines[$key] = [
+                            'material_id'          => $line->material_id,
+                            'item_name'            => $line->item_name,
+                            'description'          => $line->description,
+                            'quantity'             => (float) $line->quantity,
+                            'uom_id'               => $line->uom_id,
+                            'estimated_unit_price' => $line->estimated_unit_price,
+                            'warehouse_id'         => $line->warehouse_id,
+                            'purpose'              => $line->purpose,
+                        ];
+                    }
+                }
+            }
+
+            // Create new merged PR
+            $newPr = PurchaseRequisition::create([
+                'pr_number'           => PurchaseRequisition::generatePrNumber(),
+                'requested_by'        => $base->requested_by,
+                'department_id'       => $base->department_id,
+                'cost_center_code'    => $base->cost_center_code,
+                'pr_date'             => now()->toDateString(),
+                'required_date'       => $base->required_date,
+                'priority'            => $base->priority,
+                'budget_code'         => $base->budget_code,
+                'suggested_vendor_id' => $base->suggested_vendor_id,
+                'status'              => 'DRAFT',
+                'justification'       => $base->justification,
+                'remarks'             => 'Merged from: ' . $prs->pluck('pr_number')->implode(', '),
+                'created_by'          => $base->created_by,
+            ]);
+
+            foreach (array_values($mergedLines) as $idx => $lineData) {
+                PrLineItem::create([
+                    'pr_id'                => $newPr->id,
+                    'line_number'          => $idx + 1,
+                    'sort_order'           => $idx + 1,
+                    'material_id'          => $lineData['material_id'],
+                    'item_name'            => $lineData['item_name'],
+                    'description'          => $lineData['description'],
+                    'quantity'             => $lineData['quantity'],
+                    'uom_id'              => $lineData['uom_id'],
+                    'estimated_unit_price' => $lineData['estimated_unit_price'],
+                    'warehouse_id'         => $lineData['warehouse_id'],
+                    'purpose'              => $lineData['purpose'],
+                ]);
+            }
+
+            // Soft-delete (hide) the original PRs
+            PurchaseRequisition::whereIn('id', $prIds)->delete();
+
+            DB::commit();
+
+            $newPr->load(['requestedBy', 'department', 'lineItems.material', 'lineItems.uom']);
+
+            return response()->json([
+                'success' => true,
+                'data'    => ['purchase_requisition' => $newPr],
+                'message' => 'Purchase requisitions merged successfully into ' . $newPr->pr_number,
+                'request_id' => $requestId,
+                'timestamp'  => now()->toIso8601String(),
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'error'   => ['code' => 'MERGE_FAILED', 'details' => []],
+                'message' => 'Failed to merge purchase requisitions: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp'  => now()->toIso8601String(),
             ], 500);
         }
     }
