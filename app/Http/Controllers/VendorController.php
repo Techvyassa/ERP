@@ -3,9 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant\Vendor;
+use App\Models\Tenant\VendorContact;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Str;
 
 class VendorController extends Controller
@@ -120,6 +122,10 @@ class VendorController extends Controller
             'bank_account_no'  => 'nullable|string|max:30',
             'ifsc_code'        => 'nullable|string|max:11',
             'rating_score'     => 'nullable|numeric|min:0|max:100',
+            'contact_name'     => 'nullable|string|max:100',
+            'contact_type'     => 'nullable|string|max:50',
+            'contact_phone'    => 'nullable|string|max:20',
+            'contact_email'    => 'nullable|email|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -133,6 +139,7 @@ class VendorController extends Controller
         }
 
         try {
+            DB::beginTransaction();
             // Auto-generate vendor code if not provided
             $vendorCode = $request->input('vendor_code');
             if (empty($vendorCode)) {
@@ -162,6 +169,20 @@ class VendorController extends Controller
                 ]
             ));
 
+            if ($request->filled('contact_name')) {
+                VendorContact::create([
+                    'vendor_id'    => $vendor->id,
+                    'contact_name' => $request->input('contact_name'),
+                    'contact_type' => $request->input('contact_type', 'PRIMARY'),
+                    'phone'        => $request->input('contact_phone'),
+                    'email'        => $request->input('contact_email'),
+                    'is_primary'   => true,
+                    'is_active'    => true,
+                ]);
+            }
+
+            DB::commit();
+
             return response()->json([
                 'success' => true,
                 'data' => ['vendor' => $vendor],
@@ -170,6 +191,7 @@ class VendorController extends Controller
                 'timestamp' => now()->toIso8601String(),
             ], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'error' => ['code' => 'VENDOR_CREATION_FAILED', 'details' => []],
@@ -206,6 +228,10 @@ class VendorController extends Controller
             'approved_date'    => 'nullable|date',
             'rating_score'     => 'nullable|numeric|min:0|max:100',
             'blacklisted'      => 'sometimes|boolean',
+            'contact_name'     => 'nullable|string|max:100',
+            'contact_type'     => 'nullable|string|max:50',
+            'contact_phone'    => 'nullable|string|max:20',
+            'contact_email'    => 'nullable|email|max:100',
         ]);
 
         if ($validator->fails()) {
@@ -256,6 +282,23 @@ class VendorController extends Controller
             }
 
             $vendor->save();
+
+            // Update or Create Primary Contact
+            if ($request->has('contact_name')) {
+                VendorContact::updateOrCreate(
+                    [
+                        'vendor_id' => $vendor->id,
+                        'contact_type' => 'PRIMARY',
+                    ],
+                    [
+                        'contact_name' => $request->input('contact_name'),
+                        'phone' => $request->input('contact_phone'),
+                        'email' => $request->input('contact_email'),
+                        'is_primary' => true,
+                        'is_active' => true,
+                    ]
+                );
+            }
 
             return response()->json([
                 'success' => true,

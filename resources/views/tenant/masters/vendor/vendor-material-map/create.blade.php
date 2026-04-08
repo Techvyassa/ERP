@@ -198,7 +198,7 @@ function mapForm() {
                 this.materials = (materialData && materialData.data && materialData.data.materials) ? materialData.data.materials : [];
             } catch (error) {
                 console.error('Failed to load dropdowns:', error);
-                alert('Failed to load vendors or materials. Please refresh the page.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Failed to load vendors or materials. Please refresh the page.', type: 'error' } }));
             }
         },
         
@@ -221,12 +221,14 @@ function mapForm() {
                     throw new Error((data && data.message) ? data.message : 'Failed to create mapping');
                 }
 
-                alert('Vendor-material mapping created successfully!');
-                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}';
-                window.location.href = baseUrl;
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Vendor-material mapping created successfully!', type: 'success' } }));
+                const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}";
+                setTimeout(() => {
+                    window.location.href = baseUrl;
+                }, 1500);
             } catch (error) {
                 console.error('Failed to create mapping:', error);
-                alert(error.message || 'Failed to create mapping. Please try again.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to create mapping. Please try again.', type: 'error' } }));
             } finally {
                 this.loading = false;
             }

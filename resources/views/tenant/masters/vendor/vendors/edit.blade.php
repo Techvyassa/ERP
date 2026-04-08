@@ -17,8 +17,8 @@
                     <h2 class="text-2xl font-bold text-gray-900">Edit Vendor</h2>
                     <p class="text-gray-600 mt-1">Update vendor information</p>
                 </div>
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}" 
-                   class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}"
+                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                     <i class="fas fa-arrow-left mr-2"></i>Back to List
                 </a>
             </div>
@@ -45,8 +45,8 @@
                                 Vendor Code <span class="text-red-500">*</span>
                             </label>
                             <input type="text" x-model="form.vendor_code" required maxlength="20"
-                                   placeholder="VND-001"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="VND-001"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
                         <!-- Vendor Name -->
@@ -55,8 +55,8 @@
                                 Vendor Name <span class="text-red-500">*</span>
                             </label>
                             <input type="text" x-model="form.vendor_name" required maxlength="200"
-                                   placeholder="Legal company name"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="Legal company name"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
                         <!-- Vendor Type -->
@@ -65,7 +65,7 @@
                                 Vendor Type <span class="text-red-500">*</span>
                             </label>
                             <select x-model="form.vendor_type" required
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">Select Type</option>
                                 <option value="SUPPLIER">Supplier</option>
                                 <option value="SERVICE">Service Provider</option>
@@ -79,8 +79,8 @@
                                 GSTIN
                             </label>
                             <input type="text" x-model="form.gstin" maxlength="20"
-                                   placeholder="15-digit GSTIN (unique)"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="15-digit GSTIN (unique)"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
                         <!-- PAN Number -->
@@ -89,8 +89,8 @@
                                 PAN Number
                             </label>
                             <input type="text" x-model="form.pan_number" maxlength="10"
-                                   placeholder="10-char PAN"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="10-char PAN"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
                         <!-- MSME Category -->
@@ -99,7 +99,7 @@
                                 MSME Category
                             </label>
                             <select x-model="form.msme_category"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">Select Category</option>
                                 <option value="MICRO">Micro</option>
                                 <option value="SMALL">Small</option>
@@ -119,7 +119,7 @@
                                 Payment Terms <span class="text-red-500">*</span>
                             </label>
                             <select x-model="form.payment_terms" required
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">Select Terms</option>
                                 <option value="NET30">NET30</option>
                                 <option value="NET60">NET60</option>
@@ -134,8 +134,8 @@
                                 Credit Days <span class="text-red-500">*</span>
                             </label>
                             <input type="number" x-model="form.credit_days" required min="0"
-                                   placeholder="30"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="30"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <p class="text-xs text-gray-500 mt-1">Credit period in days</p>
                         </div>
 
@@ -145,28 +145,63 @@
                                 Currency <span class="text-red-500">*</span>
                             </label>
                             <select x-model="form.currency_id" required
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">Select Currency</option>
                                 <template x-for="curr in currencies" :key="curr.id">
                                     <option :value="curr.id" x-text="curr.currency_code + ' - ' + curr.currency_name"></option>
                                 </template>
                             </select>
-                            <p class="text-xs text-gray-500 mt-1">→ currency_master(currency_id)</p>
                         </div>
 
-                        <!-- Delivery Terms -->
+                        <!-- INCO Terms -->
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">
-                                Delivery Terms
+                                INCO Terms
                             </label>
                             <select x-model="form.delivery_terms"
-                                    class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                                 <option value="">Select Terms</option>
                                 <option value="EXW">EXW - Ex Works</option>
                                 <option value="DDP">DDP - Delivered Duty Paid</option>
                                 <option value="CIF">CIF - Cost Insurance Freight</option>
                                 <option value="FOB">FOB - Free on Board</option>
                             </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Primary Contact -->
+                <div class="mb-6">
+                    <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Primary Contact (Optional)</h3>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <!-- Contact Name -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Contact Name
+                            </label>
+                            <input type="text" x-model="form.contact_name" maxlength="100"
+                                placeholder="Contact Name"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Contact Email -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Contact Email
+                            </label>
+                            <input type="email" x-model="form.contact_email" maxlength="100"
+                                placeholder="Contact Email"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+
+                        <!-- Contact Phone -->
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                Contact Phone
+                            </label>
+                            <input type="text" x-model="form.contact_phone" maxlength="20"
+                                placeholder="+1 234 567 8900"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
                 </div>
@@ -181,8 +216,8 @@
                                 Bank Name
                             </label>
                             <input type="text" x-model="form.bank_name" maxlength="100"
-                                   placeholder="Bank name"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="Bank name"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
                         <!-- Bank Account Number -->
@@ -191,8 +226,8 @@
                                 Bank Account Number
                             </label>
                             <input type="text" x-model="form.bank_account_no" maxlength="30"
-                                   placeholder="Encrypted account number"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="Encrypted account number"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
 
                         <!-- IFSC Code -->
@@ -201,8 +236,8 @@
                                 IFSC Code
                             </label>
                             <input type="text" x-model="form.ifsc_code" maxlength="11"
-                                   placeholder="11-char IFSC code"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="11-char IFSC code"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
                 </div>
@@ -217,8 +252,8 @@
                                 Rating Score
                             </label>
                             <input type="number" x-model="form.rating_score" min="0" max="100" step="0.01"
-                                   placeholder="0-100"
-                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                placeholder="0-100"
+                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                             <p class="text-xs text-gray-500 mt-1">0-100 vendor performance score</p>
                         </div>
 
@@ -258,12 +293,12 @@
 
                 <!-- Form Actions -->
                 <div class="flex items-center justify-end space-x-4 pt-6 border-t">
-                    <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}" 
-                       class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}"
+                        class="px-6 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
                         Cancel
                     </a>
                     <button type="submit" :disabled="saving"
-                            class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                        class="px-6 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
                         <span x-show="!saving">Update Vendor</span>
                         <span x-show="saving"><i class="fas fa-spinner fa-spin mr-2"></i>Saving...</span>
                     </button>
@@ -274,137 +309,182 @@
 </div>
 
 <script>
-function vendorEditForm() {
-    return {
-        loading: true,
-        saving: false,
-        currencies: [],
-        vendorId: {{ $vendorId }},
-        form: {
-            vendor_code: '',
-            vendor_name: '',
-            vendor_type: '',
-            gstin: '',
-            pan_number: '',
-            msme_category: '',
-            payment_terms: '',
-            credit_days: 0,
-            currency_id: '',
-            delivery_terms: '',
-            bank_name: '',
-            bank_account_no: '',
-            ifsc_code: '',
-            is_approved: false,
-            rating_score: '',
-            blacklisted: false,
-            is_active: true
-        },
-        
-        async loadVendor() {
-            this.loading = true;
-            try {
-                // Load currencies first
-                await this.loadCurrencies();
-                
-                // Load vendor data
-                const response = await fetch(`/api/v1/vendors/${this.vendorId}`, {
-                    credentials: 'same-origin',
-                    headers: { 'Accept': 'application/json' }
-                });
-                
-                if (!response.ok) {
-                    throw new Error('Failed to load vendor');
-                }
-                
-                const data = await response.json();
-                
-                if (data && data.success && data.data && data.data.vendor) {
-                    const vendor = data.data.vendor;
-                    this.form = {
-                        vendor_code: vendor.vendor_code || '',
-                        vendor_name: vendor.vendor_name || '',
-                        vendor_type: vendor.vendor_type || '',
-                        gstin: vendor.gstin || '',
-                        pan_number: vendor.pan_number || '',
-                        msme_category: vendor.msme_category || '',
-                        payment_terms: vendor.payment_terms || '',
-                        credit_days: vendor.credit_days || 0,
-                        currency_id: vendor.currency_id || '',
-                        delivery_terms: vendor.delivery_terms || '',
-                        bank_name: vendor.bank_name || '',
-                        bank_account_no: vendor.bank_account_no || '',
-                        ifsc_code: vendor.ifsc_code || '',
-                        is_approved: vendor.is_approved || false,
-                        rating_score: vendor.rating_score || '',
-                        blacklisted: vendor.blacklisted || false,
-                        is_active: vendor.is_active !== false
-                    };
-                } else {
-                    throw new Error('Invalid vendor data received');
-                }
-            } catch (error) {
-                console.error('Failed to load vendor:', error);
-                alert('Failed to load vendor data. Please try again.');
-                window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}';
-            } finally {
-                this.loading = false;
-            }
-        },
-        
-        async loadCurrencies() {
-            try {
-                const currencyResponse = await fetch('/api/v1/currencies', {
-                    credentials: 'same-origin',
-                    headers: { 'Accept': 'application/json' }
-                });
-                
-                if (currencyResponse.ok) {
-                    const currencyData = await currencyResponse.json();
-                    if (currencyData && currencyData.success && currencyData.data) {
-                        this.currencies = currencyData.data.currencies || [];
+    function vendorEditForm() {
+        return {
+            loading: true,
+            saving: false,
+            currencies: [],
+            vendorId: '{{ $vendorId }}',
+            form: {
+                vendor_code: '',
+                vendor_name: '',
+                vendor_type: '',
+                gstin: '',
+                pan_number: '',
+                msme_category: '',
+                payment_terms: '',
+                credit_days: 0,
+                currency_id: '',
+                delivery_terms: '',
+                bank_name: '',
+                bank_account_no: '',
+                ifsc_code: '',
+                is_approved: false,
+                rating_score: '',
+                blacklisted: false,
+                is_active: true,
+                contact_name: '',
+                contact_type: 'PRIMARY',
+                contact_phone: '',
+                contact_email: ''
+            },
+
+            async loadVendor() {
+                this.loading = true;
+                try {
+                    // Load currencies first
+                    await this.loadCurrencies();
+
+                    // Load vendor data
+                    const response = await fetch(`/api/v1/vendors/${this.vendorId}`, {
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (!response.ok) {
+                        throw new Error('Failed to load vendor');
                     }
+
+                    const data = await response.json();
+
+                    if (data && data.success && data.data && data.data.vendor) {
+                        const vendor = data.data.vendor;
+                        // Get primary contact if it exists
+                        const primaryContact = vendor.contacts ? vendor.contacts.find(c => c.contact_type === 'PRIMARY') : null;
+
+                        this.form = {
+                            vendor_code: vendor.vendor_code || '',
+                            vendor_name: vendor.vendor_name || '',
+                            vendor_type: vendor.vendor_type || '',
+                            gstin: vendor.gstin || '',
+                            pan_number: vendor.pan_number || '',
+                            msme_category: vendor.msme_category || '',
+                            payment_terms: vendor.payment_terms || '',
+                            credit_days: vendor.credit_days || 0,
+                            currency_id: vendor.currency_id || '',
+                            delivery_terms: vendor.delivery_terms || '',
+                            bank_name: vendor.bank_name || '',
+                            bank_account_no: vendor.bank_account_no || '',
+                            ifsc_code: vendor.ifsc_code || '',
+                            is_approved: vendor.is_approved || false,
+                            rating_score: vendor.rating_score || '',
+                            blacklisted: vendor.blacklisted || false,
+                            is_active: vendor.is_active !== false,
+                            contact_name: primaryContact ? primaryContact.contact_name : '',
+                            contact_role: primaryContact ? primaryContact.contact_role : '',
+                            contact_phone: primaryContact ? primaryContact.contact_phone : '',
+                            contact_email: primaryContact ? primaryContact.contact_email : ''
+                        };
+                    } else {
+                        throw new Error('Invalid vendor data received');
+                    }
+                } catch (error) {
+                    console.error('Failed to load vendor:', error);
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: {
+                            message: 'Failed to load vendor data. Please try again.',
+                            type: 'error'
+                        }
+                    }));
+                    setTimeout(() => {
+                        window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/vendors" : "/org/" . $organization->org_slug . "/vendors") }}';
+                    }, 1500);
+                } finally {
+                    this.loading = false;
                 }
-            } catch (error) {
-                console.error('Failed to load currencies:', error);
-                // Set default currency if API fails
-                this.currencies = [
-                    { id: 1, currency_code: 'INR', currency_name: 'Indian Rupee' },
-                    { id: 2, currency_code: 'USD', currency_name: 'US Dollar' },
-                    { id: 3, currency_code: 'EUR', currency_name: 'Euro' }
-                ];
-            }
-        },
-        
-        async submitForm() {
-            this.saving = true;
-            try {
-                const response = await fetch(`/api/v1/vendors/${this.vendorId}`, {
-                    method: 'PUT',
-                    credentials: 'same-origin',
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                    },
-                    body: JSON.stringify(this.form)
-                });
-                
-                const data = await response.json();
-                
-                if (!response.ok || !data || data.success !== true) {
-                    throw new Error((data && data.message) ? data.message : 'Failed to update vendor');
+            },
+
+            async loadCurrencies() {
+                try {
+                    const currencyResponse = await fetch('/api/v1/currencies', {
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json'
+                        }
+                    });
+
+                    if (currencyResponse.ok) {
+                        const currencyData = await currencyResponse.json();
+                        if (currencyData && currencyData.success && currencyData.data) {
+                            this.currencies = currencyData.data.currencies || [];
+                        }
+                    }
+                } catch (error) {
+                    console.error('Failed to load currencies:', error);
+                    // Set default currency if API fails
+                    this.currencies = [{
+                            id: 1,
+                            currency_code: 'INR',
+                            currency_name: 'Indian Rupee'
+                        },
+                        {
+                            id: 2,
+                            currency_code: 'USD',
+                            currency_name: 'US Dollar'
+                        },
+                        {
+                            id: 3,
+                            currency_code: 'EUR',
+                            currency_name: 'Euro'
+                        }
+                    ];
                 }
-                
-                alert('Vendor updated successfully!');
-                window.location.href = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}';
-            } catch (error) {
-                console.error('Failed to update vendor:', error);
-                alert(error.message || 'Failed to update vendor. Please try again.');
-            } finally {
-                this.saving = false;
+            },
+
+            async submitForm() {
+                this.saving = true;
+                try {
+                    const response = await fetch(`/api/v1/vendors/${this.vendorId}`, {
+                        method: 'PUT',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Content-Type': 'application/json',
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: JSON.stringify(this.form)
+                    });
+
+                    const data = await response.json();
+
+                    if (!response.ok || !data || data.success !== true) {
+                        throw new Error((data && data.message) ? data.message : 'Failed to update vendor');
+                    }
+
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: {
+                            message: 'Vendor updated successfully!',
+                            type: 'success'
+                        }
+                    }));
+                    setTimeout(() => {
+                        window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/vendors" : "/org/" . $organization->org_slug . "/vendors") }}';
+                    }, 1500);
+                } catch (error) {
+                    console.error('Failed to update vendor:', error);
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: {
+                            message: error.message || 'Failed to update vendor. Please try again.',
+                            type: 'error'
+                        }
+                    }));
+                } finally {
+                    this.saving = false;
+                }
             }
         }
     }
-}
 </script>
 @endsection

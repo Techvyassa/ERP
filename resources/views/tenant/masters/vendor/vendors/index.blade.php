@@ -113,6 +113,20 @@
                                         <i class="fas fa-edit mr-1"></i>
                                         Edit
                                     </button>
+                                    <template x-if="!item.blacklisted">
+                                        <button @click="blockVendor(item)" 
+                                                class="inline-flex items-center px-3 py-1.5 bg-red-50 text-red-600 hover:bg-red-100 rounded transition-colors" 
+                                                title="Block Vendor">
+                                            <i class="fas fa-ban mr-1"></i>
+                                            Block
+                                        </button>
+                                    </template>
+                                    <template x-if="item.blacklisted">
+                                        <span class="inline-flex items-center px-3 py-1.5 bg-gray-100 text-gray-500 rounded cursor-not-allowed" title="Vendor is Blacklisted">
+                                            <i class="fas fa-lock mr-1"></i>
+                                            Blocked
+                                        </span>
+                                    </template>
                                 </div>
                             </td>
                         </tr>
@@ -200,7 +214,7 @@ function vendorData() {
                 }
             } catch (error) {
                 console.error('Failed to load vendors:', error);
-                alert(error.message || 'Failed to load vendors. Please try again.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to load vendors. Please try again.', type: 'error' } }));
                 this.items = [];
                 this.pagination = { current_page: 1, last_page: 1, per_page: 15, total: 0, from: 0, to: 0 };
             } finally {
@@ -221,12 +235,48 @@ function vendorData() {
         },
         
         openCreateModal() {
-            alert('Create vendor form - Coming soon');
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Create vendor form - Coming soon', type: 'info' } }));
         },
         
         edit(item) {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors' : '/org/' . $organization->org_slug . '/vendors') }}';
+            const baseUrl = '{{ url(request()->get("tenant_type") === "subdomain" ? "/vendors" : "/org/" . $organization->org_slug . "/vendors") }}';
             window.location.href = `${baseUrl}/${item.id}/edit`;
+        },
+        
+        blockVendor(item) {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: {
+                    title: 'Block Vendor',
+                    message: `Are you sure you want to block vendor "${item.vendor_name}"?\n\nThis action will prevent them from participating in new RFQs and POs.`,
+                    confirmText: 'Block Vendor',
+                    cancelText: 'Cancel',
+                    confirmColor: 'red',
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`/api/v1/vendors/${item.id}`, {
+                                method: 'DELETE',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                }
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (response.ok && data.success) {
+                                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Vendor blocked successfully.', type: 'success' } }));
+                                this.loadData();
+                            } else {
+                                throw new Error(data.message || 'Failed to block vendor.');
+                            }
+                        } catch (error) {
+                            console.error('Error blocking vendor:', error);
+                            window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'An error occurred while blocking vendor.', type: 'error' } }));
+                        }
+                    }
+                }
+            }));
         }
     }
 }

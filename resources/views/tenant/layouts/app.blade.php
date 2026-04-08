@@ -231,8 +231,7 @@
                             { name: 'UOM', url: '{{ url($tenantType === 'subdomain' ? '/uom' : "/org/{$organization->org_slug}/uom") }}', icon: 'straighten', category: 'Inventory', keywords: ['uom', 'unit', 'measurement'] },
                             { name: 'Bin Locations', url: '{{ url($tenantType === 'subdomain' ? '/bin-locations' : "/org/{$organization->org_slug}/bin-locations") }}', icon: 'shelves', category: 'Inventory', keywords: ['bin', 'rack', 'location', 'shelf'] },
                             { name: 'Vendors', url: '{{ url($tenantType === 'subdomain' ? '/vendors' : "/org/{$organization->org_slug}/vendors") }}', icon: 'store', category: 'Vendor', keywords: ['vendor', 'supplier', 'partner'] },
-                            { name: 'Vendor Contacts', url: '{{ url($tenantType === 'subdomain' ? '/vendor-contacts' : "/org/{$organization->org_slug}/vendor-contacts") }}', icon: 'contacts', category: 'Vendor', keywords: ['contact', 'vendor contact'] },
-                            { name: 'Vendor Material Map', url: '{{ url($tenantType === 'subdomain' ? '/vendor-material-map' : "/org/{$organization->org_slug}/vendor-material-map") }}', icon: 'link', category: 'Vendor', keywords: ['mapping', 'vendor material', 'avl'] },
+                            // { name: 'Vendor Material Map', url: '{{ url($tenantType === 'subdomain' ? '/vendor-material-map' : "/org/{$organization->org_slug}/vendor-material-map") }}', icon: 'link', category: 'Vendor', keywords: ['mapping', 'vendor material', 'avl'] },
                             { name: 'HSN Codes', url: '{{ url($tenantType === 'subdomain' ? '/hsn-codes' : "/org/{$organization->org_slug}/hsn-codes") }}', icon: 'qr_code', category: 'Tax', keywords: ['hsn', 'code', 'tax code'] },
                             { name: 'GST Taxes', url: '{{ url($tenantType === 'subdomain' ? '/gst-taxes' : "/org/{$organization->org_slug}/gst-taxes") }}', icon: 'receipt', category: 'Tax', keywords: ['gst', 'tax', 'cgst', 'sgst', 'igst'] },
                             { name: 'Currency', url: '{{ url($tenantType === 'subdomain' ? '/currency' : "/org/{$organization->org_slug}/currency") }}', icon: 'currency_exchange', category: 'Tax', keywords: ['currency', 'exchange', 'forex'] },
@@ -468,5 +467,11 @@
             @yield('content')
         </main>
     </div>
+
+    <!-- Global Toast Notification System -->
+    @include('components.toast')
+
+    <!-- Global Confirmation Modal -->
+    @include('components.confirm-modal')
 </body>
 </html>

@@ -8,8 +8,8 @@
     <!-- Breadcrumb -->
     <div class="mb-6">
         <nav class="flex items-center gap-2 text-sm">
-            <a href="{{ route('tenant.dashboard', ['org_slug' => $organization->org_slug]) }}" 
-               class="text-gray-600 hover:text-primary">Dashboard</a>
+            <a href="{{ route('tenant.dashboard', ['org_slug' => $organization->org_slug]) }}"
+                class="text-gray-600 hover:text-primary">Dashboard</a>
             <span class="text-gray-400">/</span>
             <span class="text-gray-900 font-semibold">Vendor & Procurement</span>
         </nav>
@@ -52,7 +52,7 @@
             <p class="text-sm text-gray-600">Contacts</p>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+        <!-- <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between mb-3">
                 <div class="bg-green-100 p-3 rounded-lg">
                     <span class="material-symbols-outlined text-green-600 text-2xl">link</span>
@@ -61,7 +61,7 @@
             </div>
             <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.mappings">0</h3>
             <p class="text-sm text-gray-600">Material Mappings</p>
-        </div>
+        </div> -->
 
         <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
             <div class="flex items-center justify-between mb-3">
@@ -78,8 +78,8 @@
     <!-- Module Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         <!-- Vendors -->
-        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-amber-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
-             @click="navigateTo('vendors')">
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-amber-500 hover:shadow-xl transition-all cursor-pointer group p-6"
+            @click="navigateTo('vendors')">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-amber-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
                     <span class="material-symbols-outlined text-amber-600 text-3xl">handshake</span>
@@ -97,8 +97,8 @@
         </div>
 
         <!-- Vendor Contacts -->
-        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
-             @click="navigateTo('vendor-contacts')">
+        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer group p-6"
+            @click="navigateTo('vendor-contacts')">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-blue-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
                     <span class="material-symbols-outlined text-blue-600 text-3xl">contacts</span>
@@ -116,7 +116,7 @@
         </div>
 
         <!-- Vendor Material Map (AVL) -->
-        <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
+        <!-- <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-green-500 hover:shadow-xl transition-all cursor-pointer group p-6" 
              @click="navigateTo('vendor-material-map')">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-green-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
@@ -132,59 +132,62 @@
                 <span class="text-sm font-bold text-green-600" x-text="stats.mappings + ' Mappings'">0 Mappings</span>
                 <span class="material-symbols-outlined text-green-600 group-hover:translate-x-1 transition-transform">arrow_forward</span>
             </div>
-        </div>
+        </div> -->
     </div>
 </div>
 
 <script>
-function vendorDashboard() {
-    const token = () => localStorage.getItem('access_token');
-    const orgSlug = '{{ $organization->org_slug }}';
-    const tenantType = '{{ $tenantType ?? 'path' }}';
-    const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
-    const headers = () => ({
-        'Authorization': `Bearer ${token()}`,
-        'Accept': 'application/json',
-        'X-Org-Slug': orgSlug
-    });
+    function vendorDashboard() {
+        const token = () => localStorage.getItem('access_token');
+        const orgSlug = '{{ $organization->org_slug }}';
+        const tenantType = '{{ $tenantType ?? '
+        path ' }}';
+        const baseUrl = tenantType === 'subdomain' ? '' : `/org/${orgSlug}`;
+        const headers = () => ({
+            'Authorization': `Bearer ${token()}`,
+            'Accept': 'application/json',
+            'X-Org-Slug': orgSlug
+        });
 
-    return {
-        stats: {
-            vendors: 0,
-            contacts: 0,
-            mappings: 0,
-            purchaseOrders: 0
-        },
+        return {
+            stats: {
+                vendors: 0,
+                contacts: 0,
+                mappings: 0,
+                purchaseOrders: 0
+            },
 
-        async init() {
-            await this.loadData();
-        },
+            async init() {
+                await this.loadData();
+            },
 
-        async loadData() {
-            try {
-                const response = await fetch('/api/v1/dashboard/master-stats', { headers: headers() });
-                const data = await response.json();
+            async loadData() {
+                try {
+                    const response = await fetch('/api/v1/dashboard/master-stats', {
+                        headers: headers()
+                    });
+                    const data = await response.json();
 
-                if (data.success && data.data?.vendor) {
-                    this.stats = data.data.vendor;
+                    if (data.success && data.data?.vendor) {
+                        this.stats = data.data.vendor;
+                    }
+                } catch (error) {
+                    console.error('Failed to load vendor dashboard stats:', error);
                 }
-            } catch (error) {
-                console.error('Failed to load vendor dashboard stats:', error);
-            }
-        },
+            },
 
-        navigateTo(page) {
-            const routes = {
-                'vendors': `${baseUrl}/vendors`,
-                'vendor-contacts': `${baseUrl}/vendor-contacts`,
-                'vendor-material-map': `${baseUrl}/vendor-material-map`
-            };
-            
-            if (routes[page]) {
-                window.location.href = routes[page];
+            navigateTo(page) {
+                const routes = {
+                    'vendors': `${baseUrl}/vendors`,
+                    'vendor-contacts': `${baseUrl}/vendor-contacts`,
+                    'vendor-material-map': `${baseUrl}/vendor-material-map`
+                };
+
+                if (routes[page]) {
+                    window.location.href = routes[page];
+                }
             }
         }
     }
-}
 </script>
 @endsection
