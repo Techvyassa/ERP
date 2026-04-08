@@ -224,7 +224,7 @@
                                 </div>
                                 <div>
                                     <label class="block text-xs font-medium text-gray-700 mb-1">Symbol (e.g. £) *</label>
-                                    <input type="text" x-model="newCurrency.currency_symbol" maxlength="5"
+                                    <input type="text" x-model="newCurrency.symbol" maxlength="5"
                                         class="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm">
                                 </div>
                             </div>
@@ -432,7 +432,7 @@
             },
             newCurrency: {
                 currency_code: '',
-                currency_symbol: '',
+                symbol: '',
                 currency_name: ''
             },
             creatingCurrency: false,
@@ -541,7 +541,7 @@
                         },
                         body: JSON.stringify({
                             currency_code: this.newCurrency.currency_code,
-                            currency_symbol: this.newCurrency.currency_symbol,
+                            symbol: this.newCurrency.symbol,
                             currency_name: this.newCurrency.currency_name,
                             is_active: true
                         })
@@ -556,7 +556,7 @@
                         this.temp.currency_id = newCurr.id;
                         this.newCurrency = {
                             currency_code: '',
-                            currency_symbol: '',
+                            symbol: '',
                             currency_name: ''
                         };
                         window.dispatchEvent(new CustomEvent('notify', {

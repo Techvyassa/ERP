@@ -167,6 +167,9 @@
             @yield('content')
         </main>
     </div>
+    <!-- Global Feedback Components -->
+    @include('components.toast')
+    @include('components.confirm-modal')
 </body>
 
 </html>

@@ -173,7 +173,7 @@
                                     </div>
                                     <div>
                                         <label class="block text-xs font-medium text-gray-700 mb-1">Symbol (e.g. £) *</label>
-                                        <input type="text" x-model="newCurrency.currency_symbol" maxlength="5"
+                                        <input type="text" x-model="newCurrency.symbol" maxlength="5"
                                             class="w-full px-3 py-1.5 border border-gray-300 rounded-md text-sm">
                                     </div>
                                 </div>
@@ -384,7 +384,7 @@
             },
             newCurrency: {
                 currency_code: '',
-                currency_symbol: '',
+                symbol: '',
                 currency_name: ''
             },
             creatingCurrency: false,
@@ -558,7 +558,7 @@
                     this.currencies.push(newCurr);
                     this.form.currency_id = newCurr.id;
                     this.temp.currency_id = newCurr.id;
-                    this.newCurrency = { currency_code: '', currency_symbol: '', currency_name: '' };
+                    this.newCurrency = { currency_code: '', symbol: '', currency_name: '' };
                     window.dispatchEvent(new CustomEvent('notify', {
                         detail: { message: 'Currency created dynamically.', type: 'success' }
                     }));
