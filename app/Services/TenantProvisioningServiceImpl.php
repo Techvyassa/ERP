@@ -28,6 +28,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         'ADMIN',
         'USER',
         'MANAGER',
+        'VIEWER',
         'SECURITY',
         'STORE',
         'QC',
@@ -39,29 +40,30 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
     ];
 
     private const DEFAULT_ROLES = [
-        ['code' => 'ADMIN', 'name' => 'Administration', 'description' => 'Full administration access'],
-        ['code' => 'USER', 'name' => 'User', 'description' => 'Standard user access'],
-        ['code' => 'MANAGER', 'name' => 'Manager', 'description' => 'Management level access'],
-        ['code' => 'SECURITY', 'name' => 'Security', 'description' => 'Security and gate entry access'],
-        ['code' => 'STORE', 'name' => 'Store', 'description' => 'Warehouse and store operations'],
-        ['code' => 'QC', 'name' => 'Quality Control', 'description' => 'Quality control operations'],
-        ['code' => 'PROCUREMENT', 'name' => 'Procurement', 'description' => 'Procurement department access'],
-        ['code' => 'PRODUCTION', 'name' => 'Production', 'description' => 'Production department access'],
-        ['code' => 'SALES', 'name' => 'Sales', 'description' => 'Sales and order management'],
-        ['code' => 'CUSTOMER', 'name' => 'Customer', 'description' => 'Customer portal access'],
-        ['code' => 'MAINTENANCE', 'name' => 'Maintenance', 'description' => 'Maintenance and repairs department'],
+        ['code' => 'ADMIN',       'name' => 'System Administrator', 'description' => 'Full system access across all modules'],
+        ['code' => 'MANAGER',     'name' => 'Manager',             'description' => 'Department-level management and approvals'],
+        ['code' => 'USER',        'name' => 'User',                'description' => 'Standard operational access'],
+        ['code' => 'VIEWER',      'name' => 'Viewer',              'description' => 'Read-only access'],
+        ['code' => 'QC',          'name' => 'Quality Control',     'description' => 'Quality inspection and compliance'],
+        ['code' => 'PROCUREMENT', 'name' => 'Procurement',         'description' => 'Vendor management and purchasing operations'],
+        ['code' => 'STORE',       'name' => 'Store',               'description' => 'Inventory and warehouse operations'],
+        ['code' => 'SALES',       'name' => 'Sales',               'description' => 'Sales, orders, and customer handling'],
+        ['code' => 'SECURITY',    'name' => 'Security',            'description' => 'Gate entry, visitor, and asset security'],
+        ['code' => 'MAINTENANCE', 'name' => 'Maintenance',         'description' => 'Equipment maintenance and repair operations'],
+        ['code' => 'CUSTOMER',    'name' => 'Customer',            'description' => 'Customer portal and self-service access'],
+        ['code' => 'PRODUCTION',  'name' => 'Production',          'description' => 'Production planning and shop floor operations'],
     ];
 
     private const DEFAULT_DEPARTMENTS = [
-        'Administration' => [],
-        'Security' => [],
-        'Store' => [],
-        'QC' => [],
-        'Procurement' => [],
-        'Production' => [],
-        'Sales' => [],
-        'Customer' => [],
-        'Maintenance' => [],
+        ['code' => 'PROD',        'name' => 'Production',               'cost_center' => 'PROD-001'],
+        ['code' => 'STORE',       'name' => 'Warehouse / Store',        'cost_center' => 'STORE-001'],
+        ['code' => 'QC',          'name' => 'Quality Control',          'cost_center' => 'QC-001'],
+        ['code' => 'PROCUREMENT', 'name' => 'Procurement',              'cost_center' => 'PRC-001'],
+        ['code' => 'SALES',       'name' => 'Sales',                    'cost_center' => 'SALES-001'],
+        ['code' => 'SECURITY',    'name' => 'Security',                 'cost_center' => 'SEC-001'],
+        ['code' => 'MAINT',       'name' => 'Maintenance',              'cost_center' => 'MNT-001'],
+        ['code' => 'CRM',         'name' => 'Customer Relations (CRM)', 'cost_center' => 'CRM-001'],
+        ['code' => 'CUSTOMER',    'name' => 'Customer Portal',          'cost_center' => null],
     ];
 
     public function __construct(
@@ -403,6 +405,19 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
             ];
         }
 
+        // VIEWER: read-only across all modules
+        if ($roleCode === 'VIEWER') {
+            return [
+                'scope' => 'department',
+                'view_cross_department' => false,
+                'can_view' => true,
+                'can_create' => false,
+                'can_edit' => false,
+                'can_approve' => false,
+                'can_delete' => false,
+            ];
+        }
+
         // Roles map to their identically named modules (Departmental Roles)
         if ($roleCode === $moduleCode) {
             $can_view = $can_create = $can_edit = $can_approve = true;
@@ -441,34 +456,30 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
 
+            // Create ROOT department (Organization level)
             $rootDepartment = Department::create([
                 'dept_code' => 'ROOT',
                 'dept_name' => substr($orgName, 0, 100),
                 'parent_dept_id' => null,
+                'cost_center_code' => null,
                 'is_active' => true,
                 'created_by' => null
             ]);
 
             Log::info("Created root department: {$orgName}");
 
-            foreach (self::DEFAULT_DEPARTMENTS as $parentName => $children) {
-                $parentDept = Department::create([
-                    'dept_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $parentName), 0, 15)),
-                    'dept_name' => $parentName,
+            // Create standardized departments under ROOT
+            foreach (self::DEFAULT_DEPARTMENTS as $dept) {
+                Department::create([
+                    'dept_code' => $dept['code'],
+                    'dept_name' => $dept['name'],
                     'parent_dept_id' => $rootDepartment->id,
+                    'cost_center_code' => $dept['cost_center'],
                     'is_active' => true,
                     'created_by' => null
                 ]);
 
-                foreach ($children as $childName) {
-                    Department::create([
-                        'dept_code' => strtoupper(substr(preg_replace('/[^a-zA-Z0-9]/', '', $childName), 0, 15)),
-                        'dept_name' => $childName,
-                        'parent_dept_id' => $parentDept->id,
-                        'is_active' => true,
-                        'created_by' => null
-                    ]);
-                }
+                Log::info("Created department: {$dept['code']} - {$dept['name']}");
             }
 
             Log::info("Seeded default departments hierarchy");
@@ -489,24 +500,40 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
         try {
             $this->connectionRouter->switchToTenant($tenantDbName);
 
+            // Role code => Department code mapping
             $mappings = [
-                'ADMIN'       => 'Administration',
-                'SECURITY'    => 'Security',
-                'STORE'       => 'Store',
-                'QC'          => 'Quality Control',
-                'PROCUREMENT' => 'Procurement',
-                'PRODUCTION'  => 'Production',
-                'SALES'       => 'Sales',
-                'CUSTOMER'    => 'Customer',
-                'MAINTENANCE' => 'Maintenance',
+                'SECURITY'    => 'SECURITY',
+                'STORE'       => 'STORE',
+                'QC'          => 'QC',
+                'PROCUREMENT' => 'PROCUREMENT',
+                'PRODUCTION'  => 'PROD',
+                'SALES'       => 'SALES',
+                'CUSTOMER'    => 'CUSTOMER',
+                'MAINTENANCE' => 'MAINT',
             ];
 
-            foreach ($mappings as $roleCode => $deptName) {
+            // ADMIN, MANAGER, USER, VIEWER are global roles — map them to ROOT
+            $globalRoles = ['ADMIN', 'MANAGER', 'USER', 'VIEWER'];
+            $rootDept = DB::connection('tenant')->table('department_master')
+                ->where('dept_code', 'ROOT')->first();
+
+            if ($rootDept) {
+                foreach ($globalRoles as $roleCode) {
+                    if (!isset($roles[$roleCode])) continue;
+                    DB::connection('tenant')->table('dept_role_map')->updateOrInsert(
+                        ['dept_id' => $rootDept->id, 'role_id' => $roles[$roleCode]->id],
+                        ['created_at' => now()]
+                    );
+                    Log::info("Mapped global role {$roleCode} to ROOT department");
+                }
+            }
+
+            // Departmental roles — map to their specific departments
+            foreach ($mappings as $roleCode => $deptCode) {
                 if (!isset($roles[$roleCode])) continue;
 
                 $dept = DB::connection('tenant')->table('department_master')
-                    ->where('dept_name', $deptName)
-                    ->orWhere('dept_code', $roleCode) // Fallback for code-based matches
+                    ->where('dept_code', $deptCode)
                     ->first();
 
                 if ($dept) {
@@ -514,7 +541,7 @@ class TenantProvisioningServiceImpl implements TenantProvisioningService
                         ['dept_id' => $dept->id, 'role_id' => $roles[$roleCode]->id],
                         ['created_at' => now()]
                     );
-                    Log::info("Mapped role {$roleCode} to department {$deptName}");
+                    Log::info("Mapped role {$roleCode} to department {$deptCode}");
                 }
             }
         } catch (\Exception $e) {

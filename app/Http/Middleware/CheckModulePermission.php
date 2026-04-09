@@ -55,12 +55,12 @@ class CheckModulePermission
             );
         }
 
-        // Admin bypass: Check if user has admin role (role_id = 1)
+        // Admin bypass: Check if user has admin role code
         // Admins have full access to all modules
         $this->dbRouter->switchToTenant($tenantDbName);
-        $user = \App\Models\Tenant\User::find($userId);
+        $user = \App\Models\Tenant\User::with('role')->find($userId);
         
-        if ($user && $user->role_id === 1) {
+        if ($user && $user->role && $user->role->role_code === 'ADMIN') {
             // Admin user - grant all permissions
             $request->merge([
                 'user_permissions' => [],
