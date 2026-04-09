@@ -3,10 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Models\Tenant\Vendor;
+use App\Models\Tenant\VendorContact;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Validator;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Mail;
 use Illuminate\Support\Str;
+use App\Mail\VendorDirectMail;
 
 class VendorController extends Controller
 {
@@ -120,6 +124,16 @@ class VendorController extends Controller
             'bank_account_no'  => 'nullable|string|max:30',
             'ifsc_code'        => 'nullable|string|max:11',
             'rating_score'     => 'nullable|numeric|min:0|max:100',
+            'contact_name'     => 'nullable|string|max:100',
+            'contact_type'     => 'nullable|string|max:50',
+            'contact_phone'    => 'nullable|string|max:20',
+            'contact_email'    => 'nullable|email|max:100',
+            'contacts'               => 'nullable|array',
+            'contacts.*.contact_name' => 'nullable|string|max:100',
+            'contacts.*.contact_type' => 'nullable|string|max:50',
+            'contacts.*.contact_phone' => 'nullable|string|max:20',
+            'contacts.*.contact_email' => 'nullable|email|max:100',
+            'contacts.*.is_primary'  => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -133,10 +147,14 @@ class VendorController extends Controller
         }
 
         try {
+            DB::beginTransaction();
             // Auto-generate vendor code if not provided
             $vendorCode = $request->input('vendor_code');
             if (empty($vendorCode)) {
-                $vendorCode = $this->generateVendorCode($request->input('vendor_type', 'SUPPLIER'));
+                $vendorCode = $this->generateVendorCode(
+                    $request->input('vendor_type', 'SUPPLIER'),
+                    $request->input('vendor_name', '')
+                );
             }
 
             $vendor = Vendor::create(array_merge(
@@ -158,9 +176,39 @@ class VendorController extends Controller
                 [
                     'vendor_code' => $vendorCode,
                     'is_approved' => $request->input('is_approved', false),
-                    'blacklisted' => $request->input('blacklisted', false)
+                    'blacklisted' => $request->input('blacklisted', false),
+                    'approved_by' => $request->input('is_approved') ? $request->input('auth_user_id') : null,
+                    'approved_date' => $request->input('is_approved') ? now()->toDateString() : null,
                 ]
             ));
+
+            if ($request->has('contacts') && is_array($request->input('contacts'))) {
+                foreach ($request->input('contacts') as $contact) {
+                    if (!empty($contact['contact_name'])) {
+                        VendorContact::create([
+                            'vendor_id'    => $vendor->id,
+                            'contact_name' => $contact['contact_name'],
+                            'contact_type' => $contact['contact_type'] ?? 'PRIMARY',
+                            'phone'        => $contact['contact_phone'] ?? null,
+                            'email'        => $contact['contact_email'] ?? null,
+                            'is_primary'   => !empty($contact['is_primary']),
+                            'is_active'    => true,
+                        ]);
+                    }
+                }
+            } else if ($request->filled('contact_name')) {
+                VendorContact::create([
+                    'vendor_id'    => $vendor->id,
+                    'contact_name' => $request->input('contact_name'),
+                    'contact_type' => $request->input('contact_type', 'PRIMARY'),
+                    'phone'        => $request->input('contact_phone'),
+                    'email'        => $request->input('contact_email'),
+                    'is_primary'   => true,
+                    'is_active'    => true,
+                ]);
+            }
+
+            DB::commit();
 
             return response()->json([
                 'success' => true,
@@ -170,6 +218,7 @@ class VendorController extends Controller
                 'timestamp' => now()->toIso8601String(),
             ], 201);
         } catch (\Exception $e) {
+            DB::rollBack();
             return response()->json([
                 'success' => false,
                 'error' => ['code' => 'VENDOR_CREATION_FAILED', 'details' => []],
@@ -206,6 +255,16 @@ class VendorController extends Controller
             'approved_date'    => 'nullable|date',
             'rating_score'     => 'nullable|numeric|min:0|max:100',
             'blacklisted'      => 'sometimes|boolean',
+            'contact_name'     => 'nullable|string|max:100',
+            'contact_type'     => 'nullable|string|max:50',
+            'contact_phone'    => 'nullable|string|max:20',
+            'contact_email'    => 'nullable|email|max:100',
+            'contacts'               => 'nullable|array',
+            'contacts.*.contact_name' => 'nullable|string|max:100',
+            'contacts.*.contact_type' => 'nullable|string|max:50',
+            'contacts.*.contact_phone' => 'nullable|string|max:20',
+            'contacts.*.contact_email' => 'nullable|email|max:100',
+            'contacts.*.is_primary'  => 'nullable|boolean',
         ]);
 
         if ($validator->fails()) {
@@ -257,6 +316,38 @@ class VendorController extends Controller
 
             $vendor->save();
 
+            if ($request->has('contacts') && is_array($request->input('contacts'))) {
+                // To safely update multiple, we overwrite existing for simplicity if an array is passed
+                VendorContact::where('vendor_id', $vendor->id)->delete();
+                foreach ($request->input('contacts') as $contact) {
+                    if (!empty($contact['contact_name'])) {
+                        VendorContact::create([
+                            'vendor_id'    => $vendor->id,
+                            'contact_name' => $contact['contact_name'],
+                            'contact_type' => $contact['contact_type'] ?? 'PRIMARY',
+                            'phone'        => $contact['contact_phone'] ?? null,
+                            'email'        => $contact['contact_email'] ?? null,
+                            'is_primary'   => !empty($contact['is_primary']),
+                            'is_active'    => true,
+                        ]);
+                    }
+                }
+            } else if ($request->has('contact_name')) {
+                VendorContact::updateOrCreate(
+                    [
+                        'vendor_id' => $vendor->id,
+                        'contact_type' => 'PRIMARY',
+                    ],
+                    [
+                        'contact_name' => $request->input('contact_name'),
+                        'phone' => $request->input('contact_phone'),
+                        'email' => $request->input('contact_email'),
+                        'is_primary' => true,
+                        'is_active' => true,
+                    ]
+                );
+            }
+
             return response()->json([
                 'success' => true,
                 'data' => ['vendor' => $vendor],
@@ -307,35 +398,130 @@ class VendorController extends Controller
     }
 
     /**
-     * Generate unique vendor code
+     * Send direct email to vendor
+     * POST /api/v1/vendors/{id}/send-email
      */
-    private function generateVendorCode(string $vendorType): string
+    public function sendEmail(Request $request, int $id): JsonResponse
     {
-        // Determine prefix based on vendor type
-        $prefix = match($vendorType) {
-            'SUPPLIER' => 'SUP',
-            'SERVICE' => 'SRV',
-            'TRADER' => 'TRD',
-            default => 'VND'
-        };
+        $requestId = Str::uuid()->toString();
 
-        // Get the last vendor with this prefix
-        $lastVendor = Vendor::where('vendor_code', 'like', $prefix . '-%')
-            ->orderBy('vendor_code', 'desc')
-            ->first();
+        $validator = Validator::make($request->all(), [
+            'subject' => 'required|string|max:200',
+            'message' => 'required|string',
+        ]);
 
-        if ($lastVendor) {
-            // Extract number from last code (e.g., SUP-0123 -> 123)
-            $lastCode = $lastVendor->vendor_code;
-            $parts = explode('-', $lastCode);
-            $lastNumber = isset($parts[1]) ? intval($parts[1]) : 0;
-            $newNumber = $lastNumber + 1;
-        } else {
-            $newNumber = 1;
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
         }
 
-        // Format with leading zeros (e.g., 0001)
-        return sprintf('%s-%04d', $prefix, $newNumber);
+        try {
+            $vendor = Vendor::with('contacts')->findOrFail($id);
+            
+            // Get primary contact email or fallback to first contact
+            $contact = $vendor->contacts()->where('is_primary', true)->first() 
+                      ?? $vendor->contacts()->first();
+
+            if (!$contact || empty($contact->email)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'CONTACT_EMAIL_MISSING', 'details' => []],
+                    'message' => 'Vendor has no contact email address defined.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 400);
+            }
+
+            $org = $request->input('tenant_organization');
+            $orgName = $org ? $org->org_name : 'ERP System';
+
+            Mail::to($contact->email)->send(new VendorDirectMail(
+                $request->input('subject'),
+                $request->input('message'),
+                $vendor->vendor_name,
+                $orgName
+            ));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Email sent successfully to ' . $contact->email,
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'EMAIL_SEND_FAILED', 'details' => []],
+                'message' => 'Failed to send email: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
     }
 
+    /**
+     * Generate unique vendor code
+     */
+    private function generateVendorCode(string $vendorType, string $vendorName = ''): string
+    {
+        // 1. Generate Name Prefix (Up to 3 initials from first 3 significant words)
+        $namePrefix = '';
+        if (!empty($vendorName)) {
+            $words = explode(' ', strtoupper(trim($vendorName)));
+            $ignoredWords = ['AND', '&', 'PVT', 'LTD', 'LLP', 'CO', 'CORP', 'LIMITED', 'PRIVATE', 'INC', 'INDIA', 'LLC'];
+            $selectedWords = [];
+
+            foreach ($words as $w) {
+                // Remove non-alphanumeric characters
+                $cleanWord = preg_replace('/[^A-Z0-9]/', '', $w);
+                if (!empty($cleanWord) && !in_array($cleanWord, $ignoredWords) && strlen($cleanWord) > 1) {
+                    $selectedWords[] = substr($cleanWord, 0, 3);
+                }
+                if (count($selectedWords) >= 3) break;
+            }
+            if (!empty($selectedWords)) {
+                $namePrefix = implode('-', $selectedWords);
+            }
+        }
+
+        // 2. Generate Type Prefix (3 chars)
+        $vendorTypeClean = strtoupper(trim($vendorType));
+        if ($vendorTypeClean === 'SUPPLIER') {
+            $typePrefix = 'SUP';
+        } elseif (str_contains($vendorTypeClean, 'SERVICE')) {
+            $typePrefix = 'SRV';
+        } elseif ($vendorTypeClean === 'TRADER') {
+            $typePrefix = 'TRD';
+        } else {
+            $typePrefix = substr(preg_replace('/[^A-Z]/', '', $vendorTypeClean), 0, 3);
+        }
+
+        if (empty($typePrefix)) $typePrefix = 'VND';
+
+        // 3. Combine into a Base Prefix for searching
+        $basePrefix = !empty($namePrefix) ? ($namePrefix . '-' . $typePrefix) : $typePrefix;
+
+        // 4. Find the next incremental number for this specific base
+        $lastVendor = Vendor::where('vendor_code', 'like', $basePrefix . '-%')
+            ->orderBy('id', 'desc')
+            ->first();
+
+        $newNumber = 1;
+        if ($lastVendor) {
+            $codeParts = explode('-', $lastVendor->vendor_code);
+            $lastPart = end($codeParts);
+            if (is_numeric($lastPart)) {
+                $newNumber = intval($lastPart) + 1;
+            }
+        }
+
+        // 5. Return final formatted code (e.g., SAF-LAB-SER-SRV-001)
+        return sprintf('%s-%03d', $basePrefix, $newNumber);
+    }
 }

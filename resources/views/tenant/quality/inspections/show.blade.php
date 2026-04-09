@@ -78,7 +78,9 @@
                     <select x-model="selectedParameterId" @change="onParameterChange()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
                         <option value="">— Select from list —</option>
                         <template x-for="param in qcParameters" :key="param.id">
-                            <option :value="param.id" x-text="param.parameter_name + ' • ' + param.parameter_code"></option>
+                            <option :value="param.id"
+                                    :disabled="isParameterRecorded(param.parameter_name)"
+                                    x-text="param.parameter_name + ' • ' + param.parameter_code + (isParameterRecorded(param.parameter_name) ? ' ✓ Recorded' : '')"></option>
                         </template>
                     </select>
                 </div>
@@ -218,6 +220,93 @@
                 </button>
             </div>
 
+            <!-- QC Barcode / Certificate Modal -->
+            <div x-show="showBarcodeModal" x-cloak class="fixed inset-0 z-[60] overflow-y-auto">
+                <div class="flex items-center justify-center min-h-screen px-4">
+                    <div class="fixed inset-0 bg-gray-900/60" @click="showBarcodeModal = false"></div>
+                    <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg" id="qc-certificate">
+                        <!-- Header -->
+                        <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                            <div class="flex items-center gap-2">
+                                <span class="material-symbols-outlined text-green-600">verified</span>
+                                <h3 class="text-lg font-bold text-gray-900">QC Certificate</h3>
+                            </div>
+                            <button @click="showBarcodeModal = false" class="text-gray-400 hover:text-gray-600">
+                                <span class="material-symbols-outlined">close</span>
+                            </button>
+                        </div>
+
+                        <!-- Certificate Body -->
+                        <div class="p-6 space-y-4">
+                            <!-- Decision Badge -->
+                            <div class="flex items-center justify-between">
+                                <div>
+                                    <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Inspection Lot</p>
+                                    <p class="text-2xl font-bold text-gray-900" x-text="'LOT-' + (lot.id || '')"></p>
+                                </div>
+                                <span class="px-3 py-1.5 rounded-full text-sm font-bold"
+                                      :class="{
+                                          'bg-green-100 text-green-700': lot.usage_decision?.decision === 'ACCEPTED',
+                                          'bg-red-100 text-red-700': lot.usage_decision?.decision === 'REJECTED',
+                                          'bg-amber-100 text-amber-700': lot.usage_decision?.decision === 'CONDITIONALLY_ACCEPTED',
+                                          'bg-blue-100 text-blue-700': lot.usage_decision?.decision === 'REWORK_REQUIRED',
+                                      }"
+                                      x-text="(lot.usage_decision?.decision || '').replace(/_/g, ' ')">
+                                </span>
+                            </div>
+
+                            <!-- Info Grid -->
+                            <div class="grid grid-cols-2 gap-3 text-sm bg-gray-50 rounded-lg p-4">
+                                <div>
+                                    <p class="text-xs text-gray-500">Item</p>
+                                    <p class="font-semibold text-gray-900 truncate" x-text="lot.product?.product_name || lot.material?.material_name || '—'"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Batch / Reference</p>
+                                    <p class="font-semibold text-gray-900" x-text="lot.batch_number || lot.production_order?.fg_batch_number || lot.grn?.grn_number || '—'"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Accepted Qty</p>
+                                    <p class="font-semibold text-green-700" x-text="parseFloat(lot.usage_decision?.accepted_qty || 0).toFixed(3)"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Rejected Qty</p>
+                                    <p class="font-semibold text-red-600" x-text="parseFloat(lot.usage_decision?.rejected_qty || 0).toFixed(3)"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Source</p>
+                                    <p class="font-semibold text-gray-900" x-text="lot.source_type || '—'"></p>
+                                </div>
+                                <div>
+                                    <p class="text-xs text-gray-500">Decision Date</p>
+                                    <p class="font-semibold text-gray-900" x-text="lot.usage_decision?.decided_at ? new Date(lot.usage_decision.decided_at).toLocaleDateString() : new Date().toLocaleDateString()"></p>
+                                </div>
+                            </div>
+
+                            <!-- Barcode -->
+                            <div class="flex flex-col items-center py-4 border border-gray-200 rounded-lg bg-white">
+                                <svg id="qc-barcode"></svg>
+                                <p class="text-xs text-gray-400 mt-1" x-text="barcodeValue"></p>
+                            </div>
+
+                            <!-- Remarks -->
+                            <div x-show="lot.usage_decision?.remarks" class="text-xs text-gray-600 bg-gray-50 rounded-lg px-4 py-2">
+                                <span class="font-semibold">Remarks:</span> <span x-text="lot.usage_decision?.remarks"></span>
+                            </div>
+                        </div>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3 px-6 pb-6">
+                            <button @click="showBarcodeModal = false" class="flex-1 px-4 py-2 border border-gray-200 rounded-lg text-sm hover:bg-gray-50">Close</button>
+                            <button @click="printCertificate()" class="flex-1 px-4 py-2 bg-indigo-600 text-white rounded-lg text-sm hover:bg-indigo-700 flex items-center justify-center gap-2">
+                                <span class="material-symbols-outlined text-base">print</span>
+                                Print Certificate
+                            </button>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
             <!-- Decision Modal -->
             <div x-show="showDecisionModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
                 <div class="flex items-center justify-center min-h-screen px-4">
@@ -255,8 +344,56 @@
                                 <div>
                                     <label class="block text-sm font-semibold text-gray-700 mb-2">Rejected Qty <span class="text-red-500">*</span></label>
                                     <input type="number" step="0.001" min="0" x-model="decision.rejected_qty" @input="syncDecisionQty('rejected')" @blur="normalizeDecisionQty('rejected')" required placeholder="e.g., 0.000" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                                    <p class="text-xs text-gray-500 mt-1">Quantity to be returned</p>
+                                    <p class="text-xs text-gray-500 mt-1">Quantity not approved</p>
                                 </div>
+                            </div>
+
+                            <!-- Rejected Qty Disposition -->
+                            <div x-show="parseFloat(decision.rejected_qty) > 0" class="bg-red-50 border border-red-200 rounded-lg p-4 space-y-3">
+                                <div class="flex items-center justify-between">
+                                    <p class="text-xs font-bold text-red-800 uppercase tracking-wide">Rejected Qty Disposition</p>
+                                    <span class="text-xs text-red-600">Must total <span class="font-bold" x-text="parseFloat(decision.rejected_qty).toFixed(3)"></span></span>
+                                </div>
+                                <div class="grid grid-cols-2 gap-3">
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                            <span class="inline-flex items-center gap-1">
+                                                <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
+                                                Return to Vendor
+                                            </span>
+                                        </label>
+                                        <input type="number" step="0.001" min="0"
+                                               x-model="decision.return_qty"
+                                               @input="syncDisposition('return')"
+                                               @blur="normalizeDisposition()"
+                                               placeholder="0.000"
+                                               class="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400">
+                                        <input type="text" x-model="decision.return_remarks" placeholder="Return reason (optional)" class="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs">
+                                    </div>
+                                    <div>
+                                        <label class="block text-xs font-semibold text-gray-700 mb-1">
+                                            <span class="inline-flex items-center gap-1">
+                                                <span class="w-2 h-2 rounded-full bg-orange-500 inline-block"></span>
+                                                Scrap / Write-off
+                                            </span>
+                                        </label>
+                                        <input type="number" step="0.001" min="0"
+                                               x-model="decision.scrap_qty"
+                                               @input="syncDisposition('scrap')"
+                                               @blur="normalizeDisposition()"
+                                               placeholder="0.000"
+                                               class="w-full px-3 py-2 border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
+                                        <input type="text" x-model="decision.scrap_remarks" placeholder="Scrap reason (optional)" class="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs">
+                                    </div>
+                                </div>
+                                <!-- Running total indicator -->
+                                <div class="flex items-center justify-between text-xs pt-1 border-t border-red-200">
+                                    <span class="text-gray-500">Allocated:</span>
+                                    <span :class="dispositionBalanced() ? 'text-green-600 font-bold' : 'text-red-600 font-bold'"
+                                          x-text="(parseFloat(decision.return_qty||0) + parseFloat(decision.scrap_qty||0)).toFixed(3) + ' / ' + parseFloat(decision.rejected_qty).toFixed(3)"></span>
+                                </div>
+                                <p x-show="!dispositionBalanced() && (parseFloat(decision.return_qty||0) + parseFloat(decision.scrap_qty||0)) > 0"
+                                   class="text-xs text-red-600">Return + Scrap must equal the rejected qty.</p>
                             </div>
 
                             <!-- Remarks -->
@@ -284,8 +421,24 @@
                     <div class="flex items-center justify-between"><span class="text-gray-500">Decision</span><span class="font-semibold text-gray-900" x-text="lot.usage_decision?.decision || '—'"></span></div>
                     <div class="flex items-center justify-between"><span class="text-gray-500">Accepted Qty</span><span class="font-semibold text-gray-900" x-text="lot.usage_decision?.accepted_qty || '0'"></span></div>
                     <div class="flex items-center justify-between"><span class="text-gray-500">Rejected Qty</span><span class="font-semibold text-gray-900" x-text="lot.usage_decision?.rejected_qty || '0'"></span></div>
+                    <template x-if="parseFloat(lot.usage_decision?.rejected_qty) > 0">
+                        <div class="pl-3 border-l-2 border-red-200 space-y-1">
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-red-600">↩ Return to Vendor</span>
+                                <span class="font-semibold text-gray-800" x-text="lot.usage_decision?.return_qty || '0.000'"></span>
+                            </div>
+                            <div class="flex items-center justify-between text-xs">
+                                <span class="text-orange-600">🗑 Scrap</span>
+                                <span class="font-semibold text-gray-800" x-text="lot.usage_decision?.scrap_qty || '0.000'"></span>
+                            </div>
+                        </div>
+                    </template>
                     <div><p class="text-gray-500 mb-1">Remarks</p><p class="text-gray-900" x-text="lot.usage_decision?.remarks || '—'"></p></div>
                 </div>
+                <button @click="openBarcodeModal()" class="mt-4 w-full px-4 py-2 border border-indigo-200 text-indigo-700 rounded-lg text-sm hover:bg-indigo-50 transition flex items-center justify-center gap-2">
+                    <span class="material-symbols-outlined text-base">barcode</span>
+                    View QC Certificate &amp; Barcode
+                </button>
             </div>
         </div>
     </div>
@@ -304,8 +457,10 @@ function qcInspectionDetail() {
         qcParameters: [],
         selectedParameterId: '',
         newResult: { parameter_name: '', parameter_code: '', standard_min: '', standard_max: '', standard_value: '', unit_of_measurement: '', tolerance_type: 'RANGE', observed_value: '', remarks: '' },
-        decision: { decision: '', accepted_qty: '', rejected_qty: '', remarks: '' },
+        decision: { decision: '', accepted_qty: '', rejected_qty: '', return_qty: '', scrap_qty: '', return_remarks: '', scrap_remarks: '', remarks: '' },
         showDecisionModal: false,
+        showBarcodeModal: false,
+        barcodeValue: '',
         saving: false,
 
         async init() { await this.loadLot(); },
@@ -389,15 +544,13 @@ function qcInspectionDetail() {
                 }
             }
             
-            // DUPLICATE CHECK: Prevent re-entering the same parameter with same observed value
-            const isDuplicate = this.qcResults.some(result => {
-                const sameParameter = result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase();
-                const sameValue = parseFloat(result.observed_value) === parseFloat(this.newResult.observed_value);
-                return sameParameter && sameValue;
-            });
-            
+            // DUPLICATE CHECK: Prevent re-entering the same parameter name
+            const isDuplicate = this.qcResults.some(result =>
+                result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase()
+            );
+
             if (isDuplicate) {
-                return alert(`⚠️ Duplicate Result!\n\nYou have already recorded a test result for "${this.newResult.parameter_name}" with observed value ${this.newResult.observed_value}.\n\nPlease enter a different parameter name or a different observed value.`);
+                return alert(`⚠️ Duplicate Parameter!\n\nA test result for "${this.newResult.parameter_name}" has already been recorded for this lot.\n\nEach parameter can only be recorded once.`);
             }
             
             const payload = { 
@@ -451,7 +604,20 @@ function qcInspectionDetail() {
             if (acceptedQty === 0 && rejectedQty === 0) {
                 return alert('At least one of Accepted Qty or Rejected Qty must be greater than zero');
             }
-            
+
+            // Validate disposition split when rejected qty > 0
+            if (rejectedQty > 0) {
+                const returnQty = parseFloat(this.decision.return_qty) || 0;
+                const scrapQty  = parseFloat(this.decision.scrap_qty)  || 0;
+                if (Math.round((returnQty + scrapQty) * 1000) > Math.round(rejectedQty * 1000)) {
+                    return alert('Return qty + Scrap qty cannot exceed rejected qty (' + rejectedQty.toFixed(3) + ')');
+                }
+                // Default: all rejected goes to return if nothing entered
+                if (returnQty === 0 && scrapQty === 0) {
+                    this.decision.return_qty = rejectedQty.toFixed(3);
+                }
+            }
+
             if (!this.decision.remarks || this.decision.remarks.trim() === '') {
                 return alert('Please provide remarks for your decision');
             }
@@ -460,9 +626,14 @@ function qcInspectionDetail() {
             
             try {
                 const payload = {
-                    ...this.decision,
-                    accepted_qty: acceptedQty,
-                    rejected_qty: rejectedQty,
+                    decision:       this.decision.decision,
+                    accepted_qty:   acceptedQty,
+                    rejected_qty:   rejectedQty,
+                    return_qty:     rejectedQty > 0 ? (parseFloat(this.decision.return_qty) || 0) : 0,
+                    scrap_qty:      rejectedQty > 0 ? (parseFloat(this.decision.scrap_qty)  || 0) : 0,
+                    return_remarks: this.decision.return_remarks || null,
+                    scrap_remarks:  this.decision.scrap_remarks  || null,
+                    remarks:        this.decision.remarks,
                 };
                 
                 const res = await fetch(`/api/v1/qc/${lotId}/decision`, {
@@ -482,11 +653,10 @@ function qcInspectionDetail() {
                     return alert(errorMsg);
                 }
                 
-                // Success - show confirmation and close modal
-                alert('✅ Usage decision recorded successfully!\n\nDecision: ' + this.decision.decision.replace(/_/g, ' ') + '\nAccepted: ' + acceptedQty + '\nRejected: ' + rejectedQty);
-                
+                // Success - show barcode certificate modal
                 this.showDecisionModal = false;
                 await this.loadLot();
+                this.openBarcodeModal();
             } catch (error) {
                 console.error('Decision error:', error);
                 alert('An error occurred while submitting the decision');
@@ -497,7 +667,7 @@ function qcInspectionDetail() {
 
         openDecisionModal() {
             // Reset decision form
-            this.decision = { decision: '', accepted_qty: '', rejected_qty: '', remarks: '' };
+            this.decision = { decision: '', accepted_qty: '', rejected_qty: '', return_qty: '', scrap_qty: '', return_remarks: '', scrap_remarks: '', remarks: '' };
             
             // Auto-calculate quantities from test results
             this.calculateDefaultQuantities();
@@ -673,27 +843,99 @@ function qcInspectionDetail() {
             }[value] || 'bg-gray-100 text-gray-600';
         },
 
-        // Check if the current input is a duplicate
+        // Check if the current parameter name is already recorded
         hasDuplicate() {
-            if (!this.newResult.parameter_name || !this.newResult.observed_value) {
-                return false;
-            }
-            
-            return this.qcResults.some(result => {
-                const sameParameter = result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase();
-                const sameValue = parseFloat(result.observed_value) === parseFloat(this.newResult.observed_value);
-                return sameParameter && sameValue;
-            });
+            if (!this.newResult.parameter_name) return false;
+            return this.qcResults.some(result =>
+                result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase()
+            );
         },
 
         // Get duplicate warning message
         getDuplicateMessage() {
-            if (!this.newResult.parameter_name || !this.newResult.observed_value) {
-                return '';
+            if (!this.newResult.parameter_name) return '';
+            return `"${this.newResult.parameter_name}" has already been recorded for this lot. Each parameter can only be recorded once.`;
+        },
+
+        // Sync return/scrap qty so they don't exceed rejected_qty
+        syncDisposition(changed) {
+            const rejected = parseFloat(this.decision.rejected_qty) || 0;
+            if (rejected <= 0) return;
+            if (changed === 'return') {
+                let v = parseFloat(this.decision.return_qty) || 0;
+                v = Math.min(Math.max(v, 0), rejected);
+                this.decision.scrap_qty = (rejected - v).toFixed(3);
+            } else {
+                let v = parseFloat(this.decision.scrap_qty) || 0;
+                v = Math.min(Math.max(v, 0), rejected);
+                this.decision.return_qty = (rejected - v).toFixed(3);
             }
-            
-            return `You have already recorded "${this.newResult.parameter_name}" with observed value ${this.newResult.observed_value}. Please enter a different value or parameter.`;
-        }
+        },
+
+        normalizeDisposition() {
+            const rejected = parseFloat(this.decision.rejected_qty) || 0;
+            let r = Math.min(Math.max(parseFloat(this.decision.return_qty) || 0, 0), rejected);
+            let s = Math.min(Math.max(parseFloat(this.decision.scrap_qty)  || 0, 0), rejected);
+            if (Math.round((r + s) * 1000) > Math.round(rejected * 1000)) s = rejected - r;
+            this.decision.return_qty = r.toFixed(3);
+            this.decision.scrap_qty  = s.toFixed(3);
+        },
+
+        dispositionBalanced() {
+            const rejected  = Math.round((parseFloat(this.decision.rejected_qty) || 0) * 1000);
+            const allocated = Math.round(((parseFloat(this.decision.return_qty) || 0) + (parseFloat(this.decision.scrap_qty) || 0)) * 1000);
+            return rejected === 0 || allocated === rejected;
+        },
+
+        isParameterRecorded(parameterName) {
+            return this.qcResults.some(result =>
+                result.parameter_name.toLowerCase() === parameterName.toLowerCase()
+            );
+        },
+
+        openBarcodeModal() {
+            // Build barcode value: QC-{lotId}-{decision}-{date}
+            const decision = (this.lot.usage_decision?.decision || 'DECISION').substring(0, 3);
+            const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+            this.barcodeValue = `QC-${lotId}-${decision}-${date}`;
+            this.showBarcodeModal = true;
+
+            this.$nextTick(() => {
+                try {
+                    JsBarcode('#qc-barcode', this.barcodeValue, {
+                        format: 'CODE128',
+                        width: 2,
+                        height: 60,
+                        displayValue: false,
+                        margin: 8,
+                    });
+                } catch (e) {
+                    console.error('Barcode generation failed', e);
+                }
+            });
+        },
+
+        printCertificate() {
+            const el = document.getElementById('qc-certificate');
+            const win = window.open('', '_blank', 'width=600,height=700');
+            win.document.write(`
+                <html><head><title>QC Certificate - LOT-${lotId}</title>
+                <style>
+                    body { font-family: Inter, sans-serif; padding: 24px; color: #111; }
+                    .label { font-size: 11px; color: #6b7280; text-transform: uppercase; }
+                    .value { font-size: 14px; font-weight: 600; margin-bottom: 8px; }
+                    .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; background: #f9fafb; padding: 16px; border-radius: 8px; margin: 12px 0; }
+                    .barcode-wrap { text-align: center; border: 1px solid #e5e7eb; border-radius: 8px; padding: 16px; margin: 12px 0; }
+                    .badge { display: inline-block; padding: 4px 12px; border-radius: 999px; font-weight: 700; font-size: 13px; }
+                    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; }
+                    @media print { button { display: none; } }
+                </style></head><body>
+                ${el.innerHTML}
+                <script>window.onload = function(){ window.print(); }<\/script>
+                </body></html>
+            `);
+            win.document.close();
+        },
     };
 }
 </script>

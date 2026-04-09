@@ -170,7 +170,7 @@ function contactData() {
                 this.items = (data && data.data && data.data.contacts) ? data.data.contacts : [];
             } catch (error) {
                 console.error('Failed to load contacts:', error);
-                alert(error.message || 'Failed to load contacts. Please try again.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to load contacts. Please try again.', type: 'error' } }));
                 this.items = [];
             } finally {
                 this.loading = false;
@@ -183,94 +183,96 @@ function contactData() {
         },
         
         edit(item) {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}';
+            const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-contacts' : '/org/' . $organization->org_slug . '/vendor-contacts') }}";
             window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
-        async deactivateItem(item) {
-            if (confirm('Are you sure you want to deactivate contact: ' + item.contact_name + '?')) {
-                try {
-                    const response = await fetch(`/api/v1/vendor-contacts/${item.id}`, {
-                        method: 'PUT',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            ...item,
-                            is_active: false
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to deactivate contact', 'error');
-                        return;
+        deactivateItem(item) {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: {
+                    title: 'Deactivate Contact',
+                    message: `Are you sure you want to deactivate contact: ${item.contact_name}?`,
+                    confirmText: 'Deactivate',
+                    cancelText: 'Cancel',
+                    confirmColor: 'red',
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`/api/v1/vendor-contacts/${item.id}`, {
+                                method: 'PUT',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify({
+                                    ...item,
+                                    is_active: false
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (!response.ok) {
+                                this.showNotification(data.message || 'Failed to deactivate contact', 'error');
+                                return;
+                            }
+                            
+                            this.showNotification('Contact deactivated successfully', 'success');
+                            this.loadData();
+                        } catch (error) {
+                            console.error('Failed to deactivate contact:', error);
+                            this.showNotification('Network error. Please try again.', 'error');
+                        }
                     }
-                    
-                    this.showNotification('Contact deactivated successfully', 'success');
-                    this.loadData(); // Refresh the list
-                } catch (error) {
-                    console.error('Failed to deactivate contact:', error);
-                    this.showNotification('Network error. Please try again.', 'error');
                 }
-            }
+            }));
         },
 
-        async activateItem(item) {
-            if (confirm('Are you sure you want to activate contact: ' + item.contact_name + '?')) {
-                try {
-                    const response = await fetch(`/api/v1/vendor-contacts/${item.id}`, {
-                        method: 'PUT',
-                        credentials: 'same-origin',
-                        headers: {
-                            'Content-Type': 'application/json',
-                            'Accept': 'application/json',
-                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
-                        },
-                        body: JSON.stringify({
-                            ...item,
-                            is_active: true
-                        })
-                    });
-                    
-                    const data = await response.json();
-                    
-                    if (!response.ok) {
-                        this.showNotification(data.message || 'Failed to activate contact', 'error');
-                        return;
+        activateItem(item) {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: {
+                    title: 'Activate Contact',
+                    message: `Are you sure you want to activate contact: ${item.contact_name}?`,
+                    confirmText: 'Activate',
+                    cancelText: 'Cancel',
+                    confirmColor: 'blue',
+                    onConfirm: async () => {
+                        try {
+                            const response = await fetch(`/api/v1/vendor-contacts/${item.id}`, {
+                                method: 'PUT',
+                                credentials: 'same-origin',
+                                headers: {
+                                    'Content-Type': 'application/json',
+                                    'Accept': 'application/json',
+                                    'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                                },
+                                body: JSON.stringify({
+                                    ...item,
+                                    is_active: true
+                                })
+                            });
+                            
+                            const data = await response.json();
+                            
+                            if (!response.ok) {
+                                this.showNotification(data.message || 'Failed to activate contact', 'error');
+                                return;
+                            }
+                            
+                            this.showNotification('Contact activated successfully', 'success');
+                            this.loadData();
+                        } catch (error) {
+                            console.error('Failed to activate contact:', error);
+                            this.showNotification('Network error. Please try again.', 'error');
+                        }
                     }
-                    
-                    this.showNotification('Contact activated successfully', 'success');
-                    this.loadData(); // Refresh the list
-                } catch (error) {
-                    console.error('Failed to activate contact:', error);
-                    this.showNotification('Network error. Please try again.', 'error');
                 }
-            }
+            }));
         },
 
         showNotification(message, type = 'info') {
-            const notification = document.createElement('div');
-            notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${
-                type === 'success' ? 'bg-green-500 text-white' : 
-                type === 'error' ? 'bg-red-500 text-white' : 
-                'bg-blue-500 text-white'
-            }`;
-            notification.innerHTML = `
-                <div class="flex items-center">
-                    <i class="fas fa-${type === 'success' ? 'check-circle' : type === 'error' ? 'exclamation-circle' : 'info-circle'} mr-2"></i>
-                    <span>${message}</span>
-                </div>
-            `;
-            document.body.appendChild(notification);
-            
-            setTimeout(() => {
-                notification.remove();
-            }, 3000);
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
         }
     }
 }

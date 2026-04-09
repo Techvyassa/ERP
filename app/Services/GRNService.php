@@ -545,7 +545,7 @@ class GRNService
                     $putawayService = app(PutawayService::class);
 
                     $existingTask = \App\Models\Tenant\PutawayTask::where('grn_line_id', $lineItem->id)
-                        ->whereIn('status', ['PENDING', 'IN_PROGRESS'])
+                        ->whereIn('status', ['PENDING', 'IN_PROGRESS', 'COMPLETED'])
                         ->first();
 
                     if (!$existingTask) {
@@ -558,11 +558,10 @@ class GRNService
                             'batch_number'  => $lineItem->batch_number,
                             'strategy'      => 'MANUAL',
                         ], $userId);
-                    } else {
-                        if ($existingTask->status === 'PENDING') {
-                            $existingTask->update(['quantity' => $acceptedQty]);
-                        }
+                    } elseif ($existingTask->status === 'PENDING') {
+                        $existingTask->update(['quantity' => $acceptedQty]);
                     }
+                    // COMPLETED tasks are left untouched — putaway already done
                 }
 
                 // Add return fields if provided

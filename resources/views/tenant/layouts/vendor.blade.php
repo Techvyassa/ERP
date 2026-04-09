@@ -1,5 +1,6 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -26,11 +27,17 @@
         }
     </script>
     <style>
-        [x-cloak] { display: none !important; }
-        body { font-family: 'Inter', sans-serif; }
+        [x-cloak] {
+            display: none !important;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+        }
     </style>
     <script defer src="https://cdn.jsdelivr.net/npm/alpinejs@3.x.x/dist/cdn.min.js"></script>
 </head>
+
 <body class="bg-gray-50" x-data="{ sidebarOpen: true, userMenuOpen: false, user: {} }" x-init="
     user = JSON.parse(localStorage.getItem('user') || '{}');
 ">
@@ -58,42 +65,36 @@
                 <ul class="space-y-2">
                     <!-- Back to Main Dashboard -->
                     <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/dashboard' : "/org/{$organization->org_slug}/dashboard") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        <a href="{{ url($tenantType === 'subdomain' ? '/dashboard' : "/org/{$organization->org_slug}/dashboard") }}"
+                            class="flex items-center space-x-3 px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">arrow_back</span>
                             <span x-show="sidebarOpen" class="font-medium">Main Dashboard</span>
                         </a>
                     </li>
-                    
+
                     <!-- Category Dashboard -->
                     <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/vendor-dashboard' : "/org/{$organization->org_slug}/vendor-dashboard") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-dashboard') ? 'bg-amber-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                        <a href="{{ url($tenantType === 'subdomain' ? '/vendor-dashboard' : "/org/{$organization->org_slug}/vendor-dashboard") }}"
+                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-dashboard') ? 'bg-amber-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">dashboard</span>
                             <span x-show="sidebarOpen" class="font-medium">Vendor Dashboard</span>
                         </a>
                     </li>
-                    
+
                     <li class="pt-2 border-t border-gray-200"></li>
-                    
+
                     <!-- Vendor Modules -->
                     <li x-show="sidebarOpen" class="px-3 py-2">
                         <span class="text-xs font-semibold text-gray-400 uppercase">Modules</span>
                     </li>
                     <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/vendors' : "/org/{$organization->org_slug}/vendors") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendors.*') ? 'bg-amber-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                        <a href="{{ url($tenantType === 'subdomain' ? '/vendors' : "/org/{$organization->org_slug}/vendors") }}"
+                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendors.*') ? 'bg-amber-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">handshake</span>
                             <span x-show="sidebarOpen" class="font-medium">Vendor</span>
                         </a>
                     </li>
-                    <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/vendor-contacts' : "/org/{$organization->org_slug}/vendor-contacts") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-contacts.*') ? 'bg-amber-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">contacts</span>
-                            <span x-show="sidebarOpen" class="font-medium">Vendor Contacts</span>
-                        </a>
-                    </li>
+
                     <!-- <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/vendor-material-map' : "/org/{$organization->org_slug}/vendor-material-map") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-material-map.*') ? 'bg-amber-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
@@ -117,11 +118,11 @@
                         </div>
                         <span x-show="sidebarOpen" class="material-symbols-outlined text-gray-400 text-sm transition-transform" :class="{ 'rotate-180': open }">expand_more</span>
                     </button>
-                    
+
                     <div x-show="open" @click.away="open = false" x-cloak
-                         class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
-                        <a href="{{ url($tenantType === 'subdomain' ? '/profile' : "/org/{$organization->org_slug}/profile") }}" 
-                           class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
+                        class="absolute bottom-full left-0 right-0 mb-2 bg-white rounded-lg shadow-lg border border-gray-200 py-2">
+                        <a href="{{ url($tenantType === 'subdomain' ? '/profile' : "/org/{$organization->org_slug}/profile") }}"
+                            class="flex items-center space-x-3 px-4 py-2 text-sm text-gray-700 hover:bg-gray-100">
                             <span class="material-symbols-outlined w-4">person</span>
                             <span>Profile</span>
                         </a>
@@ -152,7 +153,7 @@
                         <h1 class="text-xl font-semibold text-gray-900">@yield('page-title', 'Vendor')</h1>
                     </div>
                 </div>
-                
+
                 <div class="flex items-center space-x-4">
                     <span class="text-xs text-amber-600 px-3 py-1 bg-amber-50 rounded-full font-semibold">
                         Vendor & Procurement
@@ -166,5 +167,9 @@
             @yield('content')
         </main>
     </div>
+    <!-- Global Feedback Components -->
+    @include('components.toast')
+    @include('components.confirm-modal')
 </body>
+
 </html>

@@ -176,7 +176,7 @@
                                     <select x-model="item.material_id" @change="onMaterialSelect(index)"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
                                         <option value="">Select Material</option>
-                                        <template x-for="m in materials" :key="m.id">
+                                        <template x-for="m in availableMaterials(index)" :key="m.id">
                                             <option :value="m.id"
                                                 x-text="m.material_code + ' — ' + m.material_name">
                                             </option>
@@ -260,10 +260,8 @@
 
                                 <!-- Description -->
                                 <div class="lg:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">
-                                        Description <span class="text-red-500">*</span>
-                                    </label>
-                                    <textarea x-model="item.description" required rows="2"
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                    <textarea x-model="item.description" rows="2"
                                         placeholder="Detailed specs: model, SKU, grade, service scope..."
                                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"></textarea>
                                 </div>
@@ -378,6 +376,11 @@ function createPR() {
                 purpose:               '',
                 sort_order:            n,
             });
+            this.$nextTick(() => {
+                const items = document.querySelectorAll('[x-data] .space-y-4 > *');
+                const last = items[items.length - 1];
+                if (last) last.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            });
         },
 
         removeLineItem(index) {
@@ -388,7 +391,14 @@ function createPR() {
             });
         },
 
-        onMaterialSelect(index) {
+        availableMaterials(index) {
+            const usedIds = this.form.line_items
+                .map((item, i) => i !== index ? item.material_id : null)
+                .filter(id => id);
+            return this.materials.filter(m => !usedIds.includes(m.id) && !usedIds.includes(String(m.id)));
+        },
+
+        async onMaterialSelect(index) {
             const item     = this.form.line_items[index];
             const material = this.materials.find(m => m.id == item.material_id);
             if (!material) return;
@@ -396,9 +406,30 @@ function createPR() {
             item.item_name            = material.material_name  || '';
             item.material_type        = material.material_type  || '';
             item.description          = '';
-            item.uom_id               = material.uom_id         || '';
-            item.estimated_unit_price = parseFloat(material.standard_cost) || 0;
             item.warehouse_id         = material.default_warehouse_id || '';
+
+            // Fetch latest PO price for this material
+            try {
+                const res = await fetch(`/api/v1/purchase-requisitions/master/latest-po-price/${material.id}`, {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json' }
+                });
+                const json = await res.json();
+                if (json.success && json.data) {
+                    // Use PO data if available
+                    item.uom_id               = json.data.uom_id || '';
+                    item.estimated_unit_price = parseFloat(json.data.unit_price) || 0;
+                } else {
+                    // No PO history - leave empty for manual entry
+                    item.uom_id               = '';
+                    item.estimated_unit_price = 0;
+                }
+            } catch (e) {
+                // Network error - leave empty
+                item.uom_id               = '';
+                item.estimated_unit_price = 0;
+            }
+
             this.calcTotal(index);
         },
 

@@ -154,7 +154,7 @@ function mapEditForm() {
     return {
         initialLoading: true,
         loading: false,
-        mappingId: {{ $id }},
+        mappingId: '{{ $id }}',
         vendorName: '',
         materialName: '',
         form: {
@@ -194,9 +194,11 @@ function mapEditForm() {
                 this.form.is_active = mapping.is_active !== undefined ? mapping.is_active : true;
             } catch (error) {
                 console.error('Failed to load mapping:', error);
-                alert(error.message || 'Failed to load mapping. Redirecting to list...');
-                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}';
-                window.location.href = baseUrl;
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to load mapping. Redirecting to list...', type: 'error' } }));
+                const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}";
+                setTimeout(() => {
+                    window.location.href = baseUrl;
+                }, 1500);
             } finally {
                 this.initialLoading = false;
             }
@@ -221,12 +223,14 @@ function mapEditForm() {
                     throw new Error((data && data.message) ? data.message : 'Failed to update mapping');
                 }
 
-                alert('Vendor-material mapping updated successfully!');
-                const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}';
-                window.location.href = baseUrl;
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Vendor-material mapping updated successfully!', type: 'success' } }));
+                const baseUrl = "{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendor-material-map' : '/org/' . $organization->org_slug . '/vendor-material-map') }}";
+                setTimeout(() => {
+                    window.location.href = baseUrl;
+                }, 1500);
             } catch (error) {
                 console.error('Failed to update mapping:', error);
-                alert(error.message || 'Failed to update mapping. Please try again.');
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: error.message || 'Failed to update mapping. Please try again.', type: 'error' } }));
             } finally {
                 this.loading = false;
             }
