@@ -167,16 +167,25 @@
                     </div>
 
                     <!-- Validation Results -->
-                    <div x-show="validationResults" class="mb-4">
-                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4">
+                    <div x-show="validationResults && validationResults.errors && validationResults.errors.length > 0" class="mb-4">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-h-60 overflow-y-auto">
                             <div class="flex items-start">
                                 <i class="fas fa-exclamation-triangle text-yellow-600 mt-1 mr-3"></i>
                                 <div class="flex-1">
-                                    <h4 class="text-sm font-medium text-yellow-800">Validation Issues Found</h4>
-                                    <ul class="mt-2 text-xs text-yellow-700 list-disc list-inside">
-                                        <li>Row 5: Material code is required</li>
-                                        <li>Row 12: Invalid material type</li>
-                                        <li>Row 18: UOM not found</li>
+                                    <h4 class="text-sm font-medium text-yellow-800">
+                                        <span x-text="validationResults.imported"></span> imported successfully, 
+                                        <span x-text="validationResults.errors.length"></span> errors found
+                                    </h4>
+                                    <ul class="mt-2 text-xs text-yellow-700 space-y-1 max-h-40 overflow-y-auto">
+                                        <template x-for="(error, index) in validationResults.errors.slice(0, 20)" :key="index">
+                                            <li class="flex items-start">
+                                                <span class="mr-2">•</span>
+                                                <span x-text="error"></span>
+                                            </li>
+                                        </template>
+                                        <li x-show="validationResults.errors.length > 20" class="text-yellow-600 font-medium">
+                                            + <span x-text="validationResults.errors.length - 20"></span> more errors...
+                                        </li>
                                     </ul>
                                 </div>
                             </div>
@@ -210,6 +219,10 @@
                 <p class="text-gray-600 mt-1">Manage raw materials, packaging, and consumables</p>
             </div>
             <div class="flex items-center space-x-3">
+                <!-- Export Button -->
+                <button @click="exportMaterials" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i>Export CSV
+                </button>
                 <!-- CSV Upload Button -->
                 <button @click="showUploadModal = true" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
                     <i class="fas fa-upload mr-2"></i>Import CSV
@@ -376,6 +389,8 @@
             selectedFile: null,
             uploading: false,
             uploadProgress: 0,
+            validationResults: null,
+            dragOver: false,
             errors: {},
             filters: {
                 search: '',
@@ -450,30 +465,48 @@
                 this.loadData();
             },
 
-            downloadTemplate() {
-                // Create CSV template
-                const headers = ['material_code', 'material_name', 'material_type', 'uom_id', 'reorder_level', 'safety_stock', 'is_active'];
-                const sampleData = ['MAT-001', 'Sample Material', 'RAW', '1', '100', '50', 'true'];
-                const csv = [headers.join(','), sampleData.join(',')].join('\n');
+            exportMaterials() {
+                const params = new URLSearchParams();
+                if (this.filters.search) params.append('search', this.filters.search);
+                if (this.filters.material_type) params.append('material_type', this.filters.material_type);
+                if (this.filters.is_active) params.append('is_active', this.filters.is_active);
 
-                // Download file
-                const blob = new Blob([csv], {
-                    type: 'text/csv'
-                });
+                const url = `/api/v1/materials/export?${params}`;
+                window.location.href = url;
+                this.showNotification('Exporting materials...', 'success');
+            },
+
+            downloadTemplate() {
+                // Create CSV template with all fields matching the create form
+                const csvContent = [
+                    'material_name,material_type,uom_code,purchase_uom_code,hsn_code,reorder_level,safety_stock,lead_time_days,shelf_life_days,qc_required,inspection_type,is_batch_tracked,standard_cost,valuation_method',
+                    'Steel Rod 10mm,RAW,KG,KG,7214,100,50,7,365,true,AQL,true,150.00,FIFO',
+                    'Cardboard Box Large,PACKAGING,PC,PC,4819,200,100,5,,true,VISUAL,false,25.00,FIFO',
+                    'Lubricant Oil,CONSUMABLE,LTR,LTR,2710,50,25,10,730,false,,false,80.00,FIFO',
+                    'Semi-Finished Component,SEMI,PC,PC,8483,75,30,3,,true,AQL,true,500.00,FIFO'
+                ].join('\n');
+                
+                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
                 const url = window.URL.createObjectURL(blob);
                 const a = document.createElement('a');
                 a.href = url;
-                a.download = 'material_import_template.csv';
+                const timestamp = new Date().getTime();
+                a.download = `material_import_template_${timestamp}.csv`;
+                document.body.appendChild(a);
                 a.click();
+                document.body.removeChild(a);
                 window.URL.revokeObjectURL(url);
+                
+                this.showNotification('Template downloaded - Use UOM codes and HSN codes that exist in your masters', 'success');
             },
 
             handleFileSelect(event) {
                 const file = event.target.files[0];
                 if (file && file.type === 'text/csv') {
                     this.selectedFile = file;
+                    this.validationResults = null;
                 } else {
-                    alert('Please select a valid CSV file');
+                    this.showNotification('Please select a valid CSV file', 'error');
                 }
             },
 
@@ -482,8 +515,9 @@
                 const file = event.dataTransfer.files[0];
                 if (file && file.type === 'text/csv') {
                     this.selectedFile = file;
+                    this.validationResults = null;
                 } else {
-                    alert('Please drop a valid CSV file');
+                    this.showNotification('Please drop a valid CSV file', 'error');
                 }
             },
 
@@ -493,43 +527,74 @@
                 this.uploading = true;
                 this.uploadProgress = 0;
 
-                // Simulate upload progress
-                const interval = setInterval(() => {
-                    if (this.uploadProgress < 90) {
-                        this.uploadProgress += 10;
-                    }
-                }, 200);
-
                 try {
-                    // TODO: Replace with actual API call
                     const formData = new FormData();
                     formData.append('file', this.selectedFile);
 
-                    // Simulate API call
-                    await new Promise(resolve => setTimeout(resolve, 2000));
+                    this.uploadProgress = 30;
 
-                    this.uploadProgress = 100;
-                    clearInterval(interval);
+                    const response = await fetch('/api/v1/materials/import', {
+                        method: 'POST',
+                        credentials: 'same-origin',
+                        headers: {
+                            'Accept': 'application/json',
+                            'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                        },
+                        body: formData
+                    });
 
-                    alert('CSV imported successfully! ' + this.selectedFile.name);
-                    this.showUploadModal = false;
-                    this.selectedFile = null;
-                    this.uploading = false;
-                    this.uploadProgress = 0;
-                    this.loadData();
+                    this.uploadProgress = 80;
+                    const result = await response.json();
+
+                    if (response.ok && result.success) {
+                        const imported = result.data.imported || 0;
+                        const errors = result.data.errors || [];
+
+                        this.uploadProgress = 100;
+
+                        if (errors.length > 0) {
+                            this.validationResults = {
+                                show: true,
+                                imported: imported,
+                                errors: errors
+                            };
+                            this.showNotification(`Imported ${imported} materials with ${errors.length} errors`, 'warning');
+                        } else {
+                            this.showNotification(`Successfully imported ${imported} materials`, 'success');
+                            this.showUploadModal = false;
+                            this.selectedFile = null;
+                            this.validationResults = null;
+                        }
+
+                        if (imported > 0) {
+                            this.loadData();
+                        }
+                    } else {
+                        let errorMsg = result.message || 'Failed to import materials';
+                        this.showNotification(errorMsg, 'error');
+                    }
                 } catch (error) {
-                    clearInterval(interval);
                     console.error('Failed to upload CSV:', error);
-                    alert('Failed to upload CSV. Please try again.');
+                    this.showNotification('Failed to process CSV file: ' + error.message, 'error');
+                } finally {
                     this.uploading = false;
                     this.uploadProgress = 0;
                 }
             },
 
+            showNotification(message, type = 'info') {
+                const notification = document.createElement('div');
+                const bgColor = type === 'success' ? 'bg-green-500' : type === 'error' ? 'bg-red-500' : type === 'warning' ? 'bg-yellow-500' : 'bg-blue-500';
+                notification.className = `fixed top-4 right-4 px-6 py-3 rounded-lg shadow-lg z-50 ${bgColor} text-white`;
+                notification.textContent = message;
+                document.body.appendChild(notification);
+                setTimeout(() => {
+                    notification.remove();
+                }, 5000);
+            },
+
             edit(item) {
-                const baseUrl = '{{ url(request()->get('
-                tenant_type ') === '
-                subdomain ' ? ' / materials ' : ' / org / ' . $organization->org_slug . ' / materials ') }}';
+                const baseUrl = '{{ url(request()->get("tenant_type") === "subdomain" ? "/materials" : "/org/" . $organization->org_slug . "/materials") }}';
                 window.location.href = `${baseUrl}/${item.id}/edit`;
             },
 

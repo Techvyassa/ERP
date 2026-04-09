@@ -244,12 +244,14 @@ Route::prefix('v1')->group(function () {
             // Material Master
             Route::prefix('materials')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialController::class, 'index']);
+                Route::get('/export', [App\Http\Controllers\MaterialController::class, 'export']);
                 Route::get('/barcode', [App\Http\Controllers\MaterialController::class, 'barcode']);
                 Route::get('/search/barcode', [App\Http\Controllers\MaterialController::class, 'searchByBarcode']);
                 Route::get('/search', [App\Http\Controllers\MaterialController::class, 'search']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
                 Route::post('/bulk', [App\Http\Controllers\MaterialController::class, 'bulkStore']);
+                Route::post('/import', [App\Http\Controllers\MaterialController::class, 'import']);
                 Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\MaterialController::class, 'destroy']); // Deactivate
             });
