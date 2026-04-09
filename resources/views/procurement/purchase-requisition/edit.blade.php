@@ -232,8 +232,8 @@
                                     </select>
                                 </div>
                                 <div class="lg:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">Description <span class="text-red-500">*</span></label>
-                                    <textarea x-model="item.description" required rows="2"
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                    <textarea x-model="item.description" rows="2"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"></textarea>
                                 </div>
                                 <div>
