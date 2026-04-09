@@ -45,7 +45,6 @@
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">CGST %</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">SGST %</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">IGST %</th>
-                        <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">UGST %</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Effective From</th>
                         <th class="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Status</th>
                         <th class="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
@@ -53,13 +52,13 @@
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-200">
                     <template x-if="loading">
-                        <tr><td colspan="9" class="px-6 py-12 text-center">
+                        <tr><td colspan="8" class="px-6 py-12 text-center">
                             <span class="material-symbols-outlined text-6xl text-gray-300 animate-spin">progress_activity</span>
                             <p class="text-gray-600 mt-2">Loading GST taxes...</p>
                         </td></tr>
                     </template>
                     <template x-if="!loading && items.length === 0">
-                        <tr><td colspan="9" class="px-6 py-12 text-center">
+                        <tr><td colspan="8" class="px-6 py-12 text-center">
                             <span class="material-symbols-outlined text-6xl text-gray-300 mb-4">percent</span>
                             <p class="text-gray-600">No GST taxes found.</p>
                         </td></tr>
@@ -71,7 +70,6 @@
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.cgst_rate + '%'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.sgst_rate + '%'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.igst_rate + '%'"></td>
-                            <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.ugst_rate + '%'"></td>
                             <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-600" x-text="item.effective_from"></td>
                             <td class="px-6 py-4 whitespace-nowrap">
                                 <span class="px-2 py-1 text-xs rounded-full" :class="item.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'" x-text="item.is_active ? 'Active' : 'Inactive'"></span>
@@ -108,7 +106,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Tax Name *</label>
                         <input type="text" x-model="formData.tax_name" required maxlength="60" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent" placeholder="e.g., GST @ 18%">
                     </div>
-                    <div class="grid grid-cols-2 gap-4">
+                    <div class="grid grid-cols-3 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">CGST Rate (%)</label>
                             <input type="number" x-model="formData.cgst_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
@@ -117,15 +115,9 @@
                             <label class="block text-sm font-medium text-gray-700 mb-2">SGST Rate (%)</label>
                             <input type="number" x-model="formData.sgst_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
-                    </div>
-                    <div class="grid grid-cols-2 gap-4">
                         <div>
                             <label class="block text-sm font-medium text-gray-700 mb-2">IGST Rate (%)</label>
                             <input type="number" x-model="formData.igst_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-700 mb-2">UGST Rate (%)</label>
-                            <input type="number" x-model="formData.ugst_rate" step="0.01" min="0" max="100" class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                         </div>
                     </div>
                     <div class="grid grid-cols-2 gap-4">
@@ -162,7 +154,7 @@ function gstData() {
     return {
         items: [], loading: false, showModal: false, editMode: false,
         filters: { search: '', is_active: '' },
-        formData: { tax_code: '', tax_name: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, ugst_rate: 0, effective_from: '', effective_to: '', is_active: true },
+        formData: { tax_code: '', tax_name: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, effective_from: '', effective_to: '', is_active: true },
         
         async loadData() {
             this.loading = true;
@@ -195,7 +187,7 @@ function gstData() {
             this.editMode = false;
             // Set default effective_from to today
             const today = new Date().toISOString().split('T')[0];
-            this.formData = { tax_code: '', tax_name: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, ugst_rate: 0, effective_from: today, effective_to: '', is_active: true };
+            this.formData = { tax_code: '', tax_name: '', cgst_rate: 0, sgst_rate: 0, igst_rate: 0, effective_from: today, effective_to: '', is_active: true };
             this.showModal = true;
         },
         
@@ -214,6 +206,12 @@ function gstData() {
                 const url = this.editMode ? `/api/v1/gst-taxes/${this.formData.id}` : '/api/v1/gst-taxes';
                 const method = this.editMode ? 'PUT' : 'POST';
                 
+                // Add ugst_rate with default value 0 since it's removed from UI but required by backend
+                const payload = {
+                    ...this.formData,
+                    ugst_rate: 0
+                };
+                
                 const response = await fetch(url, {
                     method,
                     headers: {
@@ -221,7 +219,7 @@ function gstData() {
                         'Authorization': `Bearer ${this.getToken()}`,
                         'X-Org-Slug': this.getOrgSlug()
                     },
-                    body: JSON.stringify(this.formData)
+                    body: JSON.stringify(payload)
                 });
                 
                 const data = await response.json();

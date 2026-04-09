@@ -84,21 +84,21 @@
                         <a href="{{ url($tenantType === 'subdomain' ? '/users' : "/org/{$organization->org_slug}/users") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.users.*') ? 'bg-purple-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">groups</span>
-                            <span x-show="sidebarOpen" class="font-medium">Users</span>
+                            <span x-show="sidebarOpen" class="font-medium">User</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/departments' : "/org/{$organization->org_slug}/departments") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.departments.*') ? 'bg-purple-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">apartment</span>
-                            <span x-show="sidebarOpen" class="font-medium">Departments</span>
+                            <span x-show="sidebarOpen" class="font-medium">Department</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/roles' : "/org/{$organization->org_slug}/roles") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.roles.*') ? 'bg-purple-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">shield_person</span>
-                            <span x-show="sidebarOpen" class="font-medium">Roles</span>
+                            <span x-show="sidebarOpen" class="font-medium">Role</span>
                         </a>
                     </li>
                     <!-- <li>

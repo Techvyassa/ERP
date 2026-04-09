@@ -84,14 +84,14 @@
                         <a href="{{ url($tenantType === 'subdomain' ? '/hsn-codes' : "/org/{$organization->org_slug}/hsn-codes") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.hsn-codes.*') ? 'bg-green-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">qr_code</span>
-                            <span x-show="sidebarOpen" class="font-medium">HSN Codes</span>
+                            <span x-show="sidebarOpen" class="font-medium">HSN Code</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/gst-taxes' : "/org/{$organization->org_slug}/gst-taxes") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.gst-taxes.*') ? 'bg-green-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">percent</span>
-                            <span x-show="sidebarOpen" class="font-medium">GST Taxes</span>
+                            <span x-show="sidebarOpen" class="font-medium">GST Tax</span>
                         </a>
                     </li>
                     <li>

@@ -404,4 +404,218 @@ class BinLocationController extends Controller
 
         return $generatedCode;
     }
+
+    public function importCSV(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('csv_file');
+            $csvData = array_map('str_getcsv', file($file->getRealPath()));
+            
+            // Remove header row
+            $header = array_shift($csvData);
+            
+            // Normalize headers (trim whitespace)
+            $header = array_map('trim', $header);
+            
+            // Log received headers for debugging
+            \Log::info('CSV Headers received: ' . json_encode($header));
+            
+            // Validate header
+            $expectedHeaders = ['bin_code', 'warehouse', 'aisle', 'rack', 'shelf', 'max_weight_kg', 'is_active'];
+            
+            // Check if all expected headers are present (order-independent and case-insensitive)
+            $headerLower = array_map('strtolower', $header);
+            $expectedLower = array_map('strtolower', $expectedHeaders);
+            
+            \Log::info('CSV Headers (lowercase): ' . json_encode($headerLower));
+            \Log::info('Expected Headers (lowercase): ' . json_encode($expectedLower));
+            
+            $missingHeaders = array_diff($expectedLower, $headerLower);
+            if (!empty($missingHeaders)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'INVALID_CSV_FORMAT', 'details' => ['received' => $header, 'missing' => array_values($missingHeaders)]],
+                    'message' => 'Invalid CSV format. Expected headers: ' . implode(', ', $expectedHeaders) . '. Received: ' . implode(', ', $header),
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 422);
+            }
+            
+            // Create a mapping of header positions
+            $headerMap = [];
+            foreach ($header as $index => $headerName) {
+                $headerMap[strtolower(trim($headerName))] = $index;
+            }
+
+            $imported = 0;
+            $errors = [];
+            $processedBinCodes = []; // Track bin codes in current CSV to detect duplicates
+
+            foreach ($csvData as $index => $row) {
+                $rowNumber = $index + 2; // +2 because we removed header and arrays are 0-indexed
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) continue;
+
+                try {
+                    // Use header mapping to get values (supports any column order)
+                    $binCode = isset($headerMap['bin_code']) ? trim($row[$headerMap['bin_code']] ?? '') : '';
+                    $warehouseIdentifier = isset($headerMap['warehouse']) ? trim($row[$headerMap['warehouse']] ?? '') : '';
+                    $aisle = isset($headerMap['aisle']) ? trim($row[$headerMap['aisle']] ?? '') : '';
+                    $rack = isset($headerMap['rack']) ? trim($row[$headerMap['rack']] ?? '') : '';
+                    $shelf = isset($headerMap['shelf']) ? trim($row[$headerMap['shelf']] ?? '') : '';
+                    $maxWeightKg = isset($headerMap['max_weight_kg']) ? trim($row[$headerMap['max_weight_kg']] ?? '') : '';
+                    $isActive = isset($headerMap['is_active']) ? trim($row[$headerMap['is_active']] ?? '') : '';
+
+                    // Validate required fields
+                    if (empty($warehouseIdentifier)) {
+                        $errors[] = "Row {$rowNumber}: Warehouse is required";
+                        continue;
+                    }
+
+                    // Find warehouse by code or name (case-insensitive, trim spaces)
+                    $warehouseIdentifier = trim($warehouseIdentifier);
+                    $warehouse = \App\Models\Tenant\Warehouse::whereRaw('LOWER(warehouse_code) = ?', [strtolower($warehouseIdentifier)])
+                        ->orWhereRaw('LOWER(warehouse_name) = ?', [strtolower($warehouseIdentifier)])
+                        ->first();
+                    
+                    if (!$warehouse) {
+                        // Get list of available warehouses for better error message
+                        $availableWarehouses = \App\Models\Tenant\Warehouse::select('warehouse_code', 'warehouse_name')
+                            ->where('is_active', true)
+                            ->get()
+                            ->map(function($wh) {
+                                return $wh->warehouse_code . ' (' . $wh->warehouse_name . ')';
+                            })
+                            ->take(5)
+                            ->implode(', ');
+                        
+                        $errorMsg = "Row {$rowNumber}: Warehouse '{$warehouseIdentifier}' not found";
+                        if ($availableWarehouses) {
+                            $errorMsg .= ". Available warehouses: {$availableWarehouses}";
+                        }
+                        
+                        $errors[] = $errorMsg;
+                        continue;
+                    }
+
+                    $warehouseId = $warehouse->id;
+
+                    // Auto-generate bin code if empty
+                    if (empty($binCode)) {
+                        $binCode = $this->generateBinCode($warehouseId);
+                    }
+
+                    // Check if bin code already exists in database
+                    if (BinLocation::where('bin_code', $binCode)->exists()) {
+                        $errors[] = "Row {$rowNumber}: Bin code '{$binCode}' already exists in database";
+                        continue;
+                    }
+
+                    // Check if bin code is duplicate within the CSV file
+                    if (in_array($binCode, $processedBinCodes)) {
+                        $errors[] = "Row {$rowNumber}: Bin code '{$binCode}' is duplicated in the CSV file";
+                        continue;
+                    }
+
+                    // Check for duplicate location (warehouse + aisle + rack + shelf combination)
+                    if (!empty($aisle) || !empty($rack) || !empty($shelf)) {
+                        $locationQuery = BinLocation::where('warehouse_id', $warehouseId);
+                        
+                        if (!empty($aisle)) {
+                            $locationQuery->where('aisle', $aisle);
+                        } else {
+                            $locationQuery->whereNull('aisle');
+                        }
+                        
+                        if (!empty($rack)) {
+                            $locationQuery->where('rack', $rack);
+                        } else {
+                            $locationQuery->whereNull('rack');
+                        }
+                        
+                        if (!empty($shelf)) {
+                            $locationQuery->where('shelf', $shelf);
+                        } else {
+                            $locationQuery->whereNull('shelf');
+                        }
+                        
+                        if ($locationQuery->exists()) {
+                            $locationDesc = "Warehouse: {$warehouseIdentifier}";
+                            if (!empty($aisle)) $locationDesc .= ", Aisle: {$aisle}";
+                            if (!empty($rack)) $locationDesc .= ", Rack: {$rack}";
+                            if (!empty($shelf)) $locationDesc .= ", Shelf: {$shelf}";
+                            
+                            $errors[] = "Row {$rowNumber}: Bin location already exists ({$locationDesc})";
+                            continue;
+                        }
+                    }
+
+                    // Add to processed bin codes
+                    $processedBinCodes[] = $binCode;
+
+                    // Create bin location
+                    BinLocation::create([
+                        'bin_code' => $binCode,
+                        'warehouse_id' => $warehouseId,
+                        'aisle' => !empty($aisle) ? $aisle : null,
+                        'rack' => !empty($rack) ? $rack : null,
+                        'shelf' => !empty($shelf) ? $shelf : null,
+                        'max_weight_kg' => !empty($maxWeightKg) ? (float)$maxWeightKg : null,
+                        'is_active' => filter_var($isActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Successfully imported {$imported} bin location(s)";
+            if (count($errors) > 0) {
+                $message .= " with " . count($errors) . " error(s)";
+            }
+
+            return response()->json([
+                'success' => $imported > 0, // Success only if at least one row was imported
+                'data' => [
+                    'imported' => $imported,
+                    'errors' => $errors
+                ],
+                'message' => $message,
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'CSV_IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import CSV: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
 }

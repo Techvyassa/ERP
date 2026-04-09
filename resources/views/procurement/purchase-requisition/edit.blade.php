@@ -232,8 +232,8 @@
                                     </select>
                                 </div>
                                 <div class="lg:col-span-2">
-                                    <label class="block text-xs font-medium text-gray-600 mb-1">Description <span class="text-red-500">*</span></label>
-                                    <textarea x-model="item.description" required rows="2"
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
+                                    <textarea x-model="item.description" rows="2"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"></textarea>
                                 </div>
                                 <div>
@@ -419,7 +419,19 @@ function editPR() {
             }
             this.saving = true;
             try {
-                const payload = { ...this.form, status, suggested_vendor_id: this.form.suggested_vendor_id || null };
+                const payload = {
+                    ...this.form,
+                    status,
+                    requested_by: parseInt(this.form.requested_by) || null,
+                    department_id: parseInt(this.form.department_id) || null,
+                    suggested_vendor_id: this.form.suggested_vendor_id ? parseInt(this.form.suggested_vendor_id) : null,
+                    line_items: this.form.line_items.map(item => ({
+                        ...item,
+                        material_id: item.material_id ? parseInt(item.material_id) : null,
+                        uom_id: parseInt(item.uom_id),
+                        warehouse_id: item.warehouse_id ? parseInt(item.warehouse_id) : null,
+                    }))
+                };
                 const res = await fetch('/api/v1/purchase-requisitions/' + this.prId, {
                     method: 'PUT',
                     credentials: 'same-origin',

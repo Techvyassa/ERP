@@ -38,6 +38,50 @@
 
 @section('content')
 <div x-data="binData()" x-init="loadData()">
+    <!-- Import Errors Modal -->
+    <div x-show="errorModal.show"
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+         @click.self="closeErrorModal()">
+        <div class="bg-white rounded-lg shadow-xl max-w-3xl w-full mx-4 max-h-[80vh] flex flex-col" @click.stop>
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <div>
+                        <h3 class="text-lg font-semibold text-gray-900">CSV Import Results</h3>
+                        <p class="text-sm text-gray-600 mt-1">
+                            <span class="text-green-600 font-medium" x-text="errorModal.imported"></span> imported successfully, 
+                            <span class="text-red-600 font-medium" x-text="errorModal.errors.length"></span> errors
+                        </p>
+                    </div>
+                    <button @click="closeErrorModal()" class="text-gray-400 hover:text-gray-600">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+            </div>
+
+            <div class="flex-1 overflow-y-auto p-6">
+                <div class="space-y-2">
+                    <template x-for="(error, index) in errorModal.errors" :key="index">
+                        <div class="flex items-start p-3 bg-red-50 border border-red-200 rounded-lg">
+                            <i class="fas fa-exclamation-circle text-red-500 mt-0.5 mr-3"></i>
+                            <span class="text-sm text-red-800" x-text="error"></span>
+                        </div>
+                    </template>
+                </div>
+            </div>
+
+            <div class="p-6 border-t border-gray-200 flex justify-end space-x-3">
+                <button @click="closeErrorModal()" class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                    Close
+                </button>
+                <button @click="downloadErrorCSV()" class="px-4 py-2 bg-red-600 text-white rounded-lg hover:bg-red-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>
+                    Download Errors CSV
+                </button>
+            </div>
+        </div>
+    </div>
+
     <!-- Barcode Modal -->
     <div x-show="barcodeModal.show"
          x-cloak
@@ -83,10 +127,19 @@
                 <h2 class="text-2xl font-bold text-gray-900">Bin Locations</h2>
                 <p class="text-gray-600 mt-1">Manage warehouse bin locations and storage positions</p>
             </div>
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bin-locations/create' : '/org/' . $organization->org_slug . '/bin-locations/create') }}" 
-               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors inline-block">
-                <i class="fas fa-plus mr-2"></i>Add Bin Location
-            </a>
+            <div class="flex gap-3">
+                <button @click="downloadCSVTemplate()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors">
+                    <i class="fas fa-download mr-2"></i>Download CSV Template
+                </button>
+                <button @click="$refs.csvFileInput.click()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                    <i class="fas fa-file-import mr-2"></i>Import CSV
+                </button>
+                <input type="file" x-ref="csvFileInput" @change="handleCSVUpload($event)" accept=".csv" class="hidden">
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bin-locations/create' : '/org/' . $organization->org_slug . '/bin-locations/create') }}" 
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
+                    <i class="fas fa-plus mr-2"></i>Add Bin Location
+                </a>
+            </div>
         </div>
     </div>
 
@@ -193,6 +246,14 @@ function binData() {
             loading: false,
             error: ''
         },
+        errorModal: {
+            show: false,
+            imported: 0,
+            errors: [],
+            rawErrors: [],
+            failedRows: []
+        },
+        uploadedCSVData: [],
         
         async loadData() {
             this.loading = true;
@@ -286,6 +347,55 @@ function binData() {
             this.barcodeModal.barcodeHtml = '';
             this.barcodeModal.loading = false;
             this.barcodeModal.error = '';
+        },
+
+        closeErrorModal() {
+            this.errorModal.show = false;
+            this.errorModal.imported = 0;
+            this.errorModal.errors = [];
+            this.errorModal.rawErrors = [];
+            this.errorModal.failedRows = [];
+        },
+
+        downloadErrorCSV() {
+            if (this.errorModal.failedRows.length === 0) {
+                this.showNotification('No error rows to download', 'error');
+                return;
+            }
+
+            // Create CSV content with the original data structure
+            const headers = ['bin_code', 'warehouse', 'aisle', 'rack', 'shelf', 'max_weight_kg', 'is_active', 'error'];
+            const csvRows = [headers.join(',')];
+            
+            this.errorModal.failedRows.forEach(row => {
+                const escapedRow = [
+                    row.bin_code || '',
+                    row.warehouse || '',
+                    row.aisle || '',
+                    row.rack || '',
+                    row.shelf || '',
+                    row.max_weight_kg || '',
+                    row.is_active || '',
+                    `"${(row.error || '').replace(/"/g, '""')}"`
+                ].join(',');
+                csvRows.push(escapedRow);
+            });
+
+            const csvContent = csvRows.join('\n');
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            const timestamp = new Date().toISOString().replace(/[:.]/g, '-').slice(0, -5);
+            link.setAttribute('href', url);
+            link.setAttribute('download', `bin_locations_import_errors_${timestamp}.csv`);
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showNotification('Error CSV downloaded', 'success');
         },
 
         printBarcode() {
@@ -407,6 +517,216 @@ function binData() {
             setTimeout(() => {
                 notification.remove();
             }, 3000);
+        },
+
+        downloadCSVTemplate() {
+            // Create CSV content with headers and sample rows
+            const csvContent = [
+                'bin_code,warehouse,aisle,rack,shelf,max_weight_kg,is_active',
+                ',RM,A,R1,S1,500,true',
+                ',RM,A,R1,S2,500,true',
+                ',FG,B,R2,S1,1000,true'
+            ].join('\n');
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'bin_locations_import_template.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showNotification('CSV template downloaded', 'success');
+        },
+
+        async handleCSVUpload(event) {
+            const file = event.target.files[0];
+            if (!file) return;
+
+            // Validate file type
+            if (!file.name.endsWith('.csv')) {
+                this.showNotification('Please upload a CSV file', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            // Clear previous CSV data before storing new data
+            this.uploadedCSVData = [];
+
+            // Parse CSV to store the data
+            let cleanedCSVContent = '';
+            try {
+                const text = await file.text();
+                const lines = text.split('\n').filter(line => line.trim());
+                const headers = lines[0].split(',').map(h => h.trim());
+                
+                // Create cleaned headers (without error column)
+                const cleanedHeaders = headers.filter(h => h.toLowerCase() !== 'error');
+                cleanedCSVContent = cleanedHeaders.join(',') + '\n';
+                
+                for (let i = 1; i < lines.length; i++) {
+                    const values = this.parseCSVLine(lines[i]);
+                    const row = {};
+                    const cleanedValues = [];
+                    
+                    headers.forEach((header, index) => {
+                        // Ignore 'error' column if it exists
+                        if (header.toLowerCase() !== 'error') {
+                            row[header] = values[index] || '';
+                            cleanedValues.push(values[index] || '');
+                        }
+                    });
+                    
+                    row.rowNumber = i + 1; // Store original row number
+                    this.uploadedCSVData.push(row);
+                    
+                    // Add cleaned row to CSV content
+                    cleanedCSVContent += cleanedValues.join(',') + '\n';
+                }
+                
+                console.log('Cleaned CSV Content:', cleanedCSVContent.substring(0, 200)); // Debug log
+            } catch (error) {
+                console.error('Failed to parse CSV:', error);
+                this.showNotification('Failed to parse CSV file', 'error');
+                event.target.value = '';
+                return;
+            }
+
+            // Create a new file with cleaned CSV content (without error column)
+            const cleanedFile = new File([cleanedCSVContent], file.name, { type: 'text/csv' });
+            
+            const formData = new FormData();
+            formData.append('csv_file', cleanedFile);
+
+            try {
+                this.showNotification('Uploading CSV file...', 'info');
+                
+                const response = await fetch('/api/v1/bin-locations/import-csv', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+
+                if (!response.ok || !data.success) {
+                    const errorMsg = data.message || 'Failed to import CSV';
+                    const errors = data.data?.errors || [];
+                    
+                    if (errors.length > 0) {
+                        // Map errors to original CSV rows
+                        const failedRows = this.mapErrorsToRows(errors);
+                        
+                        // Show errors in modal
+                        this.errorModal.imported = data.data?.imported || 0;
+                        this.errorModal.errors = errors;
+                        this.errorModal.rawErrors = errors;
+                        this.errorModal.failedRows = failedRows;
+                        this.errorModal.show = true;
+                    } else {
+                        // No specific errors, show generic message
+                        const details = data.error?.details;
+                        if (details && typeof details === 'object') {
+                            const errorDetails = Object.values(details).flat().join(', ');
+                            alert(`Import Failed\n\n${errorMsg}\n\nDetails: ${errorDetails}`);
+                        } else {
+                            alert(`Import Failed\n\n${errorMsg}`);
+                        }
+                    }
+                    return;
+                }
+
+                // Show success message with errors if any
+                const imported = data.data?.imported || 0;
+                const errors = data.data?.errors || [];
+                
+                if (errors.length > 0) {
+                    // Partial success - show modal with errors
+                    const failedRows = this.mapErrorsToRows(errors);
+                    
+                    this.errorModal.imported = imported;
+                    this.errorModal.errors = errors;
+                    this.errorModal.rawErrors = errors;
+                    this.errorModal.failedRows = failedRows;
+                    this.errorModal.show = true;
+                } else {
+                    // Complete success
+                    this.showNotification(`Successfully imported ${imported} bin location(s)`, 'success');
+                }
+                
+                this.loadData(); // Refresh the list
+            } catch (error) {
+                console.error('CSV import failed:', error);
+                alert('Network Error\n\nFailed to import CSV file. Please check your connection and try again.');
+            } finally {
+                event.target.value = ''; // Reset file input
+            }
+        },
+
+        parseCSVLine(line) {
+            const result = [];
+            let current = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < line.length; i++) {
+                const char = line[i];
+                
+                if (char === '"') {
+                    if (inQuotes && line[i + 1] === '"') {
+                        current += '"';
+                        i++;
+                    } else {
+                        inQuotes = !inQuotes;
+                    }
+                } else if (char === ',' && !inQuotes) {
+                    result.push(current.trim());
+                    current = '';
+                } else {
+                    current += char;
+                }
+            }
+            result.push(current.trim());
+            return result;
+        },
+
+        mapErrorsToRows(errors) {
+            const failedRows = [];
+            
+            errors.forEach(error => {
+                // Parse row number from error message: "Row 2: error message"
+                const match = error.match(/^Row (\d+): (.+)$/);
+                if (match) {
+                    const rowNum = parseInt(match[1]);
+                    const errorMsg = match[2];
+                    
+                    // Find the corresponding row in uploaded data
+                    const originalRow = this.uploadedCSVData.find(row => row.rowNumber === rowNum);
+                    
+                    if (originalRow) {
+                        failedRows.push({
+                            bin_code: originalRow.bin_code || '',
+                            warehouse: originalRow.warehouse || '',
+                            aisle: originalRow.aisle || '',
+                            rack: originalRow.rack || '',
+                            shelf: originalRow.shelf || '',
+                            max_weight_kg: originalRow.max_weight_kg || '',
+                            is_active: originalRow.is_active || '',
+                            error: errorMsg
+                        });
+                    }
+                }
+            });
+            
+            return failedRows;
         }
     }
 }

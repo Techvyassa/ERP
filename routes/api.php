@@ -210,6 +210,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['check.module.permission:ADMIN'])->prefix('uoms')->group(function () {
             Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
             Route::get('/barcode', [App\Http\Controllers\UOMController::class, 'barcode']);
+            Route::post('/import-csv', [App\Http\Controllers\UOMController::class, 'importCSV']);
             Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
             Route::post('/', [App\Http\Controllers\UOMController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\UOMController::class, 'update']);
@@ -233,6 +234,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('bin-locations')->group(function () {
                 Route::get('/', [App\Http\Controllers\BinLocationController::class, 'index']);
                 Route::get('/barcode', [App\Http\Controllers\BinLocationController::class, 'barcode']);
+                Route::post('/import-csv', [App\Http\Controllers\BinLocationController::class, 'importCSV']);
                 Route::get('/{id}', [App\Http\Controllers\BinLocationController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\BinLocationController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\BinLocationController::class, 'update']);
@@ -307,6 +309,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/master/uoms', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUoms']);
                 Route::get('/master/warehouses', [App\Http\Controllers\PurchaseRequisitionController::class, 'getWarehouses']);
                 Route::get('/master/users', [App\Http\Controllers\PurchaseRequisitionController::class, 'getUsers']);
+                Route::get('/master/latest-po-price/{materialId}', [App\Http\Controllers\PurchaseRequisitionController::class, 'getLatestPoPrice']);
                 // CRUD
                 Route::get('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'index']);
                 Route::post('/', [App\Http\Controllers\PurchaseRequisitionController::class, 'store']);
@@ -316,6 +319,9 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/submit', [App\Http\Controllers\PurchaseRequisitionController::class, 'submit']);
                 Route::patch('/{id}/approve', [App\Http\Controllers\PurchaseRequisitionController::class, 'approve']);
                 Route::patch('/{id}/reject', [App\Http\Controllers\PurchaseRequisitionController::class, 'reject']);
+                Route::patch('/{id}/revert-to-draft', [App\Http\Controllers\PurchaseRequisitionController::class, 'revertToDraft']);
+                // Merge PRs
+                Route::post('/merge', [App\Http\Controllers\PurchaseRequisitionController::class, 'merge']);
                 // Send to vendor
                 Route::post('/{id}/send-to-vendor', [App\Http\Controllers\PurchaseRequisitionController::class, 'sendToVendor']);
             });

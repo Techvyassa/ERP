@@ -1,0 +1,7 @@
+product_code,product_name,product_category,hsn_code,pack_size,pack_uom,standard_cost,mrp,is_active
+,Red chilli Blend,SPICES,980003,100,Gram,80,100,true
+,Turmeric Powder,SPICES,980001,100,Gram,60,90,true
+,Cinnamon Powder,SPICES,980005,100,Gram,150,200,true
+,Clove,SPICES,9800722,1000,Gram,3000,4000,true
+,Wheat Flour,GRAINS,1101,1,Kilogram,40,60,true
+,Basmati Rice,GRAINS,1006,5,Kilogram,250,350,true

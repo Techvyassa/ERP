@@ -391,4 +391,140 @@ class UOMController extends Controller
 
         return $generatedCode;
     }
+
+    public function importCSV(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'csv_file' => 'required|file|mimes:csv,txt|max:2048',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('csv_file');
+            $csvData = array_map('str_getcsv', file($file->getRealPath()));
+            
+            // Remove header row
+            $header = array_shift($csvData);
+            
+            // Validate header
+            $expectedHeaders = ['uom_code', 'uom_name', 'uom_type', 'base_uom_code', 'conversion_factor', 'is_active'];
+            if ($header !== $expectedHeaders) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'INVALID_CSV_FORMAT', 'details' => []],
+                    'message' => 'Invalid CSV format. Expected headers: ' . implode(', ', $expectedHeaders),
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 422);
+            }
+
+            $imported = 0;
+            $errors = [];
+
+            foreach ($csvData as $index => $row) {
+                $rowNumber = $index + 2; // +2 because we removed header and arrays are 0-indexed
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) continue;
+
+                try {
+                    $uomCode = trim($row[0]);
+                    $uomName = trim($row[1]);
+                    $uomType = trim($row[2]);
+                    $baseUomCode = trim($row[3]);
+                    $conversionFactor = trim($row[4]);
+                    $isActive = trim($row[5]);
+
+                    // Validate required fields
+                    if (empty($uomName) || empty($uomType)) {
+                        $errors[] = "Row {$rowNumber}: UOM name and type are required";
+                        continue;
+                    }
+
+                    // Check if UOM name already exists
+                    if (UOM::where('uom_name', $uomName)->exists()) {
+                        $errors[] = "Row {$rowNumber}: UOM name '{$uomName}' already exists in database";
+                        continue;
+                    }
+
+                    // Auto-generate UOM code if empty
+                    if (empty($uomCode)) {
+                        $uomCode = $this->generateUOMCode($uomType);
+                    }
+
+                    // Check if UOM code already exists
+                    if (UOM::where('uom_code', $uomCode)->exists()) {
+                        $errors[] = "Row {$rowNumber}: UOM code '{$uomCode}' already exists";
+                        continue;
+                    }
+
+                    // Find base UOM ID if base_uom_code is provided
+                    $baseUomId = null;
+                    if (!empty($baseUomCode)) {
+                        $baseUom = UOM::where('uom_code', $baseUomCode)->first();
+                        if (!$baseUom) {
+                            $errors[] = "Row {$rowNumber}: Base UOM code '{$baseUomCode}' not found";
+                            continue;
+                        }
+                        $baseUomId = $baseUom->id;
+                    }
+
+                    // Create UOM
+                    UOM::create([
+                        'uom_code' => $uomCode,
+                        'uom_name' => $uomName,
+                        'uom_type' => $uomType,
+                        'base_uom_id' => $baseUomId,
+                        'conversion_factor' => !empty($conversionFactor) ? (float)$conversionFactor : 1,
+                        'is_active' => filter_var($isActive, FILTER_VALIDATE_BOOLEAN, FILTER_NULL_ON_FAILURE) ?? true,
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Successfully imported {$imported} UOM(s)";
+            if (count($errors) > 0) {
+                $message .= " with " . count($errors) . " error(s)";
+            }
+
+            return response()->json([
+                'success' => $imported > 0, // Success only if at least one row was imported
+                'data' => [
+                    'imported' => $imported,
+                    'errors' => $errors
+                ],
+                'message' => $message,
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'CSV_IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import CSV: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
 }

@@ -1,0 +1,21 @@
+CORRECT CSV FORMAT - Copy this exactly:
+
+product_code,product_name,product_category,hsn_code,pack_size,pack_uom,standard_cost,mrp,is_active
+,Red chilli Blend,Blend,980003,100,KG,80,100,true
+,Turmeric Powder,Blend,980001,100,KG,60,90,true
+,Cinnamon Powder,Blend,980005,100,KG,150,200,true
+,Clove,spice,9800722,1000,KG,3000,4000,true
+
+IMPORTANT NOTES:
+1. First column (product_code) is EMPTY - each row starts with a comma
+2. pack_uom column (6th column) should be: KG, GM, PC, LTR, MTR (SHORT codes only)
+3. Do NOT use: KG-0001, GM-0002, 98976-GG, etc.
+
+WRONG FORMAT (DO NOT USE):
+PROD-0001,Red chilli Blend,Blend,980003,100,KG-0001,80,100,TRUE
+                                            ^^^^^^^ WRONG!
+
+RIGHT FORMAT (USE THIS):
+,Red chilli Blend,Blend,980003,100,KG,80,100,true
+^                                  ^^
+Empty first column              Just "KG"

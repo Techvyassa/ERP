@@ -41,7 +41,7 @@
                 <thead class="bg-gray-50 border-b border-gray-200">
                     <tr>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">PR Number</th>
-                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Quotations</th>
+                        <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Vendors Quoted</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Vendors</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
                         <th class="px-6 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Created At</th>
@@ -61,7 +61,7 @@
                                 <span class="font-semibold text-primary" x-text="item.pr_number"></span>
                             </td>
                             <td class="px-6 py-4">
-                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium" x-text="item.quotation_count + ' quotations'"></span>
+                                <span class="px-2 py-1 bg-blue-100 text-blue-700 rounded text-xs font-medium" x-text="item.quotation_count + ' vendor(s)'"></span>
                             </td>
                             <td class="px-6 py-4">
                                 <div class="flex flex-wrap gap-1">
@@ -118,8 +118,14 @@
                 <div class="grid grid-cols-2 gap-4">
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">PR Number *</label>
-                        <input type="text" x-model="uploadForm.pr_number" required 
-                               class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                        <select x-model="uploadForm.pr_number" required
+                                @change="onPRSelected()"
+                                class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            <option value="">Select PR Number</option>
+                            <template x-for="pr in prList" :key="pr.pr_number">
+                                <option :value="pr.pr_number" x-text="pr.pr_number"></option>
+                            </template>
+                        </select>
                     </div>
                     <div>
                         <label class="block text-sm font-semibold text-gray-700 mb-2">Vendor *</label>
@@ -137,7 +143,7 @@
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Upload Type *</label>
                     <div class="flex gap-4">
                         <label class="flex items-center gap-2">
-                            <input type="radio" x-model="uploadForm.upload_type" value="form" class="text-primary">
+                            <input type="radio" x-model="uploadForm.upload_type" value="form" @change="onPRSelected()" class="text-primary">
                             <span class="text-sm">Manual Form</span>
                         </label>
                         <label class="flex items-center gap-2">
@@ -149,7 +155,14 @@
 
                 <!-- CSV Upload -->
                 <div x-show="uploadForm.upload_type === 'csv'">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">CSV File *</label>
+                    <div class="flex items-center justify-between mb-2">
+                        <label class="block text-sm font-semibold text-gray-700">CSV File *</label>
+                        <button type="button" @click="downloadCSVTemplate()" 
+                                class="px-3 py-1 bg-blue-100 text-blue-700 rounded text-xs hover:bg-blue-200 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm">download</span>
+                            Download Template
+                        </button>
+                    </div>
                     <input type="file" @change="uploadForm.csv_file = $event.target.files[0]" accept=".csv" 
                            class="w-full px-4 py-2 border border-gray-200 rounded-lg">
                     <p class="text-xs text-gray-500 mt-1">Format: item_name, quantity, unit_price, delivery_date, remarks</p>
@@ -159,16 +172,42 @@
                 <div x-show="uploadForm.upload_type === 'form'">
                     <div class="flex items-center justify-between mb-2">
                         <label class="block text-sm font-semibold text-gray-700">Line Items *</label>
-                        <button type="button" @click="addQuotationItem()" 
-                                class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                            Add Item
-                        </button>
+                        <div class="flex items-center gap-2">
+                            <span x-show="loadingPRItems" class="text-xs text-gray-400 flex items-center gap-1">
+                                <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                Loading items...
+                            </span>
+                            <button type="button" @click="addQuotationItem()" 
+                                    x-show="!uploadForm.pr_number"
+                                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
+                                Add Item
+                            </button>
+                        </div>
+                    </div>
+                    <div x-show="uploadForm.quotations.length > 0" class="grid grid-cols-12 gap-2 px-3 mb-1">
+                        <span class="col-span-3 text-xs font-semibold text-gray-500 uppercase">Item Name</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Qty</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Unit Price</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Delivery Date</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Remarks</span>
+                        <span class="col-span-1"></span>
                     </div>
                     <div class="space-y-3 max-h-60 overflow-y-auto">
+                        <template x-if="!loadingPRItems && uploadForm.quotations.length === 0">
+                            <div class="text-center py-4 text-gray-400 text-sm">
+                                <span x-show="uploadForm.pr_number">No line items found for this PR. Add manually.</span>
+                                <span x-show="!uploadForm.pr_number">Select a PR Number to auto-load items.</span>
+                            </div>
+                        </template>
                         <template x-for="(item, index) in uploadForm.quotations" :key="index">
                             <div class="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-lg">
-                                <input type="text" x-model="item.item_name" placeholder="Item Name" required 
-                                       class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
+                                <select x-model="item.item_name" required 
+                                        class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
+                                    <option value="">Select Material</option>
+                                    <template x-for="material in materials" :key="material.id">
+                                        <option :value="material.material_name" x-text="material.material_code + ' - ' + material.material_name"></option>
+                                    </template>
+                                </select>
                                 <input type="number" x-model="item.quantity" placeholder="Qty" required min="0.001" step="0.001" 
                                        class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.unit_price" placeholder="Price" required min="0" step="0.01" 
@@ -214,8 +253,11 @@ function quotationComparisonData() {
     return {
         items: [],
         vendors: [],
+        prList: [],
+        prIdMap: {},
         loading: false,
         uploading: false,
+        loadingPRItems: false,
         search: '',
         showUploadModal: false,
         uploadForm: {
@@ -228,7 +270,7 @@ function quotationComparisonData() {
         toast: { show: false, message: '', type: 'success' },
 
         async init() {
-            await Promise.all([this.loadData(), this.loadVendors()]);
+            await Promise.all([this.loadData(), this.loadVendors(), this.loadPRNumbers()]);
         },
 
         async loadData() {
@@ -262,6 +304,60 @@ function quotationComparisonData() {
                 }
             } catch (error) {
                 console.error('Error loading vendors:', error);
+            }
+        },
+
+        async loadPRNumbers() {
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/v1/purchase-requisitions?status=APPROVED&per_page=500', {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    this.prList = data.data.data ?? data.data ?? [];
+                    // Build a map of pr_number -> id for quick lookup
+                    this.prIdMap = {};
+                    this.prList.forEach(pr => { this.prIdMap[pr.pr_number] = pr.id; });
+                }
+            } catch (error) {
+                console.error('Error loading PR numbers:', error);
+            }
+        },
+
+        onPRSelected() {
+            if (this.uploadForm.upload_type === 'form' && this.uploadForm.pr_number) {
+                this.loadPRLineItems(this.uploadForm.pr_number);
+            } else {
+                this.uploadForm.quotations = [];
+            }
+        },
+
+        async loadPRLineItems(prNumber) {
+            const prId = this.prIdMap[prNumber];
+            if (!prId) return;
+            this.loadingPRItems = true;
+            this.uploadForm.quotations = [];
+            try {
+                const token = localStorage.getItem('access_token');
+                const response = await fetch(`/api/v1/purchase-requisitions/${prId}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await response.json();
+                if (data.success) {
+                    const lineItems = data.data.purchase_requisition?.line_items ?? [];
+                    this.uploadForm.quotations = lineItems.map(li => ({
+                        item_name: li.item_name ?? li.material?.material_name ?? '',
+                        quantity: li.quantity ?? 1,
+                        unit_price: li.estimated_unit_price ?? 0,
+                        delivery_date: '',
+                        remarks: ''
+                    }));
+                }
+            } catch (error) {
+                console.error('Error loading PR line items:', error);
+            } finally {
+                this.loadingPRItems = false;
             }
         },
 
@@ -357,6 +453,29 @@ function quotationComparisonData() {
             if (!val) return '—';
             const d = new Date(val);
             return isNaN(d) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
+        },
+
+        downloadCSVTemplate() {
+            // Create CSV content with headers and sample row
+            const csvContent = [
+                'item_name,quantity,unit_price,delivery_date,remarks',
+                'Sample Item,10,100.50,2026-04-15,Sample remarks here'
+            ].join('\n');
+
+            // Create blob and download
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const link = document.createElement('a');
+            const url = URL.createObjectURL(blob);
+            
+            link.setAttribute('href', url);
+            link.setAttribute('download', 'quotation_upload_template.csv');
+            link.style.visibility = 'hidden';
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            this.showToast('CSV template downloaded', 'success');
         },
 
         showToast(message, type = 'success') {
