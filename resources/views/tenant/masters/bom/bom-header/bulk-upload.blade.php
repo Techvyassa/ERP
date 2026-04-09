@@ -203,12 +203,21 @@ function bomBulkUpload() {
                 });
 
                 const data = await response.json();
-                this.result = data.data || null;
-
+                
                 if (!response.ok || data.success !== true) {
                     this.setMessage(data.message || 'BOM CSV import failed.', 'error');
+                    // Capture error details so they can be shown in the UI table
+                    if (data.error && data.error.details) {
+                        this.result = {
+                            errors: data.error.details,
+                            error_count: data.error.details.length,
+                            created_count: 0
+                        };
+                    }
                     return;
                 }
+
+                this.result = data.data || null;
 
                 this.setMessage(data.message || 'BOM CSV imported successfully.', 'success');
             } catch (error) {

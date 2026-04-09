@@ -489,7 +489,8 @@ class BOMHeaderController extends Controller
 
                 $mapped = [];
                 foreach ($headers as $colIndex => $header) {
-                    $mapped[$header] = isset($row[$colIndex]) ? trim((string) $row[$colIndex]) : null;
+                    $val = isset($row[$colIndex]) ? trim((string) $row[$colIndex]) : null;
+                    $mapped[$header] = $val === '' ? null : $val;
                 }
 
                 if (empty($mapped['bom_code'])) {
@@ -680,7 +681,6 @@ class BOMHeaderController extends Controller
                         'qty_required' => $item['qty_required'],
                         'uom_id' => $item['uom_id'],
                         'scrap_percent' => $item['scrap_percent'] ?? 0,
-                        'effective_qty' => $this->calculateEffectiveQty((float) $item['qty_required'], (float) ($item['scrap_percent'] ?? 0)),
                         'substitute_material_id' => $item['substitute_material_id'] ?? null,
                         'is_critical' => $item['is_critical'] ?? false,
                         'line_no' => $lineNo++,
@@ -805,11 +805,11 @@ class BOMHeaderController extends Controller
                 'product_id' => $product->id,
                 'version' => (int) $payload['version'],
                 'effective_from' => $payload['effective_from'],
-                'effective_to' => $payload['effective_to'] ?? null,
+                'effective_to' => !empty($payload['effective_to']) ? $payload['effective_to'] : null,
                 'bom_status' => $payload['bom_status'],
                 'batch_size' => (float) $payload['batch_size'],
                 'output_uom_id' => $outputUom->id,
-                'remarks' => $payload['remarks'] ?? null,
+                'remarks' => !empty($payload['remarks']) ? $payload['remarks'] : null,
                 'created_by' => $authUserId,
             ]);
 
@@ -836,7 +836,6 @@ class BOMHeaderController extends Controller
                     'qty_required' => $qtyRequired,
                     'uom_id' => $itemUom->id,
                     'scrap_percent' => $scrapPercent,
-                    'effective_qty' => $this->calculateEffectiveQty($qtyRequired, $scrapPercent),
                     'substitute_material_id' => $substituteMaterial?->id,
                     'is_critical' => $this->normalizeBoolean($item['is_critical'] ?? false),
                     'line_no' => $lineNo++,
@@ -908,10 +907,6 @@ class BOMHeaderController extends Controller
         throw new \RuntimeException(ucfirst($label) . ' not found', 404);
     }
 
-    private function calculateEffectiveQty(float $qtyRequired, float $scrapPercent): float
-    {
-        return round($qtyRequired * (1 + ($scrapPercent / 100)), 4);
-    }
 
     private function normalizeBoolean($value): bool
     {
