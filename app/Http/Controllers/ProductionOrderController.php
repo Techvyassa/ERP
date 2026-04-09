@@ -106,7 +106,7 @@ class ProductionOrderController extends Controller
         $requestId = Str::uuid()->toString();
         try {
             $this->switchTenantDb($request);
-            
+
             $activeOrders = ProductionOrder::whereIn('status', ['DRAFT', 'IN_PROGRESS'])->count();
             $pendingMIR = MaterialIssueRequest::where('status', 'PENDING')->count();
             $approvedMIR = MaterialIssueRequest::where('status', 'APPROVED')->count();
@@ -138,7 +138,7 @@ class ProductionOrderController extends Controller
         $requestId = Str::uuid()->toString();
         try {
             $this->switchTenantDb($request);
-            
+
             $orders = ProductionOrder::with(['product', 'inspectionLots.usageDecision'])
                 ->where('status', 'COMPLETED')
                 ->whereDoesntHave('packingOrders')
@@ -448,8 +448,10 @@ class ProductionOrderController extends Controller
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);
-        } catch (\Exception $e) {
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
             return $this->error($requestId, 'Production order not found', 404);
+        } catch (\Exception $e) {
+            return $this->error($requestId, $e->getMessage(), 500);
         }
     }
 
@@ -516,6 +518,8 @@ class ProductionOrderController extends Controller
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->error($requestId, 'Production order not found', 404);
         } catch (\Exception $e) {
             return $this->error($requestId, $e->getMessage(), 500);
         }
@@ -573,7 +577,7 @@ class ProductionOrderController extends Controller
             $rejectedQty    = (float) $request->input('rejected_qty', 0);
             $reworkQty      = (float) $request->input('rework_qty', 0);
             $targetQty      = (float) $order->target_qty;
-            
+
             $alreadyConfirmed = (float) ($order->confirmed_qty_total ?? 0);
             $alreadyRejected  = (float) ($order->rejected_qty_total ?? 0);
             $alreadyHandled   = $alreadyConfirmed + $alreadyRejected;
@@ -619,18 +623,31 @@ class ProductionOrderController extends Controller
             $inspectionLot = null;
 
             DB::connection('tenant')->transaction(function () use (
-                $order, $confirmedQty, $rejectedQty, $reworkQty, $completionStatus,
-                $newConfirmedTotal, $newRejectedTotal, $yieldPercent, $variance,
-                $warehouseId, $binId, $batchNumber, $userId, $qcRequired, $fgBucket,
-                $request, &$inspectionLot
+                $order,
+                $confirmedQty,
+                $rejectedQty,
+                $reworkQty,
+                $completionStatus,
+                $newConfirmedTotal,
+                $newRejectedTotal,
+                $yieldPercent,
+                $variance,
+                $warehouseId,
+                $binId,
+                $batchNumber,
+                $userId,
+                $qcRequired,
+                $fgBucket,
+                $request,
+                &$inspectionLot
             ) {
                 // 1. Post FG to stock (PRODUCTION_RECEIPT)
                 $this->stockService->post(
                     item: [
                         'product_id'  => $order->product_id,
                         'uom_id'      => $order->bom?->output_uom_id,
-                        'warehouse_id'=> $warehouseId,
-                        'batch_number'=> $batchNumber,
+                        'warehouse_id' => $warehouseId,
+                        'batch_number' => $batchNumber,
                     ],
                     bucket: $fgBucket,
                     qtyChange: +$confirmedQty,
@@ -649,8 +666,8 @@ class ProductionOrderController extends Controller
                         item: [
                             'product_id'  => $order->product_id,
                             'uom_id'      => $order->bom?->output_uom_id,
-                            'warehouse_id'=> $warehouseId,
-                            'batch_number'=> $batchNumber,
+                            'warehouse_id' => $warehouseId,
+                            'batch_number' => $batchNumber,
                         ],
                         bucket: 'BLOCKED',
                         qtyChange: +$rejectedQty,
@@ -741,6 +758,8 @@ class ProductionOrderController extends Controller
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->error($requestId, 'Production order not found', 404);
         } catch (\Exception $e) {
             return $this->error($requestId, $e->getMessage(), 500);
         }
@@ -802,6 +821,8 @@ class ProductionOrderController extends Controller
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->error($requestId, 'Production order not found', 404);
         } catch (\Exception $e) {
             return $this->error($requestId, $e->getMessage(), 500);
         }
@@ -878,6 +899,8 @@ class ProductionOrderController extends Controller
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->error($requestId, 'Production order not found', 404);
         } catch (\Exception $e) {
             return $this->error($requestId, $e->getMessage(), 500);
         }
