@@ -635,6 +635,7 @@
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to confirm FG');
                     this.closeModal();
                     await this.loadOrders();
+                    this.notify('FG output confirmed successfully');
                 } catch (e) {
                     this.modal.error = e.message || 'An error occurred. Please try again.';
                 } finally {
@@ -673,6 +674,16 @@
                     },
                     ...options,
                 });
+            },
+
+            notify(message, type = 'success') {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+            },
+
+            confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+                window.dispatchEvent(new CustomEvent('open-confirm', {
+                    detail: { title, message, onConfirm, confirmText, confirmColor }
+                }));
             },
         }
     }

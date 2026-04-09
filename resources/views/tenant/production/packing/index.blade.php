@@ -387,8 +387,9 @@ function packingOrders(orgSlug) {
                 this.newPackingOrder.production_order_id = '';
                 await this.loadPackingOrders();
                 await this.selectOrder(data.data.packing_order.id);
+                this.notify('Packing order created');
             } catch (error) {
-                alert(error.message);
+                this.notify(error.message, 'error');
             } finally {
                 this.creatingOrder = false;
             }
@@ -403,21 +404,22 @@ function packingOrders(orgSlug) {
                 });
                 const data = await res.json();
                 if (!res.ok || !data.success) {
-                    return alert(data.message || 'Failed to create carton');
+                    return this.notify(data.message || 'Failed to create carton', 'error');
                 }
                 await this.selectOrder(this.selectedOrder.id);
                 this.selectedCartonId = data.data.carton.id;
+                this.notify('New carton opened');
             } catch (error) {
-                alert(error.message || 'An error occurred while creating the carton');
+                this.notify(error.message || 'An error occurred while creating the carton', 'error');
             }
         },
 
         async scanIntoCarton() {
             if (!this.scanForm.product_barcode || this.scanForm.product_barcode.trim() === '') {
-                return alert('Please enter or scan the product barcode first.');
+                return this.notify('Please enter or scan the product barcode first.', 'error');
             }
             if (!this.scanForm.qty || parseFloat(this.scanForm.qty) <= 0) {
-                return alert('Please enter a valid quantity.');
+                return this.notify('Please enter a valid quantity.', 'error');
             }
             const res = await fetch(`/api/v1/packing-orders/${this.selectedOrder.id}/cartons/${this.selectedCartonId}/scan`, {
                 method: 'POST',
@@ -425,9 +427,10 @@ function packingOrders(orgSlug) {
                 body: JSON.stringify(this.scanForm)
             });
             const data = await res.json();
-            if (!res.ok || !data.success) return alert(data.message || 'Failed to scan FG into carton');
+            if (!res.ok || !data.success) return this.notify(data.message || 'Failed to scan FG into carton', 'error');
             this.scanForm = { product_barcode: '', qty: 1 };
             await this.selectOrder(this.selectedOrder.id);
+            this.notify('FG scanned into carton');
         },
 
         async sealCarton() {
@@ -437,8 +440,9 @@ function packingOrders(orgSlug) {
                 body: JSON.stringify({ labelled: true })
             });
             const data = await res.json();
-            if (!res.ok || !data.success) return alert(data.message || 'Failed to seal carton');
+            if (!res.ok || !data.success) return this.notify(data.message || 'Failed to seal carton', 'error');
             await this.selectOrder(this.selectedOrder.id);
+            this.notify('Carton sealed');
         },
 
         async completePackingOrder() {
@@ -447,9 +451,20 @@ function packingOrders(orgSlug) {
                 headers: headers()
             });
             const data = await res.json();
-            if (!res.ok || !data.success) return alert(data.message || 'Failed to complete packing order');
+            if (!res.ok || !data.success) return this.notify(data.message || 'Failed to complete packing order', 'error');
             await this.selectOrder(this.selectedOrder.id);
             await this.loadPackingOrders();
+            this.notify('Packing order completed');
+        },
+
+        notify(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+        },
+
+        confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: { title, message, onConfirm, confirmText, confirmColor }
+            }));
         }
     }
 }

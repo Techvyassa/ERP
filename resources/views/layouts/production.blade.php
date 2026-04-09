@@ -150,5 +150,9 @@
             @yield('content')
         </main>
     </div>
+
+    <!-- Global Components -->
+    <x-toast />
+    <x-confirm-modal />
 </body>
 </html>

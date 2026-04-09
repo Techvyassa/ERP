@@ -857,25 +857,32 @@
                 }
             },
 
-            async startOrder(order) {
-                const confirmed = confirm(`Start production for ${order.order_no}?`);
-                if (!confirmed) return;
-                try {
-                    const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, {
-                        method: 'POST'
-                    });
-                    const data = await res.json();
-                    if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start production');
-                    await this.loadOrders();
-                    if (this.viewModal.show && this.viewModal.order?.id === order.id) {
-                        await this.viewOrder({
-                            ...order,
-                            status: 'IN_PROGRESS'
-                        });
-                    }
-                } catch (e) {
-                    alert(e.message || 'Failed to start production');
-                }
+            startOrder(order) {
+                this.confirm(
+                    'Start Production',
+                    `Confirm starting production for ${order.order_no}?`,
+                    async () => {
+                        try {
+                            const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, {
+                                method: 'POST'
+                            });
+                            const data = await res.json();
+                            if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start production');
+                            await this.loadOrders();
+                            if (this.viewModal.show && this.viewModal.order?.id === order.id) {
+                                await this.viewOrder({
+                                    ...order,
+                                    status: 'IN_PROGRESS'
+                                });
+                            }
+                            this.notify('Production started successfully');
+                        } catch (e) {
+                            this.notify(e.message || 'Failed to start production', 'error');
+                        }
+                    },
+                    'Start',
+                    'blue'
+                );
             },
 
 
@@ -892,7 +899,7 @@
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load variance report');
                     this.varianceModal.report = data.data;
                 } catch (e) {
-                    alert(e.message || 'Failed to load variance report');
+                    this.notify(e.message || 'Failed to load variance report', 'error');
                     this.closeVarianceModal();
                 } finally {
                     this.varianceModal.loading = false;
@@ -940,6 +947,16 @@
                     },
                     ...options
                 });
+            },
+
+            notify(message, type = 'success') {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+            },
+
+            confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+                window.dispatchEvent(new CustomEvent('open-confirm', {
+                    detail: { title, message, onConfirm, confirmText, confirmColor }
+                }));
             }
         }
     }

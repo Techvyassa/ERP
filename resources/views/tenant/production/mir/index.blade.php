@@ -358,7 +358,8 @@ function mirList(orgSlug) {
                 if (this.viewModal.show && this.viewModal.data?.id === mir.id) {
                     await this.openView(mir);
                 }
-            } catch(e) { alert(e.message); }
+                this.notify('MIR approved successfully');
+            } catch(e) { this.notify(e.message, 'error'); }
             finally { this.approving = false; }
         },
 
@@ -445,6 +446,16 @@ function mirList(orgSlug) {
                     'Authorization': 'Bearer ' + (localStorage.getItem('access_token') || '') },
                 ...options
             });
+        },
+
+        notify(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+        },
+
+        confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: { title, message, onConfirm, confirmText, confirmColor }
+            }));
         }
     }
 }
