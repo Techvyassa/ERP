@@ -75,16 +75,16 @@ class ProfileCompletionController extends Controller
         $requestId = Str::uuid()->toString();
         
         $validator = Validator::make($request->all(), [
-            'org_name' => 'sometimes|string|max:255',
-            'primary_phone' => 'sometimes|string|max:20',
-            'address_line1' => 'sometimes|string|max:255',
+            'org_name' => 'sometimes|nullable|string|max:255',
+            'primary_phone' => 'sometimes|nullable|string|max:20',
+            'address_line1' => 'sometimes|nullable|string|max:255',
             'address_line2' => 'nullable|string|max:255',
-            'city' => 'sometimes|string|max:100',
-            'state' => 'sometimes|string|max:100',
-            'postal_code' => 'sometimes|string|max:20',
-            'country_code' => 'sometimes|string|size:2',
-            'timezone' => 'sometimes|string|max:50',
-            'currency_code' => 'sometimes|string|size:3',
+            'city' => 'sometimes|nullable|string|max:100',
+            'state' => 'sometimes|nullable|string|max:100',
+            'postal_code' => 'sometimes|nullable|string|max:20',
+            'country_code' => 'sometimes|nullable|string|size:2',
+            'timezone' => 'sometimes|nullable|string|max:50',
+            'currency_code' => 'sometimes|nullable|string|size:3',
         ]);
 
         if ($validator->fails()) {
