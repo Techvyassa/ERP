@@ -156,6 +156,8 @@ Route::prefix('v1')->group(function () {
         // Role management endpoints (with RBAC middleware for ADMINISTRATION module)
         Route::middleware(['check.module.permission:ADMIN'])->prefix('roles')->group(function () {
             Route::get('/', [App\Http\Controllers\RoleController::class, 'index']);
+            Route::get('/template', [App\Http\Controllers\RoleController::class, 'downloadTemplate']);
+            Route::post('/import', [App\Http\Controllers\RoleController::class, 'import']);
             Route::get('/{id}', [App\Http\Controllers\RoleController::class, 'show']);
             Route::post('/', [App\Http\Controllers\RoleController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\RoleController::class, 'update']);

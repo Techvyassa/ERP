@@ -17,11 +17,23 @@
                 <h2 class="text-2xl font-bold text-gray-900">Roles</h2>
                 <p class="text-gray-600 mt-1">Manage user roles and permissions</p>
             </div>
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/roles/create' : '/org/' . $organization->org_slug . '/roles/create') }}"
-               class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm">add</span>
-                <span>Add Role</span>
-            </a>
+            <div class="flex gap-2">
+                <button @click="downloadTemplate()" 
+                        class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">download</span>
+                    <span>Download CSV Template</span>
+                </button>
+                <button @click="openImportModal()" 
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">upload</span>
+                    <span>Import CSV</span>
+                </button>
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/roles/create' : '/org/' . $organization->org_slug . '/roles/create') }}"
+                   class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">add</span>
+                    <span>Add Role</span>
+                </a>
+            </div>
         </div>
 
         <!-- Search and Filters -->
@@ -273,6 +285,97 @@
             </div>
         </div>
     </div>
+
+    <!-- Import CSV Modal -->
+    <div x-show="showImportModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="closeImportModal()">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">Import Roles from CSV</h3>
+                <button @click="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <!-- Upload Section -->
+                <div x-show="!uploading && !uploadComplete">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-500 transition-colors"
+                         @dragover.prevent="dragOver = true"
+                         @dragleave.prevent="dragOver = false"
+                         @drop.prevent="handleFileDrop($event)"
+                         :class="{'border-purple-500 bg-purple-50': dragOver}">
+                        <input type="file" 
+                               id="csvFileInput" 
+                               accept=".csv" 
+                               @change="handleFileSelect($event)" 
+                               class="hidden">
+                        <label for="csvFileInput" class="cursor-pointer">
+                            <span class="material-symbols-outlined text-6xl text-gray-400 mb-4">upload_file</span>
+                            <p class="text-gray-700 font-medium mb-2">Drop CSV file here or click to browse</p>
+                            <p class="text-sm text-gray-500">Maximum file size: 10MB</p>
+                        </label>
+                    </div>
+                    
+                    <div x-show="selectedFile" class="mt-4 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-gray-600">description</span>
+                            <span class="text-sm text-gray-700" x-text="selectedFile ? selectedFile.name : ''"></span>
+                        </div>
+                        <button @click="clearFile()" class="text-red-600 hover:text-red-800">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div x-show="uploading" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                    <p class="text-gray-700 font-medium">Uploading and processing...</p>
+                    <p class="text-sm text-gray-500 mt-2">Please wait while we import your roles</p>
+                </div>
+
+                <!-- Upload Complete -->
+                <div x-show="uploadComplete" class="text-center py-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                        <span class="material-symbols-outlined text-4xl text-green-600">check_circle</span>
+                    </div>
+                    <p class="text-gray-700 font-medium mb-2" x-text="uploadMessage"></p>
+                    
+                    <!-- Show errors if any -->
+                    <div x-show="uploadErrors.length > 0" class="mt-4 max-h-48 overflow-y-auto">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                            <p class="text-sm font-medium text-red-800 mb-2">Errors:</p>
+                            <ul class="text-sm text-red-700 space-y-1">
+                                <template x-for="error in uploadErrors" :key="error">
+                                    <li x-text="error"></li>
+                                </template>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex gap-3 p-6 border-t border-gray-200">
+                <button type="button" 
+                        @click="closeImportModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span x-show="!uploadComplete">Cancel</span>
+                    <span x-show="uploadComplete">Close</span>
+                </button>
+                <button type="button" 
+                        x-show="!uploading && !uploadComplete"
+                        @click="uploadCSV()"
+                        :disabled="!selectedFile"
+                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Upload & Import
+                </button>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -307,6 +410,13 @@ function roleManager() {
             { code: 'FINANCE', name: 'Finance' },
             { code: 'HR', name: 'Human Resources' }
         ],
+        showImportModal: false,
+        selectedFile: null,
+        uploading: false,
+        uploadComplete: false,
+        uploadMessage: '',
+        uploadErrors: [],
+        dragOver: false,
 
         init() {
             this.fetchRoles();
@@ -610,6 +720,103 @@ function roleManager() {
                 this.showError('Failed to save permissions');
             } finally {
                 this.savingPermissions = false;
+            }
+        },
+
+        downloadTemplate() {
+            window.location.href = '/api/v1/roles/template';
+        },
+
+        openImportModal() {
+            this.showImportModal = true;
+            this.selectedFile = null;
+            this.uploading = false;
+            this.uploadComplete = false;
+            this.uploadMessage = '';
+            this.uploadErrors = [];
+        },
+
+        closeImportModal() {
+            this.showImportModal = false;
+            this.selectedFile = null;
+            this.uploading = false;
+            this.uploadComplete = false;
+            this.uploadMessage = '';
+            this.uploadErrors = [];
+            if (this.uploadComplete) {
+                this.fetchRoles();
+            }
+        },
+
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                this.selectedFile = file;
+            } else {
+                this.showError('Please select a valid CSV file');
+            }
+        },
+
+        handleFileDrop(event) {
+            this.dragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                this.selectedFile = file;
+            } else {
+                this.showError('Please drop a valid CSV file');
+            }
+        },
+
+        clearFile() {
+            this.selectedFile = null;
+            document.getElementById('csvFileInput').value = '';
+        },
+
+        async uploadCSV() {
+            if (!this.selectedFile) {
+                this.showError('Please select a file first');
+                return;
+            }
+
+            this.uploading = true;
+            this.uploadComplete = false;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', this.selectedFile);
+
+                const response = await fetch('/api/v1/roles/import', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                this.uploading = false;
+                this.uploadComplete = true;
+
+                if (data.success) {
+                    this.uploadMessage = data.message;
+                    this.uploadErrors = data.data.errors || [];
+                    
+                    // Reload page after successful import
+                    setTimeout(() => {
+                        window.location.reload();
+                    }, 2000);
+                } else {
+                    this.uploadMessage = 'Import failed';
+                    this.uploadErrors = [data.message];
+                }
+            } catch (error) {
+                this.uploading = false;
+                this.uploadComplete = true;
+                this.uploadMessage = 'Import failed';
+                this.uploadErrors = ['Network error occurred'];
             }
         },
 
