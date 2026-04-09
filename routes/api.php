@@ -184,6 +184,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [App\Http\Controllers\HSNCodeController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\HSNCodeController::class, 'show']);
             Route::post('/', [App\Http\Controllers\HSNCodeController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\HSNCodeController::class, 'import']);
             Route::put('/{id}', [App\Http\Controllers\HSNCodeController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\HSNCodeController::class, 'destroy']);
         });
@@ -193,6 +194,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [App\Http\Controllers\GSTTaxController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\GSTTaxController::class, 'show']);
             Route::post('/', [App\Http\Controllers\GSTTaxController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\GSTTaxController::class, 'import']);
             Route::put('/{id}', [App\Http\Controllers\GSTTaxController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\GSTTaxController::class, 'destroy']);
         });
@@ -202,6 +204,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [App\Http\Controllers\CurrencyController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\CurrencyController::class, 'show']);
             Route::post('/', [App\Http\Controllers\CurrencyController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\CurrencyController::class, 'import']);
             Route::put('/{id}', [App\Http\Controllers\CurrencyController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\CurrencyController::class, 'destroy']);
         });
@@ -274,8 +277,10 @@ Route::prefix('v1')->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
                 Route::get('/', [App\Http\Controllers\VendorController::class, 'index']);
+                Route::get('/export', [App\Http\Controllers\VendorController::class, 'export']);
                 Route::get('/{id}', [App\Http\Controllers\VendorController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\VendorController::class, 'store']);
+                Route::post('/import', [App\Http\Controllers\VendorController::class, 'import']);
                 Route::put('/{id}', [App\Http\Controllers\VendorController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\VendorController::class, 'destroy']); // Blacklist vendor
                 Route::post('/{id}/send-email', [App\Http\Controllers\VendorController::class, 'sendEmail']);

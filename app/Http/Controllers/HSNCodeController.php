@@ -209,4 +209,141 @@ class HSNCodeController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Import HSN codes from CSV
+     * POST /api/v1/hsn-codes/import
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+
+            // Read file with proper UTF-8 encoding handling
+            $content = file_get_contents($file->getRealPath());
+
+            // Convert to UTF-8 if needed
+            if (!mb_check_encoding($content, 'UTF-8')) {
+                $content = mb_convert_encoding($content, 'UTF-8', mb_detect_encoding($content, 'UTF-8, ISO-8859-1, Windows-1252', true));
+            }
+
+            // Remove BOM if present
+            $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+
+            // Parse CSV
+            $lines = explode("\n", $content);
+            $csvData = array_map('str_getcsv', $lines);
+
+            $headers = array_map('trim', $csvData[0]);
+            $rows = array_slice($csvData, 1);
+
+            $imported = 0;
+            $errors = [];
+
+            // Fetch GST tax mappings
+            $gstTaxMap = \App\Models\Tenant\GSTTax::pluck('id', 'tax_code')->toArray();
+
+            foreach ($rows as $index => $row) {
+                if (empty(array_filter($row))) continue;
+
+                $rowNumber = $index + 2;
+
+                // Ensure row has same number of columns as headers
+                if (count($row) < count($headers)) {
+                    $row = array_pad($row, count($headers), '');
+                }
+
+                $data = array_combine($headers, $row);
+
+                try {
+                    // Validate required fields
+                    if (empty($data['hsn_code'])) {
+                        $errors[] = "Row {$rowNumber}: HSN code is required";
+                        continue;
+                    }
+
+                    if (empty($data['description'])) {
+                        $errors[] = "Row {$rowNumber}: Description is required";
+                        continue;
+                    }
+
+                    if (empty($data['gst_tax_code'])) {
+                        $errors[] = "Row {$rowNumber}: GST tax code is required";
+                        continue;
+                    }
+
+                    // Check for duplicate HSN code
+                    $hsnCode = trim($data['hsn_code']);
+                    $existingHsn = HSNCode::where('hsn_code', $hsnCode)->first();
+                    if ($existingHsn) {
+                        $errors[] = "Row {$rowNumber}: HSN code '{$hsnCode}' already exists";
+                        continue;
+                    }
+
+                    // Resolve GST Tax
+                    $gstTaxCode = strtoupper(trim($data['gst_tax_code']));
+                    $gstTaxId = $gstTaxMap[$gstTaxCode] ?? null;
+                    if (!$gstTaxId) {
+                        $errors[] = "Row {$rowNumber}: GST tax code '{$data['gst_tax_code']}' not found";
+                        continue;
+                    }
+
+                    // Create HSN code
+                    HSNCode::create([
+                        'hsn_code' => $hsnCode,
+                        'description' => trim($data['description']),
+                        'default_gst_id' => $gstTaxId,
+                        'is_active' => true,
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'imported' => $imported,
+                    'errors' => $errors,
+                    'total_rows' => count($rows)
+                ],
+                'message' => "{$imported} HSN code(s) imported successfully" . (count($errors) > 0 ? ", " . count($errors) . " failed" : ""),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import HSN codes: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
 }

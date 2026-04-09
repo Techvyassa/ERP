@@ -215,4 +215,138 @@ class CurrencyController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Import currencies from CSV
+     * POST /api/v1/currencies/import
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            
+            // Read file with proper UTF-8 encoding handling
+            $content = file_get_contents($file->getRealPath());
+            
+            // Convert to UTF-8 if needed
+            if (!mb_check_encoding($content, 'UTF-8')) {
+                $content = mb_convert_encoding($content, 'UTF-8', mb_detect_encoding($content, 'UTF-8, ISO-8859-1, Windows-1252', true));
+            }
+            
+            // Remove BOM if present
+            $content = preg_replace('/^\xEF\xBB\xBF/', '', $content);
+            
+            // Parse CSV
+            $lines = explode("\n", $content);
+            $csvData = array_map('str_getcsv', $lines);
+            
+            $headers = array_map('trim', $csvData[0]);
+            $rows = array_slice($csvData, 1);
+
+            $imported = 0;
+            $errors = [];
+
+            foreach ($rows as $index => $row) {
+                if (empty(array_filter($row))) continue;
+
+                $rowNumber = $index + 2;
+                
+                // Ensure row has same number of columns as headers
+                if (count($row) < count($headers)) {
+                    $row = array_pad($row, count($headers), '');
+                }
+                
+                $data = array_combine($headers, $row);
+
+                try {
+                    // Validate required fields
+                    if (empty($data['currency_code'])) {
+                        $errors[] = "Row {$rowNumber}: Currency code is required";
+                        continue;
+                    }
+
+                    if (empty($data['currency_name'])) {
+                        $errors[] = "Row {$rowNumber}: Currency name is required";
+                        continue;
+                    }
+
+                    if (empty($data['symbol'])) {
+                        $errors[] = "Row {$rowNumber}: Currency symbol is required";
+                        continue;
+                    }
+
+                    // Check for duplicate currency code
+                    $currencyCode = strtoupper(trim($data['currency_code']));
+                    $existingCurrency = Currency::where('currency_code', $currencyCode)->first();
+                    if ($existingCurrency) {
+                        $errors[] = "Row {$rowNumber}: Currency code '{$currencyCode}' already exists";
+                        continue;
+                    }
+
+                    // Validate currency code length (should be 3 characters)
+                    if (strlen($currencyCode) !== 3) {
+                        $errors[] = "Row {$rowNumber}: Currency code must be exactly 3 characters";
+                        continue;
+                    }
+
+                    // Create currency
+                    Currency::create([
+                        'currency_code' => $currencyCode,
+                        'currency_name' => trim($data['currency_name']),
+                        'symbol' => trim($data['symbol']),
+                        'exchange_rate' => !empty($data['exchange_rate']) ? floatval($data['exchange_rate']) : 1.0,
+                        'is_base_currency' => !empty($data['is_base_currency']) && in_array(strtolower($data['is_base_currency']), ['true', '1', 'yes']),
+                        'is_active' => true,
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'imported' => $imported,
+                    'errors' => $errors,
+                    'total_rows' => count($rows)
+                ],
+                'message' => "{$imported} currency(ies) imported successfully" . (count($errors) > 0 ? ", " . count($errors) . " failed" : ""),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import currencies: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
 }
