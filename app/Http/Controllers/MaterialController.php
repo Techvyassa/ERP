@@ -808,4 +808,241 @@ class MaterialController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * Export materials to CSV
+     * GET /api/v1/materials/export
+     */
+    public function export(Request $request)
+    {
+        try {
+            $query = Material::with(['uom', 'purchaseUom', 'hsnCode', 'defaultWarehouse']);
+
+            if ($request->has('is_active')) {
+                $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));
+            }
+
+            if ($request->has('material_type')) {
+                $query->where('material_type', $request->input('material_type'));
+            }
+
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('material_code', 'like', "%{$search}%")
+                        ->orWhere('material_name', 'like', "%{$search}%");
+                });
+            }
+
+            $materials = $query->get();
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="materials_export_' . date('Y-m-d_His') . '.csv"',
+            ];
+
+            $callback = function () use ($materials) {
+                $file = fopen('php://output', 'w');
+
+                // CSV Headers
+                fputcsv($file, [
+                    'material_code',
+                    'material_name',
+                    'material_type',
+                    'uom_code',
+                    'purchase_uom_code',
+                    'hsn_code',
+                    'reorder_level',
+                    'safety_stock',
+                    'lead_time_days',
+                    'shelf_life_days',
+                    'qc_required',
+                    'inspection_type',
+                    'is_batch_tracked',
+                    'standard_cost',
+                    'valuation_method',
+                    'is_active'
+                ]);
+
+                // Data rows
+                foreach ($materials as $material) {
+                    fputcsv($file, [
+                        $material->material_code,
+                        $material->material_name,
+                        $material->material_type,
+                        $material->uom?->uom_code ?? '',
+                        $material->purchaseUom?->uom_code ?? '',
+                        $material->hsnCode?->hsn_code ?? '',
+                        $material->reorder_level ?? '',
+                        $material->safety_stock ?? '',
+                        $material->lead_time_days ?? '',
+                        $material->shelf_life_days ?? '',
+                        $material->qc_required ? 'true' : 'false',
+                        $material->inspection_type ?? '',
+                        $material->is_batch_tracked ? 'true' : 'false',
+                        $material->standard_cost ?? '',
+                        $material->valuation_method ?? '',
+                        $material->is_active ? 'true' : 'false'
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export materials: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Import materials from CSV
+     * POST /api/v1/materials/import
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            $csvData = array_map('str_getcsv', file($file->getRealPath()));
+            $headers = array_map('trim', $csvData[0]);
+            $rows = array_slice($csvData, 1);
+
+            $imported = 0;
+            $errors = [];
+
+            // Fetch UOM and HSN mappings
+            $uomMap = \App\Models\Tenant\UOM::pluck('id', 'uom_code')->toArray();
+            $hsnMap = \App\Models\Tenant\HSNCode::pluck('id', 'hsn_code')->toArray();
+
+            foreach ($rows as $index => $row) {
+                if (empty(array_filter($row))) continue;
+
+                $rowNumber = $index + 2;
+                $data = array_combine($headers, $row);
+
+                try {
+                    // Validate required fields
+                    if (empty($data['material_name'])) {
+                        $errors[] = "Row {$rowNumber}: Material name is required";
+                        continue;
+                    }
+
+                    if (empty($data['material_type'])) {
+                        $errors[] = "Row {$rowNumber}: Material type is required";
+                        continue;
+                    }
+
+                    // Check for duplicate material name
+                    $existingMaterial = Material::where('material_name', trim($data['material_name']))->first();
+                    if ($existingMaterial) {
+                        $errors[] = "Row {$rowNumber}: Material '{$data['material_name']}' already exists";
+                        continue;
+                    }
+
+                    // Resolve UOM
+                    $uomId = null;
+                    if (!empty($data['uom_code'])) {
+                        $uomCode = strtoupper(trim($data['uom_code']));
+                        $uomId = $uomMap[$uomCode] ?? null;
+                        if (!$uomId) {
+                            $errors[] = "Row {$rowNumber}: UOM code '{$data['uom_code']}' not found";
+                            continue;
+                        }
+                    } else {
+                        $errors[] = "Row {$rowNumber}: UOM code is required";
+                        continue;
+                    }
+
+                    // Resolve Purchase UOM
+                    $purchaseUomId = null;
+                    if (!empty($data['purchase_uom_code'])) {
+                        $purchaseUomCode = strtoupper(trim($data['purchase_uom_code']));
+                        $purchaseUomId = $uomMap[$purchaseUomCode] ?? null;
+                    }
+
+                    // Resolve HSN Code
+                    $hsnCodeId = null;
+                    if (!empty($data['hsn_code'])) {
+                        $hsnCode = trim($data['hsn_code']);
+                        $hsnCodeId = $hsnMap[$hsnCode] ?? null;
+                    }
+
+                    // Generate material code
+                    $materialType = strtoupper(trim($data['material_type']));
+                    $materialCode = $this->generateMaterialCode($materialType);
+
+                    // Create material
+                    Material::create([
+                        'material_code' => $materialCode,
+                        'material_name' => trim($data['material_name']),
+                        'material_type' => $materialType,
+                        'uom_id' => $uomId,
+                        'purchase_uom_id' => $purchaseUomId,
+                        'hsn_code_id' => $hsnCodeId,
+                        'reorder_level' => !empty($data['reorder_level']) ? floatval($data['reorder_level']) : 0,
+                        'safety_stock' => !empty($data['safety_stock']) ? floatval($data['safety_stock']) : 0,
+                        'lead_time_days' => !empty($data['lead_time_days']) ? intval($data['lead_time_days']) : 0,
+                        'shelf_life_days' => !empty($data['shelf_life_days']) ? intval($data['shelf_life_days']) : null,
+                        'qc_required' => !empty($data['qc_required']) && in_array(strtolower($data['qc_required']), ['true', '1', 'yes']),
+                        'inspection_type' => !empty($data['inspection_type']) ? trim($data['inspection_type']) : null,
+                        'is_batch_tracked' => !empty($data['is_batch_tracked']) && in_array(strtolower($data['is_batch_tracked']), ['true', '1', 'yes']),
+                        'standard_cost' => !empty($data['standard_cost']) ? floatval($data['standard_cost']) : 0,
+                        'valuation_method' => !empty($data['valuation_method']) ? trim($data['valuation_method']) : 'FIFO',
+                        'is_active' => true,
+                        'created_by' => $request->input('auth_user_id'),
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'imported' => $imported,
+                    'errors' => $errors,
+                    'total_rows' => count($rows)
+                ],
+                'message' => "{$imported} material(s) imported successfully" . (count($errors) > 0 ? ", " . count($errors) . " failed" : ""),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import materials: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
 }

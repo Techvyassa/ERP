@@ -301,11 +301,219 @@ class RoleController extends Controller
     }
 
     /**
-     * Generate barcode for role
-     * GET /api/v1/roles/{id}/barcode
+     * Download CSV template for roles
+     * GET /api/v1/roles/template
      */
+    public function downloadTemplate(): \Symfony\Component\HttpFoundation\StreamedResponse
+    {
+        $headers = [
+            'Content-Type' => 'text/csv; charset=UTF-8',
+            'Content-Disposition' => 'attachment; filename="roles_template.csv"',
+        ];
+
+        $callback = function() {
+            $file = fopen('php://output', 'w');
+            
+            // Add UTF-8 BOM for Excel compatibility
+            fprintf($file, chr(0xEF).chr(0xBB).chr(0xBF));
+            
+            // CSV Headers (role_code removed - will be auto-generated)
+            fputcsv($file, [
+                'role_name',
+                'description',
+                'is_active'
+            ]);
+            
+            // Sample data
+            fputcsv($file, [
+                'Manager',
+                'Department Manager Role',
+                'true'
+            ]);
+            
+            fputcsv($file, [
+                'Supervisor',
+                'Team Supervisor Role',
+                'true'
+            ]);
+            
+            fputcsv($file, [
+                'Team Leader',
+                'Team Leader Role',
+                'true'
+            ]);
+            
+            fclose($file);
+        };
+
+        return response()->stream($callback, 200, $headers);
+    }
 
     /**
-     * Generate Code128 barcode HTML
+     * Generate unique role code from role name
      */
+    private function generateRoleCode(string $roleName): string
+    {
+        // Convert to uppercase and remove special characters
+        $baseCode = strtoupper(preg_replace('/[^A-Za-z0-9]/', '', $roleName));
+        
+        // Take first 10 characters or less
+        $baseCode = substr($baseCode, 0, 10);
+        
+        // Check if code exists
+        $code = $baseCode;
+        $counter = 1;
+        
+        while (Role::where('role_code', $code)->exists()) {
+            $code = $baseCode . $counter;
+            $counter++;
+        }
+        
+        return $code;
+    }
+
+    /**
+     * Import roles from CSV
+     * POST /api/v1/roles/import
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        // Validate file upload
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt|max:10240', // 10MB max
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Invalid file upload',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            $fileContent = file_get_contents($file->getRealPath());
+            
+            // Handle UTF-8 encoding
+            $encoding = mb_detect_encoding($fileContent, ['UTF-8', 'ISO-8859-1', 'Windows-1252'], true);
+            if ($encoding !== 'UTF-8') {
+                $fileContent = mb_convert_encoding($fileContent, 'UTF-8', $encoding);
+            }
+            
+            // Remove BOM if present
+            $fileContent = preg_replace('/^\x{FEFF}/u', '', $fileContent);
+            
+            // Parse CSV
+            $rows = array_map('str_getcsv', explode("\n", $fileContent));
+            $header = array_shift($rows);
+            
+            if (empty($header)) {
+                return response()->json([
+                    'success' => false,
+                    'error' => [
+                        'code' => 'INVALID_CSV',
+                        'details' => []
+                    ],
+                    'message' => 'CSV file is empty or invalid',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String()
+                ], 422);
+            }
+
+            $imported = 0;
+            $errors = [];
+            $rowNumber = 1; // Start from 1 (header is row 0)
+
+            foreach ($rows as $row) {
+                $rowNumber++;
+                
+                // Skip empty rows
+                if (empty(array_filter($row))) {
+                    continue;
+                }
+
+                // Map row to associative array
+                if (count($row) !== count($header)) {
+                    $errors[] = "Row {$rowNumber}: Column count mismatch";
+                    continue;
+                }
+                
+                $data = array_combine($header, $row);
+
+                // Validate required fields (only role_name is required now)
+                if (empty($data['role_name'])) {
+                    $errors[] = "Row {$rowNumber}: role_name is required";
+                    continue;
+                }
+
+                // Check for duplicate role_name
+                $existingRole = Role::where('role_name', trim($data['role_name']))->first();
+                if ($existingRole) {
+                    $errors[] = "Row {$rowNumber}: Role name '{$data['role_name']}' already exists";
+                    continue;
+                }
+
+                // Auto-generate role_code from role_name
+                $roleCode = $this->generateRoleCode($data['role_name']);
+
+                // Parse is_active
+                $isActive = true;
+                if (isset($data['is_active'])) {
+                    $isActive = filter_var($data['is_active'], FILTER_VALIDATE_BOOLEAN);
+                }
+
+                try {
+                    // Create role
+                    Role::create([
+                        'role_code' => $roleCode,
+                        'role_name' => trim($data['role_name']),
+                        'description' => isset($data['description']) ? trim($data['description']) : null,
+                        'is_active' => $isActive,
+                        'is_system_role' => false,
+                        'created_by' => $request->input('auth_user_id'),
+                    ]);
+
+                    $imported++;
+                } catch (\Exception $e) {
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            $message = "Successfully imported {$imported} role(s)";
+            if (!empty($errors)) {
+                $message .= " with " . count($errors) . " error(s)";
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'imported' => $imported,
+                    'errors' => $errors
+                ],
+                'message' => $message,
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import roles: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
 }

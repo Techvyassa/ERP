@@ -156,6 +156,8 @@ Route::prefix('v1')->group(function () {
         // Role management endpoints (with RBAC middleware for ADMINISTRATION module)
         Route::middleware(['check.module.permission:ADMIN'])->prefix('roles')->group(function () {
             Route::get('/', [App\Http\Controllers\RoleController::class, 'index']);
+            Route::get('/template', [App\Http\Controllers\RoleController::class, 'downloadTemplate']);
+            Route::post('/import', [App\Http\Controllers\RoleController::class, 'import']);
             Route::get('/{id}', [App\Http\Controllers\RoleController::class, 'show']);
             Route::post('/', [App\Http\Controllers\RoleController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\RoleController::class, 'update']);
@@ -184,6 +186,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [App\Http\Controllers\HSNCodeController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\HSNCodeController::class, 'show']);
             Route::post('/', [App\Http\Controllers\HSNCodeController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\HSNCodeController::class, 'import']);
             Route::put('/{id}', [App\Http\Controllers\HSNCodeController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\HSNCodeController::class, 'destroy']);
         });
@@ -193,6 +196,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [App\Http\Controllers\GSTTaxController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\GSTTaxController::class, 'show']);
             Route::post('/', [App\Http\Controllers\GSTTaxController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\GSTTaxController::class, 'import']);
             Route::put('/{id}', [App\Http\Controllers\GSTTaxController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\GSTTaxController::class, 'destroy']);
         });
@@ -202,6 +206,7 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [App\Http\Controllers\CurrencyController::class, 'index']);
             Route::get('/{id}', [App\Http\Controllers\CurrencyController::class, 'show']);
             Route::post('/', [App\Http\Controllers\CurrencyController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\CurrencyController::class, 'import']);
             Route::put('/{id}', [App\Http\Controllers\CurrencyController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\CurrencyController::class, 'destroy']);
         });
@@ -244,12 +249,14 @@ Route::prefix('v1')->group(function () {
             // Material Master
             Route::prefix('materials')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialController::class, 'index']);
+                Route::get('/export', [App\Http\Controllers\MaterialController::class, 'export']);
                 Route::get('/barcode', [App\Http\Controllers\MaterialController::class, 'barcode']);
                 Route::get('/search/barcode', [App\Http\Controllers\MaterialController::class, 'searchByBarcode']);
                 Route::get('/search', [App\Http\Controllers\MaterialController::class, 'search']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\MaterialController::class, 'store']);
                 Route::post('/bulk', [App\Http\Controllers\MaterialController::class, 'bulkStore']);
+                Route::post('/import', [App\Http\Controllers\MaterialController::class, 'import']);
                 Route::put('/{id}', [App\Http\Controllers\MaterialController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\MaterialController::class, 'destroy']); // Deactivate
             });
@@ -272,8 +279,10 @@ Route::prefix('v1')->group(function () {
             // Vendor Master
             Route::prefix('vendors')->group(function () {
                 Route::get('/', [App\Http\Controllers\VendorController::class, 'index']);
+                Route::get('/export', [App\Http\Controllers\VendorController::class, 'export']);
                 Route::get('/{id}', [App\Http\Controllers\VendorController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\VendorController::class, 'store']);
+                Route::post('/import', [App\Http\Controllers\VendorController::class, 'import']);
                 Route::put('/{id}', [App\Http\Controllers\VendorController::class, 'update']);
                 Route::delete('/{id}', [App\Http\Controllers\VendorController::class, 'destroy']); // Blacklist vendor
                 Route::post('/{id}/send-email', [App\Http\Controllers\VendorController::class, 'sendEmail']);

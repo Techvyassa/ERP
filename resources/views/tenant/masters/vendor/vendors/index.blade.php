@@ -16,10 +16,132 @@
                 <h2 class="text-2xl font-bold text-gray-900">Vendor Master</h2>
                 <p class="text-gray-600 mt-1">Manage suppliers and vendor information</p>
             </div>
-            <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors/create' : '/org/' . $organization->org_slug . '/vendors/create') }}" 
-               class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-shadow hover:shadow-lg inline-flex items-center">
-                <span class="material-symbols-outlined text-sm mr-2">add</span>Add Vendor
-            </a>
+            <div class="flex items-center space-x-3">
+                <!-- Export Button -->
+                <button @click="exportVendors" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-shadow hover:shadow-lg inline-flex items-center">
+                    <span class="material-symbols-outlined text-sm mr-2">download</span>Export CSV
+                </button>
+                <!-- Import Button -->
+                <button @click="showUploadModal = true" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-shadow hover:shadow-lg inline-flex items-center">
+                    <span class="material-symbols-outlined text-sm mr-2">upload</span>Import CSV
+                </button>
+                <!-- Add Vendor Button -->
+                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/vendors/create' : '/org/' . $organization->org_slug . '/vendors/create') }}" 
+                   class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-shadow hover:shadow-lg inline-flex items-center">
+                    <span class="material-symbols-outlined text-sm mr-2">add</span>Add Vendor
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <!-- CSV Upload Modal -->
+    <div x-show="showUploadModal"
+        x-cloak
+        class="fixed inset-0 z-50 overflow-y-auto"
+        style="display: none;">
+        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
+            <!-- Backdrop -->
+            <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity" @click="showUploadModal = false"></div>
+
+            <!-- Modal Content -->
+            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
+                <!-- Header -->
+                <div class="bg-white px-6 py-4 border-b border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <h3 class="text-lg font-semibold text-gray-900">Import Vendors from CSV</h3>
+                        <button @click="showUploadModal = false" class="text-gray-400 hover:text-gray-600">
+                            <span class="material-symbols-outlined">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Body -->
+                <div class="bg-white px-6 py-4">
+                    <!-- Upload File -->
+                    <div class="mb-4">
+                        <label class="block text-sm font-medium text-gray-700 mb-2">Upload CSV File</label>
+                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors"
+                            @dragover.prevent="dragOver = true"
+                            @dragleave.prevent="dragOver = false"
+                            @drop.prevent="handleFileDrop($event)"
+                            :class="{ 'border-blue-500 bg-blue-50': dragOver }">
+                            <div class="space-y-1 text-center">
+                                <span class="material-symbols-outlined text-4xl text-gray-400 mb-3">cloud_upload</span>
+                                <div class="flex text-sm text-gray-600">
+                                    <label for="file-upload" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500 focus-within:outline-none">
+                                        <span>Upload a file</span>
+                                        <input id="file-upload"
+                                            name="file-upload"
+                                            type="file"
+                                            accept=".csv"
+                                            class="sr-only"
+                                            @change="handleFileSelect($event)">
+                                    </label>
+                                    <p class="pl-1">or drag and drop</p>
+                                </div>
+                                <p class="text-xs text-gray-500">CSV file up to 10MB</p>
+                                <p x-show="selectedFile" class="text-sm text-green-600 mt-2">
+                                    <span class="material-symbols-outlined text-sm align-middle">check_circle</span>
+                                    <span x-text="selectedFile ? selectedFile.name : ''"></span>
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Upload Progress -->
+                    <div x-show="uploading" class="mb-4">
+                        <div class="flex items-center justify-between text-sm text-gray-700 mb-2">
+                            <span>Uploading...</span>
+                            <span x-text="uploadProgress + '%'"></span>
+                        </div>
+                        <div class="w-full bg-gray-200 rounded-full h-2">
+                            <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                                :style="'width: ' + uploadProgress + '%'"></div>
+                        </div>
+                    </div>
+
+                    <!-- Validation Results -->
+                    <div x-show="validationResults && validationResults.errors && validationResults.errors.length > 0" class="mb-4">
+                        <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-4 max-h-60 overflow-y-auto">
+                            <div class="flex items-start">
+                                <span class="material-symbols-outlined text-yellow-600 mt-1 mr-3">warning</span>
+                                <div class="flex-1">
+                                    <h4 class="text-sm font-medium text-yellow-800">
+                                        <span x-text="validationResults.imported"></span> imported successfully, 
+                                        <span x-text="validationResults.errors.length"></span> errors found
+                                    </h4>
+                                    <ul class="mt-2 text-xs text-yellow-700 space-y-1 max-h-40 overflow-y-auto">
+                                        <template x-for="(error, index) in validationResults.errors.slice(0, 20)" :key="index">
+                                            <li class="flex items-start">
+                                                <span class="mr-2">•</span>
+                                                <span x-text="error"></span>
+                                            </li>
+                                        </template>
+                                        <li x-show="validationResults.errors.length > 20" class="text-yellow-600 font-medium">
+                                            + <span x-text="validationResults.errors.length - 20"></span> more errors...
+                                        </li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Footer -->
+                <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
+                    <button @click="showUploadModal = false"
+                        class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">
+                        Cancel
+                    </button>
+                    <button @click="uploadCSV"
+                        :disabled="!selectedFile || uploading"
+                        :class="!selectedFile || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg transition-colors inline-flex items-center">
+                        <span class="material-symbols-outlined text-sm mr-2">upload</span>
+                        <span x-text="uploading ? 'Uploading...' : 'Import Data'"></span>
+                    </button>
+                </div>
+            </div>
         </div>
     </div>
 
@@ -417,6 +539,12 @@ function vendorData() {
         loading: false,
         viewModalOpen: false,
         emailModalOpen: false,
+        showUploadModal: false,
+        selectedFile: null,
+        uploading: false,
+        uploadProgress: 0,
+        validationResults: null,
+        dragOver: false,
         selectedItem: null,
         emailForm: { id: null, subject: '', message: '', vendor_name: '', to_email: '' },
         sendingEmail: false,
@@ -484,6 +612,103 @@ function vendorData() {
             this.filters = { search: '', vendor_type: '', is_approved: '' };
             this.pagination.current_page = 1;
             this.loadData();
+        },
+
+        exportVendors() {
+            const params = new URLSearchParams();
+            if (this.filters.search) params.append('search', this.filters.search);
+            if (this.filters.vendor_type) params.append('vendor_type', this.filters.vendor_type);
+            if (this.filters.is_approved === 'blacklisted') {
+                params.append('blacklisted', '1');
+            } else if (this.filters.is_approved !== '') {
+                params.append('is_approved', this.filters.is_approved);
+            }
+
+            const url = `/api/v1/vendors/export?${params}`;
+            window.location.href = url;
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Exporting vendors...', type: 'success' } }));
+        },
+
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.type === 'text/csv') {
+                this.selectedFile = file;
+                this.validationResults = null;
+            } else {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Please select a valid CSV file', type: 'error' } }));
+            }
+        },
+
+        handleFileDrop(event) {
+            this.dragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file && file.type === 'text/csv') {
+                this.selectedFile = file;
+                this.validationResults = null;
+            } else {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Please drop a valid CSV file', type: 'error' } }));
+            }
+        },
+
+        async uploadCSV() {
+            if (!this.selectedFile) return;
+
+            this.uploading = true;
+            this.uploadProgress = 0;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', this.selectedFile);
+
+                this.uploadProgress = 30;
+
+                const response = await fetch('/api/v1/vendors/import', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+
+                this.uploadProgress = 80;
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    const imported = result.data.imported || 0;
+                    const errors = result.data.errors || [];
+
+                    this.uploadProgress = 100;
+
+                    if (errors.length > 0) {
+                        this.validationResults = {
+                            show: true,
+                            imported: imported,
+                            errors: errors
+                        };
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: `Imported ${imported} vendors with ${errors.length} errors`, type: 'warning' } }));
+                    } else {
+                        window.dispatchEvent(new CustomEvent('notify', { detail: { message: `Successfully imported ${imported} vendors`, type: 'success' } }));
+                        this.showUploadModal = false;
+                        this.selectedFile = null;
+                        this.validationResults = null;
+                    }
+
+                    if (imported > 0) {
+                        this.loadData();
+                    }
+                } else {
+                    let errorMsg = result.message || 'Failed to import vendors';
+                    window.dispatchEvent(new CustomEvent('notify', { detail: { message: errorMsg, type: 'error' } }));
+                }
+            } catch (error) {
+                console.error('Failed to upload CSV:', error);
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message: 'Failed to process CSV file: ' + error.message, type: 'error' } }));
+            } finally {
+                this.uploading = false;
+                this.uploadProgress = 0;
+            }
         },
         
         viewDetails(item) {
