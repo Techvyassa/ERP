@@ -73,8 +73,8 @@ Route::prefix('v1')->group(function () {
         $user = \App\Models\Tenant\User::with('role')->find($userId);
         $permissions = \App\Models\Tenant\RolePermission::where('role_id', $user->role_id)->get();
 
-        // Clear cache for this user
-        \Illuminate\Support\Facades\Cache::forget("rbac:user:{$userId}:permissions");
+        // Clear cache for this user (using the new granular key format)
+        \Illuminate\Support\Facades\Cache::forget("rbac:user:{$tenantDb}:{$userId}:permissions");
 
         return response()->json([
             'success' => true,
@@ -575,7 +575,7 @@ Route::prefix('v1')->group(function () {
 
         // ── PRODUCTION Module ─────────────────────────────────────────────
         Route::middleware(['check.module.permission:PRODUCTION'])->group(function () {
-            // Production Orders & Material Issue Requests
+            // Production Orders
             Route::prefix('production-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
                 Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
@@ -587,7 +587,16 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
             });
 
-            
+            Route::prefix('packing-orders')->group(function () {
+                Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
+                Route::get('/{id}', [App\Http\Controllers\PackingOrderController::class, 'show']);
+                Route::post('/', [App\Http\Controllers\PackingOrderController::class, 'store']);
+                Route::post('/{id}/cartons', [App\Http\Controllers\PackingOrderController::class, 'createCarton']);
+                Route::post('/{id}/cartons/{cartonId}/scan', [App\Http\Controllers\PackingOrderController::class, 'scanIntoCarton']);
+                Route::post('/{id}/cartons/{cartonId}/seal', [App\Http\Controllers\PackingOrderController::class, 'sealCarton']);
+                Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
+            });
+        });
 
         // Material Issue Request Endpoints
         // Roles: STOREKEEPER (view/scan), STORE_MGR (approve/reject), ADMIN (all)
@@ -599,17 +608,6 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
                 Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
                 Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
-            });
-        });
-
-            Route::prefix('packing-orders')->group(function () {
-                Route::get('/', [App\Http\Controllers\PackingOrderController::class, 'index']);
-                Route::get('/{id}', [App\Http\Controllers\PackingOrderController::class, 'show']);
-                Route::post('/', [App\Http\Controllers\PackingOrderController::class, 'store']);
-                Route::post('/{id}/cartons', [App\Http\Controllers\PackingOrderController::class, 'createCarton']);
-                Route::post('/{id}/cartons/{cartonId}/scan', [App\Http\Controllers\PackingOrderController::class, 'scanIntoCarton']);
-                Route::post('/{id}/cartons/{cartonId}/seal', [App\Http\Controllers\PackingOrderController::class, 'sealCarton']);
-                Route::post('/{id}/complete', [App\Http\Controllers\PackingOrderController::class, 'complete']);
             });
         });
 

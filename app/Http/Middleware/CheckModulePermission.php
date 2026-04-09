@@ -42,10 +42,10 @@ class CheckModulePermission
     public function handle(Request $request, Closure $next, string $moduleCode): Response
     {
         // Get user_id from request (set by ValidateJWT middleware)
-        $userId = $request->input('auth_user_id');
+        $userId = $request->get('auth_user_id');
 
         // Get tenant context (set by ResolveTenant middleware)
-        $tenantDbName = $request->input('tenant_db_name');
+        $tenantDbName = $request->get('tenant_db_name');
 
         if (!$userId || !$tenantDbName) {
             return $this->errorResponse(
@@ -53,6 +53,28 @@ class CheckModulePermission
                 'AUTH_CONTEXT_REQUIRED',
                 400
             );
+        }
+
+        // Determine action from HTTP method
+        $method = $request->method();
+        $path = $request->path();
+
+        $action = match ($method) {
+            'GET' => 'view',
+            'POST' => 'create',
+            'PUT', 'PATCH' => 'edit',
+            'DELETE' => 'delete',
+            default => 'view'
+        };
+
+        // Override action for specific lifecycle/workflow endpoints
+        // Requirement 9.6: Use can_approve for approval/rejection actions
+        if (str_ends_with($path, '/approve') || str_ends_with($path, '/reject')) {
+            $action = 'approve';
+        } 
+        // Lifecycle transitions often map to edit permissions
+        elseif (str_ends_with($path, '/start') || str_ends_with($path, '/complete') || str_ends_with($path, '/confirm-fg')) {
+            $action = 'edit';
         }
 
         // Admin bypass: Check if user has admin role code
@@ -75,22 +97,13 @@ class CheckModulePermission
             return $next($request);
         }
 
-        // Determine action from HTTP method
-        $method = $request->method();
-        $action = match ($method) {
-            'GET' => 'view',
-            'POST' => 'create',
-            'PUT', 'PATCH' => 'edit',
-            'DELETE' => 'delete',
-            default => 'view'
-        };
-
         try {
             // Switch to Tenant DB connection
             $this->dbRouter->switchToTenant($tenantDbName);
 
             // Requirement 9.8: Cache user permissions for 15 minutes
-            $cacheKey = "rbac:user:{$userId}:permissions";
+            // Fixed: Include tenant DB name in key to prevent collision across organizations
+            $cacheKey = "rbac:user:{$tenantDbName}:{$userId}:permissions";
             $permissions = Cache::remember($cacheKey, 900, function () use ($userId) {
                 return $this->loadUserPermissions($userId);
             });
