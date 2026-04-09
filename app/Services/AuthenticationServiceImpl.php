@@ -47,10 +47,12 @@ class AuthenticationServiceImpl implements AuthenticationService
      * @param string $email User email
      * @param string $password Plain text password
      * @param string|null $orgSlug Organization slug (optional, will be auto-detected)
+     * @param string|null $portalCode Portal context (MAIN, PROCUREMENT, STORE, QC, etc.)
+     * @param bool $rememberMe
      * @return AuthResult Authentication result with tokens
      * @throws AuthenticationException
      */
-    public function login(string $email, string $password, ?string $orgSlug = null, bool $rememberMe = false): AuthResult
+    public function login(string $email, string $password, ?string $orgSlug = null, ?string $portalCode = null, bool $rememberMe = false): AuthResult
     {
         // Step 1: Switch to Control DB and find organization
         $this->connectionRouter->switchToControl();
@@ -95,11 +97,46 @@ class AuthenticationServiceImpl implements AuthenticationService
         // Step 3-4: Switch to Tenant DB and lookup user
         $this->connectionRouter->switchToTenant($organization->tenant_db_name);
         
-        $user = User::where('email', $email)->first();
+        $user = User::with(['role', 'department'])->where('email', $email)->first();
         
         if (!$user) {
             AuditLogger::logAuthAttempt($email, $organization->org_slug, false, 'Invalid credentials');
             throw new AuthenticationException('Invalid credentials', 401);
+        }
+
+        // --- Portal-Based Isolation Policy ---
+        $roleCode = optional($user->role)->role_code;
+        
+        // If they hit the MAIN portal (usually /login), they MUST be an ADMIN.
+        if (!$portalCode || strtoupper($portalCode) === 'MAIN') {
+            if ($roleCode !== 'ADMIN') {
+                AuditLogger::logAuthAttempt($email, $organization->org_slug, false, "Unauthorized portal access (MAIN)", null, $user->id);
+                throw new AuthenticationException('Access Denied. Please use your departmental portal.', 403);
+            }
+        } else {
+             // If they hit a SPECIALIZED portal, ensure their role matches or they are an ADMIN
+             // Mapping portal codes to required role codes where necessary
+             $portalCode = strtoupper($portalCode);
+             if ($roleCode !== 'ADMIN' && $roleCode !== $portalCode) {
+                 // Specialized logic for some portal/role names if they don't match 1:1
+                 // Example: WAREHOUSE portal uses STOREKEEPER/STORE_MGR roles
+                 $isAuthorized = false;
+                 
+                 if ($portalCode === 'STORE' && in_array($roleCode, ['STOREKEEPER', 'STORE_MGR'])) $isAuthorized = true;
+                 if ($portalCode === 'QC' && in_array($roleCode, ['QC_TECH', 'QC_MGR'])) $isAuthorized = true;
+                 if ($portalCode === 'PROCUREMENT' && in_array($roleCode, ['PROC_EXE', 'PROC_MGR'])) $isAuthorized = true;
+                 if ($portalCode === 'SECURITY' && in_array($roleCode, ['SECURITY_GUARD', 'SECURITY_SUPVR'])) $isAuthorized = true;
+                 if ($portalCode === 'PRODUCTION' && in_array($roleCode, ['PRODUCTION_EXE', 'PRODUCTION_MGR'])) $isAuthorized = true;
+                 if ($portalCode === 'MAINTENANCE' && in_array($roleCode, ['MAINTENANCE_TECH', 'MAINT_MGR'])) $isAuthorized = true;
+                 
+                 // If role code exactly matches portal code, it's also authorized
+                 if ($roleCode === $portalCode) $isAuthorized = true;
+
+                 if (!$isAuthorized) {
+                     AuditLogger::logAuthAttempt($email, $organization->org_slug, false, "Unauthorized portal access ($portalCode)", null, $user->id);
+                     throw new AuthenticationException("Unauthorized access to this departmental portal.", 403);
+                 }
+             }
         }
         
         // Check if user is active

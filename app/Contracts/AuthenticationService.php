@@ -15,7 +15,7 @@ interface AuthenticationService
      * @return AuthResult Authentication result with tokens
      * @throws \App\Exceptions\AuthenticationException
      */
-    public function login(string $email, string $password, ?string $orgSlug = null, bool $rememberMe = false): AuthResult;
+    public function login(string $email, string $password, ?string $orgSlug = null, ?string $portalCode = null, bool $rememberMe = false): AuthResult;
     
     /**
      * Refresh access token using refresh token

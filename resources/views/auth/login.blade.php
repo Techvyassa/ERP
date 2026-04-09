@@ -285,6 +285,7 @@
                         body: JSON.stringify({
                             email: email,
                             password: password,
+                            portal_code: "MAIN",
                             remember_me: rememberMe
                         })
                     });

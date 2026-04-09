@@ -90,7 +90,7 @@
                         'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content
                     },
                     credentials: 'include',
-                    body: JSON.stringify({ email, password, org_slug: '{{ $orgSlug }}', remember_me: document.querySelector('input[type="checkbox"]')?.checked ?? false })
+                    body: JSON.stringify({ email, password, org_slug: '{{ $orgSlug }}', portal_code: 'PRODUCTION', remember_me: document.querySelector('input[type="checkbox"]')?.checked ?? false })
                 });
 
                 const data = await response.json();

@@ -108,6 +108,7 @@ class AuthController extends Controller
             'email'       => 'required|email',
             'password'    => 'required|string',
             'org_slug'    => 'nullable|string',
+            'portal_code' => 'nullable|string',
             'remember_me' => 'nullable|boolean',
         ]);
 
@@ -129,6 +130,7 @@ class AuthController extends Controller
                 $request->input('email'),
                 $request->input('password'),
                 $request->input('org_slug'),
+                $request->input('portal_code'),
                 (bool) $request->input('remember_me', false)
             );
 
