@@ -241,19 +241,31 @@ class CheckModulePermission
     }
 
     /**
-     * Return consistent error response
+     * Return consistent error response (JSON for API, View/Redirect for Web)
      */
     private function errorResponse(string $message, string $code, int $status): Response
     {
-        return response()->json([
-            'success' => false,
-            'error' => [
-                'code' => $code,
-                'details' => []
-            ],
+        if (request()->expectsJson() || request()->is('api/*')) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => $code,
+                    'details' => []
+                ],
+                'message' => $message,
+                'request_id' => \Illuminate\Support\Str::uuid()->toString(),
+                'timestamp' => now()->toIso8601String()
+            ], $status);
+        }
+
+        // For Web requests
+        if ($status === 401) {
+            return redirect()->route('login')->with('error', $message);
+        }
+
+        return response()->view('errors.403', [
             'message' => $message,
-            'request_id' => \Illuminate\Support\Str::uuid()->toString(),
-            'timestamp' => now()->toIso8601String()
-        ], $status);
+            'code' => $code
+        ], 403);
     }
 }
