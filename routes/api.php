@@ -16,6 +16,20 @@ use Illuminate\Support\Facades\Route;
 
 // API v1 routes
 Route::prefix('v1')->group(function () {
+    // -----------------------------------------------------------------------
+    // TEST API — All HTTP Methods (GET, POST, PUT, PATCH, DELETE)
+    // Public, no auth required. Prefix: /api/v1/test
+    // hii
+    // -----------------------------------------------------------------------
+    Route::prefix('test')->group(function () {
+        Route::get('/',        [App\Http\Controllers\TestApiController::class, 'index']);   // GET    /api/v1/test
+        Route::post('/',       [App\Http\Controllers\TestApiController::class, 'store']);   // POST   /api/v1/test
+        Route::get('/{id}',    [App\Http\Controllers\TestApiController::class, 'show']);    // GET    /api/v1/test/{id}
+        Route::put('/{id}',    [App\Http\Controllers\TestApiController::class, 'update']);  // PUT    /api/v1/test/{id}
+        Route::patch('/{id}',  [App\Http\Controllers\TestApiController::class, 'patch']);   // PATCH  /api/v1/test/{id}
+        Route::delete('/{id}', [App\Http\Controllers\TestApiController::class, 'destroy']); // DELETE /api/v1/test/{id}
+    });
+
     // Health check endpoint
     Route::get('/health', function () {
         return response()->json([
