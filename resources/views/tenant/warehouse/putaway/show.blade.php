@@ -269,21 +269,33 @@
                     if (data.success) {
                         this.task = data.data;
                     } else {
-                        alert(data.message || 'Failed to load task');
-                        window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                        this.notify(data.message || 'Failed to load task', 'error');
+                        setTimeout(() => {
+                            window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                        }, 1500);
                     }
                 } catch (e) {
                     console.error('Error loading task:', e);
-                    alert('Failed to load task');
-                    window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                    this.notify('Failed to load task', 'error');
+                    setTimeout(() => {
+                        window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                    }, 1500);
                 } finally {
                     this.loading = false;
                 }
             },
 
-            async startPutaway() {
-                if (!confirm('Start putaway execution for this task?')) return;
+            startPutaway() {
+                this.confirm(
+                    'Start Putaway',
+                    'Start putaway execution for this task?',
+                    () => this.executeStartPutaway(),
+                    'Start',
+                    'blue'
+                );
+            },
 
+            async executeStartPutaway() {
                 this.saving = true;
                 try {
                     const res = await fetch(`/api/v1/putaway-tasks/${taskId}/start`, {
@@ -295,13 +307,13 @@
 
                     if (data.success) {
                         await this.loadTask();
-                        alert('Putaway started successfully');
+                        this.notify('Putaway started successfully');
                     } else {
-                        alert(data.message || 'Failed to start putaway');
+                        this.notify(data.message || 'Failed to start putaway', 'error');
                     }
                 } catch (e) {
                     console.error('Error starting putaway:', e);
-                    alert('Failed to start putaway');
+                    this.notify('Failed to start putaway', 'error');
                 } finally {
                     this.saving = false;
                 }
@@ -316,7 +328,7 @@
 
             openCompleteModal() {
                 if (!this.task?.destination_bin_id) {
-                    alert('Please scan a destination bin location before completing the putaway.');
+                    this.notify('Please scan a destination bin location before completing the putaway.', 'error');
                     this.openBinScanModal();
                     return;
                 }
@@ -327,7 +339,7 @@
 
             async submitBinScan() {
                 if (!this.binScanInput.trim()) {
-                    alert('Please enter a bin location');
+                    this.notify('Please enter a bin location', 'error');
                     return;
                 }
 
@@ -346,13 +358,13 @@
                     if (data.success) {
                         this.showBinScanModal = false;
                         await this.loadTask();
-                        alert('Bin scanned successfully');
+                        this.notify('Bin scanned successfully');
                     } else {
-                        alert(data.message || 'Failed to scan bin');
+                        this.notify(data.message || 'Failed to scan bin', 'error');
                     }
                 } catch (e) {
                     console.error('Error scanning bin:', e);
-                    alert('Failed to scan bin');
+                    this.notify('Failed to scan bin', 'error');
                 } finally {
                     this.saving = false;
                 }
@@ -360,7 +372,7 @@
 
             async completePutaway() {
                 if (!this.task?.destination_bin_id) {
-                    alert('Please scan a destination bin location before completing the putaway.');
+                    this.notify('Please scan a destination bin location before completing the putaway.', 'error');
                     this.openBinScanModal();
                     return;
                 }
@@ -368,12 +380,12 @@
                 const taskQty = parseFloat(this.task?.quantity) || 0;
                 const enteredQty = parseFloat(this.completeQty);
                 if (!Number.isFinite(enteredQty) || enteredQty <= 0) {
-                    alert('Please enter a valid putaway quantity.');
+                    this.notify('Please enter a valid putaway quantity.', 'error');
                     return;
                 }
 
                 if (enteredQty > taskQty) {
-                    alert(`Putaway quantity cannot exceed task quantity of ${this.formatQty(taskQty)} ${this.task.uom?.uom_code || 'UNT'}.`);
+                    this.notify(`Putaway quantity cannot exceed task quantity of ${this.formatQty(taskQty)} ${this.task.uom?.uom_code || 'UNT'}.`, 'error');
                     return;
                 }
 
@@ -397,14 +409,16 @@
 
                     if (data.success) {
                         this.showCompleteModal = false;
-                        alert('Putaway completed successfully');
-                        window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                        this.notify('Putaway completed successfully');
+                        setTimeout(() => {
+                            window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                        }, 1000);
                     } else {
-                        alert(data.message || 'Failed to complete putaway');
+                        this.notify(data.message || 'Failed to complete putaway', 'error');
                     }
                 } catch (e) {
                     console.error('Error completing putaway:', e);
-                    alert('Failed to complete putaway');
+                    this.notify('Failed to complete putaway', 'error');
                 } finally {
                     this.saving = false;
                 }
@@ -417,7 +431,7 @@
 
             async submitCancel() {
                 if (!this.cancelReason.trim()) {
-                    alert('Please provide a reason');
+                    this.notify('Please provide a reason', 'error');
                     return;
                 }
 
@@ -433,14 +447,16 @@
                     const data = await res.json();
 
                     if (data.success) {
-                        alert('Putaway task cancelled successfully');
-                        window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                        this.notify('Putaway task cancelled successfully');
+                        setTimeout(() => {
+                            window.location.href = `/org/${orgSlug}/warehouse/putaway`;
+                        }, 1000);
                     } else {
-                        alert(data.message || 'Failed to cancel task');
+                        this.notify(data.message || 'Failed to cancel task', 'error');
                     }
                 } catch (e) {
                     console.error('Error cancelling task:', e);
-                    alert('Failed to cancel task');
+                    this.notify('Failed to cancel task', 'error');
                 } finally {
                     this.saving = false;
                 }
@@ -459,6 +475,16 @@
             formatQty(value) {
                 const qty = parseFloat(value);
                 return Number.isFinite(qty) ? qty.toFixed(3) : '0.000';
+            },
+
+            notify(message, type = 'success') {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+            },
+
+            confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+                window.dispatchEvent(new CustomEvent('open-confirm', {
+                    detail: { title, message, onConfirm, confirmText, confirmColor }
+                }));
             }
         };
     }

@@ -694,8 +694,8 @@ function grnData() {
             try {
                 const res = await fetch('/api/v1/grn', { method: 'POST', headers: headers(), body: JSON.stringify(this.form) });
                 const data = await res.json();
-                if (data.success) { this.showCreateModal = false; await this.loadGRNs(); await this.loadPendingMRs(); }
-                else alert(data.message || 'Failed to create GRN');
+                if (data.success) { this.showCreateModal = false; await this.loadGRNs(); await this.loadPendingMRs(); this.notify('GRN created successfully'); }
+                else this.notify(data.message || 'Failed to create GRN', 'error');
             } finally { this.saving = false; }
         },
 
@@ -706,12 +706,23 @@ function grnData() {
             this.showViewModal = true;
         },
 
-        async approveGRN(id) {
-            if (!confirm('Approve this GRN? Status will move to QC Pending and a QC inspection lot will be triggered.')) return;
-            const res = await fetch(`/api/v1/grn/${id}/approve`, { method: 'PATCH', headers: headers() });
-            const data = await res.json();
-            if (data.success) await this.loadGRNs();
-            else alert(data.message || 'Approval failed');
+        approveGRN(id) {
+            this.confirm(
+                'Approve GRN',
+                'Approve this GRN? Status will move to QC Pending and a QC inspection lot will be triggered.',
+                async () => {
+                    const res = await fetch(`/api/v1/grn/${id}/approve`, { method: 'PATCH', headers: headers() });
+                    const data = await res.json();
+                    if (data.success) {
+                        await this.loadGRNs();
+                        this.notify('GRN approved successfully');
+                    } else {
+                        this.notify(data.message || 'Approval failed', 'error');
+                    }
+                },
+                'Approve',
+                'green'
+            );
         },
 
         openCancelModal(grn) { this.selectedGRN = grn; this.cancelReason = ''; this.showCancelModal = true; },
@@ -721,8 +732,8 @@ function grnData() {
             try {
                 const res = await fetch(`/api/v1/grn/${this.selectedGRN.id}/cancel`, { method: 'PATCH', headers: headers(), body: JSON.stringify({ reason: this.cancelReason }) });
                 const data = await res.json();
-                if (data.success) { this.showCancelModal = false; await this.loadGRNs(); }
-                else alert(data.message || 'Cancellation failed');
+                if (data.success) { this.showCancelModal = false; await this.loadGRNs(); this.notify('GRN cancelled'); }
+                else this.notify(data.message || 'Cancellation failed', 'error');
             } finally { this.saving = false; }
         },
 
@@ -806,9 +817,9 @@ function grnData() {
                 if (data.success) { 
                     this.showPostQCModal = false; 
                     await this.loadGRNs(); 
-                    alert('GRN updated successfully after QC!');
+                    this.notify('GRN updated successfully after QC!');
                 }
-                else alert(data.message || 'Failed to update GRN after QC');
+                else this.notify(data.message || 'Failed to update GRN after QC', 'error');
             } finally { this.saving = false; }
         },
 
@@ -913,6 +924,16 @@ function grnData() {
             printWindow.document.close();
             setTimeout(() => printWindow.print(), 250);
         },
+
+        notify(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+        },
+
+        confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: { title, message, onConfirm, confirmText, confirmColor }
+            }));
+        }
     };
 }
 </script>
