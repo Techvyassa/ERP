@@ -21,7 +21,7 @@ class ProfileCompletionController extends Controller
         
         try {
             // Get org_id from request attributes (set by middleware)
-            $orgId = $request->attributes->get('org_id');
+            $orgId = $request->get('org_id');
             
             if (!$orgId) {
                 return response()->json([
@@ -101,7 +101,7 @@ class ProfileCompletionController extends Controller
         }
 
         try {
-            $orgId = $request->attributes->get('org_id');
+            $orgId = $request->get('org_id');
             $organization = Organization::findOrFail($orgId);
             
             $organization->fill($request->only([
@@ -155,7 +155,7 @@ class ProfileCompletionController extends Controller
         $requestId = Str::uuid()->toString();
         
         try {
-            $orgId = $request->attributes->get('org_id');
+            $orgId = $request->get('org_id');
             
             if (!$orgId) {
                 return response()->json([

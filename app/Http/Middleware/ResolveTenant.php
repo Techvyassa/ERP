@@ -36,15 +36,9 @@ class ResolveTenant
         $orgSlug = $request->header('X-Org-Slug')
             ?? $request->route('org_slug');
 
-        // If not in header or route, check if ValidateJWT middleware extracted it
-        if (!$orgSlug && $request->has('auth_org_id')) {
-            // Wait, we need the slug, not just ID. But we can fetch it via token's org_slug claim or ID
-            // If the token payload has 'org_slug', ValidateJWT can extract it. But currently ValidateJWT only extracts auth_org_id.
-            // But we can just lookup by ID if orgSlug is missing but auth_org_id is present.
-
-            // Actually, wait, let's just lookup by org_id if present
-            $organization = Organization::find($request->input('auth_org_id'));
-
+        // If not in header or route, check if ValidateJWT middleware extracted it from token
+        if (!$orgSlug && $request->get('auth_org_id')) {
+            $organization = Organization::find($request->get('auth_org_id'));
             if ($organization) {
                 $orgSlug = $organization->org_slug;
             }
@@ -98,11 +92,15 @@ class ResolveTenant
 
         // Store tenant context in request for downstream middleware
         $request->merge([
+            'org_id' => $organization->org_id,
             'tenant_org_id' => $organization->org_id,
             'tenant_org_slug' => $organization->org_slug,
             'tenant_db_name' => $organization->tenant_db_name,
             'tenant_organization' => $organization,
         ]);
+        
+        // Also add to attributes bag for controllers using $request->attributes->get()
+        $request->attributes->set('org_id', $organization->org_id);
 
         // Requirement 4.10: Log database connection context
         AuditLogger::logDatabaseSwitch(

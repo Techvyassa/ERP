@@ -117,7 +117,7 @@
                 <div class="flex-shrink-0 flex items-center gap-4">
                     <div class="w-48 bg-white/10 rounded-full h-3 overflow-hidden border border-white/20 p-0.5">
                         <div class="bg-white h-2 rounded-full transition-all duration-1000 shadow-[0_0_15px_rgba(255,255,255,0.5)]"
-                            :style="`width: ${onboarding.percentage}%` transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)'"></div>
+                            :style="{ width: onboarding.percentage + '%', transition: 'width 1s cubic-bezier(0.4, 0, 0.2, 1)' }"></div>
                     </div>
                     <a href="{{ url("/org/{$organization->org_slug}/profile-completion") }}"
                         class="px-8 py-3 bg-white text-primary font-bold rounded-2xl hover:bg-slate-50 hover:shadow-xl hover:scale-105 transition-all text-sm tracking-wide">
