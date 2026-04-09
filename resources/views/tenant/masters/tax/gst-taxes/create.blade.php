@@ -11,7 +11,7 @@
             <div class="flex items-center justify-between">
                 <div>
                     <h2 class="text-2xl font-bold text-gray-900">Create New GST Tax Rate</h2>
-                    <p class="text-gray-600 mt-1">Define GST rate slab with CGST, SGST, IGST, UGST</p>
+                    <p class="text-gray-600 mt-1">Define GST rate slab with CGST, SGST, IGST</p>
                 </div>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/gst-taxes' : '/org/' . $organization->org_slug . '/gst-taxes') }}" 
                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
@@ -46,51 +46,36 @@
                                class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
                     </div>
 
-                    <!-- CGST Rate -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            CGST Rate (%) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.cgst_rate" required min="0" max="100" step="0.01"
-                               placeholder="6.00"
-                               @input="calculateTotal"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Central GST rate (e.g. 6.00)</p>
+                    <!-- GST Rates in one line -->
+                    <div class="grid grid-cols-3 gap-4">
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                CGST Rate (%) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" x-model="form.cgst_rate" required min="0" max="100" step="0.01"
+                                   placeholder="6.00"
+                                   @input="calculateTotal"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                SGST Rate (%) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" x-model="form.sgst_rate" required min="0" max="100" step="0.01"
+                                   placeholder="6.00"
+                                   @input="calculateTotal"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
+                        <div>
+                            <label class="block text-sm font-medium text-gray-700 mb-2">
+                                IGST Rate (%) <span class="text-red-500">*</span>
+                            </label>
+                            <input type="number" x-model="form.igst_rate" required min="0" max="100" step="0.01"
+                                   placeholder="12.00"
+                                   class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                        </div>
                     </div>
-
-                    <!-- SGST Rate -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            SGST Rate (%) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.sgst_rate" required min="0" max="100" step="0.01"
-                               placeholder="6.00"
-                               @input="calculateTotal"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">State GST rate (e.g. 6.00)</p>
-                    </div>
-
-                    <!-- IGST Rate -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            IGST Rate (%) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.igst_rate" required min="0" max="100" step="0.01"
-                               placeholder="12.00"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Interstate GST rate (e.g. 12.00)</p>
-                    </div>
-
-                    <!-- UGST Rate -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            UGST Rate (%) <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.ugst_rate" required min="0" max="100" step="0.01"
-                               placeholder="0"
-                               class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Union Territory GST (0 for most)</p>
-                    </div>
+                    <p class="text-xs text-gray-500 -mt-4">CGST + SGST for intrastate, IGST for interstate transactions</p>
 
                     <!-- Total Rate Display -->
                     <div class="bg-gray-50 border border-gray-200 rounded-lg p-4">
@@ -136,7 +121,7 @@
                     <i class="fas fa-info-circle text-blue-600 mt-1 mr-3"></i>
                     <div class="text-sm text-blue-800">
                         <p class="font-semibold mb-1">About GST Tax Rates</p>
-                        <p>GST rate slab master with separate CGST, SGST, IGST, UGST rates. Supports rate history via effective dates.</p>
+                        <p>GST rate slab master with separate CGST, SGST, IGST rates. Supports rate history via effective dates.</p>
                         <p class="mt-2 text-xs">Used in: Purchase Invoice, Sales Invoice, GST Returns</p>
                     </div>
                 </div>
@@ -169,7 +154,6 @@ function gstForm() {
             cgst_rate: '',
             sgst_rate: '',
             igst_rate: '',
-            ugst_rate: 0,
             effective_from: '',
             effective_to: '',
             is_active: true
@@ -184,8 +168,31 @@ function gstForm() {
         async submitForm() {
             this.loading = true;
             try {
-                // TODO: Replace with actual API call
-                alert('GST tax creation - Coming soon\n\nData to be submitted:\n' + JSON.stringify(this.form, null, 2));
+                // Add ugst_rate with default value 0 since it's removed from UI but required by backend
+                const payload = {
+                    ...this.form,
+                    ugst_rate: 0
+                };
+
+                const response = await fetch('/api/v1/gst-taxes', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': `Bearer ${localStorage.getItem('access_token')}`,
+                        'X-Org-Slug': localStorage.getItem('org_slug'),
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await response.json();
+
+                if (data.success) {
+                    alert(data.message || 'GST tax created successfully');
+                    window.location.href = '{{ url(request()->get("tenant_type") === "subdomain" ? "/gst-taxes" : "/org/" . $organization->org_slug . "/gst-taxes") }}';
+                } else {
+                    alert(data.message || 'Failed to create GST tax');
+                }
             } catch (error) {
                 console.error('Failed to create GST tax:', error);
                 alert('Failed to create GST tax. Please try again.');

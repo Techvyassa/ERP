@@ -145,7 +145,7 @@
                     <!-- Aisle -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Aisle
+                            Route/Path
                         </label>
                         <input type="text" x-model="form.aisle" maxlength="10"
                                placeholder="Aisle identifier"

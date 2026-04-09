@@ -84,7 +84,7 @@
                         <a href="{{ url($tenantType === 'subdomain' ? '/vendors' : "/org/{$organization->org_slug}/vendors") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendors.*') ? 'bg-amber-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">handshake</span>
-                            <span x-show="sidebarOpen" class="font-medium">Vendors</span>
+                            <span x-show="sidebarOpen" class="font-medium">Vendor</span>
                         </a>
                     </li>
                     <li>

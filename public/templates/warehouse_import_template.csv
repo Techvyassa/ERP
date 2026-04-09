@@ -1,0 +1,6 @@
+warehouse_name,warehouse_type,address,city,state,pincode,incharge_name,contact_number,email,is_active
+Raw Material Warehouse,RM,"123 Industrial Area, Phase 1",Mumbai,Maharashtra,400001,John Doe,9876543210,john.doe@example.com,true
+Finished Goods Store,FG,"456 Export Zone, Sector 5",Delhi,Delhi,110001,Jane Smith,9876543211,jane.smith@example.com,true
+Packaging Material Store,PKG,"789 Logistics Park",Bangalore,Karnataka,560001,Mike Johnson,9876543212,mike.j@example.com,true
+Rejection Store,REJECTION,"321 Quality Control Area",Pune,Maharashtra,411001,Sarah Williams,9876543213,sarah.w@example.com,true
+Work in Progress Store,WIP,"654 Production Floor",Chennai,Tamil Nadu,600001,David Brown,9876543214,david.b@example.com,true

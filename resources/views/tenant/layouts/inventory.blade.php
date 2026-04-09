@@ -84,28 +84,28 @@
                         <a href="{{ url($tenantType === 'subdomain' ? '/materials' : "/org/{$organization->org_slug}/materials") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.materials.*') ? 'bg-blue-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">inventory_2</span>
-                            <span x-show="sidebarOpen" class="font-medium">Materials</span>
+                            <span x-show="sidebarOpen" class="font-medium">Material</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/products' : "/org/{$organization->org_slug}/products") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.products.*') ? 'bg-blue-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">package_2</span>
-                            <span x-show="sidebarOpen" class="font-medium">Products</span>
+                            <span x-show="sidebarOpen" class="font-medium">Product</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/warehouses' : "/org/{$organization->org_slug}/warehouses") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.warehouses.*') ? 'bg-blue-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">warehouse</span>
-                            <span x-show="sidebarOpen" class="font-medium">Warehouses</span>
+                            <span x-show="sidebarOpen" class="font-medium">Warehouse</span>
                         </a>
                     </li>
                     <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/bin-locations' : "/org/{$organization->org_slug}/bin-locations") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.bin-locations.*') ? 'bg-blue-50 text-category' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">grid_view</span>
-                            <span x-show="sidebarOpen" class="font-medium">Bin Locations</span>
+                            <span x-show="sidebarOpen" class="font-medium">Bin Location</span>
                         </a>
                     </li>
                     <li>

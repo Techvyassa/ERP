@@ -210,6 +210,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['check.module.permission:ADMIN'])->prefix('uoms')->group(function () {
             Route::get('/', [App\Http\Controllers\UOMController::class, 'index']);
             Route::get('/barcode', [App\Http\Controllers\UOMController::class, 'barcode']);
+            Route::post('/import-csv', [App\Http\Controllers\UOMController::class, 'importCSV']);
             Route::get('/{id}', [App\Http\Controllers\UOMController::class, 'show']);
             Route::post('/', [App\Http\Controllers\UOMController::class, 'store']);
             Route::put('/{id}', [App\Http\Controllers\UOMController::class, 'update']);
@@ -233,6 +234,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('bin-locations')->group(function () {
                 Route::get('/', [App\Http\Controllers\BinLocationController::class, 'index']);
                 Route::get('/barcode', [App\Http\Controllers\BinLocationController::class, 'barcode']);
+                Route::post('/import-csv', [App\Http\Controllers\BinLocationController::class, 'importCSV']);
                 Route::get('/{id}', [App\Http\Controllers\BinLocationController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\BinLocationController::class, 'store']);
                 Route::put('/{id}', [App\Http\Controllers\BinLocationController::class, 'update']);

@@ -1,0 +1,7 @@
+material_code,material_name,material_type,base_uom,hsn_code,reorder_level,safety_stock,standard_cost,is_active
+,Cumin Seeds,RAW,Kilogram,980001,100,50,150,true
+,Turmeric Powder,RAW,Kilogram,980003,200,100,120,true
+,Cardboard Box,PACKAGING,Piece,4819,50,20,5,true
+,Plastic Bag,PACKAGING,Kilogram,3923,100,50,2,true
+,Cleaning Solution,CONSUMABLE,Liter,3402,10,5,50,true
+,Spice Mix Base,SEMI,Kilogram,980005,50,25,200,true
