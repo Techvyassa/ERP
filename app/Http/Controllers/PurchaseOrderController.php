@@ -276,7 +276,7 @@ class PurchaseOrderController extends Controller
             // 1. Update Header fields
             $fillableFields = [
                 'vendor_id', 'currency_id', 'billing_address', 'ship_to_address',
-                'payment_terms', 'credit_days', 'delivery_terms', 'po_date',
+                'payment_terms', 'delivery_terms', 'po_date',
                 'expected_delivery', 'valid_until', 'terms_conditions', 'remarks'
             ];
 
@@ -284,6 +284,11 @@ class PurchaseOrderController extends Controller
                 if ($request->has($field)) {
                     $purchaseOrder->$field = $request->input($field);
                 }
+            }
+
+            // credit_days: default to 0 if null/missing to satisfy NOT NULL constraint
+            if ($request->has('credit_days')) {
+                $purchaseOrder->credit_days = $request->input('credit_days') ?? 0;
             }
 
             if ($request->has('discount_amount')) {

@@ -207,8 +207,8 @@
                         
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Credit Days</label>
-                            <input type="number" x-model="form.credit_days" readonly 
-                                   class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                            <input type="number" x-model="form.credit_days" min="0"
+                                   class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         </div>
                         
                         <div>
@@ -467,7 +467,7 @@ function purchaseOrdersData() {
             po_date: new Date().toISOString().split('T')[0],
             expected_delivery_date: '',
             payment_terms: '',
-            credit_days: '',
+            credit_days: 0,
             notes: '',
             line_items: []
         },
@@ -640,7 +640,7 @@ function purchaseOrdersData() {
                 po_date: new Date().toISOString().split('T')[0],
                 expected_delivery_date: '',
                 payment_terms: '',
-                credit_days: '',
+                credit_days: 0,
                 delivery_terms: '',
                 valid_until: '',
                 billing_address: '',
@@ -681,7 +681,7 @@ function purchaseOrdersData() {
                 this.form.vendor_name = vendor.vendor_name;
                 this.form.vendor_gstin = vendor.gstin || '';
                 this.form.payment_terms = vendor.payment_terms || '';
-                this.form.credit_days = vendor.credit_days || '';
+                this.form.credit_days = vendor.credit_days ?? 0;
                 // Set currency_id from vendor - this is REQUIRED
                 this.form.currency_id = vendor.currency_id || '';
                 
@@ -969,7 +969,7 @@ function purchaseOrdersData() {
                     po_date: this.form.po_date,
                     expected_delivery: this.form.expected_delivery_date || null,
                     payment_terms: this.form.payment_terms || null,
-                    credit_days: this.form.credit_days ? parseInt(this.form.credit_days) : null,
+                    credit_days: this.form.credit_days !== '' && this.form.credit_days !== null ? parseInt(this.form.credit_days) : 0,
                     delivery_terms: this.form.delivery_terms || null,
                     valid_until: this.form.valid_until || null,
                     billing_address: this.form.billing_address || null,
@@ -1235,7 +1235,7 @@ function purchaseOrdersData() {
                         po_date: formatDateForInput(po.po_date),
                         expected_delivery_date: formatDateForInput(po.expected_delivery),
                         payment_terms: po.payment_terms || '',
-                        credit_days: po.credit_days || '',
+                        credit_days: po.credit_days ?? 0,
                         delivery_terms: po.delivery_terms || '',
                         valid_until: formatDateForInput(po.valid_until),
                         billing_address: po.billing_address || '',

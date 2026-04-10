@@ -473,6 +473,7 @@ class QuotationComparisonController extends Controller
 
                 $po = \App\Models\Tenant\PurchaseOrder::create([
                     'po_number'       => $poNumber,
+                    'pr_number'       => $prNumber,
                     'vendor_id'       => $vendorId,
                     'currency_id'     => $vendor->currency_id ?? $defaultCurrency?->id,
                     'payment_terms'   => $vendor->payment_terms ?? 'NET30',
@@ -485,7 +486,7 @@ class QuotationComparisonController extends Controller
                     'grand_total'     => $subtotal,
                     'po_date'         => now()->toDateString(),
                     'expected_delivery' => $vendorSelections->max(fn($s) => $s->quotation->delivery_date?->format('Y-m-d')),
-                    'status'          => 'DRAFT',
+                    'status'          => 'PENDING_APPROVAL',
                     'remarks'         => 'Created from PR ' . $prNumber . ' quotation comparison',
                     'created_by'      => $request->input('auth_user_id'),
                 ]);
@@ -532,6 +533,10 @@ class QuotationComparisonController extends Controller
                     'grand_total' => $subtotal,
                 ];
             }
+
+            // Update PR status to CONVERTED_TO_PO
+            \App\Models\Tenant\PurchaseRequisition::where('pr_number', $prNumber)
+                ->update(['status' => 'CONVERTED_TO_PO']);
 
             DB::connection('tenant')->commit();
 
