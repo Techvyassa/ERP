@@ -706,18 +706,22 @@ function grnData() {
             this.showViewModal = true;
         },
 
-        approveGRN(id) {
+        async approveGRN(id) {
             this.confirm(
                 'Approve GRN',
                 'Approve this GRN? Status will move to QC Pending and a QC inspection lot will be triggered.',
                 async () => {
-                    const res = await fetch(`/api/v1/grn/${id}/approve`, { method: 'PATCH', headers: headers() });
-                    const data = await res.json();
-                    if (data.success) {
-                        await this.loadGRNs();
-                        this.notify('GRN approved successfully');
-                    } else {
-                        this.notify(data.message || 'Approval failed', 'error');
+                    try {
+                        const res = await fetch(`/api/v1/grn/${id}/approve`, { method: 'PATCH', headers: headers() });
+                        const data = await res.json();
+                        if (data.success) {
+                            await this.loadGRNs();
+                            this.notify('GRN approved successfully');
+                        } else {
+                            this.notify(data.message || 'Approval failed', 'error');
+                        }
+                    } catch (e) {
+                        this.notify('Request failed', 'error');
                     }
                 },
                 'Approve',
