@@ -219,13 +219,8 @@
                         </template>
                         <template x-for="(item, index) in uploadForm.quotations" :key="index">
                             <div class="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-lg">
-                                <select x-model="item.item_name" required 
-                                        class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
-                                    <option value="">Select Material</option>
-                                    <template x-for="material in materials" :key="material.id">
-                                        <option :value="material.material_name" x-text="material.material_code + ' - ' + material.material_name"></option>
-                                    </template>
-                                </select>
+                                <input type="text" x-model="item.item_name" placeholder="Item name" required
+                                       class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.quantity" placeholder="Qty" required min="0.001" step="0.001" 
                                        class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.unit_price" placeholder="Price" required min="0" step="0.01" 
