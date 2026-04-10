@@ -269,17 +269,32 @@ function gateEntryData() {
             try {
                 const res = await fetch(`/api/v1/gate-entries/${this.selectedEntry.id}/verify`, { method: 'POST', headers: headers(), body: JSON.stringify(this.verifyForm) });
                 const data = await res.json();
-                if (data.success) { this.showVerifyModal = false; await this.loadEntries(); }
-                else alert(data.message || 'Verification failed');
+                if (data.success) { 
+                    this.showVerifyModal = false; 
+                    await this.loadEntries(); 
+                    this.notify('Verification completed');
+                }
+                else this.notify(data.message || 'Verification failed', 'error');
             } finally { this.saving = false; }
         },
 
-        async moveToDock(id) {
-            if (!confirm('Move this entry to dock?')) return;
-            const res = await fetch(`/api/v1/gate-entries/${id}/move-to-dock`, { method: 'PATCH', headers: headers() });
-            const data = await res.json();
-            if (data.success) await this.loadEntries();
-            else alert(data.message || 'Failed to move to dock');
+        moveToDock(id) {
+            this.confirm(
+                'Move to Dock',
+                'Move this entry to dock?',
+                async () => {
+                    const res = await fetch(`/api/v1/gate-entries/${id}/move-to-dock`, { method: 'PATCH', headers: headers() });
+                    const data = await res.json();
+                    if (data.success) {
+                        await this.loadEntries();
+                        this.notify('Entry moved to dock');
+                    } else {
+                        this.notify(data.message || 'Failed to move to dock', 'error');
+                    }
+                },
+                'Move',
+                'blue'
+            );
         },
 
         changePage(p) { if (p >= 1 && p <= this.pagination.last_page) this.loadEntries(p); },
@@ -288,6 +303,16 @@ function gateEntryData() {
         statusClass(s) {
             return { 'PENDING_VERIFICATION': 'bg-amber-100 text-amber-700', 'VERIFIED': 'bg-green-100 text-green-700', 'MOVED_TO_DOCK': 'bg-blue-100 text-blue-700', 'REJECTED': 'bg-red-100 text-red-700' }[s] ?? 'bg-gray-100 text-gray-600';
         },
+
+        notify(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+        },
+
+        confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: { title, message, onConfirm, confirmText, confirmColor }
+            }));
+        }
     };
 }
 </script>

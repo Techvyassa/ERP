@@ -466,6 +466,265 @@ class VendorController extends Controller
     }
 
     /**
+     * Export vendors to CSV
+     * GET /api/v1/vendors/export
+     */
+    public function export(Request $request)
+    {
+        try {
+            $query = Vendor::with(['currency', 'contacts']);
+
+            if ($request->has('vendor_type')) {
+                $query->where('vendor_type', $request->input('vendor_type'));
+            }
+            if ($request->has('is_approved')) {
+                $query->where('is_approved', filter_var($request->input('is_approved'), FILTER_VALIDATE_BOOLEAN));
+            }
+            if ($request->has('blacklisted')) {
+                $query->where('blacklisted', filter_var($request->input('blacklisted'), FILTER_VALIDATE_BOOLEAN));
+            }
+            if ($request->has('search')) {
+                $search = $request->input('search');
+                $query->where(function ($q) use ($search) {
+                    $q->where('vendor_name', 'like', "%{$search}%")
+                        ->orWhere('vendor_code', 'like', "%{$search}%")
+                        ->orWhere('gstin', 'like', "%{$search}%");
+                });
+            }
+
+            $vendors = $query->get();
+
+            $headers = [
+                'Content-Type' => 'text/csv',
+                'Content-Disposition' => 'attachment; filename="vendors_export_' . date('Y-m-d_His') . '.csv"',
+            ];
+
+            $callback = function () use ($vendors) {
+                $file = fopen('php://output', 'w');
+
+                // CSV Headers
+                fputcsv($file, [
+                    'vendor_name',
+                    'vendor_type',
+                    'gstin',
+                    'pan_number',
+                    'msme_category',
+                    'payment_terms',
+                    'credit_days',
+                    'currency_code',
+                    'delivery_terms',
+                    'bank_name',
+                    'bank_account_no',
+                    'ifsc_code',
+                    'rating_score',
+                    'contact_name',
+                    'contact_type',
+                    'contact_phone',
+                    'contact_email',
+                    'is_approved',
+                    'blacklisted'
+                ]);
+
+                // Data rows
+                foreach ($vendors as $vendor) {
+                    $primaryContact = $vendor->contacts()->where('is_primary', true)->first()
+                                    ?? $vendor->contacts()->first();
+
+                    fputcsv($file, [
+                        $vendor->vendor_name,
+                        $vendor->vendor_type,
+                        $vendor->gstin ?? '',
+                        $vendor->pan_number ?? '',
+                        $vendor->msme_category ?? '',
+                        $vendor->payment_terms ?? '',
+                        $vendor->credit_days ?? '',
+                        $vendor->currency?->currency_code ?? '',
+                        $vendor->delivery_terms ?? '',
+                        $vendor->bank_name ?? '',
+                        $vendor->bank_account_no ?? '',
+                        $vendor->ifsc_code ?? '',
+                        $vendor->rating_score ?? '',
+                        $primaryContact?->contact_name ?? '',
+                        $primaryContact?->contact_type ?? '',
+                        $primaryContact?->phone ?? '',
+                        $primaryContact?->email ?? '',
+                        $vendor->is_approved ? 'true' : 'false',
+                        $vendor->blacklisted ? 'true' : 'false'
+                    ]);
+                }
+
+                fclose($file);
+            };
+
+            return response()->stream($callback, 200, $headers);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to export vendors: ' . $e->getMessage()
+            ], 500);
+        }
+    }
+
+    /**
+     * Import vendors from CSV
+     * POST /api/v1/vendors/import
+     */
+    public function import(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'file' => 'required|file|mimes:csv,txt|max:10240',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'VALIDATION_ERROR',
+                    'details' => $validator->errors()
+                ],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 422);
+        }
+
+        try {
+            $file = $request->file('file');
+            $csvData = array_map('str_getcsv', file($file->getRealPath()));
+            $headers = array_map('trim', $csvData[0]);
+            $rows = array_slice($csvData, 1);
+
+            $imported = 0;
+            $errors = [];
+
+            // Fetch currency mappings
+            $currencyMap = \App\Models\Tenant\Currency::pluck('id', 'currency_code')->toArray();
+
+            foreach ($rows as $index => $row) {
+                if (empty(array_filter($row))) continue;
+
+                $rowNumber = $index + 2;
+                $data = array_combine($headers, $row);
+
+                try {
+                    // Validate required fields
+                    if (empty($data['vendor_name'])) {
+                        $errors[] = "Row {$rowNumber}: Vendor name is required";
+                        continue;
+                    }
+
+                    // Check for duplicate vendor name
+                    $existingVendor = Vendor::where('vendor_name', trim($data['vendor_name']))->first();
+                    if ($existingVendor) {
+                        $errors[] = "Row {$rowNumber}: Vendor '{$data['vendor_name']}' already exists";
+                        continue;
+                    }
+
+                    // Check for duplicate GSTIN if provided
+                    if (!empty($data['gstin'])) {
+                        $existingGstin = Vendor::where('gstin', trim($data['gstin']))->first();
+                        if ($existingGstin) {
+                            $errors[] = "Row {$rowNumber}: GSTIN '{$data['gstin']}' already exists";
+                            continue;
+                        }
+                    }
+
+                    // Resolve Currency
+                    $currencyId = null;
+                    if (!empty($data['currency_code'])) {
+                        $currencyCode = strtoupper(trim($data['currency_code']));
+                        $currencyId = $currencyMap[$currencyCode] ?? null;
+                        if (!$currencyId) {
+                            $errors[] = "Row {$rowNumber}: Currency code '{$data['currency_code']}' not found";
+                            continue;
+                        }
+                    } else {
+                        // Default to INR or first available currency
+                        $currencyId = $currencyMap['INR'] ?? $currencyMap['USD'] ?? array_values($currencyMap)[0] ?? null;
+                        if (!$currencyId) {
+                            $errors[] = "Row {$rowNumber}: No currency available in system";
+                            continue;
+                        }
+                    }
+
+                    // Generate vendor code
+                    $vendorType = !empty($data['vendor_type']) ? strtoupper(trim($data['vendor_type'])) : 'SUPPLIER';
+                    $vendorCode = $this->generateVendorCode($vendorType, trim($data['vendor_name']));
+
+                    DB::beginTransaction();
+
+                    // Create vendor
+                    $vendor = Vendor::create([
+                        'vendor_code' => $vendorCode,
+                        'vendor_name' => trim($data['vendor_name']),
+                        'vendor_type' => $vendorType,
+                        'gstin' => !empty($data['gstin']) ? trim($data['gstin']) : null,
+                        'pan_number' => !empty($data['pan_number']) ? trim($data['pan_number']) : null,
+                        'msme_category' => !empty($data['msme_category']) ? trim($data['msme_category']) : null,
+                        'payment_terms' => !empty($data['payment_terms']) ? trim($data['payment_terms']) : 'NET30',
+                        'credit_days' => !empty($data['credit_days']) ? intval($data['credit_days']) : 30,
+                        'currency_id' => $currencyId,
+                        'delivery_terms' => !empty($data['delivery_terms']) ? trim($data['delivery_terms']) : null,
+                        'bank_name' => !empty($data['bank_name']) ? trim($data['bank_name']) : null,
+                        'bank_account_no' => !empty($data['bank_account_no']) ? trim($data['bank_account_no']) : null,
+                        'ifsc_code' => !empty($data['ifsc_code']) ? trim($data['ifsc_code']) : null,
+                        'rating_score' => !empty($data['rating_score']) ? floatval($data['rating_score']) : 0,
+                        'is_approved' => !empty($data['is_approved']) && in_array(strtolower($data['is_approved']), ['true', '1', 'yes']),
+                        'blacklisted' => !empty($data['blacklisted']) && in_array(strtolower($data['blacklisted']), ['true', '1', 'yes']),
+                        'approved_by' => null,
+                        'approved_date' => null,
+                    ]);
+
+                    // Create contact if provided
+                    if (!empty($data['contact_name'])) {
+                        VendorContact::create([
+                            'vendor_id' => $vendor->id,
+                            'contact_name' => trim($data['contact_name']),
+                            'contact_type' => !empty($data['contact_type']) ? trim($data['contact_type']) : 'PRIMARY',
+                            'phone' => !empty($data['contact_phone']) ? trim($data['contact_phone']) : null,
+                            'email' => !empty($data['contact_email']) ? trim($data['contact_email']) : null,
+                            'is_primary' => true,
+                            'is_active' => true,
+                        ]);
+                    }
+
+                    DB::commit();
+                    $imported++;
+                } catch (\Exception $e) {
+                    DB::rollBack();
+                    $errors[] = "Row {$rowNumber}: " . $e->getMessage();
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'imported' => $imported,
+                    'errors' => $errors,
+                    'total_rows' => count($rows)
+                ],
+                'message' => "{$imported} vendor(s) imported successfully" . (count($errors) > 0 ? ", " . count($errors) . " failed" : ""),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 200);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => [
+                    'code' => 'IMPORT_FAILED',
+                    'details' => []
+                ],
+                'message' => 'Failed to import vendors: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
+
+
+    /**
      * Generate unique vendor code
      */
     private function generateVendorCode(string $vendorType, string $vendorName = ''): string

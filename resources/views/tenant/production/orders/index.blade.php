@@ -534,24 +534,23 @@
                                     </div>
                                     <div>
                                         <span class="text-sm font-bold text-slate-800" x-text="order.order_no"></span>
-                                        <div class="text-sm font-medium text-gray-500" x-text="order.product_name"></div>
-                                        <div class="text-[10px] text-gray-400 font-mono tracking-tight uppercase" x-text="order.product_code"></div>
+                                        <div class="text-sm font-medium text-gray-500" x-text="typeof order.product_name === 'object' ? order.product_name.product_name : order.product_name"></div>
+                                        <div class="text-[10px] text-gray-400 font-mono tracking-tight uppercase" x-text="typeof order.product_code === 'object' ? order.product_code.product_code : order.product_code"></div>
                                     </div>
                                 </div>
                             </td>
-                            <td class="px-5 py-4">
                             <td class="px-5 py-4">
                                 <div class="space-y-1">
                                     <div class="flex items-center gap-1.5 font-bold text-gray-400 text-xs">
                                         <span>Target:</span>
                                         <span class="text-gray-900" x-text="order.target_qty"></span>
-                                        <span class="text-[10px] font-normal uppercase" x-text="order.uom"></span>
+                                        <span class="text-[10px] font-normal uppercase" x-text="typeof order.uom === 'object' ? (order.uom.uom_name || order.uom.uom_code) : order.uom"></span>
                                     </div>
                                     <template x-if="order.actual_qty && order.actual_qty > 0">
                                         <div class="flex items-center gap-1.5 font-bold text-blue-600 text-xs">
                                             <span>Actual:</span>
                                             <span x-text="order.actual_qty"></span>
-                                            <span class="text-[10px] font-normal uppercase" x-text="order.uom"></span>
+                                            <span class="text-[10px] font-normal uppercase" x-text="typeof order.uom === 'object' ? (order.uom.uom_name || order.uom.uom_code) : order.uom"></span>
                                         </div>
                                     </template>
                                 </div>
@@ -857,25 +856,32 @@
                 }
             },
 
-            async startOrder(order) {
-                const confirmed = confirm(`Start production for ${order.order_no}?`);
-                if (!confirmed) return;
-                try {
-                    const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, {
-                        method: 'POST'
-                    });
-                    const data = await res.json();
-                    if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start production');
-                    await this.loadOrders();
-                    if (this.viewModal.show && this.viewModal.order?.id === order.id) {
-                        await this.viewOrder({
-                            ...order,
-                            status: 'IN_PROGRESS'
-                        });
-                    }
-                } catch (e) {
-                    alert(e.message || 'Failed to start production');
-                }
+            startOrder(order) {
+                this.confirm(
+                    'Start Production',
+                    `Confirm starting production for ${order.order_no}?`,
+                    async () => {
+                            try {
+                                const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, {
+                                    method: 'POST'
+                                });
+                                const data = await res.json();
+                                if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start production');
+                                await this.loadOrders();
+                                if (this.viewModal.show && this.viewModal.order?.id === order.id) {
+                                    await this.viewOrder({
+                                        ...order,
+                                        status: 'IN_PROGRESS'
+                                    });
+                                }
+                                this.notify('Production started successfully');
+                            } catch (e) {
+                                this.notify(e.message || 'Failed to start production', 'error');
+                            }
+                        },
+                        'Start',
+                        'blue'
+                );
             },
 
 
@@ -892,7 +898,7 @@
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load variance report');
                     this.varianceModal.report = data.data;
                 } catch (e) {
-                    alert(e.message || 'Failed to load variance report');
+                    this.notify(e.message || 'Failed to load variance report', 'error');
                     this.closeVarianceModal();
                 } finally {
                     this.varianceModal.loading = false;
@@ -940,6 +946,27 @@
                     },
                     ...options
                 });
+            },
+
+            notify(message, type = 'success') {
+                window.dispatchEvent(new CustomEvent('notify', {
+                    detail: {
+                        message,
+                        type
+                    }
+                }));
+            },
+
+            confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+                window.dispatchEvent(new CustomEvent('open-confirm', {
+                    detail: {
+                        title,
+                        message,
+                        onConfirm,
+                        confirmText,
+                        confirmColor
+                    }
+                }));
             }
         }
     }

@@ -209,7 +209,7 @@ function putawayData() {
                 }
             } catch (e) {
                 console.error('Error loading putaway tasks:', e);
-                alert('Failed to load putaway tasks');
+                this.notify('Failed to load putaway tasks', 'error');
             } finally {
                 this.loading = false;
             }
@@ -252,7 +252,7 @@ function putawayData() {
 
         async submitCancel() {
             if (!this.selectedTask || !this.cancelReason.trim()) {
-                alert('Please provide a reason');
+                this.notify('Please provide a reason', 'error');
                 return;
             }
 
@@ -268,13 +268,13 @@ function putawayData() {
                 if (data.success) {
                     this.showCancelModal = false;
                     await this.loadPutawayTasks();
-                    alert('Putaway task cancelled successfully');
+                    this.notify('Putaway task cancelled successfully');
                 } else {
-                    alert(data.message || 'Failed to cancel task');
+                    this.notify(data.message || 'Failed to cancel task', 'error');
                 }
             } catch (e) {
                 console.error('Error cancelling task:', e);
-                alert('Failed to cancel task');
+                this.notify('Failed to cancel task', 'error');
             } finally {
                 this.saving = false;
             }
@@ -304,6 +304,10 @@ function putawayData() {
         formatDate(date) {
             if (!date) return '—';
             return new Date(date).toLocaleDateString('en-IN');
+        },
+
+        notify(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
         }
     };
 }

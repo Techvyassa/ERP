@@ -8,8 +8,8 @@
     <!-- Header -->
     <div class="flex items-center justify-between mb-8">
         <div class="flex items-center gap-4">
-            <a href="/org/{{ $organization->org_slug }}/warehouse/mir" 
-               class="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all shadow-sm active:scale-95">
+            <a href="/org/{{ $organization->org_slug }}/warehouse/mir"
+                class="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all shadow-sm active:scale-95">
                 <span class="material-symbols-outlined">arrow_back</span>
             </a>
             <div>
@@ -200,25 +200,25 @@
     <!-- Scan Modal -->
     <div x-show="showScanModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
         <div class="flex items-center justify-center min-h-screen px-4 py-8">
-            <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity" 
-                 x-show="showScanModal"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0"
-                 x-transition:enter-end="opacity-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100"
-                 x-transition:leave-end="opacity-0"
-                 @click="showScanModal = false"></div>
-            
+            <div class="fixed inset-0 bg-slate-900/40 backdrop-blur-sm transition-opacity"
+                x-show="showScanModal"
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0"
+                x-transition:enter-end="opacity-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100"
+                x-transition:leave-end="opacity-0"
+                @click="showScanModal = false"></div>
+
             <div class="relative bg-white rounded-3xl shadow-2xl w-full max-w-lg overflow-hidden border border-gray-100"
-                 x-show="showScanModal"
-                 x-transition:enter="ease-out duration-300"
-                 x-transition:enter-start="opacity-0 translate-y-4 scale-95"
-                 x-transition:enter-end="opacity-100 translate-y-0 scale-100"
-                 x-transition:leave="ease-in duration-200"
-                 x-transition:leave-start="opacity-100 translate-y-0 scale-100"
-                 x-transition:leave-end="opacity-0 translate-y-4 scale-95">
-                
+                x-show="showScanModal"
+                x-transition:enter="ease-out duration-300"
+                x-transition:enter-start="opacity-0 translate-y-4 scale-95"
+                x-transition:enter-end="opacity-100 translate-y-0 scale-100"
+                x-transition:leave="ease-in duration-200"
+                x-transition:leave-start="opacity-100 translate-y-0 scale-100"
+                x-transition:leave-end="opacity-0 translate-y-4 scale-95">
+
                 {{-- Modal Header --}}
                 <div class="px-8 py-6 bg-gradient-to-r from-slate-800 to-slate-900 border-b border-gray-200">
                     <div class="flex items-center justify-between">
@@ -334,7 +334,7 @@
                     <textarea x-model="rejectionReason" rows="3" required
                         placeholder="e.g., Insufficient stock, material damaged, wrong specification..."
                         class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm focus:ring-2 focus:ring-red-500/20 focus:border-red-500 transition-all"></textarea>
-                    
+
                     <div class="pt-4 border-t border-gray-100 flex gap-3">
                         <button @click="showRejectModal = false"
                             class="flex-1 py-3 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50">
@@ -399,8 +399,15 @@
                     if (data.success) {
                         this.mir = data.data.mir;
                     } else {
-                        alert(data.message || 'Failed to load MIR');
-                        window.location.href = `/org/${orgSlug}/warehouse/mir`;
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: data.message || 'Failed to load MIR',
+                                type: 'error'
+                            }
+                        }));
+                        setTimeout(() => {
+                            window.location.href = `/org/${orgSlug}/warehouse/mir`;
+                        }, 1500);
                     }
                 } catch (e) {
                     console.error('Error loading MIR:', e);
@@ -409,9 +416,19 @@
                 }
             },
 
-            async approveMIR() {
-                if (!confirm('Confirm approval for this MIR? This allows the operator to start issuing materials.')) return;
-                
+            approveMIR() {
+                window.dispatchEvent(new CustomEvent('open-confirm', {
+                    detail: {
+                        title: 'Approve MIR',
+                        message: 'Confirm approval for this MIR? This allows the operator to start issuing materials.',
+                        confirmText: 'Approve',
+                        confirmColor: 'blue',
+                        onConfirm: () => this.executeApproval()
+                    }
+                }));
+            },
+
+            async executeApproval() {
                 this.processing = true;
                 try {
                     const apiUrl = `${window.location.origin}/api/v1/material-issue-requests/${mirId}/approve`;
@@ -422,9 +439,19 @@
                     const data = await res.json();
                     if (data.success) {
                         await this.loadMIR();
-                        alert('MIR approved successfully');
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: 'MIR approved successfully',
+                                type: 'success'
+                            }
+                        }));
                     } else {
-                        alert(data.message || 'Failed to approve MIR');
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: data.message || 'Failed to approve MIR',
+                                type: 'error'
+                            }
+                        }));
                     }
                 } catch (e) {
                     console.error('Error approving MIR:', e);
@@ -445,15 +472,27 @@
                     const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: headers(),
-                        body: JSON.stringify({ reason: this.rejectionReason })
+                        body: JSON.stringify({
+                            reason: this.rejectionReason
+                        })
                     });
                     const data = await res.json();
                     if (data.success) {
                         this.showRejectModal = false;
                         await this.loadMIR();
-                        alert('MIR rejected');
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: 'MIR rejected successfully',
+                                type: 'success'
+                            }
+                        }));
                     } else {
-                        alert(data.message || 'Failed to reject MIR');
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: data.message || 'Failed to reject MIR',
+                                type: 'error'
+                            }
+                        }));
                     }
                 } catch (e) {
                     console.error('Error rejecting MIR:', e);
@@ -492,11 +531,12 @@
                     if (data.success) {
                         this.showScanModal = false;
                         await this.loadMIR();
-                        if (data.data.all_issued) {
-                            alert('All materials issued successfully!');
-                        } else {
-                            alert('Material issued successfully.');
-                        }
+                        window.dispatchEvent(new CustomEvent('notify', {
+                            detail: {
+                                message: data.data.all_issued ? 'All materials issued successfully!' : 'Material issued successfully.',
+                                type: 'success'
+                            }
+                        }));
                     } else {
                         this.scanError = data.message || 'Scan validation failed';
                     }
@@ -509,11 +549,15 @@
             },
 
             scanStatusClass(status) {
-                switch(status) {
-                    case 'PENDING': return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
-                    case 'PARTIAL': return 'bg-orange-50 text-orange-700 ring-1 ring-orange-100';
-                    case 'ISSUED': return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
-                    default: return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
+                switch (status) {
+                    case 'PENDING':
+                        return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
+                    case 'PARTIAL':
+                        return 'bg-orange-50 text-orange-700 ring-1 ring-orange-100';
+                    case 'ISSUED':
+                        return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
+                    default:
+                        return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
                 }
             }
         }

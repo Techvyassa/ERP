@@ -73,7 +73,7 @@
             </select>
             <span class="material-symbols-outlined absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none text-lg">expand_more</span>
         </div>
-        <button @click="loadMIRs()" 
+        <button @click="loadMIRs()"
             class="px-4 py-2 text-slate-400 hover:text-amber-600 font-black uppercase tracking-widest text-[10px] transition-colors flex items-center gap-2">
             <span class="material-symbols-outlined text-sm" :class="loading ? 'animate-spin' : ''">refresh</span>
             Refresh
@@ -111,7 +111,7 @@
                             <td colspan="6" class="px-6 py-16 text-center">
                                 <div class="flex flex-col items-center gap-4 text-gray-300">
                                     <div class="p-4 bg-gray-50 rounded-full">
-                                         <span class="material-symbols-outlined text-5xl">outbox</span>
+                                        <span class="material-symbols-outlined text-5xl">outbox</span>
                                     </div>
                                     <div>
                                         <p class="text-sm font-black text-gray-900 uppercase tracking-widest leading-none">No requests found</p>
@@ -207,12 +207,17 @@
             },
 
             statusClass(status) {
-                switch(status) {
-                    case 'PENDING': return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
-                    case 'APPROVED': return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
-                    case 'REJECTED': return 'bg-red-50 text-red-700 ring-1 ring-red-100';
-                    case 'ISSUED': return 'bg-blue-50 text-blue-700 ring-1 ring-blue-100';
-                    default: return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
+                switch (status) {
+                    case 'PENDING':
+                        return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
+                    case 'APPROVED':
+                        return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
+                    case 'REJECTED':
+                        return 'bg-red-50 text-red-700 ring-1 ring-red-100';
+                    case 'ISSUED':
+                        return 'bg-blue-50 text-blue-700 ring-1 ring-blue-100';
+                    default:
+                        return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
                 }
             }
         }

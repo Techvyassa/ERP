@@ -512,16 +512,23 @@ function mrData() {
                 };
                 const res = await fetch('/api/v1/material-receipts', { method: 'POST', headers: headers(), body: JSON.stringify(payload) });
                 const data = await res.json();
-                if (data.success) { this.showCreateModal = false; await this.loadReceipts(); }
-                else alert(data.message || 'Failed to create MR');
+                if (data.success) { 
+                    this.showCreateModal = false; 
+                    await this.loadReceipts(); 
+                    this.notify('Material Receipt created');
+                }
+                else this.notify(data.message || 'Failed to create MR', 'error');
             } finally { this.saving = false; }
         },
 
         async startUnloading(id) {
             const res = await fetch(`/api/v1/material-receipts/${id}/start-unloading`, { method: 'PATCH', headers: headers() });
             const data = await res.json();
-            if (data.success) await this.loadReceipts();
-            else alert(data.message || 'Failed to start unloading');
+            if (data.success) {
+                await this.loadReceipts();
+                this.notify('Unloading started');
+            }
+            else this.notify(data.message || 'Failed to start unloading', 'error');
         },
 
         async openCompleteModal(mr) {
@@ -563,13 +570,17 @@ function mrData() {
                     }),
                 });
                 const updateData = await updateRes.json();
-                if (!updateData.success) { alert(updateData.message || 'Failed to update receipt'); return; }
+                if (!updateData.success) { this.notify(updateData.message || 'Failed to update receipt', 'error'); return; }
 
                 // Step 2: mark complete
                 const completeRes = await fetch(`/api/v1/material-receipts/${this.completeForm.mr_id}/complete`, { method: 'PATCH', headers: headers() });
                 const completeData = await completeRes.json();
-                if (completeData.success) { this.showCompleteModal = false; await this.loadReceipts(); }
-                else alert(completeData.message || 'Failed to complete unloading');
+                if (completeData.success) { 
+                    this.showCompleteModal = false; 
+                    await this.loadReceipts(); 
+                    this.notify('Unloading completed');
+                }
+                else this.notify(completeData.message || 'Failed to complete unloading', 'error');
             } finally { this.saving = false; }
         },
 
@@ -593,6 +604,10 @@ function mrData() {
                 'GRN_POSTED': 'bg-purple-100 text-purple-700'
             }[s] ?? 'bg-gray-100 text-gray-600';
         },
+
+        notify(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+        }
     };
 }
 </script>

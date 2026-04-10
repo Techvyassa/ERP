@@ -27,7 +27,7 @@
                             <span class="material-symbols-outlined">inventory</span>
                         </div>
                         <div>
-                            <h3 class="text-lg font-bold text-white">Record Finished Goods</h3>
+                            <h3 class="text-lg font-bold text-white">Confirm Production Output</h3>
                             <p class="text-xs text-emerald-100/70" x-text="modal.order?.order_no + ' — ' + (modal.order?.product_name || '')"></p>
                         </div>
                     </div>
@@ -58,29 +58,28 @@
                         <div class="space-y-1.5">
                             <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Total Target</label>
                             <input type="text" readonly
-                                :value="modal.order?.target_qty + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                :value="modal.order?.target_qty + ' ' + (typeof modal.order?.uom === 'object' ? (modal.order?.uom?.uom_name || modal.order?.uom?.uom_code) : (modal.order?.uom || ''))"
                                 class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Already Confirmed</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Already Produced</label>
                             <input type="text" readonly
-                                :value="(modal.order?.confirmed_qty_total ?? 0) + ' ' + (modal.order?.uom?.uom_name || modal.order?.uom || '')"
+                                :value="(modal.order?.confirmed_qty_total ?? 0) + ' ' + (typeof modal.order?.uom === 'object' ? (modal.order?.uom?.uom_name || modal.order?.uom?.uom_code) : (modal.order?.uom || ''))"
                                 class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                     </div>
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Accept (Auto-filled)</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Confirm Units</label>
                             <input type="number" min="0.001" step="0.001"
                                 x-model="form.confirmed_qty"
                                 :max="modal.order?.remaining_qty"
-                                readonly
-                                class="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold shadow-inner cursor-not-allowed">
-                            <p class="text-[10px] text-emerald-600">Auto-calculated from remaining quantity</p>
+                                class="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold shadow-inner">
+                            <p class="text-[10px] text-emerald-600">Enter quantity produced in this batch</p>
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Reject (Optional)</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Reject Units (Optional)</label>
                             <input type="number" min="0" step="0.001"
                                 x-model="form.rejected_qty"
                                 @input="syncStatus()"
@@ -100,16 +99,16 @@
                             </div>
                         </div>
                         <p class="text-[10px] font-medium text-gray-500 italic max-w-[180px] text-right">
-                            <span x-show="form.completion_status === 'COMPLETED'">Full batch target met. Order will be marked as Finished for Packing.</span>
-                            <span x-show="form.completion_status !== 'COMPLETED'">Target not fully met. Order remains Open for more recordings.</span>
+                            <span x-show="form.completion_status === 'COMPLETED'">Target quantity reached. Order will be closed.</span>
+                            <span x-show="form.completion_status !== 'COMPLETED'">Partial production. Order remains open.</span>
                         </p>
                     </div>
 
                     <div class="space-y-1.5">
                         <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
                         <select x-model="form.rejection_reason_code"
-                            class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-inner">
-                            <option value="">— None —</option>
+                            class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-sm transition-all">
+                            <option value="">— Select Reason —</option>
                             <option value="DEFECT_VISUAL">Visual Defect</option>
                             <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
                             <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
@@ -131,17 +130,17 @@
                     </div>
 
                     <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Identity</label>
+                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Tag / Number</label>
                         <input type="text" x-model="form.fg_batch_number"
-                            placeholder="Auto-generated"
-                            class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-inner">
+                            placeholder="e.g. B240409 (Optional)"
+                            class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-sm transition-all">
                     </div>
 
                     <label class="flex items-center gap-3 rounded-2xl bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800 cursor-pointer border border-emerald-100 hover:bg-emerald-50 transition-colors">
                         <input type="checkbox" x-model="form.qc_required" class="rounded-lg border-emerald-300 text-emerald-600 focus:ring-emerald-500 w-5 h-5 shadow-inner">
                         <div class="flex-1">
-                            <p class="font-bold">Hold for QC Inspection</p>
-                            <p class="text-[10px] opacity-70 italic uppercase tracking-tighter font-black">Strict verification mandated</p>
+                            <p class="font-bold">Sent for QC Inspection</p>
+                            <p class="text-[10px] opacity-70 italic uppercase tracking-tighter font-black">Quality check required before packing</p>
                         </div>
                     </label>
 
@@ -197,7 +196,7 @@
                         <span class="material-symbols-outlined">analytics</span>
                     </div>
                     <div>
-                        <h3 class="text-lg font-bold text-white tracking-tight">Batch Analysis</h3>
+                        <h3 class="text-lg font-bold text-white tracking-tight">Production Summary</h3>
                         <div class="flex items-center gap-2">
                             <p class="text-xs text-slate-300 font-mono" x-text="drawer.order?.order_no"></p>
                             <span class="text-slate-500 text-xs">•</span>
@@ -361,8 +360,8 @@
     {{-- ── Page Header ────────────────────────────────────────────────── --}}
     <div class="flex items-center justify-between mb-8">
         <div>
-            <h2 class="text-2xl font-black text-gray-900 tracking-tight">FG Confirmation</h2>
-            <p class="text-sm text-gray-500 mt-1">Record finished goods output and maintain batch integrity.</p>
+            <h2 class="text-2xl font-black text-gray-900 tracking-tight">Production Confirmation</h2>
+            <p class="text-sm text-gray-500 mt-1">Confirm how much quantity was produced and track rejected units.</p>
         </div>
     </div>
 
@@ -396,13 +395,13 @@
             <table class="min-w-full divide-y divide-gray-100">
                 <thead>
                     <tr class="bg-slate-50/50">
-                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Order Reference</th>
-                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Product Identity</th>
-                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Projected</th>
-                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Confirmed</th>
-                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Remaining</th>
-                        <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Batch Status</th>
-                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Operations</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Order No</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Product Name</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Target</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Produced</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Balance</th>
+                        <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Status</th>
+                        <th class="px-6 py-4 text-right text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Actions</th>
                     </tr>
                 </thead>
                 <tbody class="bg-white divide-y divide-gray-50">
@@ -444,12 +443,12 @@
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <span class="text-xs font-extrabold text-slate-600"
-                                    x-text="order.target_qty + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
+                                    x-text="order.target_qty + ' ' + (typeof order.uom === 'object' ? (order.uom.uom_name || order.uom.uom_code) : (order.uom || ''))"></span>
                             </td>
                             <td class="px-6 py-4 text-right leading-none">
                                 <div class="inline-flex flex-col items-end gap-1">
                                     <span class="text-xs font-black text-emerald-600"
-                                        x-text="(order.confirmed_qty_total ?? 0) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
+                                        x-text="(order.confirmed_qty_total ?? 0) + ' ' + (typeof order.uom === 'object' ? (order.uom.uom_name || order.uom.uom_code) : (order.uom || ''))"></span>
                                     <div class="w-16 h-1 bg-gray-100 rounded-full overflow-hidden">
                                         <div class="bg-emerald-500 h-full transition-all duration-1000" :style="'width: ' + ((order.confirmed_qty_total / order.target_qty) * 100) + '%'"></div>
                                     </div>
@@ -458,7 +457,7 @@
                             <td class="px-6 py-4 text-right font-black leading-none">
                                 <span class="text-xs"
                                     :class="remainingQty(order) > 0 ? 'text-orange-600' : 'text-gray-400'"
-                                    x-text="remainingQty(order) + ' ' + (order.uom?.uom_name || order.uom || '')"></span>
+                                    x-text="remainingQty(order) + ' ' + (typeof order.uom === 'object' ? (order.uom.uom_name || order.uom.uom_code) : (order.uom || ''))"></span>
                             </td>
                             <td class="px-6 py-4 text-center leading-none">
                                 <span class="px-3 py-1 text-[10px] rounded-full font-black uppercase tracking-widest"
@@ -635,6 +634,7 @@
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to confirm FG');
                     this.closeModal();
                     await this.loadOrders();
+                    this.notify('FG output confirmed successfully');
                 } catch (e) {
                     this.modal.error = e.message || 'An error occurred. Please try again.';
                 } finally {
@@ -673,6 +673,16 @@
                     },
                     ...options,
                 });
+            },
+
+            notify(message, type = 'success') {
+                window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+            },
+
+            confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+                window.dispatchEvent(new CustomEvent('open-confirm', {
+                    detail: { title, message, onConfirm, confirmText, confirmColor }
+                }));
             },
         }
     }

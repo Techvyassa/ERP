@@ -477,29 +477,48 @@ function warehouseDashboard() {
             this.formSubmitting = false;
         },
 
-        async confirmSO(id) {
-            if (!confirm('Confirm this Sales Order?')) return;
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch('/api/v1/sales-orders/' + id + '/confirm', {
-                method: 'PATCH',
-                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-            });
-            const json = await res.json();
-            if (json.success) { await this.loadSalesOrders(); await this.loadSOStats(); }
+        confirmSO(id) {
+            this.confirm(
+                'Confirm Order',
+                'Confirm this Sales Order?',
+                async () => {
+                    const token = localStorage.getItem('auth_token');
+                    const res = await fetch('/api/v1/sales-orders/' + id + '/confirm', {
+                        method: 'PATCH',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+                    });
+                    const json = await res.json();
+                    if (json.success) { 
+                        await this.loadSalesOrders(); 
+                        await this.loadSOStats();
+                        this.notify('Sales Order confirmed');
+                    }
+                },
+                'Confirm',
+                'green'
+            );
         },
 
-        async checkStock(id) {
-            if (!confirm('Run stock availability check for this order?')) return;
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch('/api/v1/sales-orders/' + id + '/check-stock', {
-                method: 'PATCH',
-                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-            });
-            const json = await res.json();
-            if (json.success) {
-                alert('Stock check complete. Status: ' + json.stock_status);
-                await this.loadSalesOrders(); await this.loadSOStats();
-            }
+        checkStock(id) {
+            this.confirm(
+                'Check Stock',
+                'Run stock availability check for this order?',
+                async () => {
+                    const token = localStorage.getItem('auth_token');
+                    const res = await fetch('/api/v1/sales-orders/' + id + '/check-stock', {
+                        method: 'PATCH',
+                        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+                    });
+                    const json = await res.json();
+                    if (json.success) {
+                        this.notify('Stock check complete. Status: ' + json.stock_status);
+                        await this.loadSalesOrders(); 
+                        await this.loadSOStats();
+                    }
+                },
+                'Check',
+                'blue'
+            );
         },
 
         isOverdue(date, status) {
@@ -515,6 +534,16 @@ function warehouseDashboard() {
             const map = { DRAFT: 'bg-gray-100 text-gray-600', CONFIRMED: 'bg-blue-100 text-blue-700', STOCK_CHECKED: 'bg-indigo-100 text-indigo-700', PICKING: 'bg-amber-100 text-amber-700', PACKED: 'bg-purple-100 text-purple-700', DISPATCHED: 'bg-teal-100 text-teal-700', DELIVERED: 'bg-green-100 text-green-700', CANCELLED: 'bg-red-100 text-red-700' };
             return map[s] ?? 'bg-gray-100 text-gray-600';
         },
+
+        notify(message, type = 'success') {
+            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+        },
+
+        confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
+            window.dispatchEvent(new CustomEvent('open-confirm', {
+                detail: { title, message, onConfirm, confirmText, confirmColor }
+            }));
+        }
     }
 }
 </script>
