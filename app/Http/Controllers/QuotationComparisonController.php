@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Models\Tenant\VendorQuotation;
 use App\Models\Tenant\QuotationSelection;
 use App\Models\Tenant\Vendor;
+use App\Models\Tenant\Currency;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -250,7 +251,7 @@ class QuotationComparisonController extends Controller
     }
 
     /**
-     * Select winning quotation
+     * Select winning quotation (legacy single-vendor)
      * POST /api/v1/quotation-comparison/select
      */
     public function selectQuotation(Request $request): JsonResponse
@@ -274,10 +275,8 @@ class QuotationComparisonController extends Controller
         }
 
         try {
-            // Validate minimum 2 vendors
             $vendorCount = VendorQuotation::where('pr_number', $request->input('pr_number'))
-                ->distinct('vendor_id')
-                ->count('vendor_id');
+                ->distinct('vendor_id')->count('vendor_id');
 
             if ($vendorCount < 2) {
                 return response()->json([
@@ -316,6 +315,279 @@ class QuotationComparisonController extends Controller
                 'success' => false,
                 'error' => ['code' => 'SELECTION_FAILED', 'details' => []],
                 'message' => 'Failed to select quotation: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Save per-item vendor selections for a PR
+     * POST /api/v1/quotation-comparison/select-items
+     * Body: { pr_number, selections: [{ quotation_id, item_name }], selection_reason }
+     */
+    public function selectItemVendors(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'pr_number'              => 'required|string|max:50',
+            'selections'             => 'required|array|min:1',
+            'selections.*.quotation_id' => 'required|integer|exists:tenant.vendor_quotations,id',
+            'selections.*.item_name' => 'required|string|max:200',
+            'selection_reason'       => 'nullable|string|max:500',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        try {
+            $prNumber = $request->input('pr_number');
+
+            $vendorCount = VendorQuotation::where('pr_number', $prNumber)
+                ->distinct('vendor_id')->count('vendor_id');
+
+            if ($vendorCount < 2) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'INSUFFICIENT_QUOTATIONS', 'details' => []],
+                    'message' => 'At least 2 vendor quotations are required for comparison',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            DB::beginTransaction();
+
+            // Remove previous per-item selections for this PR
+            QuotationSelection::where('pr_number', $prNumber)->delete();
+
+            $created = [];
+            foreach ($request->input('selections') as $sel) {
+                $quotation = VendorQuotation::findOrFail($sel['quotation_id']);
+
+                $created[] = QuotationSelection::create([
+                    'pr_number'             => $prNumber,
+                    'vendor_id'             => $quotation->vendor_id,
+                    'quotation_id'          => $quotation->id,
+                    'selected_price'        => $quotation->total_price,
+                    'selected_delivery_date'=> $quotation->delivery_date,
+                    'selection_reason'      => $request->input('selection_reason'),
+                    'status'                => 'selected',
+                    'selected_by'           => $request->input('auth_user_id'),
+                    'selected_at'           => now(),
+                ]);
+            }
+
+            DB::commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => ['selections' => $created],
+                'message' => count($created) . ' item selection(s) saved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::rollBack();
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'SELECTION_FAILED', 'details' => []],
+                'message' => 'Failed to save selections: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Create POs from per-item selections (one PO per vendor)
+     * POST /api/v1/quotation-comparison/create-pos
+     * Body: { pr_number }
+     */
+    public function createPOsFromSelections(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+
+        $validator = Validator::make($request->all(), [
+            'pr_number' => 'required|string|max:50',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'VALIDATION_ERROR', 'details' => $validator->errors()],
+                'message' => 'Validation failed',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 422);
+        }
+
+        try {
+            $prNumber = $request->input('pr_number');
+
+            // Load all per-item selections for this PR
+            $selections = QuotationSelection::where('pr_number', $prNumber)
+                ->where('status', 'selected')
+                ->with(['vendor', 'quotation'])
+                ->get();
+
+            if ($selections->isEmpty()) {
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'NO_SELECTIONS', 'details' => []],
+                    'message' => 'No item selections found for this PR. Please select vendors for each item first.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            // Load PR for metadata
+            $pr = \App\Models\Tenant\PurchaseRequisition::where('pr_number', $prNumber)
+                ->with(['lineItems.material', 'lineItems.uom'])
+                ->first();
+
+            // Get default currency
+            $defaultCurrency = \App\Models\Tenant\Currency::first();
+
+            DB::connection('tenant')->beginTransaction();
+
+            // Group selections by vendor_id → one PO per vendor
+            $byVendor = $selections->groupBy('vendor_id');
+            $createdPOs = [];
+
+            foreach ($byVendor as $vendorId => $vendorSelections) {
+                $vendor = $vendorSelections->first()->vendor;
+
+                $poNumber = \App\Models\Tenant\PurchaseOrder::generatePoNumber();
+
+                $subtotal = $vendorSelections->sum(fn($s) => floatval($s->quotation->total_price ?? 0));
+
+                $po = \App\Models\Tenant\PurchaseOrder::create([
+                    'po_number'       => $poNumber,
+                    'vendor_id'       => $vendorId,
+                    'currency_id'     => $vendor->currency_id ?? $defaultCurrency?->id,
+                    'payment_terms'   => $vendor->payment_terms ?? 'NET30',
+                    'credit_days'     => $vendor->credit_days ?? 30,
+                    'delivery_terms'  => $vendor->delivery_terms,
+                    'subtotal'        => $subtotal,
+                    'discount_amount' => 0,
+                    'freight_charges' => 0,
+                    'tax_amount'      => 0,
+                    'grand_total'     => $subtotal,
+                    'po_date'         => now()->toDateString(),
+                    'expected_delivery' => $vendorSelections->max(fn($s) => $s->quotation->delivery_date?->format('Y-m-d')),
+                    'status'          => 'DRAFT',
+                    'remarks'         => 'Created from PR ' . $prNumber . ' quotation comparison',
+                    'created_by'      => $request->input('auth_user_id'),
+                ]);
+
+                // Create line items
+                $lineNumber = 1;
+                foreach ($vendorSelections as $sel) {
+                    $quotation = $sel->quotation;
+
+                    // Try to match PR line item for material_id
+                    $materialId = null;
+                    $uomId = null;
+                    if ($pr) {
+                        $match = $pr->lineItems->first(fn($li) =>
+                            strtolower(trim($li->item_name)) === strtolower(trim($quotation->item_name))
+                        );
+                        if ($match) {
+                            $materialId = $match->material_id;
+                            $uomId = $match->uom_id;
+                        }
+                    }
+
+                    \App\Models\Tenant\PoLineItem::create([
+                        'po_id'               => $po->id,
+                        'line_number'         => $lineNumber++,
+                        'material_id'         => $materialId,
+                        'material_description'=> $quotation->item_name,
+                        'ordered_qty'         => $quotation->quantity,
+                        'uom_id'              => $uomId,
+                        'unit_price'          => $quotation->unit_price,
+                        'discount_pct'        => 0,
+                        'line_total'          => $quotation->total_price,
+                        'scheduled_delivery'  => $quotation->delivery_date?->format('Y-m-d'),
+                        'received_qty'        => 0,
+                        'receipt_status'      => 'OPEN',
+                    ]);
+                }
+
+                $createdPOs[] = [
+                    'po_number'   => $poNumber,
+                    'po_id'       => $po->id,
+                    'vendor_name' => $vendor->vendor_name,
+                    'item_count'  => $vendorSelections->count(),
+                    'grand_total' => $subtotal,
+                ];
+            }
+
+            DB::connection('tenant')->commit();
+
+            return response()->json([
+                'success' => true,
+                'data' => ['purchase_orders' => $createdPOs],
+                'message' => count($createdPOs) . ' Purchase Order(s) created successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 201);
+
+        } catch (\Exception $e) {
+            DB::connection('tenant')->rollBack();
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'PO_CREATION_FAILED', 'details' => []],
+                'message' => 'Failed to create POs: ' . $e->getMessage(),
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Get per-item selections for a PR
+     * GET /api/v1/quotation-comparison/item-selections/{prNumber}
+     */
+    public function getItemSelections(string $prNumber): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $selections = QuotationSelection::where('pr_number', $prNumber)
+                ->where('status', 'selected')
+                ->with(['vendor:id,vendor_name,vendor_code', 'quotation'])
+                ->get();
+
+            $data = $selections->map(fn($s) => [
+                'quotation_id'  => $s->quotation_id,
+                'item_name'     => $s->quotation->item_name ?? '',
+                'vendor_id'     => $s->vendor_id,
+                'vendor_name'   => $s->vendor->vendor_name,
+                'selected_price'=> $s->selected_price,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => ['selections' => $data],
+                'message' => 'Item selections retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['code' => 'FETCH_FAILED', 'details' => []],
+                'message' => 'Failed to retrieve selections: ' . $e->getMessage(),
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ], 500);

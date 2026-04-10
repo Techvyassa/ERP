@@ -332,9 +332,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('/vendors', [App\Http\Controllers\QuotationComparisonController::class, 'getVendors']);
                 Route::get('/selected-prs', [App\Http\Controllers\QuotationComparisonController::class, 'getSelectedPRs']);
                 Route::get('/pr-quotation/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'getPRQuotation']);
+                Route::get('/item-selections/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'getItemSelections']);
                 Route::get('/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'show']);
                 Route::post('/upload', [App\Http\Controllers\QuotationComparisonController::class, 'upload']);
                 Route::post('/select', [App\Http\Controllers\QuotationComparisonController::class, 'selectQuotation']);
+                Route::post('/select-items', [App\Http\Controllers\QuotationComparisonController::class, 'selectItemVendors']);
+                Route::post('/create-pos', [App\Http\Controllers\QuotationComparisonController::class, 'createPOsFromSelections']);
             });
         });
 

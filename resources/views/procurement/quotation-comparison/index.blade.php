@@ -132,8 +132,26 @@
                         <select x-model="uploadForm.vendor_id" required 
                                 class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
                             <option value="">Select Vendor</option>
-                            <template x-for="vendor in vendors" :key="vendor.id">
-                                <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                            <!-- Already quoted vendors shown first -->
+                            <template x-if="quotedVendorIds.length > 0">
+                                <optgroup label="── Already Quoted ──">
+                                    <template x-for="vendor in vendors.filter(v => quotedVendorIds.includes(v.id))" :key="'q-' + vendor.id">
+                                        <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                                    </template>
+                                </optgroup>
+                            </template>
+                            <template x-if="quotedVendorIds.length > 0">
+                                <optgroup label="── Other Vendors ──">
+                                    <template x-for="vendor in vendors.filter(v => !quotedVendorIds.includes(v.id))" :key="'o-' + vendor.id">
+                                        <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                                    </template>
+                                </optgroup>
+                            </template>
+                            <!-- No PR selected yet — show flat list -->
+                            <template x-if="quotedVendorIds.length === 0">
+                                <template x-for="vendor in vendors" :key="vendor.id">
+                                    <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                                </template>
                             </template>
                         </select>
                     </div>
@@ -260,6 +278,7 @@ function quotationComparisonData() {
         loadingPRItems: false,
         search: '',
         showUploadModal: false,
+        quotedVendorIds: [],
         uploadForm: {
             pr_number: '',
             vendor_id: '',
@@ -326,10 +345,35 @@ function quotationComparisonData() {
         },
 
         onPRSelected() {
-            if (this.uploadForm.upload_type === 'form' && this.uploadForm.pr_number) {
-                this.loadPRLineItems(this.uploadForm.pr_number);
+            this.uploadForm.vendor_id = '';
+            this.quotedVendorIds = [];
+            if (this.uploadForm.pr_number) {
+                this.loadQuotedVendors(this.uploadForm.pr_number);
+                if (this.uploadForm.upload_type === 'form') {
+                    this.loadPRLineItems(this.uploadForm.pr_number);
+                }
             } else {
                 this.uploadForm.quotations = [];
+            }
+        },
+
+        async loadQuotedVendors(prNumber) {
+            try {
+                const token = localStorage.getItem('access_token');
+                const res = await fetch(`/api/v1/quotation-comparison/${prNumber}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Collect unique vendor_ids from all items' quotations
+                    const ids = new Set();
+                    (data.data.comparison ?? []).forEach(item => {
+                        item.quotations.forEach(q => ids.add(q.vendor_id));
+                    });
+                    this.quotedVendorIds = [...ids];
+                }
+            } catch (e) {
+                // silently ignore — dropdown still works without grouping
             }
         },
 
@@ -443,6 +487,7 @@ function quotationComparisonData() {
                 csv_file: null,
                 quotations: []
             };
+            this.quotedVendorIds = [];
         },
 
         viewComparison(prNumber) {
