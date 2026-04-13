@@ -752,6 +752,7 @@ class QuotationComparisonController extends Controller
                 
                 return [
                     'material_id' => $material_id,
+                    'item_code' => $quotation->item_code,
                     'item_name' => $quotation->item_name,
                     'quantity' => $quotation->quantity,
                     'unit_price' => $quotation->unit_price,

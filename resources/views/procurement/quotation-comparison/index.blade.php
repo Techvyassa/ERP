@@ -233,6 +233,17 @@
                     </div>
                 </div>
 
+                <!-- Important Note -->
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-amber-600 text-xl">info</span>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-900 mb-1">Important Note:</p>
+                            <p class="text-sm text-amber-800">Quotation must contain the raw price of item (base price without taxes or additional charges).</p>
+                        </div>
+                    </div>
+                </div>
+
                 <div class="flex items-center justify-end gap-3 pt-4 border-t border-gray-100">
                     <button type="button" @click="showUploadModal = false" 
                             class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
