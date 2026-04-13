@@ -57,13 +57,7 @@
                             <label class="block text-sm font-medium text-gray-600 mb-1">Version</label>
                             <p class="text-lg font-semibold text-gray-900" x-text="bom.version ? 'v' + bom.version : '-'"></p>
                         </div>
-                        <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Batch Size</label>
-                            <p class="text-lg font-semibold text-gray-900">
-                                <span x-text="bom.batch_size ? Number(bom.batch_size).toFixed(3) : '0.000'"></span>
-                                <span x-text="bom.output_uom && bom.output_uom.uom_code ? ' ' + bom.output_uom.uom_code : ''"></span>
-                            </p>
-                        </div>
+
                         <div>
                             <label class="block text-sm font-medium text-gray-600 mb-1">Effective From</label>
                             <p class="text-lg font-semibold text-gray-900" x-text="formatDate(bom.effective_from)"></p>

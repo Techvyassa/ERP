@@ -26,3 +26,4 @@ Thumbs.db
 local-note/*
 refactor.py
 test_*.php
+.kiro/*

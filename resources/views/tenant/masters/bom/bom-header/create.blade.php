@@ -170,16 +170,7 @@
                         <p class="text-xs text-gray-500 mt-1">NULL = currently active BOM</p>
                     </div>
 
-                    <!-- Batch Size -->
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Batch Size <span class="text-red-500">*</span>
-                        </label>
-                        <input type="number" x-model="form.batch_size" required min="0.001" step="0.001"
-                            placeholder="100"
-                            class="w-full px-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent">
-                        <p class="text-xs text-gray-500 mt-1">Output quantity per batch</p>
-                    </div>
+
 
                     <!-- Output UOM -->
                     <div>
@@ -297,22 +288,10 @@
                             <tr>
                                 <td class="px-4 py-3 text-right">Total Material Weight:</td>
                                 <td class="px-4 py-3">
-                                    <span :class="Math.abs(weightDifference) > 0.001 ? 'text-orange-600' : 'text-green-600'"
-                                        x-text="totalWeight.toFixed(4)"></span>
+                                    <span class="text-gray-900" x-text="totalWeight.toFixed(4)"></span>
                                 </td>
-                                <td colspan="3" class="px-4 py-3 text-sm italic">
-                                    <template x-if="Math.abs(weightDifference) > 0.001">
-                                        <span class="text-orange-500">
-                                            <i class="fas fa-exclamation-triangle mr-1"></i>
-                                            Formulation <span x-text="weightDifference > 0 ? 'Gain' : 'Loss'"></span>:
-                                            <span x-text="Math.abs(weightDifference).toFixed(4)"></span>
-                                        </span>
-                                    </template>
-                                    <template x-if="Math.abs(weightDifference) <= 0.001">
-                                        <span class="text-green-600">
-                                            <i class="fas fa-check-circle mr-1"></i> Perfect Balance
-                                        </span>
-                                    </template>
+                                <td colspan="3" class="px-4 py-3 text-sm italic border-x">
+                                    <span class="text-gray-500">Formulation balance not calculated</span>
                                 </td>
                                 <td class="px-4 py-3 bg-gray-100 text-gray-700" x-text="totalEffectiveQty.toFixed(4)"></td>
                                 <td colspan="2"></td>
@@ -386,7 +365,6 @@
                 version: 1,
                 effective_from: '',
                 effective_to: '',
-                batch_size: 100,
                 output_uom_id: '',
                 bom_status: 'DRAFT',
                 remarks: '',
@@ -414,10 +392,6 @@
                 return this.form.items.reduce((sum, item) => sum + (parseFloat(this.calculateEffectiveQty(item)) || 0), 0);
             },
 
-            get weightDifference() {
-                const batchSize = parseFloat(this.form.batch_size) || 0;
-                return this.totalWeight - batchSize;
-            },
 
             calculateEffectiveQty(item) {
                 const qty = parseFloat(item.qty_required) || 0;
@@ -567,7 +541,6 @@
                         version: parseInt(this.form.version),
                         effective_from: this.form.effective_from,
                         effective_to: this.form.effective_to || null,
-                        batch_size: parseFloat(this.form.batch_size),
                         output_uom_id: parseInt(this.form.output_uom_id),
                         bom_status: this.form.bom_status,
                         remarks: this.form.remarks || null,
