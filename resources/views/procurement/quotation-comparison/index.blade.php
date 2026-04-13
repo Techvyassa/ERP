@@ -188,19 +188,11 @@
 
                 <!-- Manual Form -->
                 <div x-show="uploadForm.upload_type === 'form'">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-semibold text-gray-700">Line Items *</label>
-                        <div class="flex items-center gap-2">
-                            <span x-show="loadingPRItems" class="text-xs text-gray-400 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                                Loading items...
-                            </span>
-                            <button type="button" @click="addQuotationItem()" 
-                                    x-show="!uploadForm.pr_number"
-                                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                                Add Item
-                            </button>
-                        </div>
+                    <div class="flex items-center justify-end mb-2">
+                        <span x-show="loadingPRItems" class="text-xs text-gray-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                            Loading items...
+                        </span>
                     </div>
                     <div x-show="uploadForm.quotations.length > 0" class="grid grid-cols-12 gap-2 px-3 mb-1">
                         <span class="col-span-3 text-xs font-semibold text-gray-500 uppercase">Item Name</span>
