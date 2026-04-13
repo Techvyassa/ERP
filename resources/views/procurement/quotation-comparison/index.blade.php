@@ -183,7 +183,7 @@
                     </div>
                     <input type="file" @change="uploadForm.csv_file = $event.target.files[0]" accept=".csv" 
                            class="w-full px-4 py-2 border border-gray-200 rounded-lg">
-                    <p class="text-xs text-gray-500 mt-1">Format: item_name, quantity, unit_price, delivery_date, remarks</p>
+                    <p class="text-xs text-gray-500 mt-1">Format: item_code, item_name, quantity, unit_price, delivery_date, remarks</p>
                 </div>
 
                 <!-- Manual Form -->
@@ -195,11 +195,12 @@
                         </span>
                     </div>
                     <div x-show="uploadForm.quotations.length > 0" class="grid grid-cols-12 gap-2 px-3 mb-1">
-                        <span class="col-span-3 text-xs font-semibold text-gray-500 uppercase">Item Name</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Item Code</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Item Name</span>
                         <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Qty</span>
                         <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Unit Price</span>
                         <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Delivery Date</span>
-                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Remarks</span>
+                        <span class="col-span-1 text-xs font-semibold text-gray-500 uppercase">Remarks</span>
                         <span class="col-span-1"></span>
                     </div>
                     <div class="space-y-3 max-h-60 overflow-y-auto">
@@ -211,8 +212,10 @@
                         </template>
                         <template x-for="(item, index) in uploadForm.quotations" :key="index">
                             <div class="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-lg">
+                                <input type="text" x-model="item.item_code" placeholder="Item code" readonly
+                                       class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm bg-gray-100">
                                 <input type="text" x-model="item.item_name" placeholder="Item name" required
-                                       class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
+                                       class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.quantity" placeholder="Qty" required min="0.001" step="0.001" 
                                        class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.unit_price" placeholder="Price" required min="0" step="0.01" 
@@ -220,7 +223,7 @@
                                 <input type="date" x-model="item.delivery_date" 
                                        class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="text" x-model="item.remarks" placeholder="Remarks" 
-                                       class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
+                                       class="col-span-1 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <button type="button" @click="uploadForm.quotations.splice(index, 1)" 
                                         class="col-span-1 text-red-600 hover:text-red-800">
                                     <span class="material-symbols-outlined text-base">delete</span>
@@ -396,6 +399,7 @@ function quotationComparisonData() {
                 if (data.success) {
                     const lineItems = data.data.purchase_requisition?.line_items ?? [];
                     this.uploadForm.quotations = lineItems.map(li => ({
+                        item_code: li.material?.material_code ?? '',
                         item_name: li.item_name ?? li.material?.material_name ?? '',
                         quantity: li.quantity ?? 1,
                         unit_price: li.estimated_unit_price ?? 0,
@@ -412,6 +416,7 @@ function quotationComparisonData() {
 
         addQuotationItem() {
             this.uploadForm.quotations.push({
+                item_code: '',
                 item_name: '',
                 quantity: 1,
                 unit_price: 0,
@@ -505,11 +510,65 @@ function quotationComparisonData() {
             return isNaN(d) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         },
 
-        downloadCSVTemplate() {
-            // Create CSV content with headers and sample row
+        async downloadCSVTemplate() {
+            // If PR is selected, fetch its line items and create pre-filled template
+            if (this.uploadForm.pr_number) {
+                const prId = this.prIdMap[this.uploadForm.pr_number];
+                if (prId) {
+                    try {
+                        const token = localStorage.getItem('access_token');
+                        const response = await fetch(`/api/v1/purchase-requisitions/${prId}`, {
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            const lineItems = data.data.purchase_requisition?.line_items ?? [];
+                            
+                            // Create CSV with header
+                            let csvContent = 'item_code,item_name,quantity,unit_price,delivery_date,remarks\n';
+                            
+                            // Calculate a sample delivery date (30 days from today)
+                            const sampleDate = new Date();
+                            sampleDate.setDate(sampleDate.getDate() + 30);
+                            const formattedDate = sampleDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                            
+                            // Add each line item
+                            lineItems.forEach(li => {
+                                const itemCode = li.material?.material_code ?? '';
+                                const itemName = (li.item_name ?? li.material?.material_name ?? '').replace(/,/g, ';'); // Replace commas
+                                const quantity = li.quantity ?? '';
+                                const unitPrice = li.estimated_unit_price ?? '';
+                                
+                                csvContent += `${itemCode},${itemName},${quantity},${unitPrice},${formattedDate},\n`;
+                            });
+                            
+                            // Create blob and download
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const link = document.createElement('a');
+                            const url = URL.createObjectURL(blob);
+                            
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', `quotation_template_${this.uploadForm.pr_number}.csv`);
+                            link.style.visibility = 'hidden';
+                            
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching PR data for template:', error);
+                        this.showToast('Failed to fetch PR data. Downloading blank template.', 'error');
+                    }
+                }
+            }
+            
+            // Fallback: Create blank template with sample data
             const csvContent = [
-                'item_name,quantity,unit_price,delivery_date,remarks',
-                'Sample Item,10,100.50,2026-04-15,Sample remarks here'
+                'item_code,item_name,quantity,unit_price,delivery_date,remarks',
+                'RM-001,Sample Item,10,100.50,2026-04-15,Sample remarks here'
             ].join('\n');
 
             // Create blob and download

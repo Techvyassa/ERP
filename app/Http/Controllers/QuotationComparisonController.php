@@ -165,6 +165,7 @@ class QuotationComparisonController extends Controller
             'upload_type' => 'required|in:form,csv',
             // For form upload
             'quotations' => 'required_if:upload_type,form|array|min:1',
+            'quotations.*.item_code' => 'nullable|string|max:50',
             'quotations.*.item_name' => 'required_if:upload_type,form|string|max:200',
             'quotations.*.quantity' => 'required_if:upload_type,form|numeric|min:0.001',
             'quotations.*.unit_price' => 'required_if:upload_type,form|numeric|min:0',
@@ -201,11 +202,12 @@ class QuotationComparisonController extends Controller
                     if (count($row) < 3) continue; // Skip invalid rows
                     
                     $quotationsData[] = [
-                        'item_name' => $row[0] ?? '',
-                        'quantity' => $row[1] ?? 0,
-                        'unit_price' => $row[2] ?? 0,
-                        'delivery_date' => $row[3] ?? null,
-                        'remarks' => $row[4] ?? null,
+                        'item_code' => $row[0] ?? null,
+                        'item_name' => $row[1] ?? '',
+                        'quantity' => $row[2] ?? 0,
+                        'unit_price' => $row[3] ?? 0,
+                        'delivery_date' => $row[4] ?? null,
+                        'remarks' => $row[5] ?? null,
                     ];
                 }
             }
@@ -217,6 +219,7 @@ class QuotationComparisonController extends Controller
                 $quotation = VendorQuotation::create([
                     'pr_number' => $request->input('pr_number'),
                     'vendor_id' => $request->input('vendor_id'),
+                    'item_code' => $item['item_code'] ?? null,
                     'item_name' => $item['item_name'],
                     'quantity' => $item['quantity'],
                     'unit_price' => $item['unit_price'],
