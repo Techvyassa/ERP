@@ -16,7 +16,7 @@ class RbacSeeder extends Seeder
     public function run(): void
     {
         DB::connection('tenant')->transaction(function () {
-            $this->command->info('Cleaning up legacy RBAC data...');
+            $this->command->info('Cleaning up legacy departments and roles...');
             $this->cleanupLegacy();
 
             $this->command->info('Seeding specialized roles and departments...');
@@ -36,7 +36,46 @@ class RbacSeeder extends Seeder
      */
     private function cleanupLegacy(): void
     {
-        // Add cleanup logic here if needed
+        // Mapping of [Legacy Code => Canonical Code]
+        $mergeMap = [
+            'PROC'        => 'PROCUREMENT',
+            'PROCU'       => 'PROCUREMENT',
+            'SEC'         => 'SECURITY',
+            'PRODUC'      => 'SECURITY',
+            'CUST'        => 'CRM',
+            'MAINTENANCE' => 'MAINT',
+        ];
+
+        // Isolated removal codes (no mapping needed or handled elsewhere)
+        $removalOnly = ['FIN', 'ADMIN'];
+
+        foreach ($mergeMap as $legacyCode => $canonicalCode) {
+            $legacyDept = DB::connection('tenant')->table('department_master')->where('dept_code', $legacyCode)->first();
+            $canonicalDept = DB::connection('tenant')->table('department_master')->where('dept_code', $canonicalCode)->first();
+
+            if ($legacyDept && $canonicalDept) {
+                // 1. Reassign Users
+                DB::connection('tenant')->table('users')
+                    ->where('dept_id', $legacyDept->id)
+                    ->update(['dept_id' => $canonicalDept->id]);
+
+                // 2. Reassign Roles mapping (optional but good)
+                DB::connection('tenant')->table('dept_role_map')
+                    ->where('dept_id', $legacyDept->id)
+                    ->delete(); // We delete because the canonical one is seeded anyway
+
+                // 3. Delete Legacy
+                DB::connection('tenant')->table('department_master')->where('id', $legacyDept->id)->delete();
+                $this->command->info("  ✓ Merged {$legacyCode} into {$canonicalCode}");
+            }
+        }
+
+        // Handle removals with no merge
+        DB::connection('tenant')->table('department_master')
+            ->whereIn('dept_code', $removalOnly)
+            ->delete();
+
+        $this->command->info('  ✓ Legacy duplicate cleanup finished.');
     }
 
     // ─────────────────────────────────────────────
@@ -45,17 +84,15 @@ class RbacSeeder extends Seeder
     private function seedDepartments(): void
     {
         $departments = [
-            ['dept_code' => 'PROC',  'dept_name' => 'Procurement'],
-            ['dept_code' => 'SEC',   'dept_name' => 'Security'],
-            ['dept_code' => 'STORE', 'dept_name' => 'Warehouse / Store'],
-            ['dept_code' => 'QC',    'dept_name' => 'Quality Control'],
-            ['dept_code' => 'FIN',   'dept_name' => 'Finance'],
-            ['dept_code' => 'PPC',   'dept_name' => 'Production Planning & Control'],
-            ['dept_code' => 'PROD',  'dept_name' => 'Production'],
-            ['dept_code' => 'ADMIN', 'dept_name' => 'IT / Admin'],
-            ['dept_code' => 'SALES', 'dept_name' => 'Sales'],
-            ['dept_code' => 'CUST',  'dept_name' => 'Customer Relations'],
-            ['dept_code' => 'MAINT', 'dept_name' => 'Maintenance'],
+            ['dept_code' => 'PROCUREMENT', 'dept_name' => 'Procurement'],
+            ['dept_code' => 'SECURITY',    'dept_name' => 'Security'],
+            ['dept_code' => 'STORE',       'dept_name' => 'Warehouse / Store'],
+            ['dept_code' => 'QC',          'dept_name' => 'Quality Control'],
+            ['dept_code' => 'PPC',         'dept_name' => 'Production Planning & Control'],
+            ['dept_code' => 'PROD',        'dept_name' => 'Production'],
+            ['dept_code' => 'SALES',       'dept_name' => 'Sales'],
+            ['dept_code' => 'CRM',         'dept_name' => 'Customer Relations (CRM)'],
+            ['dept_code' => 'MAINT',       'dept_name' => 'Maintenance'],
         ];
 
         foreach ($departments as $dept) {
@@ -223,15 +260,15 @@ class RbacSeeder extends Seeder
     private function seedDeptRoleMap(): void
     {
         $map = [
-            'PROC'  => ['PROC_EXE', 'PROC_MGR'],
-            'SEC'   => ['SECURITY_GUARD', 'SECURITY_SUPVR'],
-            'STORE' => ['STOREKEEPER', 'STORE_MGR'],
-            'QC'    => ['QC_TECH', 'QC_MGR'],
-            'PPC'   => ['PPC_USER'],
-            'PROD'  => ['PRODUCTION'],
-            'SALES' => ['SALES_EXE', 'SALES_MGR'],
-            'CUST'  => ['CUST_EXE'],
-            'MAINT' => ['MAINT_TECH', 'MAINT_MGR'],
+            'PROCUREMENT' => ['PROC_EXE', 'PROC_MGR'],
+            'SECURITY'    => ['SECURITY_GUARD', 'SECURITY_SUPVR'],
+            'STORE'       => ['STOREKEEPER', 'STORE_MGR'],
+            'QC'          => ['QC_TECH', 'QC_MGR'],
+            'PPC'         => ['PPC_USER'],
+            'PROD'        => ['PRODUCTION'],
+            'SALES'       => ['SALES_EXE', 'SALES_MGR'],
+            'CRM'         => ['CUST_EXE'],
+            'MAINT'       => ['MAINT_TECH', 'MAINT_MGR'],
         ];
 
         foreach ($map as $deptCode => $roleCodes) {
