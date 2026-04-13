@@ -762,6 +762,60 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 ]);
             })->name('orders');
 
+            Route::get('/orders/{id}', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.orders.show', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'orderId' => $id
+                ]);
+            })->name('orders.show');
+
+            // Batch Runs — Independent execution units
+            Route::get('/batch-runs', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.batch-runs.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('batch-runs.index');
+
+            Route::get('/batch-runs/{id}', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.batch-runs.show', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'batchRunId' => $id
+                ]);
+            })->name('batch-runs.show');
+
+            // Material Issue Requests (MIR) — Per batch run
+            Route::get('/material-issue-requests', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.mir.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('mir.index');
+
+            Route::get('/material-issue-requests/{id}', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.mir.show', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'mirId' => $id
+                ]);
+            })->name('mir.show');
+
+            // Production Floor Receiving — Confirm materials at workstation
+            Route::get('/batch-runs/{id}/receiving', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.batch-runs.receiving', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'batchRunId' => $id
+                ]);
+            })->name('batch-runs.receiving');
 
             Route::get('/packing', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
