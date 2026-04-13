@@ -445,6 +445,7 @@ function purchaseOrdersData() {
         loading: false,
         saving: false,
         showModal: false,
+        modalDataLoaded: false,
         modalTitle: 'Create Purchase Order',
         editingId: null,
         filters: {
@@ -473,11 +474,18 @@ function purchaseOrdersData() {
         },
         
         async init() {
-            await this.loadCurrencies();
             await this.loadVendors();
-            await this.loadMaterials();
-            await this.loadGstTaxes();
             await this.loadPurchaseOrders();
+        },
+        
+        async loadModalData() {
+            if (this.modalDataLoaded) return;
+            await Promise.all([
+                this.loadCurrencies(),
+                this.loadMaterials(),
+                this.loadGstTaxes()
+            ]);
+            this.modalDataLoaded = true;
         },
         
         async loadGstTaxes() {
@@ -629,7 +637,8 @@ function purchaseOrdersData() {
             }
         },
         
-        openCreateModal() {
+        async openCreateModal() {
+            await this.loadModalData();
             this.modalTitle = 'Create Purchase Order';
             this.editingId = null;
             this.form = {
@@ -1193,6 +1202,7 @@ function purchaseOrdersData() {
         },
         
         async editPO(id) {
+            await this.loadModalData();
             try {
                 const token = localStorage.getItem('access_token');
                 const response = await fetch(`/api/v1/purchase-orders/${id}`, {
