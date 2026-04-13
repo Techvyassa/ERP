@@ -321,7 +321,25 @@ function quotationComparisonData() {
                 });
                 const data = await response.json();
                 if (data.success) {
-                    this.prList = data.data.data ?? data.data ?? [];
+                    const allPRs = data.data.data ?? data.dataa ?? data.data ?? [];
+                    
+                    // Fetch completed comparisons (PRs with selected quotations)
+                    const selectionsResponse = await fetch('/api/v1/quotation-comparison/selected-prs', {
+                        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                    });
+                    const selectionsData = await selectionsResponse.json();
+                    
+                    // Get list of PR numbers that have been compared (selected)
+                    const comparedPRNumbers = new Set();
+                    if (selectionsData.success && selectionsData.data.selected_prs) {
+                        selectionsData.data.selected_prs.forEach(selection => {
+                            comparedPRNumbers.add(selection.pr_number);
+                        });
+                    }
+                    
+                    // Filter out PRs that have already been compared
+                    this.prList = allPRs.filter(pr => !comparedPRNumbers.has(pr.pr_number));
+                    
                     // Build a map of pr_number -> id for quick lookup
                     this.prIdMap = {};
                     this.prList.forEach(pr => { this.prIdMap[pr.pr_number] = pr.id; });
