@@ -24,7 +24,7 @@
                 </button>
                 <!-- Create POs -->
                 <button @click="showCreatePOModal = true"
-                        x-show="selectionsFinalized"
+                        x-show="selectionsFinalized && !poExists"
                         class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">add_shopping_cart</span>
                     Create Purchase Orders
@@ -192,12 +192,18 @@
                                     <span x-show="saving">Saving...</span>
                                 </button>
                             </template>
-                            <template x-if="selectionsFinalized">
+                            <template x-if="selectionsFinalized && !poExists">
                                 <button @click="showCreatePOModal = true"
                                         class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2">
                                     <span class="material-symbols-outlined text-sm">add_shopping_cart</span>
                                     Create Purchase Orders
                                 </button>
+                            </template>
+                            <template x-if="selectionsFinalized && poExists">
+                                <span class="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-semibold flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm">check_circle</span>
+                                    PO Already Created
+                                </span>
                             </template>
                         </div>
                     </div>
@@ -268,6 +274,7 @@ function compareQuotationsData() {
         saving: false,
         creatingPOs: false,
         showCreatePOModal: false,
+        poExists: false,
         // { item_name: quotation_id }
         itemSelections: {},
         // { item_name: { vendor_name, total_price, ... } }
@@ -291,6 +298,7 @@ function compareQuotationsData() {
                 const data = await res.json();
                 if (data.success) {
                     this.comparison = data.data.comparison;
+                    this.poExists = data.data.po_exists ?? false;
                 }
             } catch (e) {
                 this.showToast('Failed to load comparison', 'error');
@@ -404,6 +412,9 @@ function compareQuotationsData() {
                     setTimeout(() => {
                         window.location.href = '{{ url("/org/{$organization->org_slug}/procurement/purchase-orders") }}';
                     }, 2500);
+                } else if (data.error?.code === 'PO_ALREADY_EXISTS') {
+                    this.showCreatePOModal = false;
+                    this.showToast(data.message, 'error');
                 } else {
                     this.showToast(data.message || 'Failed to create POs', 'error');
                 }

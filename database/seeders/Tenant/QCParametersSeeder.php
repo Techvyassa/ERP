@@ -113,6 +113,14 @@ class QCParametersSeeder extends Seeder
             ],
         ];
 
-        DB::connection('tenant')->table('qc_parameters_master')->insert($parameters);
+        foreach ($parameters as $parameter) {
+            DB::connection('tenant')->table('qc_parameters_master')->updateOrInsert(
+                [
+                    'material_id' => $parameter['material_id'], 
+                    'parameter_code' => $parameter['parameter_code']
+                ],
+                $parameter
+            );
+        }
     }
 }

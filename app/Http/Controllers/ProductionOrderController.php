@@ -215,11 +215,10 @@ class ProductionOrderController extends Controller
             // Build a map of material_id => uom_id from BOM details
             $materialUomMap = $bomDetails->map(fn($d) => $d->uom_id)->toArray();
 
-            // Get the BOM header to calculate scaling factor
+            // Get the BOM header and target quantity
             $bomHeader = BOMHeader::findOrFail($request->input('bom_id'));
-            $batchSize = (float) $bomHeader->batch_size;
-            $targetQty = (float) $request->input('target_qty');
-            $scaleFactor = $batchSize > 0 ? $targetQty / $batchSize : 1;
+            $runQty = (float) $request->input('target_qty');
+            $scaleFactor = $runQty;
 
             DB::connection('tenant')->transaction(function () use ($request, &$order, &$mir, $bomDetails, $materialUomMap, $scaleFactor) {
                 // Generate order number
@@ -843,8 +842,7 @@ class ProductionOrderController extends Controller
 
             $targetQty = (float) $order->target_qty;
             $actualQty = (float) ($order->actual_qty ?? 0);
-            $batchSize = (float) ($order->bom?->batch_size ?? 1);
-            $scaleFactor = $batchSize > 0 ? $actualQty / $batchSize : 0;
+            $scaleFactor = $actualQty;
 
             // Get actual RM consumed from inventory transactions
             $rmConsumed = InventoryTransaction::where('reference_type', 'MaterialIssueRequest')

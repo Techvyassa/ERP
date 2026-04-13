@@ -227,7 +227,6 @@ class BOMHeaderController extends Controller
             'boms.*.effective_from' => 'required|date',
             'boms.*.effective_to' => 'nullable|date',
             'boms.*.bom_status' => 'required|in:DRAFT,ACTIVE,OBSOLETE',
-            'boms.*.batch_size' => 'required|numeric|min:0.001',
             'boms.*.output_uom_id' => 'required|integer',
             'boms.*.items' => 'required|array|min:1',
             'boms.*.items.*.material_id' => 'required|integer',
@@ -314,7 +313,6 @@ class BOMHeaderController extends Controller
             'effective_from',
             'effective_to',
             'bom_status',
-            'batch_size',
             'output_uom_code',
             'remarks',
             'material_code',
@@ -334,7 +332,6 @@ class BOMHeaderController extends Controller
                 now()->format('Y-m-d'),
                 '',
                 'DRAFT',
-                '100',
                 'NOS',
                 'Starter BOM import',
                 'RM-0001',
@@ -352,7 +349,6 @@ class BOMHeaderController extends Controller
                 now()->format('Y-m-d'),
                 '',
                 'DRAFT',
-                '100',
                 'NOS',
                 'Starter BOM import',
                 'PKG-0001',
@@ -424,7 +420,7 @@ class BOMHeaderController extends Controller
             }
 
             $headers = array_map([$this, 'normalizeCsvHeader'], array_shift($csvData));
-            $requiredHeaders = ['bom_code', 'version', 'effective_from', 'bom_status', 'batch_size', 'remarks', 'qty_required', 'scrap_percent', 'is_critical', 'item_remarks'];
+            $requiredHeaders = ['bom_code', 'version', 'effective_from', 'bom_status', 'remarks', 'qty_required', 'scrap_percent', 'is_critical', 'item_remarks'];
             foreach ($requiredHeaders as $header) {
                 if (!in_array($header, $headers, true)) {
                     return response()->json([
@@ -511,7 +507,6 @@ class BOMHeaderController extends Controller
                     'effective_from' => $mapped['effective_from'] ?? null,
                     'effective_to' => $mapped['effective_to'] ?? null,
                     'bom_status' => $mapped['bom_status'] ?? null,
-                    'batch_size' => $mapped['batch_size'] ?? null,
                     'output_uom_id' => $mapped['output_uom_id'] ?? null,
                     'output_uom_code' => $mapped['output_uom_code'] ?? null,
                     'remarks' => $mapped['remarks'] ?? null,
@@ -610,7 +605,6 @@ class BOMHeaderController extends Controller
             'effective_from' => 'nullable|date',
             'effective_to' => 'nullable|date|after:effective_from',
             'bom_status' => 'nullable|in:DRAFT,ACTIVE,OBSOLETE',
-            'batch_size' => 'nullable|numeric|min:0.001',
             'output_uom_id' => 'nullable|integer',
             'remarks' => 'nullable|string|max:1000',
             'items' => 'nullable|array|min:1',
@@ -662,7 +656,6 @@ class BOMHeaderController extends Controller
                 'effective_from',
                 'effective_to',
                 'bom_status',
-                'batch_size',
                 'output_uom_id',
                 'remarks',
             ]);
@@ -775,7 +768,6 @@ class BOMHeaderController extends Controller
             'effective_from' => 'required|date',
             'effective_to' => 'nullable|date|after:effective_from',
             'bom_status' => 'required|in:DRAFT,ACTIVE,OBSOLETE',
-            'batch_size' => 'required|numeric|min:0.001',
             'remarks' => 'nullable|string|max:1000',
             'items' => 'required|array|min:1',
             'items.*.qty_required' => 'required|numeric|min:0.0001',
@@ -807,7 +799,6 @@ class BOMHeaderController extends Controller
                 'effective_from' => $payload['effective_from'],
                 'effective_to' => !empty($payload['effective_to']) ? $payload['effective_to'] : null,
                 'bom_status' => $payload['bom_status'],
-                'batch_size' => (float) $payload['batch_size'],
                 'output_uom_id' => $outputUom->id,
                 'remarks' => !empty($payload['remarks']) ? $payload['remarks'] : null,
                 'created_by' => $authUserId,

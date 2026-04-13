@@ -280,9 +280,7 @@
                                             <div class="flex items-center gap-2">
                                                 <span class="text-sm font-bold text-gray-900" x-text="boms[0].bom_code + ' (v' + boms[0].version + ')'"></span>
                                                 <span class="text-[10px] uppercase font-black bg-orange-200 text-orange-800 px-1.5 py-0.5 rounded leading-none">Master</span>
-                                            </div>
-                                            <p class="text-xs text-gray-500 mt-0.5" x-text="'Standard Batch: ' + boms[0].batch_size + ' ' + (boms[0].output_uom ? boms[0].output_uom.uom_code : '')"></p>
-                                        </div>
+
                                     </div>
                                     <span class="material-symbols-outlined text-green-500 text-base">check_circle</span>
                                 </div>
@@ -295,8 +293,7 @@
                                     class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-400 focus:border-transparent">
                                     <option value="">— Select BOM Version —</option>
                                     <template x-for="b in boms" :key="b.id">
-                                        <option :value="b.id"
-                                            x-text="b.bom_code + '  v' + b.version + '  (batch: ' + b.batch_size + ' ' + (b.output_uom ? b.output_uom.uom_code : '') + ')'">
+                                            x-text="b.bom_code + '  v' + b.version">
                                         </option>
                                     </template>
                                 </select>
@@ -344,7 +341,7 @@
                             <span class="material-symbols-outlined text-orange-500">calculate</span>
                             <h4 class="text-sm font-semibold text-gray-800">Auto-calculated Raw Materials</h4>
                             <span class="text-xs text-gray-500 ml-auto">
-                                Batch size: <strong x-text="selectedBom?.batch_size"></strong>
+                                Target Qty: <strong x-text="form.target_qty"></strong>
                                 &nbsp;→&nbsp; Multiplier: <strong x-text="multiplier.toFixed(4)"></strong>
                             </span>
                         </div>
@@ -375,9 +372,9 @@
                         <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
                             <p class="font-semibold mb-1">How this is calculated:</p>
                             <ul class="space-y-1 ml-4 list-disc">
-                                <li><strong>Effective Qty</strong> = Base Qty + (Base Qty × Scrap %)</li>
-                                <li><strong>Required Qty</strong> = Effective Qty × (Target Qty ÷ Batch Size)</li>
-                                <li>Example: 5.10 × (10 ÷ 100) = 0.510 KG</li>
+                                <li><strong>Effective Qty</strong> = Base Qty × (1 + Scrap %)</li>
+                                <li><strong>Required Qty</strong> = Effective Qty × Target Qty</li>
+                                <li>Example: 5.10 × 10 = 51.0 KG</li>
                             </ul>
                         </div>
                         <p class="text-xs text-gray-500 mt-2 flex items-center gap-1">
@@ -749,8 +746,10 @@
                     const data = await res.json();
                     // Response: data.data is a flat array
                     const details = Array.isArray(data?.data) ? data.data : [];
-                    const batchSize = parseFloat(this.selectedBom?.batch_size) || 1;
-                    this.multiplier = this.form.target_qty / batchSize;
+                    // Fixed: Use target_qty directly as the multiplier (correct formula)
+                    // Old (WRONG): this.multiplier = this.form.target_qty / batchSize;
+                    // New (CORRECT): this.multiplier = this.form.target_qty;
+                    this.multiplier = this.form.target_qty;
 
                     this.rmLines = details.map(d => ({
                         material_id: d.material_id,

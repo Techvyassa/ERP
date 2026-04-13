@@ -93,6 +93,11 @@ class ProductionOrder extends Model
         return $this->hasMany(PackingOrder::class, 'production_order_id');
     }
 
+    public function batchRuns()
+    {
+        return $this->hasMany(ProductionBatchRun::class, 'production_order_id');
+    }
+
     /**
      * Check if order can be started
      */

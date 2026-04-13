@@ -118,7 +118,7 @@
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">BOM Code</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Product</th>
                         <th class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Ver.</th>
-                        <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Batch Size</th>
+
                         <th class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Items</th>
                         <th class="px-6 py-3.5 text-left text-xs font-semibold text-gray-500 uppercase tracking-wider">Effective From</th>
                         <th class="px-6 py-3.5 text-center text-xs font-semibold text-gray-500 uppercase tracking-wider">Status</th>
@@ -176,11 +176,7 @@
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded bg-blue-50 text-blue-700" x-text="'v' + item.version"></span>
                             </td>
-                            <!-- Batch Size -->
-                            <td class="px-6 py-4 whitespace-nowrap">
-                                <span class="text-sm text-gray-800 font-medium" x-text="item.batch_size_formatted"></span>
-                                <span class="text-xs text-gray-400 ml-1" x-text="item.output_uom_name"></span>
-                            </td>
+
                             <!-- Items Count -->
                             <td class="px-6 py-4 whitespace-nowrap text-center">
                                 <span class="inline-flex items-center px-2 py-0.5 text-xs font-semibold rounded-full"
@@ -264,12 +260,7 @@ function bomData() {
         }
     }
 
-    // Format batch size number (strip trailing zeros)
-    function formatBatchSize(val) {
-        const n = parseFloat(val);
-        if (isNaN(n)) return val;
-        return n % 1 === 0 ? n.toFixed(0) : n.toFixed(2).replace(/0+$/, '');
-    }
+
 
     return {
         items: [],
@@ -319,8 +310,7 @@ function bomData() {
                     product_name: b.product ? b.product.product_name : 'N/A',
                     product_code: b.product ? b.product.product_code : '',
                     version: b.version || 1,
-                    batch_size: b.batch_size || 1,
-                    batch_size_formatted: formatBatchSize(b.batch_size),
+
                     output_uom_id: b.output_uom_id,
                     output_uom_name: b.output_uom ? b.output_uom.uom_name : '',
                     items_count: b.bom_details ? b.bom_details.length : 0,

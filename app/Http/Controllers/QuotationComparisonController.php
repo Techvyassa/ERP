@@ -127,6 +127,9 @@ class QuotationComparisonController extends Controller
                 ->with('vendor:id,vendor_name')
                 ->first();
 
+            // Check if PO already created for this PR
+            $poExists = \App\Models\Tenant\PurchaseOrder::where('pr_number', $prNumber)->exists();
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -135,6 +138,7 @@ class QuotationComparisonController extends Controller
                     'is_selected' => $selection ? true : false,
                     'selected_vendor' => $selection ? $selection->vendor->vendor_name : null,
                     'selection_status' => $selection ? $selection->status : null,
+                    'po_exists' => $poExists,
                 ],
                 'message' => 'Quotation comparison retrieved successfully',
                 'request_id' => $requestId,
@@ -448,6 +452,19 @@ class QuotationComparisonController extends Controller
                     'success' => false,
                     'error' => ['code' => 'NO_SELECTIONS', 'details' => []],
                     'message' => 'No item selections found for this PR. Please select vendors for each item first.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            // Prevent duplicate POs: check if POs already exist for this PR
+            $existingPOs = \App\Models\Tenant\PurchaseOrder::where('pr_number', $prNumber)->get();
+            if ($existingPOs->isNotEmpty()) {
+                $poNumbers = $existingPOs->pluck('po_number')->implode(', ');
+                return response()->json([
+                    'success' => false,
+                    'error' => ['code' => 'PO_ALREADY_EXISTS', 'details' => ['po_numbers' => $existingPOs->pluck('po_number')]],
+                    'message' => 'Purchase Order(s) already exist for this PR: ' . $poNumbers,
                     'request_id' => $requestId,
                     'timestamp' => now()->toIso8601String(),
                 ], 422);
