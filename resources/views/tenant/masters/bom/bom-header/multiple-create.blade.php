@@ -86,10 +86,7 @@
                         <label class="block text-sm font-medium text-gray-700 mb-2">Effective To</label>
                         <input type="date" x-model="bom.effective_to" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Batch Size</label>
-                        <input type="number" min="0.001" step="0.001" x-model="bom.batch_size" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
-                    </div>
+
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">Output UOM</label>
                         <select x-model="bom.output_uom_id" class="w-full px-4 py-2.5 border border-gray-300 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-transparent">
@@ -254,7 +251,6 @@ function multipleBomCreate() {
         effective_from: '',
         effective_to: '',
         bom_status: 'DRAFT',
-        batch_size: 100,
         output_uom_id: '',
         remarks: '',
         items: [newItem()]
@@ -335,7 +331,6 @@ function multipleBomCreate() {
                     effective_from: bom.effective_from,
                     effective_to: bom.effective_to || null,
                     bom_status: bom.bom_status,
-                    batch_size: parseFloat(bom.batch_size),
                     output_uom_id: parseInt(bom.output_uom_id),
                     remarks: bom.remarks || null,
                     items: bom.items.map((item) => ({

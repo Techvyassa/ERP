@@ -19,7 +19,6 @@ return new class extends Migration
             $table->date('effective_from')->comment('BOM valid from this date');
             $table->date('effective_to')->nullable()->comment('NULL = currently active BOM');
             $table->string('bom_status', 15)->default('DRAFT')->comment('DRAFT / ACTIVE / OBSOLETE');
-            $table->decimal('batch_size', 12, 3)->comment('Output quantity per batch run');
             $table->unsignedBigInteger('output_uom_id');
             $table->text('remarks')->nullable()->comment('Change notes, reason for version');
             $table->unsignedBigInteger('created_by')->nullable();

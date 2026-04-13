@@ -17,7 +17,6 @@ class BOMHeader extends Model
         'effective_from',
         'effective_to',
         'bom_status',
-        'batch_size',
         'output_uom_id',
         'remarks',
         'created_by',
@@ -26,8 +25,7 @@ class BOMHeader extends Model
 
     protected $casts = [
         'effective_from' => 'date',
-        'effective_to' => 'date',
-        'batch_size' => 'decimal:3'
+        'effective_to' => 'date'
     ];
 
     // Relationships
