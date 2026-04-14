@@ -557,9 +557,11 @@ Route::prefix('v1')->group(function () {
                 Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
                 Route::get('/for-packing', [App\Http\Controllers\ProductionOrderController::class, 'forPacking']);
                 Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
+                Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']); // DRAFT → IN_PROGRESS (requires MIR CLOSED)
                 Route::patch('/{id}/release', [App\Http\Controllers\ProductionOrderController::class, 'release']); // DRAFT → RELEASED
                 Route::patch('/{id}/close', [App\Http\Controllers\ProductionOrderController::class, 'close']); // IN_PROGRESS → CLOSED
                 Route::patch('/{id}/confirm-receipt', [App\Http\Controllers\ProductionOrderController::class, 'confirmReceipt']); // MIR FULLY_ISSUED → CLOSED, unlocks start
+                Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']); // Record FG output
                 Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
                 Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
             });

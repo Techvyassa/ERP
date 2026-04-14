@@ -238,7 +238,7 @@
                             title="Materials not yet fully issued by Store">
                             Pending Issue
                         </button>
-                        <button x-show="viewModal.order?.status === 'COMPLETED'" @click="openVarianceModal(viewModal.order)"
+                        <button x-show="viewModal.order?.status === 'COMPLETED'" @click="viewModal.show = false; openVarianceModal(viewModal.order)"
                             class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
                             Variance
                         </button>
@@ -977,11 +977,7 @@
                 startOrder(order) {
                     this.confirm(
                         'Start Production',
-                        `Confirm starting production for ${order.order_no}? 
-             Product: ${typeof order.product_name === 'object'
-                            ? order.product_name.product_name
-                            : (order.product_name || '')
-                        }`,
+                        `Confirm starting production for ${order.order_no}? Product: ${order.product_name || ''}`,
                         async () => {
                             try {
                                 const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, {
@@ -989,13 +985,11 @@
                                 });
                                 const data = await res.json();
                                 if (!res.ok || !data.success) throw new Error(data.message || 'Failed to start production');
-                                await this.loadOrders();
-                                if (this.viewModal.show && this.viewModal.order?.id === order.id) {
-                                    await this.viewOrder({
-                                        ...order,
-                                        status: 'IN_PROGRESS'
-                                    });
-                                }
+                                // Update the order in the list directly — no extra API call
+                                const idx = this.orders.findIndex(o => o.id === order.id);
+                                if (idx !== -1) this.orders[idx] = { ...this.orders[idx], status: 'IN_PROGRESS' };
+                                // Close view modal and notify
+                                this.viewModal.show = false;
                                 this.notify('Production started successfully');
                             } catch (e) {
                                 this.notify(e.message || 'Failed to start production', 'error');
