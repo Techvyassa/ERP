@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Models\Tenant\VendorQuotation;
 use App\Models\Tenant\QuotationSelection;
+use App\Models\Tenant\PurchaseOrder;
 use App\Models\Tenant\Vendor;
 use App\Models\Tenant\Currency;
 use Illuminate\Http\JsonResponse;
@@ -49,6 +50,10 @@ class QuotationComparisonController extends Controller
                 $selection = QuotationSelection::where('pr_number', $item->pr_number)
                     ->with('vendor:id,vendor_name')
                     ->first();
+
+                // Check if POs already created for this PR
+                $pos = \App\Models\Tenant\PurchaseOrder::where('pr_number', $item->pr_number)
+                    ->pluck('po_number');
                 
                 return [
                     'pr_number' => $item->pr_number,
@@ -58,6 +63,7 @@ class QuotationComparisonController extends Controller
                     'is_selected' => $selection ? true : false,
                     'selected_vendor' => $selection ? $selection->vendor->vendor_name : null,
                     'selection_status' => $selection ? $selection->status : null,
+                    'po_numbers' => $pos->values(),
                 ];
             });
 
@@ -457,14 +463,16 @@ class QuotationComparisonController extends Controller
                 ], 422);
             }
 
-            // Prevent duplicate POs: check if POs already exist for this PR
-            $existingPOs = \App\Models\Tenant\PurchaseOrder::where('pr_number', $prNumber)->get();
-            if ($existingPOs->isNotEmpty()) {
-                $poNumbers = $existingPOs->pluck('po_number')->implode(', ');
+            // Prevent duplicate POs: only block if a non-DRAFT PO already exists for this PR + vendor
+            $existingConfirmedPOs = \App\Models\Tenant\PurchaseOrder::where('pr_number', $prNumber)
+                ->whereNotIn('status', ['DRAFT', 'CANCELLED'])
+                ->get();
+            if ($existingConfirmedPOs->isNotEmpty()) {
+                $poNumbers = $existingConfirmedPOs->pluck('po_number')->implode(', ');
                 return response()->json([
                     'success' => false,
-                    'error' => ['code' => 'PO_ALREADY_EXISTS', 'details' => ['po_numbers' => $existingPOs->pluck('po_number')]],
-                    'message' => 'Purchase Order(s) already exist for this PR: ' . $poNumbers,
+                    'error' => ['code' => 'PO_ALREADY_EXISTS', 'details' => ['po_numbers' => $existingConfirmedPOs->pluck('po_number')]],
+                    'message' => 'Purchase Order(s) already submitted/approved for this PR: ' . $poNumbers,
                     'request_id' => $requestId,
                     'timestamp' => now()->toIso8601String(),
                 ], 422);
@@ -487,18 +495,21 @@ class QuotationComparisonController extends Controller
             foreach ($byVendor as $vendorId => $vendorSelections) {
                 $vendor = $vendorSelections->first()->vendor;
 
-                $poNumber = \App\Models\Tenant\PurchaseOrder::generatePoNumber();
-
                 $subtotal = $vendorSelections->sum(fn($s) => floatval($s->quotation->total_price ?? 0));
 
-                $po = \App\Models\Tenant\PurchaseOrder::create([
-                    'po_number'       => $poNumber,
+                // Upsert: update existing DRAFT PO for this PR+vendor, or create new
+                $existingDraft = \App\Models\Tenant\PurchaseOrder::where('pr_number', $prNumber)
+                    ->where('vendor_id', $vendorId)
+                    ->where('status', 'DRAFT')
+                    ->first();
+
+                $poData = [
                     'pr_number'       => $prNumber,
                     'vendor_id'       => $vendorId,
                     'currency_id'     => $vendor->currency_id ?? $defaultCurrency?->id,
                     'payment_terms'   => $vendor->payment_terms ?? 'NET30',
                     'credit_days'     => $vendor->credit_days ?? 30,
-                    'delivery_terms'  => $vendor->delivery_terms,
+                    'delivery_terms'  => $vendor->delivery_terms ?? null,
                     'subtotal'        => $subtotal,
                     'discount_amount' => 0,
                     'freight_charges' => 0,
@@ -506,10 +517,23 @@ class QuotationComparisonController extends Controller
                     'grand_total'     => $subtotal,
                     'po_date'         => now()->toDateString(),
                     'expected_delivery' => $vendorSelections->max(fn($s) => $s->quotation->delivery_date?->format('Y-m-d')),
-                    'status'          => 'PENDING_APPROVAL',
+                    'status'          => 'DRAFT',
                     'remarks'         => 'Created from PR ' . $prNumber . ' quotation comparison',
-                    'created_by'      => $request->input('auth_user_id'),
-                ]);
+                ];
+
+                if ($existingDraft) {
+                    $existingDraft->fill($poData);
+                    $existingDraft->save();
+                    $existingDraft->lineItems()->delete();
+                    $po = $existingDraft;
+                    $poNumber = $existingDraft->po_number;
+                } else {
+                    $poNumber = \App\Models\Tenant\PurchaseOrder::generatePoNumber();
+                    $po = \App\Models\Tenant\PurchaseOrder::create(array_merge($poData, [
+                        'po_number'  => $poNumber,
+                        'created_by' => $request->input('auth_user_id'),
+                    ]));
+                }
 
                 // Create line items
                 $lineNumber = 1;
@@ -658,20 +682,47 @@ class QuotationComparisonController extends Controller
     {
         $requestId = Str::uuid()->toString();
         try {
+            // Exclude PRs that already have a confirmed PO (exclude DRAFT so user can recreate if needed)
+            $prNumbersWithPO = PurchaseOrder::whereNotNull('pr_number')
+                ->whereNotIn('status', ['DRAFT', 'CANCELLED'])
+                ->pluck('pr_number')
+                ->unique()
+                ->toArray();
+
             $selections = QuotationSelection::with(['vendor:id,vendor_name,vendor_code'])
                 ->where('status', 'selected')
+                ->whereNotIn('pr_number', $prNumbersWithPO)
                 ->orderByDesc('selected_at')
                 ->get();
 
-            $selectedPRs = $selections->map(function ($selection) {
-                return [
-                    'pr_number' => $selection->pr_number,
-                    'vendor_id' => $selection->vendor_id,
-                    'vendor_name' => $selection->vendor->vendor_name,
-                    'vendor_code' => $selection->vendor->vendor_code,
-                    'selected_at' => $selection->selected_at?->format('Y-m-d H:i:s'),
-                ];
-            });
+            // Group by pr_number — a PR may have multiple rows (item-level multi-vendor selections)
+            $grouped = $selections->groupBy('pr_number');
+
+            $selectedPRs = $grouped->flatMap(function ($rows, $prNumber) {
+                $uniqueVendors = $rows->groupBy('vendor_id');
+
+                if ($uniqueVendors->count() === 1) {
+                    // Single vendor — one entry
+                    $first = $rows->first();
+                    return [[
+                        'pr_number'   => $prNumber,
+                        'vendor_id'   => $first->vendor_id,
+                        'vendor_name' => $first->vendor->vendor_name,
+                        'selected_at' => $first->selected_at?->format('Y-m-d H:i:s'),
+                    ]];
+                }
+
+                // Multi-vendor — one entry per vendor
+                return $uniqueVendors->map(function ($vendorRows, $vendorId) use ($prNumber) {
+                    $first = $vendorRows->first();
+                    return [
+                        'pr_number'   => $prNumber,
+                        'vendor_id'   => $vendorId,
+                        'vendor_name' => $first->vendor->vendor_name,
+                        'selected_at' => $first->selected_at?->format('Y-m-d H:i:s'),
+                    ];
+                })->values()->toArray();
+            })->values();
 
             return response()->json([
                 'success' => true,
@@ -699,12 +750,20 @@ class QuotationComparisonController extends Controller
     {
         $requestId = Str::uuid()->toString();
         try {
-            // Get the selected quotation for this PR
-            $selection = QuotationSelection::where('pr_number', $prNumber)
-                ->with(['vendor:id,vendor_name,vendor_code,gstin,currency_id,payment_terms'])
-                ->first();
+            // Optional vendor_id filter — used when a multi-vendor PR is split per vendor
+            $vendorId = request()->query('vendor_id');
 
-            if (!$selection) {
+            $selectionsQuery = QuotationSelection::where('pr_number', $prNumber)
+                ->where('status', 'selected')
+                ->with(['vendor:id,vendor_name,vendor_code,gstin,currency_id,payment_terms']);
+
+            if ($vendorId) {
+                $selectionsQuery->where('vendor_id', $vendorId);
+            }
+
+            $selections = $selectionsQuery->get();
+
+            if ($selections->isEmpty()) {
                 return response()->json([
                     'success' => false,
                     'error' => ['code' => 'NOT_FOUND', 'details' => []],
@@ -714,63 +773,66 @@ class QuotationComparisonController extends Controller
                 ], 404);
             }
 
-            // Get all quotation line items for the selected vendor
-            $quotations = VendorQuotation::where('pr_number', $prNumber)
-                ->where('vendor_id', $selection->vendor_id)
-                ->orderBy('id')
-                ->get();
-
-            if ($quotations->isEmpty()) {
-                return response()->json([
-                    'success' => false,
-                    'error' => ['code' => 'NOT_FOUND', 'details' => []],
-                    'message' => 'No quotation items found for selected vendor',
-                    'request_id' => $requestId,
-                    'timestamp' => now()->toIso8601String(),
-                ], 404);
-            }
+            $vendor = $selections->first()->vendor;
 
             // Get the PR with line items to map material_id
             $pr = \App\Models\Tenant\PurchaseRequisition::where('pr_number', $prNumber)
                 ->with(['lineItems.material', 'lineItems.uom'])
                 ->first();
 
-            // Map quotation items with PR line items to get material_id
+            // Fetch quotation items for this vendor only
+            $quotations = VendorQuotation::where('pr_number', $prNumber)
+                ->where('vendor_id', $vendor->id)
+                ->orderBy('id')
+                ->get();
+
             $lineItems = $quotations->map(function ($quotation) use ($pr) {
                 $material_id = null;
-                
-                // Try to find matching PR line item by item name
-                if ($pr && $pr->lineItems) {
-                    $matchingLineItem = $pr->lineItems->first(function ($lineItem) use ($quotation) {
-                        return strtolower(trim($lineItem->item_name)) === strtolower(trim($quotation->item_name));
-                    });
-                    
-                    if ($matchingLineItem) {
-                        $material_id = $matchingLineItem->material_id;
-                    }
+
+                // 1. Match by item_code → material_code (most reliable)
+                if ($quotation->item_code) {
+                    $byCode = \App\Models\Tenant\Material::where('material_code', $quotation->item_code)
+                        ->value('id');
+                    if ($byCode) $material_id = $byCode;
                 }
-                
+
+                // 2. Fallback: match via PR line item by item_name
+                if (!$material_id && $pr && $pr->lineItems) {
+                    $match = $pr->lineItems->first(fn($li) =>
+                        strtolower(trim($li->item_name)) === strtolower(trim($quotation->item_name))
+                    );
+                    if ($match) $material_id = $match->material_id;
+                }
+
+                // 3. Fallback: match via PR line item by item_code
+                if (!$material_id && $quotation->item_code && $pr && $pr->lineItems) {
+                    $match = $pr->lineItems->first(fn($li) =>
+                        $li->material && strtolower($li->material->material_code) === strtolower($quotation->item_code)
+                    );
+                    if ($match) $material_id = $match->material_id;
+                }
+
                 return [
-                    'material_id' => $material_id,
-                    'item_code' => $quotation->item_code,
-                    'item_name' => $quotation->item_name,
-                    'quantity' => $quotation->quantity,
-                    'unit_price' => $quotation->unit_price,
-                    'total_price' => $quotation->total_price,
+                    'material_id'   => $material_id,
+                    'item_code'     => $quotation->item_code,
+                    'item_name'     => $quotation->item_name,
+                    'quantity'      => $quotation->quantity,
+                    'unit_price'    => $quotation->unit_price,
+                    'total_price'   => $quotation->total_price,
                     'delivery_date' => $quotation->delivery_date?->format('Y-m-d'),
                 ];
-            });
+            })->values();
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'pr_number' => $prNumber,
-                    'vendor_id' => $selection->vendor_id,
-                    'vendor_name' => $selection->vendor->vendor_name,
-                    'vendor_gstin' => $selection->vendor->gstin,
-                    'currency_id' => $selection->vendor->currency_id,
-                    'payment_terms' => $selection->vendor->payment_terms,
-                    'line_items' => $lineItems,
+                    'pr_number'    => $prNumber,
+                    'vendor_id'    => $vendor->id,
+                    'vendor_name'  => $vendor->vendor_name,
+                    'vendor_gstin' => $vendor->gstin,
+                    'currency_id'  => $vendor->currency_id,
+                    'payment_terms'=> $vendor->payment_terms,
+                    'line_items'   => $lineItems,
                 ],
                 'message' => 'PR quotation details retrieved successfully',
                 'request_id' => $requestId,

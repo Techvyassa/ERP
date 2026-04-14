@@ -23,6 +23,7 @@ class StorePurchaseOrderRequest extends FormRequest
     {
         return [
             // Header
+            'pr_number'  => 'nullable|string|max:50',
             'vendor_id' => 'required|integer|exists:tenant.vendor_master,id',
             'currency_id' => 'required|integer|exists:tenant.currency_master,id',
             'billing_address' => 'nullable|string|max:500',

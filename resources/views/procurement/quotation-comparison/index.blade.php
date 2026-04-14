@@ -78,6 +78,16 @@
                                             Selected
                                         </span>
                                         <p class="text-xs text-gray-600">Vendor: <span class="font-semibold" x-text="item.selected_vendor"></span></p>
+                                        <template x-if="item.po_numbers && item.po_numbers.length > 0">
+                                            <div class="flex flex-wrap gap-1 mt-1">
+                                                <template x-for="po in item.po_numbers" :key="po">
+                                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium flex items-center gap-1">
+                                                        <span class="material-symbols-outlined text-xs">receipt</span>
+                                                        <span x-text="po"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </template>
                                     </div>
                                 </template>
                                 <template x-if="!item.is_selected">
