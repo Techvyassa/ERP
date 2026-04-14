@@ -489,12 +489,28 @@ class ProductionOrderController extends Controller
                 ], 422);
             }
 
-            $pendingLines = $order->mir->lines()->where('scan_status', '!=', 'ISSUED')->count();
-            if ($pendingLines > 0) {
+            // Gate: MIR must be CLOSED (store issued + production confirmed floor receipt)
+            if ($order->mir->status !== 'CLOSED') {
+                // Give a specific message based on current MIR state
+                $mirStatus = $order->mir->status;
+
+                if ($mirStatus === 'PENDING' || $mirStatus === 'APPROVED') {
+                    $message = 'Store has not yet issued materials. MIR must be fully issued before starting.';
+                } elseif ($mirStatus === 'PARTIALLY_ISSUED') {
+                    $pendingLines = $order->mir->lines()->whereNotIn('status', ['FULLY_PICKED'])->count();
+                    $message = "Store has partially issued materials ({$pendingLines} line(s) remaining). All materials must be issued first.";
+                } elseif ($mirStatus === 'FULLY_ISSUED') {
+                    $message = 'Materials issued but production floor receipt not yet confirmed. Please confirm receipt first.';
+                } elseif ($mirStatus === 'REJECTED') {
+                    $message = 'MIR has been rejected. Please resolve the rejection before starting production.';
+                } else {
+                    $message = "MIR status is '{$mirStatus}'. Must be CLOSED to start production.";
+                }
+
                 return response()->json([
                     'success' => false,
-                    'error' => ['code' => 'MIR_NOT_FULLY_ISSUED', 'details' => ['pending_lines' => $pendingLines]],
-                    'message' => "MIR has {$pendingLines} lines not yet issued. All materials must be scanned before starting production.",
+                    'error' => ['code' => 'MIR_NOT_READY', 'details' => ['mir_status' => $mirStatus]],
+                    'message' => $message,
                     'request_id' => $requestId,
                     'timestamp' => now()->toIso8601String(),
                 ], 422);

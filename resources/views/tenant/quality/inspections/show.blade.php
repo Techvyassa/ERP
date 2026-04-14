@@ -5,27 +5,59 @@
 
 @section('content')
 <div x-data="qcInspectionDetail()" x-init="init()">
-    <div class="flex items-center justify-between mb-6">
-        <div>
-            <button type="button" onclick="window.history.back()" class="inline-flex items-center gap-2 mb-3 px-3 py-2 text-sm font-medium text-gray-600 bg-white border border-gray-200 rounded-lg hover:bg-gray-50">
+    <div class="flex items-start justify-between mb-6">
+        <div class="flex items-start gap-4">
+            <button type="button" onclick="window.history.back()"
+                class="mt-1 p-2 text-gray-400 bg-white border border-gray-200 rounded-xl hover:text-gray-700 hover:border-gray-400 transition-all shadow-sm">
                 <span class="material-symbols-outlined text-base">arrow_back</span>
-                Back
             </button>
-            <h2 class="text-2xl font-bold text-gray-900">Inspection Lot <span x-text="'LOT-' + (lot.id || '')"></span></h2>
-            <p class="text-sm text-gray-500">Record test results and submit the final QC decision.</p>
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[16px] font-black text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded uppercase tracking-widest">QC Inspection</span>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-[16px] font-bold text-slate-600 font-mono" x-text="lot.lot_number || ('LOT-' + lot.id)"></span>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight"
+                    x-text="lot.product?.product_name || lot.material?.material_name || 'Inspection'"></h2>
+                <p class="text-sm text-slate-500 mt-0.5">
+                    <span x-text="lot.source_type === 'PRODUCTION' ? 'Finished Goods' : 'Inward Goods'"></span>
+                    <span class="mx-1 text-slate-300">·</span>
+                    <span x-text="lot.production_order?.order_no || lot.grn?.grn_number || '—'"></span>
+                </p>
+            </div>
         </div>
-        <div class="flex gap-2">
-            <button x-show="lot.status === 'PENDING'" @click="startInspection()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Start</button>
-            <button x-show="lot.status === 'IN_PROGRESS'" @click="completeInspection()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700">Complete</button>
+        <div class="flex items-center gap-3">
+            <span class="px-3 py-1.5 rounded-full text-xs font-black uppercase tracking-widest"
+                :class="statusClass(lot.status)"
+                x-text="(lot.status || '').replace(/_/g, ' ')"></span>
+            <button x-show="lot.status === 'PENDING'" @click="startInspection()"
+                class="px-5 py-2.5 bg-blue-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-blue-700 transition-all shadow-sm active:scale-95">
+                Start Inspection
+            </button>
+            <button x-show="lot.status === 'IN_PROGRESS'" @click="completeInspection()"
+                class="px-5 py-2.5 bg-emerald-600 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-emerald-700 transition-all shadow-sm active:scale-95">
+                Complete
+            </button>
         </div>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-5 gap-4 mb-6">
-        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Source</p><p class="font-semibold text-gray-900" x-text="lot.source_type || 'GRN'"></p></div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Item</p><p class="font-semibold text-gray-900" x-text="lot.product?.product_name || lot.material?.material_name || '—'"></p></div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Reference</p><p class="font-semibold text-gray-900" x-text="lot.production_order?.order_no || lot.grn?.grn_number || '—'"></p></div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Batch</p><p class="font-semibold text-gray-900" x-text="lot.batch_number || lot.production_order?.fg_batch_number || '—'"></p></div>
-        <div class="bg-white rounded-xl border border-gray-200 p-4"><p class="text-xs text-gray-500 font-semibold mb-1">Status</p><span class="px-2.5 py-1 rounded-full text-xs font-bold" :class="statusClass(lot.status)" x-text="(lot.status || '').replace(/_/g, ' ')"></span></div>
+    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Lot No</p>
+            <p class="text-sm font-black text-slate-900 font-mono" x-text="lot.lot_number || ('LOT-' + lot.id)"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Source</p>
+            <p class="text-sm font-semibold text-slate-800" x-text="lot.source_type || 'GRN'"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Sample Size</p>
+            <p class="text-sm font-black text-slate-900" x-text="lot.sample_size || '—'"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Batch</p>
+            <p class="text-sm font-semibold text-slate-800" x-text="lot.batch_number || lot.production_order?.fg_batch_number || '—'"></p>
+        </div>
     </div>
 
     <div class="grid grid-cols-1 xl:grid-cols-[1.05fr_0.95fr] gap-6">
@@ -69,143 +101,155 @@
             <div x-show="lot.status === 'IN_PROGRESS'" class="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
                 <div>
                     <h3 class="font-semibold text-gray-900">Record Test Result</h3>
-                    <p class="text-sm text-gray-500">Select a configured parameter or enter manual test details.</p>
                 </div>
 
-                <!-- Configured Parameter Selection -->
-                <div x-show="qcParameters.length > 0">
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Select Configured Parameter</label>
-                    <select x-model="selectedParameterId" @change="onParameterChange()" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm">
-                        <option value="">— Select from list —</option>
-                        <template x-for="param in qcParameters" :key="param.id">
-                            <option :value="param.id"
-                                    :disabled="isParameterRecorded(param.parameter_name)"
-                                    x-text="param.parameter_name + ' • ' + param.parameter_code + (isParameterRecorded(param.parameter_name) ? ' ✓ Recorded' : '')"></option>
-                        </template>
-                    </select>
-                </div>
-
-                <!-- Manual Parameter Entry (when no configured parameters or user wants manual entry) -->
-                <div x-show="!selectedParameterId && qcParameters.length > 0" class="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-lg">
-                    <p class="text-xs text-amber-800">
-                        <span class="font-semibold">Note:</span> No parameter selected. You can manually enter parameter details below or select a configured parameter above.
-                    </p>
-                </div>
-
-                <!-- Selected Parameter Details -->
-                <div x-show="selectedParameterId" class="bg-blue-50 border border-blue-200 rounded-lg p-4 mt-4">
-                    <h4 class="text-sm font-bold text-blue-900 mb-3">Parameter Configuration (Auto-loaded)</h4>
-                    <div class="grid grid-cols-2 gap-3 text-xs">
-                        <div>
-                            <span class="text-blue-600 font-semibold">Name:</span>
-                            <span class="text-gray-800 ml-1" x-text="newResult.parameter_name || '—'"></span>
+                <!-- NO PARAMETERS: show message + remarks only -->
+                <template x-if="qcParameters.length === 0">
+                    <div class="space-y-4">
+                        <div class="flex items-start gap-3 px-4 py-4 bg-amber-50 border border-amber-200 rounded-xl">
+                            <span class="material-symbols-outlined text-amber-500 text-xl mt-0.5">warning</span>
+                            <div>
+                                <p class="text-sm font-black text-amber-800">No QC parameters configured for this material.</p>
+                                <p class="text-xs text-amber-700 mt-1">Please set up QC parameters in the master data before recording test results. You can add a general remark below.</p>
+                                <a href="/org/{{ $organization->org_slug }}/quality/qc-parameters"
+                                    class="inline-flex items-center gap-1 mt-2 text-xs font-black text-amber-700 underline underline-offset-2 hover:text-amber-900">
+                                    <span class="material-symbols-outlined text-xs">open_in_new</span>
+                                    Go to QC Parameters
+                                </a>
+                            </div>
                         </div>
                         <div>
-                            <span class="text-blue-600 font-semibold">Code:</span>
-                            <span class="text-gray-800 ml-1" x-text="newResult.parameter_code || '—'"></span>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Remarks</label>
+                            <textarea x-model="newResult.remarks" rows="3"
+                                placeholder="Add any observations or notes about this inspection..."
+                                class="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"></textarea>
                         </div>
+                        <div class="flex justify-end">
+                            <button @click="addResult()" class="px-4 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
+                                Save Remark
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- HAS PARAMETERS: full form -->
+                <template x-if="qcParameters.length > 0">
+                    <div class="space-y-4">
+                        <!-- Parameter Selection -->
                         <div>
-                            <span class="text-blue-600 font-semibold">Type:</span>
-                            <span class="px-2 py-0.5 rounded-full text-xs font-bold bg-blue-100 text-blue-700 ml-1" x-text="newResult.tolerance_type"></span>
+                            <label class="block text-xs font-black text-slate-500 uppercase tracking-widest mb-2">Select Parameter</label>
+                            <select x-model="selectedParameterId" @change="onParameterChange()"
+                                class="w-full px-3 py-2.5 border border-gray-200 rounded-xl text-sm bg-gray-50 focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                                <option value="">— Choose a configured parameter —</option>
+                                <template x-for="param in qcParameters" :key="param.id">
+                                    <option :value="param.id"
+                                            :disabled="isParameterRecorded(param.parameter_name)"
+                                            x-text="param.parameter_name + (isParameterRecorded(param.parameter_name) ? ' ✓' : '')"></option>
+                                </template>
+                            </select>
                         </div>
+
+                        <!-- Selected Parameter summary chips -->
+                        <div x-show="selectedParameterId" class="flex flex-wrap gap-2 px-4 py-3 bg-blue-50 border border-blue-100 rounded-xl">
+                            <span class="text-[10px] font-black text-blue-600 uppercase tracking-widest w-full mb-1">Auto-loaded</span>
+                            <span class="px-2.5 py-1 bg-white border border-blue-200 rounded-lg text-xs font-semibold text-blue-800" x-text="newResult.parameter_name"></span>
+                            <span class="px-2.5 py-1 bg-white border border-blue-200 rounded-lg text-xs font-semibold text-blue-800" x-text="newResult.tolerance_type"></span>
+                            <span x-show="newResult.unit_of_measurement" class="px-2.5 py-1 bg-white border border-blue-200 rounded-lg text-xs font-semibold text-blue-800" x-text="newResult.unit_of_measurement"></span>
+                            <span x-show="newResult.tolerance_type === 'RANGE'" class="px-2.5 py-1 bg-white border border-blue-200 rounded-lg text-xs font-semibold text-blue-800"
+                                x-text="newResult.standard_min + ' – ' + newResult.standard_max"></span>
+                        </div>
+
+                        <!-- Duplicate Warning -->
+                        <div x-show="hasDuplicate()" class="flex items-start gap-2 bg-red-50 border border-red-200 rounded-xl p-4">
+                            <span class="material-symbols-outlined text-red-500 text-base mt-0.5">error</span>
+                            <div>
+                                <p class="text-xs font-black text-red-800">Duplicate Result Detected</p>
+                                <p class="text-xs text-red-700 mt-0.5" x-text="getDuplicateMessage()"></p>
+                            </div>
+                        </div>
+
+                        <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Parameter Name <span class="text-red-500">*</span></label>
+                                <input type="text" x-model="newResult.parameter_name"
+                                    :placeholder="selectedParameterId ? 'From configuration' : 'e.g., Moisture Content'"
+                                    :readonly="!!selectedParameterId"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm"
+                                    :class="selectedParameterId ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Parameter Code</label>
+                                <input type="text" x-model="newResult.parameter_code"
+                                    :placeholder="selectedParameterId ? 'From configuration' : 'e.g., MOIST-01'"
+                                    :readonly="!!selectedParameterId"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm"
+                                    :class="selectedParameterId ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Tolerance Type <span class="text-red-500">*</span></label>
+                                <select x-model="newResult.tolerance_type"
+                                    :disabled="!!selectedParameterId"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm"
+                                    :class="selectedParameterId ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                                    <option value="RANGE">Range</option>
+                                    <option value="MIN_ONLY">Min Only</option>
+                                    <option value="MAX_ONLY">Max Only</option>
+                                    <option value="EXACT">Exact</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Unit</label>
+                                <input type="text" x-model="newResult.unit_of_measurement"
+                                    :placeholder="selectedParameterId ? 'From configuration' : 'e.g., %, kg, ppm'"
+                                    :readonly="!!selectedParameterId"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm"
+                                    :class="selectedParameterId ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                            </div>
+                            <div x-show="['RANGE', 'MIN_ONLY'].includes(newResult.tolerance_type)">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Min</label>
+                                <input type="number" step="0.0001" x-model="newResult.standard_min"
+                                    :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 10.5'"
+                                    :readonly="!!selectedParameterId"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm"
+                                    :class="selectedParameterId ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                            </div>
+                            <div x-show="['RANGE', 'MAX_ONLY'].includes(newResult.tolerance_type)">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Max</label>
+                                <input type="number" step="0.0001" x-model="newResult.standard_max"
+                                    :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 20.5'"
+                                    :readonly="!!selectedParameterId"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm"
+                                    :class="selectedParameterId ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                            </div>
+                            <div x-show="newResult.tolerance_type === 'EXACT'">
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Value</label>
+                                <input type="number" step="0.0001" x-model="newResult.standard_value"
+                                    :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 15.0'"
+                                    :readonly="!!selectedParameterId"
+                                    class="w-full px-3 py-2 border rounded-lg text-sm"
+                                    :class="selectedParameterId ? 'border-gray-200 bg-gray-50 text-gray-500 cursor-not-allowed' : 'border-gray-300 bg-white focus:ring-2 focus:ring-primary/20 focus:border-primary'">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Observed Value <span class="text-red-500">*</span></label>
+                                <input type="number" step="0.0001" x-model="newResult.observed_value"
+                                    placeholder="Enter measured value"
+                                    class="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            </div>
+                        </div>
+
                         <div>
-                            <span class="text-blue-600 font-semibold">Unit:</span>
-                            <span class="text-gray-800 ml-1" x-text="newResult.unit_of_measurement || '—'"></span>
+                            <label class="block text-xs font-semibold text-gray-600 mb-1">Remarks</label>
+                            <textarea x-model="newResult.remarks" rows="2" placeholder="Optional remarks about this test result"
+                                class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"></textarea>
                         </div>
-                        <div x-show="newResult.tolerance_type === 'RANGE'">
-                            <span class="text-blue-600 font-semibold">Tolerance Range:</span>
-                            <span class="text-gray-800 ml-1" x-text="newResult.standard_min + ' to ' + newResult.standard_max"></span>
-                        </div>
-                        <div x-show="newResult.tolerance_type === 'MIN_ONLY'">
-                            <span class="text-blue-600 font-semibold">Min Value:</span>
-                            <span class="text-gray-800 ml-1" x-text="newResult.standard_min || '—'"></span>
-                        </div>
-                        <div x-show="newResult.tolerance_type === 'MAX_ONLY'">
-                            <span class="text-blue-600 font-semibold">Max Value:</span>
-                            <span class="text-gray-800 ml-1" x-text="newResult.standard_max || '—'"></span>
-                        </div>
-                        <div x-show="newResult.tolerance_type === 'EXACT'">
-                            <span class="text-blue-600 font-semibold">Target Value:</span>
-                            <span class="text-gray-800 ml-1" x-text="newResult.standard_value || '—'"></span>
-                        </div>
-                    </div>
-                </div>
 
-                <!-- Manual Entry Info -->
-                <div x-show="!selectedParameterId" class="bg-gray-50 border border-gray-200 rounded-lg p-4 mt-4">
-                    <h4 class="text-sm font-bold text-gray-700 mb-3">Manual Parameter Entry</h4>
-                    <p class="text-xs text-gray-600 mb-2">Enter parameter details manually. You must provide:</p>
-                    <ul class="text-xs text-gray-600 space-y-1 ml-4 list-disc">
-                        <li><strong>Parameter Name</strong> - What are you testing? (e.g., "Moisture")</li>
-                        <li><strong>Tolerance Type</strong> - How will you judge it? (Range, Min Only, Max Only, or Exact)</li>
-                        <li><strong>Standard Values</strong> - What is acceptable? (e.g., 10 to 20)</li>
-                        <li><strong>Observed Value</strong> - What did you measure?</li>
-                    </ul>
-                    <p class="text-xs text-gray-500 mt-3"><strong>Note:</strong> Tolerance = The acceptable range/limit for your test.</p>
-                </div>
-
-                <!-- Duplicate Warning -->
-                <div x-show="hasDuplicate()" class="bg-red-50 border border-red-200 rounded-lg p-4 mt-4">
-                    <div class="flex items-start gap-2">
-                        <span class="text-red-600 text-xl">⚠️</span>
-                        <div>
-                            <h4 class="text-sm font-bold text-red-800 mb-1">Duplicate Result Detected!</h4>
-                            <p class="text-xs text-red-700" x-text="getDuplicateMessage()"></p>
+                        <div class="flex justify-end">
+                            <button @click="addResult()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 text-sm font-semibold">
+                                Record Result
+                            </button>
                         </div>
                     </div>
-                </div>
-
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <!-- Parameter fields - editable when no parameter selected, readonly when configured parameter is selected -->
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Parameter Name <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="newResult.parameter_name" :placeholder="selectedParameterId ? 'From configuration' : 'Parameter name'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Parameter Code</label>
-                        <input type="text" x-model="newResult.parameter_code" :placeholder="selectedParameterId ? 'From configuration' : 'Parameter code'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Tolerance Type <span class="text-red-500">*</span></label>
-                        <select x-model="newResult.tolerance_type" :disabled="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                            <option value="RANGE">Range</option>
-                            <option value="MIN_ONLY">Min Only</option>
-                            <option value="MAX_ONLY">Max Only</option>
-                            <option value="EXACT">Exact</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Unit</label>
-                        <input type="text" x-model="newResult.unit_of_measurement" :placeholder="selectedParameterId ? 'From configuration' : 'Unit'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                    </div>
-                    <!-- Standard values -->
-                    <div x-show="['RANGE', 'MIN_ONLY'].includes(newResult.tolerance_type)">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Min</label>
-                        <input type="text" x-model="newResult.standard_min" :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 10.5'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                    </div>
-                    <div x-show="['RANGE', 'MAX_ONLY'].includes(newResult.tolerance_type)">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Max</label>
-                        <input type="text" x-model="newResult.standard_max" :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 20.5'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                    </div>
-                    <div x-show="newResult.tolerance_type === 'EXACT'">
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Standard Value</label>
-                        <input type="text" x-model="newResult.standard_value" :placeholder="selectedParameterId ? 'From configuration' : 'e.g., 15.0'" :readonly="selectedParameterId" class="px-3 py-2 border rounded-lg text-sm" :class="selectedParameterId ? 'border-gray-200 bg-gray-50' : 'border-primary/30 focus:ring-2 focus:ring-primary/20 focus:border-primary'">
-                    </div>
-                    <!-- Observed value (always editable) -->
-                    <div>
-                        <label class="block text-xs font-semibold text-gray-600 mb-1">Observed Value <span class="text-red-500">*</span></label>
-                        <input type="number" step="0.0001" x-model="newResult.observed_value" placeholder="Enter measured value" class="px-3 py-2 border border-primary/30 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
-                    </div>
-                </div>
-
-                <div>
-                    <label class="block text-xs font-semibold text-gray-600 mb-1">Remarks</label>
-                    <textarea x-model="newResult.remarks" rows="2" placeholder="Optional remarks about this test result" class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm"></textarea>
-                </div>
-
-                <div class="flex justify-end">
-                    <button @click="addResult()" class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700">Record Result</button>
-                </div>
+                </template>
             </div>
         </div>
 
@@ -242,7 +286,7 @@
                             <div class="flex items-center justify-between">
                                 <div>
                                     <p class="text-xs text-gray-500 font-semibold uppercase tracking-wide">Inspection Lot</p>
-                                    <p class="text-2xl font-bold text-gray-900" x-text="'LOT-' + (lot.id || '')"></p>
+                                    <p class="text-2xl font-bold text-gray-900" x-text="lot.lot_number || ('LOT-' + lot.id)"></p>
                                 </div>
                                 <span class="px-3 py-1.5 rounded-full text-sm font-bold"
                                       :class="{
@@ -284,9 +328,9 @@
                             </div>
 
                             <!-- Barcode -->
-                            <div class="flex flex-col items-center py-4 border border-gray-200 rounded-lg bg-white">
-                                <svg id="qc-barcode"></svg>
-                                <p class="text-xs text-gray-400 mt-1" x-text="barcodeValue"></p>
+                            <div class="flex flex-col items-center py-4 px-4 border border-gray-200 rounded-lg bg-white overflow-hidden">
+                                <svg id="qc-barcode" class="max-w-full h-auto"></svg>
+                                <p class="text-[14px] text-gray-800 mt-1 font-mono break-all text-center" x-text="barcodeValue"></p>
                             </div>
 
                             <!-- Remarks -->
@@ -470,8 +514,14 @@ function qcInspectionDetail() {
             const data = await res.json();
             this.lot = data.data || {};
             this.qcResults = this.lot.test_results || [];
-            if (this.lot.material_id) {
-                const paramRes = await fetch(`/api/v1/qc/parameters/${this.lot.material_id}`, { headers: headers() });
+
+            // Fetch parameters: use product_id for FG lots, material_id for GRN lots
+            const isProduction = this.lot.source_type === 'PRODUCTION';
+            const paramId = isProduction ? this.lot.product_id : this.lot.material_id;
+            const paramType = isProduction ? 'product' : 'material';
+
+            if (paramId) {
+                const paramRes = await fetch(`/api/v1/qc/parameters/${paramId}?type=${paramType}`, { headers: headers() });
                 const paramData = await paramRes.json();
                 this.qcParameters = paramData.data || [];
             } else {
@@ -897,18 +947,25 @@ function qcInspectionDetail() {
             // Build barcode value: QC-{lotId}-{decision}-{date}
             const decision = (this.lot.usage_decision?.decision || 'DECISION').substring(0, 3);
             const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            this.barcodeValue = `QC-${lotId}-${decision}-${date}`;
+            const lotLabel = this.lot.lot_number || ('LOT-' + lotId);
+            this.barcodeValue = `QC-${lotLabel}-${decision}-${date}`;
             this.showBarcodeModal = true;
 
             this.$nextTick(() => {
                 try {
                     JsBarcode('#qc-barcode', this.barcodeValue, {
                         format: 'CODE128',
-                        width: 2,
-                        height: 60,
+                        width: 1.2,
+                        height: 50,
                         displayValue: false,
-                        margin: 8,
+                        margin: 6,
                     });
+                    // Scale SVG to fit container
+                    const svg = document.getElementById('qc-barcode');
+                    if (svg) {
+                        svg.setAttribute('width', '100%');
+                        svg.style.maxWidth = '100%';
+                    }
                 } catch (e) {
                     console.error('Barcode generation failed', e);
                 }
@@ -919,7 +976,7 @@ function qcInspectionDetail() {
             const el = document.getElementById('qc-certificate');
             const win = window.open('', '_blank', 'width=600,height=700');
             win.document.write(`
-                <html><head><title>QC Certificate - LOT-${lotId}</title>
+                <html><head><title>QC Certificate - ${this.lot.lot_number || ('LOT-' + lotId)}</title>
                 <style>
                     body { font-family: Inter, sans-serif; padding: 24px; color: #111; }
                     .label { font-size: 11px; color: #6b7280; text-transform: uppercase; }

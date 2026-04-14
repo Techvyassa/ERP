@@ -11,6 +11,7 @@ class QCParameter extends Model
 
     protected $fillable = [
         'material_id',
+        'product_id',
         'test_type_id',
         'parameter_code',
         'parameter_name',
@@ -37,11 +38,19 @@ class QCParameter extends Model
     ];
 
     /**
-     * Get the material
+     * Get the material (for inbound GRN QC parameters)
      */
     public function material()
     {
         return $this->belongsTo(Material::class, 'material_id');
+    }
+
+    /**
+     * Get the product (for FG production QC parameters)
+     */
+    public function product()
+    {
+        return $this->belongsTo(Product::class, 'product_id');
     }
 
     /**
