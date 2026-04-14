@@ -326,26 +326,43 @@
                                 <!-- Bin suggestions (when stock found) -->
                                 <template x-if="!binsLoading && availableBins.length > 0">
                                     <div class="mb-2 space-y-1.5">
-                                        <p class="text-[10px] text-slate-400 font-semibold">Available stock locations:</p>
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-[10px] text-slate-400 font-semibold">All bin locations:</p>
+                                            <p class="text-[10px] text-slate-400">
+                                                Total available:
+                                                <span class="font-black text-emerald-600"
+                                                    x-text="availableBins.reduce((s,b) => s + parseFloat(b.qty_available||0), 0).toFixed(3)">
+                                                </span>
+                                            </p>
+                                        </div>
                                         <div class="flex flex-wrap gap-2">
                                             <template x-for="bin in availableBins" :key="bin.bin_code">
-                                                <button type="button" @click="selectBin(bin)"
-                                                    :class="scanForm.bin_barcode === bin.bin_code ? 'bg-slate-900 text-white' : 'bg-slate-50 text-slate-700 hover:bg-slate-100'"
-                                                    class="px-3 py-1.5 rounded-lg text-[10px] font-black border border-slate-200 transition-all flex items-center gap-1.5">
+                                                <button type="button"
+                                                    @click="parseFloat(bin.qty_available) > 0 && selectBin(bin)"
+                                                    :disabled="parseFloat(bin.qty_available) <= 0"
+                                                    :class="{
+                                                        'bg-slate-900 text-white border-slate-900': scanForm.bin_barcode === bin.bin_code,
+                                                        'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100': parseFloat(bin.qty_available) > 0 && scanForm.bin_barcode !== bin.bin_code,
+                                                        'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed': parseFloat(bin.qty_available) <= 0,
+                                                    }"
+                                                    class="px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all flex items-center gap-1.5">
                                                     <span class="material-symbols-outlined text-xs">shelves</span>
                                                     <span x-text="bin.bin_code"></span>
-                                                    <span class="opacity-60" x-text="'(' + parseFloat(bin.qty_available).toFixed(2) + ')'"></span>
+                                                    <span class="font-semibold opacity-70"
+                                                        :class="parseFloat(bin.qty_available) > 0 ? 'text-emerald-600' : 'text-gray-300'"
+                                                        x-text="parseFloat(bin.qty_available) > 0 ? '(' + parseFloat(bin.qty_available).toFixed(3) + ')' : '(empty)'">
+                                                    </span>
                                                 </button>
                                             </template>
                                         </div>
                                     </div>
                                 </template>
 
-                                <!-- No stock warning -->
+                                <!-- No bins at all -->
                                 <template x-if="!binsLoading && availableBins.length === 0 && selectedLine">
                                     <div class="mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
                                         <span class="material-symbols-outlined text-amber-500 text-sm">warning</span>
-                                        <span class="text-[10px] text-amber-700 font-bold">No stock found in AVAILABLE bins. Enter bin manually.</span>
+                                        <span class="text-[10px] text-amber-700 font-bold">No stock records found for this material. Enter bin manually.</span>
                                     </div>
                                 </template>
 

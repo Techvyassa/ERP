@@ -63,41 +63,8 @@ Route::prefix('v1')->group(function () {
         ->get('/auth/me', [App\Http\Controllers\AuthController::class, 'me']);
 
     // Debug: Check current user permissions
-    Route::middleware(['validate.jwt', 'resolve.tenant'])->get('/debug/my-permissions', function (Request $request) {
-        $userId = $request->input('auth_user_id');
-        $tenantDb = $request->input('tenant_db_name');
-
-        // Switch to tenant DB
-        config(['database.connections.tenant.database' => $tenantDb]);
-
-        $user = \App\Models\Tenant\User::with('role')->find($userId);
-        $permissions = \App\Models\Tenant\RolePermission::where('role_id', $user->role_id)->get();
-
-        // Clear cache for this user (using the new granular key format)
-        \Illuminate\Support\Facades\Cache::forget("rbac:user:{$tenantDb}:{$userId}:permissions");
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user_id' => $userId,
-                'user_email' => $user->email,
-                'role_id' => $user->role_id,
-                'role_name' => $user->role->role_name ?? 'N/A',
-                'role_code' => $user->role->role_code ?? 'N/A',
-                'permissions_count' => $permissions->count(),
-                'permissions' => $permissions->map(fn($p) => [
-                    'module' => $p->module_code,
-                    'view' => $p->can_view,
-                    'create' => $p->can_create,
-                    'edit' => $p->can_edit,
-                    'approve' => $p->can_approve,
-                    'delete' => $p->can_delete,
-                ]),
-                'cache_cleared' => true,
-            ],
-            'message' => 'User permissions retrieved and cache cleared',
-        ]);
-    });
+    Route::middleware(['validate.jwt', 'resolve.tenant'])
+        ->get('/debug/my-permissions', [App\Http\Controllers\DebugController::class, 'myPermissions']);
 
     // Organization registration and utilities (public)
     Route::prefix('organizations')->group(function () {
@@ -663,154 +630,12 @@ Route::prefix('v1')->group(function () {
 
 
         // ── Lookup routes for Sales Order creation (no module-permission gate) ──
-        Route::get('/lookup/customers', function (\Illuminate\Http\Request $request) {
-            // Switch to tenant DB (normally done by CheckModulePermission, must do manually here)
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-
-            $customers = \App\Models\Tenant\Customer::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%' . $request->search . '%'))
-                ->orderBy('customer_name')
-                ->get(['id', 'customer_name', 'customer_code', 'phone', 'email'])
-                ->map(fn($c) => ['id' => 'c_' . $c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
-
-            $users = \App\Models\Tenant\User::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(
-                    fn($q2) =>
-                    $q2->where('first_name', 'like', '%' . $request->search . '%')
-                        ->orWhere('last_name', 'like', '%' . $request->search . '%')
-                        ->orWhere('email', 'like', '%' . $request->search . '%')
-                ))
-                ->orderBy('first_name')
-                ->get(['id', 'first_name', 'last_name', 'email', 'employee_code'])
-                ->map(fn($u) => ['id' => 'u_' . $u->id, 'label' => trim($u->first_name . ' ' . $u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
-
-            $merged = $customers->concat($users)->sortBy('label')->values();
-            return response()->json(['success' => true, 'data' => $merged]);
-        });
-
-        Route::post('/lookup/customers', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-                'customer_name' => 'required|string|max:200',
-            ]);
-            if ($validator->fails()) {
-                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
-            }
-            $customer = \App\Models\Tenant\Customer::create([
-                'customer_name' => $request->customer_name,
-                'customer_code' => \App\Models\Tenant\Customer::generateCode(),
-                'created_by' => $request->input('auth_user_id'),
-            ]);
-            return response()->json(['success' => true, 'data' => $customer], 201);
-        });
-
-        Route::get('/lookup/products', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            $products = \App\Models\Tenant\Product::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(
-                    fn($q2) =>
-                    $q2->where('product_name', 'like', '%' . $request->search . '%')
-                        ->orWhere('product_code', 'like', '%' . $request->search . '%')
-                ))
-                ->orderBy('product_name')
-                ->get(['id', 'product_code', 'product_name', 'pack_size', 'pack_uom_id', 'standard_cost', 'mrp']);
-            return response()->json(['success' => true, 'data' => $products]);
-        });
-
-        Route::get('/lookup/uoms', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            return response()->json(['success' => true, 'data' => \App\Models\Tenant\UOM::where('is_active', true)->orderBy('uom_name')->get(['id', 'uom_code', 'uom_name'])]);
-        });
-
-        Route::get('/lookup/stock-bins', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            $productId = $request->input('product_id');
-            if (!$productId) {
-                return response()->json(['success' => false, 'message' => 'product_id required'], 422);
-            }
-            $bins = \DB::connection('tenant')
-                ->table('stock_balances as sb')
-                ->join('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
-                ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
-                ->where('sb.product_id', $productId)
-                ->where('sb.bucket', 'AVAILABLE')
-                ->whereRaw('(sb.qty_on_hand - sb.qty_reserved) > 0')
-                ->select(
-                    'bl.bin_code',
-                    'wm.warehouse_name',
-                    \DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available')
-                )
-                ->orderByDesc('qty_available')
-                ->get();
-            return response()->json(['success' => true, 'data' => $bins]);
-        });
-
-        // Material bin lookup — for MIR issue modal (uses material_id, not product_id)
-        Route::get('/lookup/material-bins', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            $materialId = $request->input('material_id');
-            if (!$materialId) {
-                return response()->json(['success' => false, 'message' => 'material_id required'], 422);
-            }
-
-            // All stock rows for this material across all buckets and bins
-            $bins = \DB::connection('tenant')
-                ->table('stock_balances as sb')
-                ->leftJoin('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
-                ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
-                ->where('sb.material_id', $materialId)
-                ->where('sb.bucket', 'AVAILABLE')
-                ->select(
-                    'bl.id as bin_id',
-                    \DB::raw("COALESCE(bl.bin_code, 'No Bin') as bin_code"),
-                    'wm.warehouse_name',
-                    'wm.id as warehouse_id',
-                    'sb.qty_on_hand',
-                    'sb.qty_reserved',
-                    \DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available'),
-                    'sb.batch_number',
-                    'sb.bucket'
-                )
-                ->orderByDesc('qty_available')
-                ->get();
-
-            return response()->json([
-                'success' => true,
-                'data' => $bins,
-                'total_available' => $bins->sum('qty_available'),
-                'bin_count' => $bins->count(),
-            ]);
-        });
+        Route::get('/lookup/customers', [App\Http\Controllers\LookupController::class, 'customers']);
+        Route::post('/lookup/customers', [App\Http\Controllers\LookupController::class, 'createCustomer']);
+        Route::get('/lookup/products', [App\Http\Controllers\LookupController::class, 'products']);
+        Route::get('/lookup/uoms', [App\Http\Controllers\LookupController::class, 'uoms']);
+        Route::get('/lookup/stock-bins', [App\Http\Controllers\LookupController::class, 'stockBins']);
+        Route::get('/lookup/material-bins', [App\Http\Controllers\LookupController::class, 'materialBins']);
 
         // Sales Order Endpoints (Outward Flow)
         // Status Flow: DRAFT → CONFIRMED → STOCK_CHECKED → PICKING → PACKED → DISPATCHED → DELIVERED
