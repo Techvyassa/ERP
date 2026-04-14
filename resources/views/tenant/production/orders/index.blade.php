@@ -984,7 +984,7 @@
                         }`,
                         async () => {
                             try {
-                                const res = await this._fetch(`/ api / v1 / production - orders / ${order.id} / start`, {
+                                const res = await this._fetch(`/api/v1/production-orders/${order.id}/start`, {
                                     method: 'POST'
                                 });
                                 const data = await res.json();
@@ -1015,7 +1015,7 @@
                         report: null
                     };
                     try {
-                        const res = await this._fetch(`/ api / v1 / production - orders / ${order.id} / variance`);
+                        const res = await this._fetch(`/api/v1/production-orders/${order.id}/variance`);
                         const data = await res.json();
                         if (!res.ok || !data.success) throw new Error(data.message || 'Failed to load variance report');
                         this.varianceModal.report = data.data;
