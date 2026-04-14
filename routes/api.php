@@ -754,6 +754,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
                 Route::patch('/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
                 Route::post('/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/{id}/mark-packed', [App\Http\Controllers\SalesOrderController::class, 'markPacked']);
                 Route::patch('/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
             });
         });
@@ -769,6 +770,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/orders/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
                 Route::patch('/orders/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
                 Route::post('/orders/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/orders/{id}/mark-packed', [App\Http\Controllers\SalesOrderController::class, 'markPacked']);
                 Route::patch('/orders/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
             });
         });

@@ -104,64 +104,118 @@
                             <th class="px-5 py-3 text-left font-semibold">SO Date</th>
                             <th class="px-5 py-3 text-left font-semibold">Delivery Date</th>
                             <th class="px-5 py-3 text-right font-semibold">Grand Total</th>
-                            <th class="px-5 py-3 text-center font-semibold">Stock</th>
                             <th class="px-5 py-3 text-center font-semibold">Status</th>
-                            <th class="px-5 py-3 text-center font-semibold">Actions</th>
+                            <th class="px-5 py-3 text-left font-semibold">Actions</th>
                         </tr>
                     </thead>
                     <tbody class="divide-y divide-gray-100">
                         <template x-if="loading">
-                            <tr><td colspan="8" class="px-5 py-10 text-center text-gray-400">
+                            <tr><td colspan="7" class="px-5 py-10 text-center text-gray-400">
                                 <span class="material-symbols-outlined animate-spin text-3xl">progress_activity</span>
                             </td></tr>
                         </template>
                         <template x-if="!loading && orders.length === 0">
-                            <tr><td colspan="8" class="px-5 py-10 text-center text-gray-400">No sales orders found.</td></tr>
+                            <tr><td colspan="7" class="px-5 py-10 text-center text-gray-400">No sales orders found.</td></tr>
                         </template>
                         <template x-for="so in orders" :key="so.id">
                             <tr class="hover:bg-gray-50 transition-colors">
                                 <td class="px-5 py-3 font-semibold text-emerald-700" x-text="so.so_number"></td>
                                 <td class="px-5 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                <td class="px-5 py-3 text-gray-600" x-text="so.so_date"></td>
+                                <td class="px-5 py-3 text-gray-600" x-text="so.so_date ? new Date(so.so_date).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—'"></td>
                                 <td class="px-5 py-3">
                                     <span :class="isOverdue(so.required_delivery_date, so.status) ? 'text-red-600 font-semibold' : 'text-gray-600'"
-                                          x-text="so.required_delivery_date"></span>
+                                          x-text="so.required_delivery_date ? new Date(so.required_delivery_date).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—'"></span>
                                 </td>
                                 <td class="px-5 py-3 text-right font-semibold text-gray-800"
                                     x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN', {minimumFractionDigits:2})"></td>
                                 <td class="px-5 py-3 text-center">
-                                    <span :class="stockBadge(so.stock_status)"
-                                          class="px-2 py-1 rounded text-xs font-bold" x-text="so.stock_status ?? 'PENDING'"></span>
+                                    <div class="flex flex-col items-center gap-1">
+                                        <span :class="statusBadge(so.status)"
+                                              class="px-2 py-1 rounded text-xs font-bold" x-text="so.status"></span>
+                                        <template x-if="so.stock_status && so.stock_status !== 'PENDING'">
+                                            <span :class="stockBadge(so.stock_status)"
+                                                  class="px-2 py-0.5 rounded text-xs font-semibold" x-text="so.stock_status"></span>
+                                        </template>
+                                    </div>
                                 </td>
-                                <td class="px-5 py-3 text-center">
-                                    <span :class="statusBadge(so.status)"
-                                          class="px-2 py-1 rounded text-xs font-bold" x-text="so.status"></span>
-                                </td>
-                                <td class="px-5 py-3 text-center">
-                                    <div class="flex items-center justify-center gap-1 flex-wrap">
+                                <td class="px-5 py-3">
+                                    <div class="flex flex-col items-start gap-1">
+                                        <!-- DRAFT: Confirm → Check Stock → Cancel -->
                                         <template x-if="so.status === 'DRAFT'">
-                                            <button @click="confirmSO(so.id)"
-                                                class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded font-semibold">Confirm</button>
+                                            <div class="flex flex-wrap gap-1">
+                                                <button @click="confirmSO(so.id)"
+                                                    class="text-xs bg-emerald-600 text-white hover:bg-emerald-700 px-2.5 py-1 rounded font-semibold">Confirm</button>
+                                                <button @click="checkStock(so.id)"
+                                                    class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2.5 py-1 rounded font-semibold">Check Stock</button>
+                                                <button @click="cancelSO(so.id)"
+                                                    class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
+                                            </div>
                                         </template>
-                                        <template x-if="['CONFIRMED','DRAFT'].includes(so.status)">
-                                            <button @click="checkStock(so.id)"
-                                                class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-semibold">Check Stock</button>
+                                        <!-- CONFIRMED: Check Stock → Cancel -->
+                                        <template x-if="so.status === 'CONFIRMED'">
+                                            <div class="flex flex-wrap gap-1">
+                                                <button @click="checkStock(so.id)"
+                                                    class="text-xs bg-blue-600 text-white hover:bg-blue-700 px-2.5 py-1 rounded font-semibold">Check Stock</button>
+                                                <button @click="cancelSO(so.id)"
+                                                    class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
+                                            </div>
                                         </template>
+                                        <!-- STOCK_CHECKED + AVAILABLE: Send Picklist to Store → Cancel -->
                                         <template x-if="so.status === 'STOCK_CHECKED' && so.stock_status === 'AVAILABLE'">
-                                            <button @click="generatePicklist(so.id)"
-                                                class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2 py-1 rounded font-semibold">Picklist</button>
+                                            <div class="flex flex-wrap gap-1">
+                                                <button @click="generatePicklist(so.id)"
+                                                    class="text-xs bg-purple-600 text-white hover:bg-purple-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-sm">send_to_mobile</span> Send Picklist to Store
+                                                </button>
+                                                <button @click="cancelSO(so.id)"
+                                                    class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
+                                            </div>
                                         </template>
-                                        <template x-if="['PICKING','PACKED','DISPATCHED','DELIVERED'].includes(so.status)">
-                                            <button @click="generatePicklist(so.id)"
-                                                class="text-xs bg-purple-50 text-purple-600 hover:bg-purple-100 px-2 py-1 rounded font-semibold border border-purple-200">View Picklist</button>
+                                        <!-- STOCK_CHECKED + UNAVAILABLE/PARTIAL: Create PR → Cancel -->
+                                        <template x-if="so.status === 'STOCK_CHECKED' && ['UNAVAILABLE','PARTIAL'].includes(so.stock_status)">
+                                            <div class="flex flex-wrap gap-1">
+                                                <template x-if="!soPrMap[so.id]">
+                                                    <button @click="createPRFromSO(so)"
+                                                        class="text-xs bg-orange-500 text-white hover:bg-orange-600 px-2.5 py-1 rounded font-semibold">Create PR</button>
+                                                </template>
+                                                <template x-if="soPrMap[so.id]">
+                                                    <span class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded font-semibold"
+                                                          x-text="'PR: ' + soPrMap[so.id]"></span>
+                                                </template>
+                                                <button @click="cancelSO(so.id)"
+                                                    class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
+                                            </div>
                                         </template>
+                                        <!-- PICKING: Sent to Store — view only -->
                                         <template x-if="so.status === 'PICKING'">
-                                            <button @click="openDispatchModal(so)"
-                                                class="text-xs bg-teal-100 text-teal-700 hover:bg-teal-200 px-2 py-1 rounded font-semibold">Dispatch</button>
+                                            <div class="flex flex-wrap gap-1">
+                                                <span class="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-sm">send_to_mobile</span> Sent to Store
+                                                </span>
+                                                <button @click="generatePicklist(so.id)"
+                                                    class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2.5 py-1 rounded font-semibold">View Picklist</button>
+                                            </div>
                                         </template>
-                                        <template x-if="!['DISPATCHED','DELIVERED','CANCELLED'].includes(so.status)">
-                                            <button @click="cancelSO(so.id)"
-                                                class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2 py-1 rounded font-semibold">Cancel</button>
+                                        <!-- PACKED: Awaiting Security Dispatch — view only -->
+                                        <template x-if="so.status === 'PACKED'">
+                                            <div class="flex flex-wrap gap-1">
+                                                <span class="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-sm">inventory_2</span> Packed
+                                                </span>
+                                                <button @click="generatePicklist(so.id)"
+                                                    class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2.5 py-1 rounded font-semibold">View Picklist</button>
+                                            </div>
+                                        </template>
+                                        <!-- DISPATCHED / DELIVERED: View Picklist only -->
+                                        <template x-if="['DISPATCHED','DELIVERED'].includes(so.status)">
+                                            <div class="flex flex-wrap gap-1">
+                                                <button @click="generatePicklist(so.id)"
+                                                    class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2.5 py-1 rounded font-semibold">View Picklist</button>
+                                            </div>
+                                        </template>
+                                        <!-- CANCELLED -->
+                                        <template x-if="so.status === 'CANCELLED'">
+                                            <span class="text-xs text-gray-400 italic">—</span>
                                         </template>
                                     </div>
                                 </td>
@@ -211,7 +265,7 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-3 font-semibold text-emerald-700" x-text="so.so_number"></td>
                                 <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                <td class="px-4 py-3 text-gray-600" x-text="so.required_delivery_date"></td>
+                                <td class="px-4 py-3 text-gray-600" x-text="so.required_delivery_date ? new Date(so.required_delivery_date).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—'"></td>
                                 <td class="px-4 py-3 text-center">
                                     <span :class="stockBadge(so.stock_status)" class="px-2 py-1 rounded text-xs font-bold" x-text="so.stock_status ?? 'PENDING'"></span>
                                 </td>
@@ -349,7 +403,7 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-3 font-semibold text-emerald-700" x-text="so.so_number"></td>
                                 <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                <td class="px-4 py-3 text-gray-600" x-text="so.required_delivery_date"></td>
+                                <td class="px-4 py-3 text-gray-600" x-text="so.required_delivery_date ? new Date(so.required_delivery_date).toLocaleDateString('en-IN', {day:'2-digit',month:'short',year:'numeric'}) : '—'"></td>
                                 <td class="px-4 py-3 text-gray-600" x-text="so.vehicle_number ? so.vehicle_number + ' / ' + so.driver_name : '—'"></td>
                                 <td class="px-4 py-3 text-center">
                                     <span :class="statusBadge(so.status)" class="px-2 py-1 rounded text-xs font-bold" x-text="so.status"></span>
@@ -396,7 +450,7 @@
                             <tr class="hover:bg-gray-50">
                                 <td class="px-4 py-3 font-semibold text-emerald-700" x-text="so.so_number"></td>
                                 <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                <td class="px-4 py-3 text-gray-600" x-text="so.dispatched_at ?? so.updated_at"></td>
+                                <td class="px-4 py-3 text-gray-600" x-text="(so.dispatched_at ?? so.updated_at) ? new Date(so.dispatched_at ?? so.updated_at).toLocaleString('en-IN', {day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—'"></td>
                                 <td class="px-4 py-3 text-gray-600" x-text="(so.vehicle_number ?? '—') + ' / ' + (so.logistics_partner ?? '—')"></td>
                                 <td class="px-4 py-3 text-right font-semibold text-gray-800"
                                     x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN', {minimumFractionDigits:2})"></td>
@@ -493,6 +547,13 @@
                             class="text-xs text-emerald-600 hover:text-emerald-800 font-semibold flex items-center gap-1">
                             <span class="material-symbols-outlined text-sm">add</span> Add Line
                         </button>
+                    </div>
+                    <div class="grid grid-cols-12 gap-2 px-2 mb-1">
+                        <div class="col-span-5 text-xs font-semibold text-gray-500 uppercase tracking-wide">Product</div>
+                        <div class="col-span-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Qty</div>
+                        <div class="col-span-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">UOM</div>
+                        <div class="col-span-2 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unit Price</div>
+                        <div class="col-span-1"></div>
                     </div>
                     <div class="space-y-2">
                         <template x-for="(line, idx) in form.line_items" :key="idx">
@@ -686,17 +747,44 @@
 
                     <div x-show="picklistError" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2 mb-4" x-text="picklistError"></div>
 
-                    <div class="flex justify-end gap-3">
-                        <button type="button" @click="showPicklistModal = false"
-                            class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
-                        <template x-if="picklistSO && picklistSO.status === 'STOCK_CHECKED'">
-                            <button type="button" @click="confirmGeneratePicklist()"
-                                :disabled="picklistConfirming"
-                                class="px-4 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-semibold flex items-center gap-2">
-                                <span class="material-symbols-outlined text-base">send</span>
-                                <span x-text="picklistConfirming ? 'Dispatching...' : 'Confirm & Dispatch to HHT'"></span>
-                            </button>
-                        </template>
+                    <div class="flex justify-between items-center gap-3">
+                        <!-- Status indicator -->
+                        <div class="text-xs text-gray-500 flex items-center gap-1">
+                            <template x-if="picklistSO">
+                                <span>
+                                    Status: <span class="font-semibold" :class="statusBadge(picklistSO?.status)" x-text="picklistSO?.status"></span>
+                                </span>
+                            </template>
+                        </div>
+                        <div class="flex gap-3">
+                            <button type="button" @click="showPicklistModal = false"
+                                class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
+                            <!-- STOCK_CHECKED: confirm generates picklist & sends to HHT -->
+                            <template x-if="picklistSO && picklistSO.status === 'STOCK_CHECKED'">
+                                <button type="button" @click="confirmGeneratePicklist()"
+                                    :disabled="picklistConfirming"
+                                    class="px-5 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-semibold flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base">checklist</span>
+                                    <span x-text="picklistConfirming ? 'Processing...' : 'Send Picklist to Store'"></span>
+                                </button>
+                            </template>
+                            <!-- PICKING: already sent to HHT -->
+                            <template x-if="picklistSO && picklistSO.status === 'PICKING'">
+                                <button type="button" disabled
+                                    class="px-5 py-2 text-sm bg-amber-100 text-amber-700 rounded-lg font-semibold flex items-center gap-2 cursor-default">
+                                    <span class="material-symbols-outlined text-base">send_to_mobile</span>
+                                    Sent to HHT
+                                </button>
+                            </template>
+                            <!-- PACKED / DISPATCHED / DELIVERED: view only -->
+                            <template x-if="picklistSO && ['PACKED','DISPATCHED','DELIVERED'].includes(picklistSO.status)">
+                                <button type="button" disabled
+                                    class="px-5 py-2 text-sm bg-gray-100 text-gray-500 rounded-lg font-semibold flex items-center gap-2 cursor-default">
+                                    <span class="material-symbols-outlined text-base">visibility</span>
+                                    View Only
+                                </button>
+                            </template>
+                        </div>
                     </div>
                 </div>
             </div>
@@ -730,6 +818,7 @@ function salesOrdersApp() {
         dispatchedOrders: [],
 
         showCreateModal: false,
+        soPrMap: {},  // { [so_id]: pr_number } — persisted in localStorage
         customers: [], products: [], uoms: [],
         manualCustomer: false,
         form: { customer_id: '', customer_name_manual: '', required_delivery_date: '', payment_terms: 'NET30', remarks: '', line_items: [] },
@@ -751,6 +840,7 @@ function salesOrdersApp() {
         headers() { return { 'Authorization': 'Bearer ' + this.token(), 'Accept': 'application/json', 'Content-Type': 'application/json' }; },
 
         async init() {
+            try { this.soPrMap = JSON.parse(localStorage.getItem('so_pr_map') || '{}'); } catch(e) { this.soPrMap = {}; }
             await this.loadStats();
             await this.loadOrders();
         },
@@ -967,6 +1057,63 @@ function salesOrdersApp() {
             if (!confirm('Cancel this Sales Order?')) return;
             await fetch('/api/v1/sales-orders/' + id + '/cancel', { method: 'PATCH', headers: this.headers() });
             await this.loadOrders(); await this.loadStats();
+        },
+
+        async createPRFromSO(so) {
+            if (!confirm('Create a Purchase Requisition (Draft) for the unavailable items in ' + so.so_number + '?')) return;
+            try {
+                // Fetch SO details to get line items with product names
+                const res = await fetch('/api/v1/sales-orders/' + so.id, { headers: this.headers() });
+                const json = await res.json();
+                if (!json.success) { alert('Failed to load SO details.'); return; }
+
+                const soDetail = json.data;
+                const lines = soDetail.line_items ?? [];
+
+                // Decode auth_user_id from JWT
+                let authUserId = null;
+                try {
+                    const payload = JSON.parse(atob(this.token().split('.')[1]));
+                    authUserId = payload.sub ?? payload.user_id ?? payload.id ?? null;
+                } catch(e) {}
+
+                // Build PR line items from SO lines
+                const prLines = lines.map(line => ({
+                    item_name: line.product?.product_name ?? ('Product #' + line.product_id),
+                    description: 'Auto-generated from SO ' + so.so_number,
+                    quantity: parseFloat(line.qty),
+                    uom_id: line.uom_id,
+                    material_id: null,
+                    estimated_unit_price: line.unit_price ? parseFloat(line.unit_price) : null,
+                    purpose: 'Stock replenishment for Sales Order ' + so.so_number,
+                }));
+
+                const payload = {
+                    auth_user_id: authUserId,
+                    required_date: so.required_delivery_date
+                        ? so.required_delivery_date.split('T')[0]
+                        : new Date(Date.now() + 7 * 86400000).toISOString().split('T')[0],
+                    priority: 'HIGH',
+                    status: 'DRAFT',
+                    justification: 'FG stock unavailable for Sales Order ' + so.so_number,
+                    remarks: 'Auto-created from SO ' + so.so_number + ' due to UNAVAILABLE stock.',
+                    line_items: prLines,
+                };
+
+                const prRes = await fetch('/api/v1/purchase-requisitions', { method: 'POST', headers: this.headers(), body: JSON.stringify(payload) });
+                const prJson = await prRes.json();
+
+                if (prJson.success) {
+                    const prNumber = prJson.data?.purchase_requisition?.pr_number ?? 'PR';
+                    this.soPrMap = { ...this.soPrMap, [so.id]: prNumber };
+                    localStorage.setItem('so_pr_map', JSON.stringify(this.soPrMap));
+                } else {
+                    alert('Failed to create PR: ' + (prJson.message || 'Unknown error'));
+                }
+            } catch(e) {
+                alert('Error creating PR. Please try again.');
+                console.error(e);
+            }
         },
 
         isOverdue(date, status) { return !['DELIVERED','CANCELLED'].includes(status) && date && new Date(date) < new Date(new Date().toDateString()); },

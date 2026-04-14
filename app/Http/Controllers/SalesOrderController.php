@@ -269,6 +269,23 @@ class SalesOrderController extends Controller
     }
 
     // PATCH /api/v1/sales-orders/{id}/dispatch
+    public function markPacked(Request $request, $id)
+    {
+        $so = SalesOrder::findOrFail($id);
+
+        if ($so->status !== 'PICKING') {
+            return response()->json(['success' => false, 'message' => 'Only PICKING orders can be marked as packed.'], 422);
+        }
+
+        $so->update(['status' => 'PACKED', 'updated_at' => now()]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Order marked as PACKED. Ready for dispatch.',
+            'data'    => $so->fresh(['customer', 'lineItems.product']),
+        ]);
+    }
+
     public function dispatch(Request $request, $id)
     {
         $so = SalesOrder::with('lineItems')->findOrFail($id);

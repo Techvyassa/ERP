@@ -191,13 +191,13 @@ class PurchaseRequisitionController extends Controller
                 PrLineItem::create([
                     'pr_id'                 => $pr->id,
                     'line_number'           => $idx + 1,
-                    'material_id'           => $lineData['material_id'] ?: null,
+                    'material_id'           => $lineData['material_id'] ?? null ?: null,
                     'item_name'             => $lineData['item_name'],
-                    'description'           => $lineData['description'] ?: 'N/A',
+                    'description'           => $lineData['description'] ?? 'N/A' ?: 'N/A',
                     'quantity'              => $lineData['quantity'],
                     'uom_id'                => $lineData['uom_id'],
                     'estimated_unit_price'  => $unitPrice,
-                    'warehouse_id'          => $lineData['warehouse_id'] ?: null,
+                    'warehouse_id'          => $lineData['warehouse_id'] ?? null ?: null,
                     'purpose'               => $lineData['purpose'] ?? null,
                     'sort_order'            => $idx + 1,
                 ]);
@@ -310,13 +310,13 @@ class PurchaseRequisitionController extends Controller
                 PrLineItem::create([
                     'pr_id'                 => $pr->id,
                     'line_number'           => $idx + 1,
-                    'material_id'           => $lineData['material_id'] ?: null,
+                    'material_id'           => $lineData['material_id'] ?? null ?: null,
                     'item_name'             => $lineData['item_name'],
-                    'description'           => $lineData['description'] ?: 'N/A',
+                    'description'           => $lineData['description'] ?? 'N/A' ?: 'N/A',
                     'quantity'              => $lineData['quantity'],
                     'uom_id'                => $lineData['uom_id'],
                     'estimated_unit_price'  => $lineData['estimated_unit_price'] ?? null,
-                    'warehouse_id'          => $lineData['warehouse_id'] ?: null,
+                    'warehouse_id'          => $lineData['warehouse_id'] ?? null ?: null,
                     'purpose'               => $lineData['purpose'] ?? null,
                     'sort_order'            => $idx + 1,
                 ]);

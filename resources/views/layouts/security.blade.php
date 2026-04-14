@@ -74,6 +74,20 @@
                         </a>
                     </li>
 
+                    <li class="pt-2 border-t border-gray-200"></li>
+
+                    <li x-show="sidebarOpen" class="px-3 py-2">
+                        <span class="text-xs font-semibold text-gray-400 uppercase">Outward</span>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/security/dispatch") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.security.dispatch') ? 'bg-indigo-50 text-security font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
+                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
+                        </a>
+                    </li>
+
                     {{-- <li>
                         <a href="{{ url("/org/{$organization->org_slug}/security/gate-verification") }}"
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.security.gate-verification') ? 'bg-indigo-50 text-security font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">

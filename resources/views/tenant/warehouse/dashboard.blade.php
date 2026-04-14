@@ -87,12 +87,6 @@
                     class="py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
                     Live Receiving Queue
                 </button>
-                <button @click="activeTab = 'sales'; loadSalesOrders()"
-                    :class="activeTab === 'sales' ? 'border-indigo-500 text-indigo-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap flex items-center gap-2">
-                    Sales Order Creation
-                    <span class="bg-indigo-100 text-indigo-700 text-xs font-bold px-2 py-0.5 rounded-full" x-text="soStats.total_open"></span>
-                </button>
             </nav>
         </div>
 
@@ -243,6 +237,218 @@
         </div>
     </div>
 
+        <!-- Outward Tab -->
+        <div x-show="activeTab === 'outward'" x-cloak class="p-6">
+            <div class="flex items-center justify-between mb-5">
+                <div>
+                    <h3 class="text-lg font-bold text-gray-900">Outward — Picking, Packing & Dispatch</h3>
+                    <p class="text-sm text-gray-500 mt-0.5">Orders sent to HHT for picking. Mark packed once items are ready, then confirm dispatch.</p>
+                </div>
+                <button @click="loadOutwardOrders()" class="text-gray-500 hover:text-gray-700">
+                    <span class="material-symbols-outlined text-xl">refresh</span>
+                </button>
+            </div>
+
+            <!-- Outward Stats -->
+            <div class="grid grid-cols-3 gap-4 mb-6">
+                <div class="bg-amber-50 rounded-lg p-3 text-center border border-amber-100">
+                    <p class="text-2xl font-bold text-amber-700" x-text="outwardStats.picking">0</p>
+                    <p class="text-xs text-amber-600 mt-1 flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">send_to_mobile</span> In Picking (HHT)
+                    </p>
+                </div>
+                <div class="bg-purple-50 rounded-lg p-3 text-center border border-purple-100">
+                    <p class="text-2xl font-bold text-purple-700" x-text="outwardStats.packed">0</p>
+                    <p class="text-xs text-purple-600 mt-1 flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">inventory_2</span> Packed
+                    </p>
+                </div>
+                <div class="bg-teal-50 rounded-lg p-3 text-center border border-teal-100">
+                    <p class="text-2xl font-bold text-teal-700" x-text="outwardStats.dispatched_today">0</p>
+                    <p class="text-xs text-teal-600 mt-1 flex items-center justify-center gap-1">
+                        <span class="material-symbols-outlined text-sm">local_shipping</span> Dispatched Today
+                    </p>
+                </div>
+            </div>
+
+            <!-- Sub-tabs: Picking / Packed / Dispatched -->
+            <div class="border-b border-gray-200 mb-4">
+                <nav class="flex gap-4">
+                    <button @click="outwardTab = 'picking'"
+                        :class="outwardTab === 'picking' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        class="pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">send_to_mobile</span>
+                        Picking
+                        <span class="bg-amber-100 text-amber-700 text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="outwardStats.picking"></span>
+                    </button>
+                    <button @click="outwardTab = 'packed'"
+                        :class="outwardTab === 'packed' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        class="pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">inventory_2</span>
+                        Packed
+                        <span class="bg-purple-100 text-purple-700 text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="outwardStats.packed"></span>
+                    </button>
+                    <button @click="outwardTab = 'dispatched'"
+                        :class="outwardTab === 'dispatched' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
+                        class="pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1">
+                        <span class="material-symbols-outlined text-base">local_shipping</span>
+                        Dispatched
+                    </button>
+                </nav>
+            </div>
+
+            <div x-show="outwardLoading" class="flex justify-center py-10">
+                <span class="material-symbols-outlined animate-spin text-3xl text-teal-500">progress_activity</span>
+            </div>
+
+            <div x-show="!outwardLoading" class="overflow-x-auto rounded-lg border border-gray-200">
+                <table class="w-full text-sm">
+                    <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
+                        <tr>
+                            <th class="px-4 py-3 text-left">SO Number</th>
+                            <th class="px-4 py-3 text-left">Customer</th>
+                            <th class="px-4 py-3 text-left">Delivery Date</th>
+                            <th class="px-4 py-3 text-right">Grand Total</th>
+                            <th class="px-4 py-3 text-center">Status</th>
+                            <th class="px-4 py-3 text-left">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody class="divide-y divide-gray-100">
+                        <!-- PICKING sub-tab -->
+                        <template x-if="outwardTab === 'picking'">
+                            <template x-for="so in outwardOrders.filter(o => o.status === 'PICKING')" :key="so.id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 font-semibold text-teal-700" x-text="so.so_number"></td>
+                                    <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
+                                    <td class="px-4 py-3">
+                                        <span :class="isOverdue(so.required_delivery_date, so.status) ? 'text-red-600 font-semibold' : 'text-gray-600'"
+                                              x-text="so.required_delivery_date ? new Date(so.required_delivery_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—'"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-semibold text-gray-800"
+                                        x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN',{minimumFractionDigits:2})"></td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold">PICKING</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <div class="flex gap-1">
+                                            <button @click="markPacked(so.id)"
+                                                class="text-xs bg-purple-600 text-white hover:bg-purple-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                                                <span class="material-symbols-outlined text-sm">inventory_2</span> Mark Packed
+                                            </button>
+                                        </div>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                        <template x-if="outwardTab === 'picking' && outwardOrders.filter(o => o.status === 'PICKING').length === 0">
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No orders currently in picking.</td></tr>
+                        </template>
+
+                        <!-- PACKED sub-tab -->
+                        <template x-if="outwardTab === 'packed'">
+                            <template x-for="so in outwardOrders.filter(o => o.status === 'PACKED')" :key="so.id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 font-semibold text-teal-700" x-text="so.so_number"></td>
+                                    <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
+                                    <td class="px-4 py-3">
+                                        <span :class="isOverdue(so.required_delivery_date, so.status) ? 'text-red-600 font-semibold' : 'text-gray-600'"
+                                              x-text="so.required_delivery_date ? new Date(so.required_delivery_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—'"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-semibold text-gray-800"
+                                        x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN',{minimumFractionDigits:2})"></td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold">PACKED</span>
+                                    </td>
+                                    <td class="px-4 py-3">
+                                        <button @click="openDispatchForm(so)"
+                                            class="text-xs bg-teal-600 text-white hover:bg-teal-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
+                                            <span class="material-symbols-outlined text-sm">local_shipping</span> Dispatch
+                                        </button>
+                                    </td>
+                                </tr>
+                            </template>
+                        </template>
+                        <template x-if="outwardTab === 'packed' && outwardOrders.filter(o => o.status === 'PACKED').length === 0">
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No packed orders awaiting dispatch.</td></tr>
+                        </template>
+
+                        <!-- DISPATCHED sub-tab -->
+                        <template x-if="outwardTab === 'dispatched'">
+                            <template x-for="so in outwardOrders.filter(o => o.status === 'DISPATCHED')" :key="so.id">
+                                <tr class="hover:bg-gray-50">
+                                    <td class="px-4 py-3 font-semibold text-teal-700" x-text="so.so_number"></td>
+                                    <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
+                                    <td class="px-4 py-3 text-gray-600"
+                                        x-text="so.dispatched_at ? new Date(so.dispatched_at).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—'"></td>
+                                    <td class="px-4 py-3 text-right font-semibold text-gray-800"
+                                        x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN',{minimumFractionDigits:2})"></td>
+                                    <td class="px-4 py-3 text-center">
+                                        <span class="bg-teal-100 text-teal-700 px-2 py-1 rounded text-xs font-bold">DISPATCHED</span>
+                                    </td>
+                                    <td class="px-4 py-3 text-xs text-gray-500"
+                                        x-text="(so.vehicle_number ?? '—') + ' / ' + (so.driver_name ?? '—')"></td>
+                                </tr>
+                            </template>
+                        </template>
+                        <template x-if="outwardTab === 'dispatched' && outwardOrders.filter(o => o.status === 'DISPATCHED').length === 0">
+                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No dispatched orders today.</td></tr>
+                        </template>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+
+    <!-- Dispatch Form Modal -->
+    <div x-show="showDispatchModal" x-cloak
+         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+                <div>
+                    <h3 class="text-base font-bold text-gray-900">Confirm Dispatch</h3>
+                    <p class="text-xs text-gray-500 mt-0.5" x-text="dispatchingSO?.so_number"></p>
+                </div>
+                <button @click="showDispatchModal = false" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            <div class="p-5 space-y-4">
+                <div class="grid grid-cols-2 gap-3">
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Vehicle Number <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="dispatchForm.vehicle_number" placeholder="GJ-01-XX-1234"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Driver Name <span class="text-red-500">*</span></label>
+                        <input type="text" x-model="dispatchForm.driver_name" placeholder="Driver name"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Logistics Partner</label>
+                        <input type="text" x-model="dispatchForm.logistics_partner" placeholder="e.g. Delhivery"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
+                    </div>
+                    <div>
+                        <label class="block text-xs font-medium text-gray-700 mb-1">Expected Delivery Date <span class="text-red-500">*</span></label>
+                        <input type="date" x-model="dispatchForm.expected_delivery_date"
+                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
+                    </div>
+                </div>
+                <div x-show="dispatchError" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" x-text="dispatchError"></div>
+                <div class="flex justify-end gap-3 pt-1">
+                    <button @click="showDispatchModal = false"
+                        class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                    <button @click="submitDispatch()" :disabled="dispatchSubmitting"
+                        class="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-semibold flex items-center gap-2">
+                        <span class="material-symbols-outlined text-base">local_shipping</span>
+                        <span x-text="dispatchSubmitting ? 'Dispatching...' : 'Confirm Dispatch'"></span>
+                    </button>
+                </div>
+            </div>
+        </div>
+    </div>
+
     <!-- Create Sales Order Modal -->
     <div x-show="showCreateModal" x-cloak
          class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
@@ -375,6 +581,17 @@ function warehouseDashboard() {
         form: { customer_id: '', required_delivery_date: '', payment_terms: 'NET30', remarks: '', line_items: [] },
         formError: '',
         formSubmitting: false,
+
+        // Outward
+        outwardOrders: [],
+        outwardStats: { picking: 0, packed: 0, dispatched_today: 0, active: 0 },
+        outwardLoading: false,
+        outwardTab: 'picking',
+        showDispatchModal: false,
+        dispatchingSO: null,
+        dispatchForm: { vehicle_number: '', driver_name: '', logistics_partner: '', expected_delivery_date: '' },
+        dispatchError: '',
+        dispatchSubmitting: false,
 
         init() {
             this.loadStats();
@@ -543,7 +760,85 @@ function warehouseDashboard() {
             window.dispatchEvent(new CustomEvent('open-confirm', {
                 detail: { title, message, onConfirm, confirmText, confirmColor }
             }));
-        }
+        },
+
+        async loadOutwardOrders() {
+            this.outwardLoading = true;
+            try {
+                const token = localStorage.getItem('auth_token');
+                const h = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
+                const res = await fetch('/api/v1/sales-orders?per_page=100&status=PICKING,PACKED,DISPATCHED', { headers: h });
+                const json = await res.json();
+                if (json.success) {
+                    // API may not support comma-separated status, so fetch all and filter
+                    const all = json.data.data ?? json.data ?? [];
+                    this.outwardOrders = all.filter(o => ['PICKING','PACKED','DISPATCHED'].includes(o.status));
+                    const today = new Date().toDateString();
+                    this.outwardStats = {
+                        picking: this.outwardOrders.filter(o => o.status === 'PICKING').length,
+                        packed:  this.outwardOrders.filter(o => o.status === 'PACKED').length,
+                        dispatched_today: this.outwardOrders.filter(o => o.status === 'DISPATCHED' && o.dispatched_at && new Date(o.dispatched_at).toDateString() === today).length,
+                        active: this.outwardOrders.filter(o => ['PICKING','PACKED'].includes(o.status)).length,
+                    };
+                }
+            } catch(e) { console.error('Outward load error', e); }
+            this.outwardLoading = false;
+        },
+
+        async markPacked(id) {
+            if (!confirm('Mark this order as PACKED?')) return;
+            const token = localStorage.getItem('auth_token');
+            const res = await fetch('/api/v1/sales-orders/' + id + '/mark-packed', {
+                method: 'PATCH',
+                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+            });
+            const json = await res.json();
+            if (json.success) {
+                this.outwardTab = 'packed';
+                await this.loadOutwardOrders();
+            } else {
+                alert(json.message || 'Failed to mark as packed.');
+            }
+        },
+
+        openDispatchForm(so) {
+            this.dispatchingSO = so;
+            this.dispatchForm = {
+                vehicle_number: '',
+                driver_name: '',
+                logistics_partner: '',
+                expected_delivery_date: so.required_delivery_date ? so.required_delivery_date.split('T')[0] : ''
+            };
+            this.dispatchError = '';
+            this.dispatchSubmitting = false;
+            this.showDispatchModal = true;
+        },
+
+        async submitDispatch() {
+            this.dispatchError = '';
+            if (!this.dispatchForm.vehicle_number || !this.dispatchForm.driver_name || !this.dispatchForm.expected_delivery_date) {
+                this.dispatchError = 'Vehicle number, driver name and delivery date are required.'; return;
+            }
+            this.dispatchSubmitting = true;
+            try {
+                const token = localStorage.getItem('auth_token');
+                const res = await fetch('/api/v1/sales-orders/' + this.dispatchingSO.id + '/dispatch', {
+                    method: 'PATCH',
+                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json', 'Content-Type': 'application/json' },
+                    body: JSON.stringify(this.dispatchForm)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    this.showDispatchModal = false;
+                    this.outwardTab = 'dispatched';
+                    await this.loadOutwardOrders();
+                    await this.loadSOStats();
+                } else {
+                    this.dispatchError = json.message || 'Dispatch failed.';
+                }
+            } catch(e) { this.dispatchError = 'Network error. Please try again.'; }
+            this.dispatchSubmitting = false;
+        },
     }
 }
 </script>
