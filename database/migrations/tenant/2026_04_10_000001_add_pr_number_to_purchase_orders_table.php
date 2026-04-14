@@ -9,14 +9,18 @@ return new class extends Migration
     public function up(): void
     {
         Schema::connection('tenant')->table('purchase_orders', function (Blueprint $table) {
-            $table->string('pr_number', 50)->nullable()->index()->after('po_number');
+            if (!Schema::connection('tenant')->hasColumn('purchase_orders', 'pr_number')) {
+                $table->string('pr_number', 50)->nullable()->index()->after('po_number');
+            }
         });
     }
 
     public function down(): void
     {
         Schema::connection('tenant')->table('purchase_orders', function (Blueprint $table) {
-            $table->dropColumn('pr_number');
+            if (Schema::connection('tenant')->hasColumn('purchase_orders', 'pr_number')) {
+                $table->dropColumn('pr_number');
+            }
         });
     }
 };
