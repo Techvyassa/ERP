@@ -114,6 +114,7 @@
                         <thead class="bg-blue-100 border-b border-blue-300">
                             <tr>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">#</th>
+                                <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item Code</th>
                                 <th class="px-4 py-3 text-left text-xs font-semibold text-gray-700 uppercase">Item Name</th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Quantity</th>
                                 <th class="px-4 py-3 text-right text-xs font-semibold text-gray-700 uppercase">Unit Price</th>
@@ -124,6 +125,7 @@
                             <template x-for="(item, index) in prItems" :key="index">
                                 <tr class="hover:bg-blue-50">
                                     <td class="px-4 py-3 text-gray-700" x-text="index + 1"></td>
+                                    <td class="px-4 py-3 text-gray-600 font-mono text-xs" x-text="item.item_code || '—'"></td>
                                     <td class="px-4 py-3 text-gray-900 font-medium" x-text="item.item_name"></td>
                                     <td class="px-4 py-3 text-right text-gray-700" x-text="item.quantity.toFixed(3)"></td>
                                     <td class="px-4 py-3 text-right text-gray-700" x-text="formatCurrency(item.unit_price)"></td>
@@ -133,7 +135,7 @@
                         </tbody>
                         <tfoot class="bg-blue-50 border-t-2 border-blue-300">
                             <tr>
-                                <td colspan="4" class="px-4 py-3 text-right font-bold text-gray-900">Grand Total:</td>
+                                <td colspan="5" class="px-4 py-3 text-right font-bold text-gray-900">Grand Total:</td>
                                 <td class="px-4 py-3 text-right font-bold text-primary text-lg" x-text="formatCurrency(calculatePRTotal())"></td>
                             </tr>
                         </tfoot>
@@ -372,6 +374,7 @@ function createPOData() {
                     
                     // Store PR items for read-only display (with total_price from quotation)
                     this.prItems = prData.line_items.map(item => ({
+                        item_code: item.item_code || '',
                         item_name: item.item_name,
                         quantity: parseFloat(item.quantity),
                         unit_price: parseFloat(item.unit_price),
