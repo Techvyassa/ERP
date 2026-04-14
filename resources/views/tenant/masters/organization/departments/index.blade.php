@@ -9,65 +9,93 @@
 
 @section('content')
 <div x-data="departmentMasterData()" x-init="loadData()">
-    <!-- CSV Upload Modal -->
-    <div x-show="showUploadModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto" style="display: none;">
-        <div class="flex items-center justify-center min-h-screen pt-4 px-4 pb-20 text-center sm:block sm:p-0">
-            <div class="fixed inset-0 bg-gray-900 bg-opacity-50 transition-opacity" @click="showUploadModal = false"></div>
-            <div class="inline-block align-bottom bg-white rounded-lg text-left overflow-hidden shadow-xl transform transition-all sm:my-8 sm:align-middle sm:max-w-lg sm:w-full">
-                <div class="bg-white px-6 py-4 border-b border-gray-200">
-                    <div class="flex items-center justify-between">
-                        <h3 class="text-lg font-semibold text-gray-900">Import Departments from CSV</h3>
-                        <button @click="showUploadModal = false" class="text-gray-400 hover:text-gray-600"><i class="fas fa-times"></i></button>
-                    </div>
-                </div>
-                <div class="bg-white px-6 py-4">
-                    <div class="mb-6">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Step 1: Download Template</label>
-                        <button @click="downloadTemplate()" class="w-full px-4 py-2 border-2 border-dashed border-gray-300 rounded-lg hover:border-blue-500 hover:bg-blue-50 transition-colors flex items-center justify-center">
-                            <i class="fas fa-download text-blue-600 mr-2"></i><span class="text-sm text-gray-700">Download CSV Template</span>
-                        </button>
-                    </div>
-                    <div class="mb-4">
-                        <label class="block text-sm font-medium text-gray-700 mb-2">Step 2: Upload Filled CSV</label>
-                        <div class="mt-1 flex justify-center px-6 pt-5 pb-6 border-2 border-gray-300 border-dashed rounded-lg hover:border-blue-500 transition-colors" @dragover.prevent="dragOver = true" @dragleave.prevent="dragOver = false" @drop.prevent="dragOver = false; const file = $event.dataTransfer.files[0]; if (file && file.type === 'text/csv') selectedFile = file; else alert('Please drop a valid CSV file');" :class="{ 'border-blue-500 bg-blue-50': dragOver }">
-                            <div class="space-y-1 text-center">
-                                <i class="fas fa-cloud-upload-alt text-4xl text-gray-400 mb-3"></i>
-                                <div class="flex text-sm text-gray-600">
-                                    <label for="file-upload-dept" class="relative cursor-pointer bg-white rounded-md font-medium text-blue-600 hover:text-blue-500">
-                                        <span>Upload a file</span>
-                                        <input id="file-upload-dept" type="file" accept=".csv" class="sr-only" @change="const file = $event.target.files[0]; if (file && file.type === 'text/csv') selectedFile = file; else alert('Please select a valid CSV file');">
-                                    </label>
-                                    <p class="pl-1">or drag and drop</p>
-                                </div>
-                                <p class="text-xs text-gray-500">CSV file up to 10MB</p>
-                                <p x-show="selectedFile" class="text-sm text-green-600 mt-2"><i class="fas fa-check-circle mr-1"></i><span x-text="selectedFile ? selectedFile.name : ''"></span></p>
-                            </div>
-                        </div>
-                    </div>
-                    <div x-show="uploading" class="mb-4">
-                        <div class="flex items-center justify-between text-sm text-gray-700 mb-2"><span>Uploading...</span><span x-text="uploadProgress + '%'"></span></div>
-                        <div class="w-full bg-gray-200 rounded-full h-2"><div class="bg-blue-600 h-2 rounded-full transition-all duration-300" :style="'width: ' + uploadProgress + '%'"></div></div>
+    <!-- Import CSV Modal -->
+    <div x-show="showImportModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50"
+         @click.self="closeImportModal()">
+        <div class="bg-white rounded-xl shadow-xl max-w-md w-full mx-4">
+            <div class="flex items-center justify-between p-6 border-b border-gray-200">
+                <h3 class="text-xl font-bold text-gray-900">Import Departments from CSV</h3>
+                <button @click="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                    <span class="material-symbols-outlined">close</span>
+                </button>
+            </div>
+            
+            <div class="p-6">
+                <!-- Upload Section -->
+                <div x-show="!uploading && !uploadComplete">
+                    <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center hover:border-purple-500 transition-colors"
+                         @dragover.prevent="dragOver = true"
+                         @dragleave.prevent="dragOver = false"
+                         @drop.prevent="handleFileDrop($event)"
+                         :class="{'border-purple-500 bg-purple-50': dragOver}">
+                        <input type="file" 
+                               id="csvFileInput" 
+                               accept=".csv" 
+                               @change="handleFileSelect($event)" 
+                               class="hidden">
+                        <label for="csvFileInput" class="cursor-pointer">
+                            <span class="material-symbols-outlined text-6xl text-gray-400 mb-4">upload_file</span>
+                            <p class="text-gray-700 font-medium mb-2">Drop CSV file here or click to browse</p>
+                            <p class="text-sm text-gray-500">Maximum file size: 10MB</p>
+                        </label>
                     </div>
                     
-                    <!-- Validation Results -->
-                    <div x-show="validationResults && validationResults.length > 0" class="mb-4">
-                        <h4 class="text-sm font-medium text-red-700 mb-2">Import Issues:</h4>
-                        <div class="max-h-32 overflow-y-auto bg-red-50 border border-red-200 rounded p-3">
-                            <template x-for="error in validationResults" :key="error.row">
-                                <div class="text-xs text-red-600 mb-1">
-                                    <strong>Row <span x-text="error.row"></span>:</strong>
-                                    <span x-text="error.errors.join(', ')"></span>
-                                </div>
-                            </template>
+                    <div x-show="selectedFile" class="mt-4 p-3 bg-gray-50 rounded-lg flex items-center justify-between">
+                        <div class="flex items-center gap-2">
+                            <span class="material-symbols-outlined text-gray-600">description</span>
+                            <span class="text-sm text-gray-700" x-text="selectedFile ? selectedFile.name : ''"></span>
+                        </div>
+                        <button @click="clearFile()" class="text-red-600 hover:text-red-800">
+                            <span class="material-symbols-outlined text-sm">close</span>
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Upload Progress -->
+                <div x-show="uploading" class="text-center py-8">
+                    <div class="inline-block animate-spin rounded-full h-12 w-12 border-b-2 border-purple-600 mb-4"></div>
+                    <p class="text-gray-700 font-medium">Uploading and processing...</p>
+                    <p class="text-sm text-gray-500 mt-2">Please wait while we import your departments</p>
+                </div>
+
+                <!-- Upload Complete -->
+                <div x-show="uploadComplete" class="text-center py-8">
+                    <div class="inline-flex items-center justify-center w-16 h-16 bg-green-100 rounded-full mb-4">
+                        <span class="material-symbols-outlined text-4xl text-green-600">check_circle</span>
+                    </div>
+                    <p class="text-gray-700 font-medium mb-2" x-text="uploadMessage"></p>
+                    
+                    <!-- Show errors if any -->
+                    <div x-show="uploadErrors.length > 0" class="mt-4 max-h-48 overflow-y-auto">
+                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                            <p class="text-sm font-medium text-red-800 mb-2">Errors:</p>
+                            <ul class="text-sm text-red-700 space-y-1">
+                                <template x-for="error in uploadErrors" :key="error">
+                                    <li x-text="error"></li>
+                                </template>
+                            </ul>
                         </div>
                     </div>
                 </div>
-                <div class="bg-gray-50 px-6 py-4 flex items-center justify-end space-x-3">
-                    <button @click="showUploadModal = false" class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-100 transition-colors">Cancel</button>
-                    <button @click="uploadCSV()" :disabled="!selectedFile || uploading" :class="!selectedFile || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-green-700'" class="px-4 py-2 bg-green-600 text-white rounded-lg transition-colors">
-                        <i class="fas fa-upload mr-2"></i><span x-text="uploading ? 'Uploading...' : 'Import Data'"></span>
-                    </button>
-                </div>
+            </div>
+
+            <!-- Modal Footer -->
+            <div class="flex gap-3 p-6 border-t border-gray-200">
+                <button type="button" 
+                        @click="closeImportModal()"
+                        class="flex-1 px-4 py-2 border border-gray-300 text-gray-700 rounded-lg hover:bg-gray-50 transition-colors">
+                    <span x-show="!uploadComplete">Cancel</span>
+                    <span x-show="uploadComplete">Close</span>
+                </button>
+                <button type="button" 
+                        x-show="!uploading && !uploadComplete"
+                        @click="uploadCSV()"
+                        :disabled="!selectedFile"
+                        class="flex-1 px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 disabled:cursor-not-allowed">
+                    Upload & Import
+                </button>
             </div>
         </div>
     </div>
@@ -181,7 +209,10 @@
                 <p class="text-gray-600 mt-1">Manage organizational departments</p>
             </div>
             <div class="flex items-center space-x-3">
-                <button @click="showUploadModal = true" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
+                <button @click="downloadTemplate()" class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors flex items-center">
+                    <i class="fas fa-download mr-2"></i>Download CSV Template
+                </button>
+                <button @click="openImportModal()" class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center">
                     <i class="fas fa-upload mr-2"></i>Import CSV
                 </button>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/departments/create' : '/org/' . $organization->org_slug . '/departments/create') }}" 
@@ -288,11 +319,12 @@
 <script>
  function departmentMasterData() {
      return {
-         showUploadModal: false,
+         showImportModal: false,
          selectedFile: null,
          uploading: false,
-         uploadProgress: 0,
-         validationResults: null,
+         uploadComplete: false,
+         uploadMessage: '',
+         uploadErrors: [],
          dragOver: false,
 
          items: [],
@@ -438,13 +470,33 @@
          },
 
          downloadTemplate() {
-             // Download template from API
              window.location.href = '/api/v1/departments/import/template';
+         },
+
+         openImportModal() {
+             this.showImportModal = true;
+             this.selectedFile = null;
+             this.uploading = false;
+             this.uploadComplete = false;
+             this.uploadMessage = '';
+             this.uploadErrors = [];
+         },
+
+         closeImportModal() {
+             this.showImportModal = false;
+             this.selectedFile = null;
+             this.uploading = false;
+             this.uploadComplete = false;
+             this.uploadMessage = '';
+             this.uploadErrors = [];
+             if (this.uploadComplete) {
+                 this.loadData();
+             }
          },
 
          handleFileSelect(event) {
              const file = event.target.files[0];
-             if (file && file.type === 'text/csv') {
+             if (file && file.name.endsWith('.csv')) {
                  this.selectedFile = file;
              } else {
                  alert('Please select a valid CSV file');
@@ -454,36 +506,32 @@
          handleFileDrop(event) {
              this.dragOver = false;
              const file = event.dataTransfer.files[0];
-             if (file && file.type === 'text/csv') {
+             if (file && file.name.endsWith('.csv')) {
                  this.selectedFile = file;
              } else {
                  alert('Please drop a valid CSV file');
              }
          },
 
+         clearFile() {
+             this.selectedFile = null;
+             document.getElementById('csvFileInput').value = '';
+         },
+
          async uploadCSV() {
-             if (!this.selectedFile) return;
-             
-             console.log('Starting CSV upload...', this.selectedFile);
-             
+             if (!this.selectedFile) {
+                 alert('Please select a file first');
+                 return;
+             }
+
              this.uploading = true;
-             this.uploadProgress = 0;
-             this.validationResults = null;
-             
+             this.uploadComplete = false;
+
              try {
                  const formData = new FormData();
                  formData.append('file', this.selectedFile);
-                 
-                 console.log('FormData created, making API call...');
-                 
-                 // Simulate progress
-                 const progressInterval = setInterval(() => {
-                     if (this.uploadProgress < 90) {
-                         this.uploadProgress += 10;
-                     }
-                 }, 200);
-                 
-                 const response = await fetch('{{ url("api/v1/departments/import") }}', {
+
+                 const response = await fetch('/api/v1/departments/import', {
                      method: 'POST',
                      credentials: 'same-origin',
                      headers: {
@@ -492,58 +540,30 @@
                      },
                      body: formData
                  });
-                 
-                 clearInterval(progressInterval);
-                 this.uploadProgress = 100;
-                 
-                 console.log('Response received:', response.status, response.statusText);
-                 
+
                  const data = await response.json();
                  
-                 console.log('CSV Import Response:', data);
-                 
-                 if (!response.ok) {
-                     console.error('Import failed:', data);
-                     if (data.error && data.error.details) {
-                         this.showNotification('Validation failed: ' + JSON.stringify(data.error.details), 'error');
-                     } else {
-                         this.showNotification(data.message || 'Failed to import CSV', 'error');
-                     }
-                     return;
-                 }
-                 
-                 // Show results
-                 if (data.data && data.data.errors && data.data.errors.length > 0) {
-                     this.validationResults = data.data.errors;
-                     this.showNotification(`Import completed with issues. ${data.data.successful} successful, ${data.data.failed} failed.`, 'warning');
-                     console.log('Import errors:', data.data.errors);
-                 } else if (data.data && data.data.successful > 0) {
-                     this.showNotification(`CSV imported successfully! ${data.data.successful} departments created.`, 'success');
-                     this.closeUploadModal();
-                     this.loadData(); // Refresh the departments list
-                 } else {
-                     this.showNotification('No departments were created. Please check your CSV data.', 'warning');
-                     if (data.data && data.data.errors) {
-                         this.validationResults = data.data.errors;
-                     }
-                 }
-                 
-             } catch (error) {
-                 console.error('Failed to upload CSV:', error);
-                 this.showNotification('Network error. Please try again.', 'error');
-             } finally {
                  this.uploading = false;
-                 this.uploadProgress = 0;
-             }
-         },
+                 this.uploadComplete = true;
 
-         closeUploadModal() {
-             this.showUploadModal = false;
-             this.selectedFile = null;
-             this.uploading = false;
-             this.uploadProgress = 0;
-             this.validationResults = null;
-             this.dragOver = false;
+                 if (data.success) {
+                     this.uploadMessage = data.message;
+                     this.uploadErrors = data.data.errors || [];
+                     
+                     // Reload page after successful import
+                     setTimeout(() => {
+                         window.location.reload();
+                     }, 2000);
+                 } else {
+                     this.uploadMessage = 'Import failed';
+                     this.uploadErrors = [data.message];
+                 }
+             } catch (error) {
+                 this.uploading = false;
+                 this.uploadComplete = true;
+                 this.uploadMessage = 'Import failed';
+                 this.uploadErrors = ['Network error occurred'];
+             }
          },
 
          showNotification(message, type = 'info') {
@@ -565,7 +585,7 @@
                  notification.remove();
              }, 3000);
          }
-     }
+     };
  }
 </script>
 @endsection
