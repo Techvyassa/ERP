@@ -606,6 +606,14 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                     'tenantType' => $tenantType
                 ]);
             })->name('gate-entry');
+
+            Route::get('/dispatch', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.security.dispatch', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('dispatch');
         });
 
         // Warehouse/store Department Portal
@@ -682,6 +690,14 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 extract($getOrg($orgSlug));
                 return redirect()->route('tenant.sales.orders', $orgSlug);
             })->name('sales-orders');
+
+            Route::get('/outward', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.outward', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('outward');
         });
 
         // Quality Portal
