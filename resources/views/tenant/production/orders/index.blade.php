@@ -379,55 +379,47 @@
                                 <span class="material-symbols-outlined text-orange-500">calculate</span>
                                 <h4 class="text-sm font-semibold text-gray-800">Auto-calculated Raw Materials</h4>
                                 <span class="text-xs text-gray-500 ml-auto">
-                                    Target Qty: <strong x-text="form.target_qty"></strong>
-                                    &nbsp;→&nbsp; Multiplier: <strong x-text="multiplier.toFixed(4)"></strong>
+                                    Target: <strong x-text="form.target_qty"></strong> units
                                 </span>
                             </div>
                             <div class="border border-gray-200 rounded-lg overflow-hidden">
                                 <table class="min-w-full text-sm">
                                     <thead class="bg-gray-50">
                                         <tr>
-                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">#
-                                            </th>
-                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
-                                                Material</th>
-                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
-                                                Code</th>
-                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">
-                                                Required Qty</th>
-                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">
-                                                UOM</th>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">#</th>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Material</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Base Qty</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Scrap %</th>
+                                            <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Required Qty</th>
+                                            <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">UOM</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
                                         <template x-for="(line, idx) in rmLines" :key="line.material_id">
                                             <tr class="hover:bg-gray-50">
                                                 <td class="px-4 py-2 text-gray-400 text-xs" x-text="idx + 1"></td>
-                                                <td class="px-4 py-2 text-gray-900 font-medium" x-text="line.material_name">
+                                                <td class="px-4 py-2">
+                                                    <div class="font-medium text-gray-900" x-text="line.material_name"></div>
+                                                    <div class="text-[10px] text-gray-400" x-text="line.material_code"></div>
                                                 </td>
-                                                <td class="px-4 py-2 text-gray-500 text-xs" x-text="line.material_code">
-                                                </td>
-                                                <td class="px-4 py-2 text-right font-bold text-orange-600"
-                                                    x-text="line.required_qty"></td>
-                                                <td class="px-4 py-2 text-gray-500"
-                                                    x-text="line.uom?.uom_name || line.uom || ''"></td>
+                                                <td class="px-4 py-2 text-right text-gray-500 text-xs" x-text="parseFloat(line.qty_required).toFixed(4)"></td>
+                                                <td class="px-4 py-2 text-right text-xs"
+                                                    :class="parseFloat(line.scrap_percent) > 0 ? 'text-amber-600 font-semibold' : 'text-gray-400'"
+                                                    x-text="parseFloat(line.scrap_percent).toFixed(1) + '%'"></td>
+                                                <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
+                                                <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                             </tr>
                                         </template>
                                     </tbody>
                                 </table>
                             </div>
-                            <div class="mt-3 p-3 bg-blue-50 border border-blue-200 rounded-lg text-xs text-blue-700">
-                                <p class="font-semibold mb-1">How this is calculated:</p>
-                                <ul class="space-y-1 ml-4 list-disc">
-                                    <li><strong>Effective Qty</strong> = Base Qty × (1 + Scrap %)</li>
-                                    <li><strong>Required Qty</strong> = Effective Qty × Target Qty</li>
-                                    <li>Example: 5.10 × 10 = 51.0 KG</li>
-                                </ul>
+                            <div class="mt-2 px-3 py-2 bg-blue-50 border border-blue-100 rounded-lg text-xs text-blue-700 flex items-start gap-2">
+                                <span class="material-symbols-outlined text-sm mt-0.5">info</span>
+                                <span>
+                                    <strong>Required Qty</strong> = Base Qty × (1 + Scrap%) × Target Qty.
+                                    A Material Issue Request (MIR) will be sent to Store on submission.
+                                </span>
                             </div>
-                            <p class="text-xs text-gray-500 mt-2 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-xs">info</span>
-                                A Material Issue Request (MIR) will be sent to Store for approval on submission.
-                            </p>
                         </div>
 
                         <div x-show="formError" class="p-3 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg"
@@ -861,24 +853,32 @@
                     try {
                         const res = await this._fetch(`/api/v1/bom-details?bom_id=${this.form.bom_id}`);
                         const data = await res.json();
-                        // Response: data.data is a flat array
                         const details = Array.isArray(data?.data) ? data.data : [];
-                        // Fixed: Use target_qty directly as the multiplier (correct formula)
-                        // Old (WRONG): this.multiplier = this.form.target_qty / batchSize;
-                        // New (CORRECT): this.multiplier = this.form.target_qty;
-                        this.multiplier = this.form.target_qty;
 
-                        this.rmLines = details.map(d => ({
-                            material_id: d.material_id,
-                            material_name: d.material?.material_name || ('Material #' + d.material_id),
-                            material_code: d.material?.material_code || '',
-                            // effective_qty is a DB generated column (qty_required * (1 + scrap/100))
-                            required_qty: (parseFloat(d.effective_qty ?? d.qty_required) * this.multiplier).toFixed(3),
-                            uom: d.uom ? {
-                                uom_code: d.uom.uom_code,
-                                uom_name: d.uom.uom_name
-                            } : (d.uom_code || '')
-                        }));
+                        const targetQty = parseFloat(this.form.target_qty);
+                        this.multiplier = targetQty;
+
+                        this.rmLines = details.map(d => {
+                            const qtyRequired  = parseFloat(d.qty_required  ?? 0);
+                            const scrapPercent = parseFloat(d.scrap_percent ?? 0);
+                            // effective_qty = qty_required × (1 + scrap% / 100) — stored in DB
+                            // Use DB value if available, otherwise calculate it here
+                            const effectiveQty = d.effective_qty
+                                ? parseFloat(d.effective_qty)
+                                : qtyRequired * (1 + scrapPercent / 100);
+
+                            return {
+                                material_id:   d.material_id,
+                                material_name: d.material?.material_name || ('Material #' + d.material_id),
+                                material_code: d.material?.material_code || '',
+                                qty_required:  qtyRequired,
+                                scrap_percent: scrapPercent,
+                                effective_qty: effectiveQty,
+                                // required_qty = effective_qty × target_qty
+                                required_qty:  (effectiveQty * targetQty).toFixed(3),
+                                uom: d.uom ? { uom_code: d.uom.uom_code, uom_name: d.uom.uom_name } : (d.uom_code || '')
+                            };
+                        });
                     } catch (e) {
                         console.error('RM calculation failed', e);
                     }
