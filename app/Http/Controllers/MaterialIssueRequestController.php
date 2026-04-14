@@ -186,8 +186,9 @@ class MaterialIssueRequestController extends Controller
                 'product_name'         => $mir->productionOrder?->product?->product_name,
                 'product_code'         => $mir->productionOrder?->product?->product_code,
                 'target_qty'           => $mir->productionOrder?->target_qty,
-                'uom'                  => $mir->productionOrder?->bom?->outputUom?->uom_code
-                                          ?? $mir->productionOrder?->bom?->outputUom?->uom_name,
+                'uom'                  => $mir->productionOrder?->bom?->outputUom?->uom_code,
+                'uom_name'             => $mir->productionOrder?->bom?->outputUom?->uom_name
+                                          ?? $mir->productionOrder?->bom?->outputUom?->uom_code,
                 // MIR fields
                 'status'               => $mir->status,
                 'rejection_reason'     => $mir->rejection_reason,

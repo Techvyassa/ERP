@@ -7,19 +7,41 @@
 <div x-data="receivingData()" x-init="init()">
 
     <!-- Header -->
-    <div class="flex items-center gap-4 mb-8">
-        <a href="/org/{{ $organization->org_slug }}/production/orders"
-            class="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all shadow-sm active:scale-95">
-            <span class="material-symbols-outlined">arrow_back</span>
-        </a>
-        <div>
-            <div class="flex items-center gap-2 mb-1">
-                <span class="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase tracking-widest">Production Floor</span>
-                <span class="text-slate-300">•</span>
-                <span class="text-[10px] font-bold text-slate-400 font-mono" x-text="order?.order_no || '...'"></span>
+    <div class="flex items-center justify-between mb-8">
+        <div class="flex items-center gap-4">
+            <a href="/org/{{ $organization->org_slug }}/production/orders"
+                class="p-2.5 bg-white border border-slate-200 rounded-xl text-slate-400 hover:text-slate-900 hover:border-slate-400 transition-all shadow-sm active:scale-95">
+                <span class="material-symbols-outlined">arrow_back</span>
+            </a>
+            <div>
+                <div class="flex items-center gap-2 mb-1">
+                    <span class="text-[10px] font-black text-orange-600 bg-orange-50 px-2 py-0.5 rounded uppercase tracking-widest">Production Floor</span>
+                    <span class="text-slate-300">•</span>
+                    <span class="text-[10px] font-bold text-slate-400 font-mono" x-text="order?.order_no || '...'"></span>
+                </div>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight">Confirm Material Receipt</h2>
             </div>
-            <h2 class="text-2xl font-black text-slate-900 tracking-tight">Confirm Material Receipt</h2>
         </div>
+
+        <!-- Confirm button in header -->
+        <template x-if="order && order.mir_status !== 'CLOSED'">
+            <div class="flex items-center gap-3">
+                <template x-if="confirmError">
+                    <span class="text-xs text-red-600 font-bold" x-text="confirmError"></span>
+                </template>
+                <button @click="openConfirmModal()" :disabled="!allQtysEntered()"
+                    class="px-6 py-2.5 bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-all flex items-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-md active:scale-95">
+                    <span class="material-symbols-outlined text-sm">move_to_inbox</span>
+                    Confirm Receipt
+                </button>
+            </div>
+        </template>
+        <template x-if="order && order.mir_status === 'CLOSED'">
+            <span class="px-4 py-2.5 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2">
+                <span class="material-symbols-outlined text-sm">check_circle</span>
+                Receipt Confirmed
+            </span>
+        </template>
     </div>
 
     <!-- Loading -->
@@ -88,28 +110,23 @@
                                 <template x-for="line in mirLines" :key="line.id">
                                     <tr class="hover:bg-slate-50/30 transition-all">
                                         <td class="px-6 py-4 leading-none">
-                                            <div class="flex flex-col gap-1">
-                                                <span class="text-sm font-bold text-slate-800" x-text="line.material?.name || line.material_name"></span>
-                                                <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter" x-text="line.material?.code || line.material_code"></span>
-                                            </div>
+                                            <span class="text-sm font-bold text-slate-800" x-text="line.material?.name || line.material_name"></span>
                                         </td>
                                         <td class="px-6 py-4 text-center leading-none">
                                             <span class="text-sm font-black text-slate-700" x-text="line.required_qty"></span>
-                                            <span class="text-[10px] text-slate-400 ml-1" x-text="line.uom"></span>
+                                            <span class="text-[10px] text-slate-400 ml-1" x-text="line.uom_name || line.uom"></span>
                                         </td>
                                         <td class="px-6 py-4 text-center leading-none">
                                             <span class="text-sm font-black text-emerald-600" x-text="line.issued_qty"></span>
-                                            <span class="text-[10px] text-slate-400 ml-1" x-text="line.uom"></span>
+                                            <span class="text-[10px] text-slate-400 ml-1" x-text="line.uom_name || line.uom"></span>
                                         </td>
                                         <td class="px-6 py-4 text-center leading-none">
                                             <div class="flex items-center justify-center gap-1">
                                                 <input type="number"
-                                                    x-model="receivedQtys[line.id]"
-                                                    :max="line.issued_qty"
-                                                    min="0"
-                                                    step="0.001"
-                                                    class="w-24 px-2 py-1.5 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-center focus:ring-2 focus:ring-orange-400 focus:border-transparent">
-                                                <span class="text-[10px] text-slate-400" x-text="line.uom"></span>
+                                                    :value="receivedQtys[line.id]"
+                                                    readonly
+                                                    class="w-24 px-2 py-1.5 bg-slate-100 border border-slate-200 rounded-lg text-sm font-bold text-center text-slate-500 cursor-not-allowed">
+                                                <span class="text-[10px] text-slate-400" x-text="line.uom_name || line.uom"></span>
                                             </div>
                                         </td>
                                         <td class="px-6 py-4 text-center leading-none">
@@ -130,50 +147,6 @@
                             </tbody>
                         </table>
                     </div>
-                </div>
-
-                <!-- Notes & Confirm -->
-                <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-6 space-y-4">
-                    <div>
-                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
-                            Receiving Notes (optional)
-                        </label>
-                        <textarea x-model="receivingNotes" rows="3"
-                            placeholder="Note any discrepancies, damaged materials, or observations..."
-                            class="w-full px-4 py-3 bg-gray-50 border-none rounded-xl text-sm text-slate-900 focus:ring-2 focus:ring-orange-400 transition-all resize-none"></textarea>
-                    </div>
-
-                    <template x-if="confirmError">
-                        <div class="px-4 py-3 bg-red-50 text-red-600 text-xs rounded-xl font-bold flex items-center gap-2 border border-red-100">
-                            <span class="material-symbols-outlined text-sm">error</span>
-                            <span x-text="confirmError"></span>
-                        </div>
-                    </template>
-
-                    <div class="flex items-center gap-3 pt-2">
-                        <a href="/org/{{ $organization->org_slug }}/production/orders"
-                            class="px-5 py-3 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all">
-                            Cancel
-                        </a>
-                        <button @click="confirmReceipt()" :disabled="processing || !allQtysEntered()"
-                            class="flex-1 py-3 px-6 bg-orange-500 text-white text-sm font-black uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg active:scale-95">
-                            <template x-if="!processing">
-                                <span class="flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-lg">check_circle</span>
-                                    Confirm All Materials Received — Start Production
-                                </span>
-                            </template>
-                            <template x-if="processing">
-                                <span class="flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-lg animate-spin">progress_activity</span>
-                                    Confirming...
-                                </span>
-                            </template>
-                        </button>
-                    </div>
-                    <p class="text-[10px] text-slate-400 text-center">
-                        Confirming receipt will close the MIR and unlock production to start.
-                    </p>
                 </div>
             </div>
 
@@ -221,20 +194,118 @@
                         </div>
                         <div class="flex justify-between items-center">
                             <span class="text-xs text-slate-500">All Fully Picked</span>
-                            <span class="text-xs font-black text-emerald-600 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm">check_circle</span>
-                                Yes
+                            <span class="text-xs font-black flex items-center gap-1"
+                                :class="mirLines.length > 0 && mirLines.every(l => l.status === 'FULLY_PICKED') ? 'text-emerald-600' : 'text-amber-600'">
+                                <span class="material-symbols-outlined text-sm"
+                                    x-text="mirLines.length > 0 && mirLines.every(l => l.status === 'FULLY_PICKED') ? 'check_circle' : 'pending'">
+                                </span>
+                                <span x-text="mirLines.length > 0 && mirLines.every(l => l.status === 'FULLY_PICKED') ? 'Yes' : 'Partial'"></span>
                             </span>
                         </div>
                         <div class="flex justify-between items-center">
+                            <span class="text-xs text-slate-500">MIR Status</span>
+                            <span class="text-xs font-black text-slate-900" x-text="order.mir_status || '—'"></span>
+                        </div>
+                        <div class="flex justify-between items-center">
                             <span class="text-xs text-slate-500">Issued At</span>
-                            <span class="text-xs font-semibold text-slate-700" x-text="order.mir_fully_issued_at ? new Date(order.mir_fully_issued_at).toLocaleString() : '—'"></span>
+                            <span class="text-xs font-semibold text-slate-700"
+                                x-text="order.mir_fully_issued_at ? new Date(order.mir_fully_issued_at).toLocaleString('en-IN', { day:'2-digit', month:'short', year:'numeric', hour:'2-digit', minute:'2-digit' }) : '—'">
+                            </span>
                         </div>
                     </div>
                 </div>
             </div>
         </div>
     </template>
+
+    <!-- Confirm Receipt Modal -->
+    <div x-show="showConfirmModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-slate-900/50 backdrop-blur-sm" @click="showConfirmModal = false"></div>
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden border border-gray-100"
+                x-transition:enter="ease-out duration-200"
+                x-transition:enter-start="opacity-0 scale-95"
+                x-transition:enter-end="opacity-100 scale-100">
+
+                <!-- Modal Header -->
+                <div class="px-6 py-5 bg-gradient-to-r from-orange-500 to-orange-600 flex items-center justify-between">
+                    <div class="flex items-center gap-3">
+                        <div class="p-2 bg-white/20 rounded-xl">
+                            <span class="material-symbols-outlined text-white">move_to_inbox</span>
+                        </div>
+                        <div>
+                            <h3 class="text-base font-black text-white">Confirm Material Receipt</h3>
+                            <p class="text-[10px] text-orange-100 font-semibold" x-text="order?.order_no"></p>
+                        </div>
+                    </div>
+                    <button @click="showConfirmModal = false" class="text-white/60 hover:text-white transition-colors">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <div class="p-6 space-y-5">
+                    <!-- Summary -->
+                    <div class="bg-orange-50 rounded-xl p-4 border border-orange-100">
+                        <p class="text-xs font-black text-orange-700 mb-2 uppercase tracking-widest">Receipt Summary</p>
+                        <div class="space-y-1.5">
+                            <div class="flex justify-between text-xs">
+                                <span class="text-slate-500">Total materials</span>
+                                <span class="font-black text-slate-900" x-text="mirLines.length + ' items'"></span>
+                            </div>
+                            <template x-for="line in mirLines" :key="line.id">
+                                <div class="flex justify-between text-xs">
+                                    <span class="text-slate-500" x-text="line.material?.name || line.material_name"></span>
+                                    <span class="font-bold"
+                                        :class="parseFloat(receivedQtys[line.id]) < parseFloat(line.issued_qty) ? 'text-red-600' : 'text-emerald-600'"
+                                        x-text="receivedQtys[line.id] + ' ' + (line.uom_name || line.uom)"></span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+
+                    <!-- Notes -->
+                    <div>
+                        <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2">
+                            Notes (optional)
+                        </label>
+                        <textarea x-model="receivingNotes" rows="3"
+                            placeholder="Note any discrepancies, damaged materials, or observations..."
+                            class="w-full px-4 py-3 bg-gray-50 border border-gray-200 rounded-xl text-sm text-slate-900 focus:ring-2 focus:ring-orange-400 transition-all resize-none"></textarea>
+                    </div>
+
+                    <template x-if="confirmError">
+                        <div class="px-4 py-3 bg-red-50 text-red-600 text-xs rounded-xl font-bold flex items-center gap-2 border border-red-100">
+                            <span class="material-symbols-outlined text-sm">error</span>
+                            <span x-text="confirmError"></span>
+                        </div>
+                    </template>
+
+                    <!-- Actions -->
+                    <div class="flex gap-3 pt-1">
+                        <button @click="showConfirmModal = false"
+                            class="flex-1 py-3 border border-gray-200 text-gray-600 text-sm font-bold rounded-xl hover:bg-gray-50 transition-all">
+                            Cancel
+                        </button>
+                        <button @click="confirmReceipt()" :disabled="processing"
+                            class="flex-[2] py-3 bg-orange-500 text-white text-sm font-black uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-all flex items-center justify-center gap-2 disabled:opacity-50 shadow-md active:scale-95">
+                            <template x-if="!processing">
+                                <span class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base">check_circle</span>
+                                    Confirm Receipt
+                                </span>
+                            </template>
+                            <template x-if="processing">
+                                <span class="flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-base animate-spin">progress_activity</span>
+                                    Confirming...
+                                </span>
+                            </template>
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -252,9 +323,10 @@ function receivingData() {
     return {
         loading: true,
         processing: false,
+        showConfirmModal: false,
         order: null,
         mirLines: [],
-        receivedQtys: {},   // { [lineId]: qty }
+        receivedQtys: {},
         receivingNotes: '',
         confirmError: '',
 
@@ -272,14 +344,15 @@ function receivingData() {
                 const raw = data.data?.order || data.data;
                 this.order = {
                     ...raw,
-                    product_name: raw.product?.product_name || raw.product_name,
-                    mir_no: raw.mir?.mir_no,
-                    mir_status: raw.mir?.status || raw.mir_status,
-                    mir_fully_issued_at: raw.mir?.fully_issued_at,
+                    product_name:         raw.product?.product_name || raw.product_name,
+                    mir_no:               raw.mir?.mir_no,
+                    mir_status:           raw.mir?.status || raw.mir_status,
+                    mir_fully_issued_at:  raw.mir?.fully_issued_at,
+                    mir_id:               raw.mir?.id || raw.mir_id,
                 };
 
                 // Load MIR lines
-                const mirId = raw.mir?.id;
+                const mirId = raw.mir?.id || raw.mir_id;
                 if (mirId) {
                     const mirRes = await fetch(`/api/v1/material-issue-requests/${mirId}`, { headers: headers() });
                     const mirData = await mirRes.json();
@@ -309,6 +382,12 @@ function receivingData() {
                 const v = this.receivedQtys[line.id];
                 return v !== null && v !== undefined && v !== '' && parseFloat(v) >= 0;
             });
+        },
+
+        openConfirmModal() {
+            this.confirmError = '';
+            this.receivingNotes = '';
+            this.showConfirmModal = true;
         },
 
         async confirmReceipt() {
@@ -343,6 +422,7 @@ function receivingData() {
                 const data = await res.json();
                 if (!data.success) throw new Error(data.message || 'Failed to confirm receipt');
 
+                this.showConfirmModal = false;
                 window.dispatchEvent(new CustomEvent('notify', {
                     detail: { message: 'Materials confirmed. Production can now start!', type: 'success' }
                 }));

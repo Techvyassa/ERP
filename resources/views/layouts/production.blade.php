@@ -74,14 +74,7 @@
                         </a>
                     </li>
 
-                    {{-- Step 2: Material Issued (MIR list — what store issued) --}}
-                    <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/production/material-issue-requests") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.mir.index') || request()->routeIs('tenant.production.mir.show') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">outbox</span>
-                            <span x-show="sidebarOpen" class="font-medium">Issued Materials</span>
-                        </a>
-                    </li>
+                    {{-- Step 2 removed: Issued Materials belongs to Warehouse portal, not Production --}}
 
                     {{-- Step 3: Floor Receiving — confirm materials arrived --}}
                     <li>

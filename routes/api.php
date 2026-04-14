@@ -567,40 +567,23 @@ Route::prefix('v1')->group(function () {
             // Batch Runs — Independent execution units per production order
             Route::prefix('batch-runs')->group(function () {
                 Route::get('/', [App\Http\Controllers\BatchRunController::class, 'index']);
-                Route::post('/', [App\Http\Controllers\BatchRunController::class, 'store']); // Create batch run under production order
+                Route::post('/', [App\Http\Controllers\BatchRunController::class, 'store']);
                 Route::get('/{id}', [App\Http\Controllers\BatchRunController::class, 'show']);
-                Route::patch('/{id}/start', [App\Http\Controllers\BatchRunController::class, 'start']); // PENDING → MIR_RAISED → IN_PROGRESS (after MIR FULLY_ISSUED + RECEIVED)
-                Route::patch('/{id}/complete', [App\Http\Controllers\BatchRunController::class, 'complete']); // IN_PROGRESS → COMPLETED
-                Route::get('/{id}/materials', [App\Http\Controllers\BatchRunController::class, 'materials']); // Get batch run materials
-                Route::get('/{id}/mir', [App\Http\Controllers\BatchRunController::class, 'mir']); // Get associated MIR
-            });
-
-            // Material Issue Requests (MIR) — Auto-generated per batch run
-            Route::prefix('material-issue-requests')->group(function () {
-                Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
-                Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
-                Route::get('/{id}/lines', [App\Http\Controllers\MaterialIssueRequestController::class, 'lines']); // Get all MIR lines
-                Route::patch('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']); // PENDING → APPROVED (Store confirms all materials available)
-                Route::patch('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']); // PENDING → REJECTED
-            });
-
-            // MIR Line Items — Individual material tracking
-            Route::prefix('mir-lines')->group(function () {
-                Route::get('/{id}', [App\Http\Controllers\MIRLineController::class, 'show']);
-                Route::patch('/{id}/approve', [App\Http\Controllers\MIRLineController::class, 'approve']); // PENDING → APPROVED
-                Route::patch('/{id}/reject', [App\Http\Controllers\MIRLineController::class, 'reject']); // PENDING → REJECTED
-                Route::post('/{id}/issue', [App\Http\Controllers\MIRLineController::class, 'issue']); // Issue qty (partial or full) → PARTIALLY_PICKED or FULLY_PICKED
+                Route::patch('/{id}/start', [App\Http\Controllers\BatchRunController::class, 'start']);
+                Route::patch('/{id}/complete', [App\Http\Controllers\BatchRunController::class, 'complete']);
+                Route::get('/{id}/materials', [App\Http\Controllers\BatchRunController::class, 'materials']);
+                Route::get('/{id}/mir', [App\Http\Controllers\BatchRunController::class, 'mir']);
             });
 
             // Production Floor Receiving — Confirm materials at workstation
             Route::prefix('batch-runs/{batchRunId}/receiving')->group(function () {
-                Route::get('/', [App\Http\Controllers\BatchRunReceivingController::class, 'show']); // Get receiving status
-                Route::patch('/confirm', [App\Http\Controllers\BatchRunReceivingController::class, 'confirm']); // PENDING_RECEIPT → RECEIVED (unlock batch run to start)
+                Route::get('/', [App\Http\Controllers\BatchRunReceivingController::class, 'show']);
+                Route::patch('/confirm', [App\Http\Controllers\BatchRunReceivingController::class, 'confirm']);
             });
 
             // Finished Goods Receipt — Record actual production output
             Route::prefix('fg-receipts')->group(function () {
-                Route::post('/', [App\Http\Controllers\FGReceiptController::class, 'store']); // Create FG receipt for completed batch run
+                Route::post('/', [App\Http\Controllers\FGReceiptController::class, 'store']);
                 Route::get('/{id}', [App\Http\Controllers\FGReceiptController::class, 'show']);
             });
 
@@ -615,19 +598,26 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // Material Issue Request Endpoints
-        // Roles: STOREKEEPER (view/scan), STORE_MGR (approve/reject), ADMIN (all)
-        // Status Flow: PENDING → APPROVED → SCANNING → ISSUED
+        // ── MIR & MIR Lines — accessible by STORE (issue) and PRODUCTION (view) ──
+        // Using STORE permission since warehouse staff are the primary actors
         Route::middleware(['check.module.permission:STORE'])->group(function () {
+            // Material Issue Requests — viewed and approved by Store
             Route::prefix('material-issue-requests')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
-                Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
-                Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
-                Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
+                Route::get('/{id}/lines', [App\Http\Controllers\MaterialIssueRequestController::class, 'lines']);
+                Route::patch('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']); // PENDING → APPROVED
+                Route::patch('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);   // PENDING → REJECTED
+            });
+
+            // MIR Line Items — Store approves and issues materials
+            Route::prefix('mir-lines')->group(function () {
+                Route::get('/{id}', [App\Http\Controllers\MIRLineController::class, 'show']);
+                Route::patch('/{id}/approve', [App\Http\Controllers\MIRLineController::class, 'approve']); // PENDING → APPROVED
+                Route::patch('/{id}/reject', [App\Http\Controllers\MIRLineController::class, 'reject']);   // PENDING → REJECTED
+                Route::post('/{id}/issue', [App\Http\Controllers\MIRLineController::class, 'issue']);      // Issue qty → PARTIALLY_PICKED or FULLY_PICKED
             });
         });
-
 
         // ── Lookup routes for Sales Order creation (no module-permission gate) ──
         Route::get('/lookup/customers', [App\Http\Controllers\LookupController::class, 'customers']);

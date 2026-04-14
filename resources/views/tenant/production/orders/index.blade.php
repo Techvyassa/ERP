@@ -840,8 +840,10 @@
                     const data = await res.json();
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to create order');
                     this.closeModal();
-                    // Redirect to Warehouse MIR page so user can see the generated MIR
-                    window.location.href = `/org/${this.orgSlug}/warehouse/mir`;
+                    await this.loadOrders();
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { message: 'Production order created. MIR sent to Store for approval.', type: 'success' }
+                    }));
                 } catch (e) {
                     this.formError = e.message || 'An error occurred. Please try again.';
                 } finally {

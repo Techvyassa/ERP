@@ -420,8 +420,10 @@ class ProductionOrderController extends Controller
                         'mir_status' => $order->mir?->status,
                         'mir_id' => $order->mir?->id,
                         'mir' => $order->mir ? [
-                            'id' => $order->mir->id,
-                            'status' => $order->mir->status,
+                            'id'              => $order->mir->id,
+                            'mir_no'          => $order->mir->mir_no,
+                            'status'          => $order->mir->status,
+                            'fully_issued_at' => $order->mir->fully_issued_at?->toIso8601String(),
                             'lines' => $order->mir->lines->map(fn($l) => [
                                 'material_id' => $l->material_id,
                                 'material' => $l->material ? [

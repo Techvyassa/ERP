@@ -85,13 +85,12 @@
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Final Product</p>
                         <p class="text-sm font-bold text-slate-800" x-text="mir?.product_name || '—'"></p>
-                        <p class="text-[10px] font-black text-slate-400 uppercase" x-text="mir?.product_code || ''"></p>
                     </div>
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Batch Target</p>
                         <p class="text-sm font-black text-slate-900">
                             <span x-text="mir?.target_qty ?? '—'"></span>
-                            <span class="text-[10px] text-slate-400 uppercase ml-1" x-text="mir?.uom || ''"></span>
+                            <span class="text-[10px] text-slate-400 uppercase ml-1" x-text="mir?.uom_name || mir?.uom || ''"></span>
                         </p>
                     </div>
                     <div>
@@ -135,10 +134,7 @@
                             <template x-for="line in mir?.lines" :key="line.id">
                                 <tr class="hover:bg-slate-50/30 transition-all group">
                                     <td class="px-6 py-4 leading-none">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-sm font-bold text-slate-800" x-text="line.material_name"></span>
-                                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter" x-text="line.material_code"></span>
-                                        </div>
+                                        <span class="text-sm font-bold text-slate-800" x-text="line.material_name"></span>
                                     </td>
                                     <td class="px-6 py-4 text-center leading-none">
                                         <span class="text-sm font-black text-slate-700" x-text="line.required_qty"></span>
@@ -298,11 +294,11 @@
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
                             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Required</p>
-                            <p class="text-base font-black text-slate-900" x-text="selectedLine?.required_qty + ' ' + (selectedLine?.uom || '')"></p>
+                            <p class="text-base font-black text-slate-900" x-text="selectedLine?.required_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
                         </div>
                         <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
                             <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Remaining</p>
-                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + (selectedLine?.uom || '')"></p>
+                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
                         </div>
                     </div>
 
@@ -383,22 +379,20 @@
                                     class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all font-mono placeholder:text-slate-300">
                             </div>
 
-                            <!-- Issue Quantity -->
+                            <!-- Issue Quantity — read-only, pre-filled with remaining qty -->
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">numbers</span>
                                     Issue Quantity
                                     <span class="text-slate-400 font-semibold normal-case tracking-normal ml-auto"
-                                        x-text="'max: ' + selectedLine?.remaining_qty + ' ' + (selectedLine?.uom || '')"></span>
+                                        x-text="'max: ' + selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></span>
                                 </label>
                                 <div class="relative">
                                     <input type="number"
-                                        x-model="scanForm.quantity"
-                                        step="0.001"
-                                        min="0.001"
-                                        required
-                                        class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all">
-                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom || ''"></span>
+                                        :value="scanForm.quantity"
+                                        readonly
+                                        class="w-full px-4 py-3.5 bg-slate-100 border-none rounded-2xl text-sm font-black text-slate-500 cursor-not-allowed select-none">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom_name || selectedLine?.uom || ''"></span>
                                 </div>
                             </div>
                         </div>
@@ -632,7 +626,7 @@
                 this.scanForm = {
                     bin_barcode: '',
                     material_barcode: line.material_code || line.material?.code || '',
-                    quantity: String(line.remaining_qty ?? ''),  // string so x-model stays editable
+                    quantity: parseFloat(line.remaining_qty ?? 0),
                 };
                 this.showScanModal = true;
                 this.fetchBins(line);
