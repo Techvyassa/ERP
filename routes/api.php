@@ -63,41 +63,8 @@ Route::prefix('v1')->group(function () {
         ->get('/auth/me', [App\Http\Controllers\AuthController::class, 'me']);
 
     // Debug: Check current user permissions
-    Route::middleware(['validate.jwt', 'resolve.tenant'])->get('/debug/my-permissions', function (Request $request) {
-        $userId = $request->input('auth_user_id');
-        $tenantDb = $request->input('tenant_db_name');
-
-        // Switch to tenant DB
-        config(['database.connections.tenant.database' => $tenantDb]);
-
-        $user = \App\Models\Tenant\User::with('role')->find($userId);
-        $permissions = \App\Models\Tenant\RolePermission::where('role_id', $user->role_id)->get();
-
-        // Clear cache for this user (using the new granular key format)
-        \Illuminate\Support\Facades\Cache::forget("rbac:user:{$tenantDb}:{$userId}:permissions");
-
-        return response()->json([
-            'success' => true,
-            'data' => [
-                'user_id' => $userId,
-                'user_email' => $user->email,
-                'role_id' => $user->role_id,
-                'role_name' => $user->role->role_name ?? 'N/A',
-                'role_code' => $user->role->role_code ?? 'N/A',
-                'permissions_count' => $permissions->count(),
-                'permissions' => $permissions->map(fn($p) => [
-                    'module' => $p->module_code,
-                    'view' => $p->can_view,
-                    'create' => $p->can_create,
-                    'edit' => $p->can_edit,
-                    'approve' => $p->can_approve,
-                    'delete' => $p->can_delete,
-                ]),
-                'cache_cleared' => true,
-            ],
-            'message' => 'User permissions retrieved and cache cleared',
-        ]);
-    });
+    Route::middleware(['validate.jwt', 'resolve.tenant'])
+        ->get('/debug/my-permissions', [App\Http\Controllers\DebugController::class, 'myPermissions']);
 
     // Organization registration and utilities (public)
     Route::prefix('organizations')->group(function () {
@@ -593,10 +560,34 @@ Route::prefix('v1')->group(function () {
                 Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
                 Route::get('/for-packing', [App\Http\Controllers\ProductionOrderController::class, 'forPacking']);
                 Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
-                Route::post('/{id}/start', [App\Http\Controllers\ProductionOrderController::class, 'start']);
-                Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']);
+                Route::patch('/{id}/release', [App\Http\Controllers\ProductionOrderController::class, 'release']); // DRAFT → RELEASED
+                Route::patch('/{id}/close', [App\Http\Controllers\ProductionOrderController::class, 'close']); // IN_PROGRESS → CLOSED
+                Route::patch('/{id}/confirm-receipt', [App\Http\Controllers\ProductionOrderController::class, 'confirmReceipt']); // MIR FULLY_ISSUED → CLOSED, unlocks start
                 Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
                 Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
+            });
+
+            // Batch Runs — Independent execution units per production order
+            Route::prefix('batch-runs')->group(function () {
+                Route::get('/', [App\Http\Controllers\BatchRunController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\BatchRunController::class, 'store']);
+                Route::get('/{id}', [App\Http\Controllers\BatchRunController::class, 'show']);
+                Route::patch('/{id}/start', [App\Http\Controllers\BatchRunController::class, 'start']);
+                Route::patch('/{id}/complete', [App\Http\Controllers\BatchRunController::class, 'complete']);
+                Route::get('/{id}/materials', [App\Http\Controllers\BatchRunController::class, 'materials']);
+                Route::get('/{id}/mir', [App\Http\Controllers\BatchRunController::class, 'mir']);
+            });
+
+            // Production Floor Receiving — Confirm materials at workstation
+            Route::prefix('batch-runs/{batchRunId}/receiving')->group(function () {
+                Route::get('/', [App\Http\Controllers\BatchRunReceivingController::class, 'show']);
+                Route::patch('/confirm', [App\Http\Controllers\BatchRunReceivingController::class, 'confirm']);
+            });
+
+            // Finished Goods Receipt — Record actual production output
+            Route::prefix('fg-receipts')->group(function () {
+                Route::post('/', [App\Http\Controllers\FGReceiptController::class, 'store']);
+                Route::get('/{id}', [App\Http\Controllers\FGReceiptController::class, 'show']);
             });
 
             Route::prefix('packing-orders')->group(function () {
@@ -610,127 +601,34 @@ Route::prefix('v1')->group(function () {
             });
         });
 
-        // Material Issue Request Endpoints
-        // Roles: STOREKEEPER (view/scan), STORE_MGR (approve/reject), ADMIN (all)
-        // Status Flow: PENDING → APPROVED → SCANNING → ISSUED
+        // ── MIR & MIR Lines — accessible by STORE (issue) and PRODUCTION (view) ──
+        // Using STORE permission since warehouse staff are the primary actors
         Route::middleware(['check.module.permission:STORE'])->group(function () {
+            // Material Issue Requests — viewed and approved by Store
             Route::prefix('material-issue-requests')->group(function () {
                 Route::get('/', [App\Http\Controllers\MaterialIssueRequestController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\MaterialIssueRequestController::class, 'show']);
-                Route::post('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']);
-                Route::post('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);
-                Route::post('/{id}/lines/{lineId}/scan', [App\Http\Controllers\MaterialIssueRequestController::class, 'scan']);
+                Route::get('/{id}/lines', [App\Http\Controllers\MaterialIssueRequestController::class, 'lines']);
+                Route::patch('/{id}/approve', [App\Http\Controllers\MaterialIssueRequestController::class, 'approve']); // PENDING → APPROVED
+                Route::patch('/{id}/reject', [App\Http\Controllers\MaterialIssueRequestController::class, 'reject']);   // PENDING → REJECTED
+            });
+
+            // MIR Line Items — Store approves and issues materials
+            Route::prefix('mir-lines')->group(function () {
+                Route::get('/{id}', [App\Http\Controllers\MIRLineController::class, 'show']);
+                Route::patch('/{id}/approve', [App\Http\Controllers\MIRLineController::class, 'approve']); // PENDING → APPROVED
+                Route::patch('/{id}/reject', [App\Http\Controllers\MIRLineController::class, 'reject']);   // PENDING → REJECTED
+                Route::post('/{id}/issue', [App\Http\Controllers\MIRLineController::class, 'issue']);      // Issue qty → PARTIALLY_PICKED or FULLY_PICKED
             });
         });
 
-
         // ── Lookup routes for Sales Order creation (no module-permission gate) ──
-        Route::get('/lookup/customers', function (\Illuminate\Http\Request $request) {
-            // Switch to tenant DB (normally done by CheckModulePermission, must do manually here)
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-
-            $customers = \App\Models\Tenant\Customer::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where('customer_name', 'like', '%' . $request->search . '%'))
-                ->orderBy('customer_name')
-                ->get(['id', 'customer_name', 'customer_code', 'phone', 'email'])
-                ->map(fn($c) => ['id' => 'c_' . $c->id, 'label' => $c->customer_name, 'sub' => $c->customer_code, 'source' => 'customer', 'raw_id' => $c->id]);
-
-            $users = \App\Models\Tenant\User::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(
-                    fn($q2) =>
-                    $q2->where('first_name', 'like', '%' . $request->search . '%')
-                        ->orWhere('last_name', 'like', '%' . $request->search . '%')
-                        ->orWhere('email', 'like', '%' . $request->search . '%')
-                ))
-                ->orderBy('first_name')
-                ->get(['id', 'first_name', 'last_name', 'email', 'employee_code'])
-                ->map(fn($u) => ['id' => 'u_' . $u->id, 'label' => trim($u->first_name . ' ' . $u->last_name), 'sub' => $u->email, 'source' => 'user', 'raw_id' => $u->id]);
-
-            $merged = $customers->concat($users)->sortBy('label')->values();
-            return response()->json(['success' => true, 'data' => $merged]);
-        });
-
-        Route::post('/lookup/customers', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            $validator = \Illuminate\Support\Facades\Validator::make($request->all(), [
-                'customer_name' => 'required|string|max:200',
-            ]);
-            if ($validator->fails()) {
-                return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
-            }
-            $customer = \App\Models\Tenant\Customer::create([
-                'customer_name' => $request->customer_name,
-                'customer_code' => \App\Models\Tenant\Customer::generateCode(),
-                'created_by' => $request->input('auth_user_id'),
-            ]);
-            return response()->json(['success' => true, 'data' => $customer], 201);
-        });
-
-        Route::get('/lookup/products', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            $products = \App\Models\Tenant\Product::where('is_active', true)
-                ->when($request->filled('search'), fn($q) => $q->where(
-                    fn($q2) =>
-                    $q2->where('product_name', 'like', '%' . $request->search . '%')
-                        ->orWhere('product_code', 'like', '%' . $request->search . '%')
-                ))
-                ->orderBy('product_name')
-                ->get(['id', 'product_code', 'product_name', 'pack_size', 'pack_uom_id', 'standard_cost', 'mrp']);
-            return response()->json(['success' => true, 'data' => $products]);
-        });
-
-        Route::get('/lookup/uoms', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            return response()->json(['success' => true, 'data' => \App\Models\Tenant\UOM::where('is_active', true)->orderBy('uom_name')->get(['id', 'uom_code', 'uom_name'])]);
-        });
-
-        Route::get('/lookup/stock-bins', function (\Illuminate\Http\Request $request) {
-            $tenantDb = $request->input('tenant_db_name');
-            if ($tenantDb) {
-                config(['database.connections.tenant.database' => $tenantDb]);
-                \DB::purge('tenant');
-                \DB::reconnect('tenant');
-            }
-            $productId = $request->input('product_id');
-            if (!$productId) {
-                return response()->json(['success' => false, 'message' => 'product_id required'], 422);
-            }
-            $bins = \DB::connection('tenant')
-                ->table('stock_balances as sb')
-                ->join('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
-                ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
-                ->where('sb.product_id', $productId)
-                ->where('sb.bucket', 'AVAILABLE')
-                ->whereRaw('(sb.qty_on_hand - sb.qty_reserved) > 0')
-                ->select(
-                    'bl.bin_code',
-                    'wm.warehouse_name',
-                    \DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available')
-                )
-                ->orderByDesc('qty_available')
-                ->get();
-            return response()->json(['success' => true, 'data' => $bins]);
-        });
+        Route::get('/lookup/customers', [App\Http\Controllers\LookupController::class, 'customers']);
+        Route::post('/lookup/customers', [App\Http\Controllers\LookupController::class, 'createCustomer']);
+        Route::get('/lookup/products', [App\Http\Controllers\LookupController::class, 'products']);
+        Route::get('/lookup/uoms', [App\Http\Controllers\LookupController::class, 'uoms']);
+        Route::get('/lookup/stock-bins', [App\Http\Controllers\LookupController::class, 'stockBins']);
+        Route::get('/lookup/material-bins', [App\Http\Controllers\LookupController::class, 'materialBins']);
 
         // Sales Order Endpoints (Outward Flow)
         // Status Flow: DRAFT → CONFIRMED → STOCK_CHECKED → PICKING → PACKED → DISPATCHED → DELIVERED

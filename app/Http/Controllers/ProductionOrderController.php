@@ -420,8 +420,10 @@ class ProductionOrderController extends Controller
                         'mir_status' => $order->mir?->status,
                         'mir_id' => $order->mir?->id,
                         'mir' => $order->mir ? [
-                            'id' => $order->mir->id,
-                            'status' => $order->mir->status,
+                            'id'              => $order->mir->id,
+                            'mir_no'          => $order->mir->mir_no,
+                            'status'          => $order->mir->status,
+                            'fully_issued_at' => $order->mir->fully_issued_at?->toIso8601String(),
                             'lines' => $order->mir->lines->map(fn($l) => [
                                 'material_id' => $l->material_id,
                                 'material' => $l->material ? [
@@ -817,6 +819,73 @@ class ProductionOrderController extends Controller
                     'sessions' => $sessions,
                 ],
                 'message' => 'FG confirmation sessions retrieved.',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String(),
+            ]);
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->error($requestId, 'Production order not found', 404);
+        } catch (\Exception $e) {
+            return $this->error($requestId, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * PATCH /api/v1/production-orders/{id}/confirm-receipt
+     * Production floor confirms materials received from Store.
+     * Closes the MIR and unlocks the production order to start.
+     */
+    public function confirmReceipt(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $this->switchTenantDb($request);
+
+            $order = ProductionOrder::with(['mir.lines'])->findOrFail($id);
+
+            if (!$order->mir) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No MIR found for this production order.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            if ($order->mir->status !== 'FULLY_ISSUED') {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot confirm receipt. MIR status is '{$order->mir->status}', must be FULLY_ISSUED.",
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            $notes = $request->input('receiving_notes');
+            $userId = (int) $request->input('auth_user_id', 0);
+
+            // Close the MIR — marks handover from Store to Production
+            $order->mir->update([
+                'status'    => 'CLOSED',
+                'closed_at' => now(),
+            ]);
+
+            Log::info('[ProductionOrder] Floor receipt confirmed', [
+                'order_id'  => $order->id,
+                'order_no'  => $order->order_no,
+                'mir_id'    => $order->mir->id,
+                'user_id'   => $userId,
+                'notes'     => $notes,
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'order_id'   => $order->id,
+                    'order_no'   => $order->order_no,
+                    'mir_status' => 'CLOSED',
+                    'can_start'  => true,
+                ],
+                'message' => 'Materials confirmed received. Production can now start.',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);

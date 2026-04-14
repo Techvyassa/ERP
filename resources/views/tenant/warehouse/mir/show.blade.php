@@ -16,9 +16,9 @@
                 <div class="flex items-center gap-2 mb-1">
                     <span class="text-[10px] font-black text-amber-600 bg-amber-50 px-2 py-0.5 rounded uppercase tracking-widest">Logistic Request</span>
                     <span class="text-slate-300">•</span>
-                    <span class="text-[10px] font-bold text-slate-400 font-mono" x-text="mir?.created_at_human"></span>
+                    <span class="text-[10px] font-bold text-slate-400 font-mono" x-text="mir?.created_at ? new Date(mir.created_at).toLocaleDateString('en-IN', { day:'2-digit', month:'short', year:'numeric' }) : '...'"></span>
                 </div>
-                <h2 class="text-2xl font-black text-slate-900 tracking-tight" x-text="'MIR: ' + (mir?.mir_no || '...')"></h2>
+                <h2 class="text-2xl font-black text-slate-900 tracking-tight" x-text="(mir?.mir_no || '...')"></h2>
             </div>
         </div>
         <div class="flex items-center gap-3">
@@ -31,14 +31,32 @@
                     <button @click="approveMIR()" :disabled="processing"
                         class="px-6 py-2.5 bg-slate-900 text-white font-black text-[10px] uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95 flex items-center gap-2 disabled:opacity-50">
                         <span class="material-symbols-outlined text-sm">check_circle</span>
-                        Approve For Picking
+                        Approve All & Start Picking
                     </button>
                 </div>
             </template>
             <template x-if="mir?.status === 'APPROVED'">
+                <span class="px-4 py-2 bg-blue-50 text-blue-700 ring-1 ring-blue-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-sm">thumb_up</span>
+                    Approved — Ready to Pick
+                </span>
+            </template>
+            <template x-if="mir?.status === 'PARTIALLY_ISSUED'">
+                <span class="px-4 py-2 bg-orange-50 text-orange-700 ring-1 ring-orange-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-sm">hourglass_top</span>
+                    Partially Issued
+                </span>
+            </template>
+            <template x-if="mir?.status === 'FULLY_ISSUED'">
                 <span class="px-4 py-2 bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
                     <span class="material-symbols-outlined text-sm">verified</span>
-                    Ready for fulfillment
+                    Fully Issued
+                </span>
+            </template>
+            <template x-if="mir?.status === 'CLOSED'">
+                <span class="px-4 py-2 bg-slate-100 text-slate-600 ring-1 ring-slate-200 rounded-xl text-[10px] font-black uppercase tracking-widest flex items-center gap-2 shadow-sm">
+                    <span class="material-symbols-outlined text-sm">lock</span>
+                    Closed
                 </span>
             </template>
             <template x-if="mir?.status === 'REJECTED'">
@@ -67,13 +85,12 @@
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Final Product</p>
                         <p class="text-sm font-bold text-slate-800" x-text="mir?.product_name || '—'"></p>
-                        <p class="text-[10px] font-black text-slate-400 uppercase" x-text="mir?.product_code || ''"></p>
                     </div>
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Batch Target</p>
                         <p class="text-sm font-black text-slate-900">
-                            <span x-text="mir?.target_qty || '0'"></span>
-                            <span class="text-[10px] text-slate-400 uppercase ml-1" x-text="mir?.uom"></span>
+                            <span x-text="mir?.target_qty ?? '—'"></span>
+                            <span class="text-[10px] text-slate-400 uppercase ml-1" x-text="mir?.uom_name || mir?.uom || ''"></span>
                         </p>
                     </div>
                     <div>
@@ -97,9 +114,10 @@
                 <div class="px-6 py-4 bg-slate-50/50 border-b border-gray-100 flex items-center justify-between">
                     <div class="flex items-center gap-2">
                         <span class="material-symbols-outlined text-slate-400 text-xl">inventory_2</span>
-                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Bill of Materials</h3>
+                        <h3 class="text-xs font-black text-slate-800 uppercase tracking-widest">Materials Lists</h3>
                     </div>
-                    <span class="px-2 py-1 bg-slate-200 text-slate-600 rounded text-[10px] font-black uppercase tracking-widest" x-text="mir?.lines?.length + ' Components'"></span>
+                    <span class="px-2 py-1 bg-slate-200 text-slate-600 rounded text-[10px] font-black uppercase tracking-widest"
+                        x-text="(mir?.lines?.length ?? 0) + ' Components'"></span>
                 </div>
                 <div class="overflow-x-auto">
                     <table class="w-full text-left border-collapse">
@@ -116,36 +134,70 @@
                             <template x-for="line in mir?.lines" :key="line.id">
                                 <tr class="hover:bg-slate-50/30 transition-all group">
                                     <td class="px-6 py-4 leading-none">
-                                        <div class="flex flex-col gap-1">
-                                            <span class="text-sm font-bold text-slate-800" x-text="line.material_name"></span>
-                                            <span class="text-[10px] font-black text-slate-400 uppercase tracking-tighter" x-text="line.material_code"></span>
-                                        </div>
+                                        <span class="text-sm font-bold text-slate-800" x-text="line.material_name"></span>
                                     </td>
                                     <td class="px-6 py-4 text-center leading-none">
                                         <span class="text-sm font-black text-slate-700" x-text="line.required_qty"></span>
-                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom"></span>
+                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom_name || line.uom"></span>
                                     </td>
                                     <td class="px-6 py-4 text-center leading-none">
                                         <span class="text-sm font-black text-emerald-600" x-text="line.issued_qty"></span>
-                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom"></span>
+                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom_name || line.uom"></span>
                                     </td>
                                     <td class="px-6 py-4 text-center leading-none">
                                         <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"
-                                            :class="scanStatusClass(line.scan_status)" x-text="line.scan_status"></span>
+                                            :class="lineStatusClass(line.status)" x-text="lineStatusLabel(line.status)"></span>
                                     </td>
                                     <td class="px-6 py-4 text-right leading-none">
-                                        <button x-show="mir?.status === 'APPROVED' && line.scan_status !== 'ISSUED'"
-                                            @click="openScanModal(line)"
-                                            class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95">
-                                            <span class="material-symbols-outlined text-sm">qr_code_scanner</span>
-                                            SCAN
-                                        </button>
-                                        <div x-show="line.scan_status === 'ISSUED'" class="flex flex-col items-end gap-1">
-                                            <div class="flex items-center gap-1.5">
-                                                <span class="material-symbols-outlined text-xs text-emerald-500">shelves</span>
-                                                <span class="text-[10px] text-slate-900 font-mono font-black" x-text="line.bin_barcode"></span>
+                                        <!-- APPROVED or PARTIALLY_PICKED: Issue -->
+                                        <div x-show="['APPROVED','PARTIALLY_PICKED'].includes(line.status) && ['APPROVED','PARTIALLY_ISSUED','FULLY_ISSUED'].includes(mir?.status)" x-cloak>
+                                            <button @click="openScanModal(line)"
+                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95">
+                                                <span class="material-symbols-outlined text-sm">outbox</span>
+                                                Issue
+                                            </button>
+                                        </div>
+                                        <!-- PENDING: waiting for MIR approval -->
+                                        <div x-show="line.status === 'PENDING'" x-cloak>
+                                            <span class="text-[10px] text-slate-400 font-semibold">Awaiting approval</span>
+                                        </div>
+                                        <!-- FULLY_PICKED -->
+                                        <div x-show="line.status === 'FULLY_PICKED'" x-cloak class="flex flex-col items-end gap-2">
+                                            <!-- Bin locations from transactions -->
+                                            <template x-if="line.transactions && line.transactions.length > 0">
+                                                <div class="flex flex-col items-end gap-1">
+                                                    <template x-for="txn in line.transactions" :key="txn.id">
+                                                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-100 rounded-lg">
+                                                            <span class="material-symbols-outlined text-xs text-emerald-600">shelves</span>
+                                                            <span class="text-[10px] font-black text-emerald-800 font-mono" x-text="txn.bin_code || '—'"></span>
+                                                            <span class="text-[9px] text-emerald-600 font-semibold" x-text="parseFloat(txn.issued_qty).toFixed(3)"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                            <div class="flex items-center gap-1 mt-0.5">
+                                                <span class="material-symbols-outlined text-xs text-emerald-500">check_circle</span>
+                                                <span class="text-[9px] text-slate-400 font-medium" x-text="line.last_issued_at ? new Date(line.last_issued_at).toLocaleString() : ''"></span>
                                             </div>
-                                            <span class="text-[9px] text-slate-400 font-medium" x-text="line.scanned_at"></span>
+                                        </div>
+                                        <!-- PARTIALLY_PICKED: show issued bins + Issue more button -->
+                                        <div x-show="line.status === 'PARTIALLY_PICKED'" x-cloak class="flex flex-col items-end gap-2">
+                                            <template x-if="line.transactions && line.transactions.length > 0">
+                                                <div class="flex flex-col items-end gap-1">
+                                                    <template x-for="txn in line.transactions" :key="txn.id">
+                                                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-orange-50 border border-orange-100 rounded-lg">
+                                                            <span class="material-symbols-outlined text-xs text-orange-500">shelves</span>
+                                                            <span class="text-[10px] font-black text-orange-800 font-mono" x-text="txn.bin_code || '—'"></span>
+                                                            <span class="text-[9px] text-orange-600 font-semibold" x-text="parseFloat(txn.issued_qty).toFixed(3)"></span>
+                                                        </div>
+                                                    </template>
+                                                </div>
+                                            </template>
+                                        </div>
+                                        <!-- REJECTED -->
+                                        <div x-show="line.status === 'REJECTED'" x-cloak class="flex flex-col items-end gap-1">
+                                            <span class="text-[10px] text-red-600 font-black">Rejected</span>
+                                            <span class="text-[9px] text-slate-400" x-text="line.rejected_reason || ''"></span>
                                         </div>
                                     </td>
                                 </tr>
@@ -241,49 +293,106 @@
                     <!-- Progress Info -->
                     <div class="grid grid-cols-2 gap-4">
                         <div class="bg-slate-50 rounded-2xl p-4 border border-slate-100">
-                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">To Issue</p>
-                            <p class="text-base font-black text-slate-900" x-text="selectedLine?.required_qty + ' ' + (selectedLine?.uom?.uom_name || selectedLine?.uom)"></p>
+                            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1">Required</p>
+                            <p class="text-base font-black text-slate-900" x-text="selectedLine?.required_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
                         </div>
                         <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
                             <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Remaining</p>
-                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + (selectedLine?.uom?.uom_name || selectedLine?.uom)"></p>
+                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
                         </div>
                     </div>
 
                     <form @submit.prevent="submitScan()" class="space-y-5">
                         <div class="space-y-4">
-                            <!-- Bin Barcode -->
+                            <!-- Bin Barcode with suggestions -->
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">shelves</span>
                                     Storage Bin
                                 </label>
-                                <input type="text" x-model="scanForm.bin_barcode" required autofocus
-                                    placeholder="Enter physical bin label..."
+
+                                <!-- Loading bins -->
+                                <template x-if="binsLoading">
+                                    <div class="flex items-center gap-2 py-2 text-slate-400 text-xs">
+                                        <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                        Loading available bins...
+                                    </div>
+                                </template>
+
+                                <!-- Bin suggestions (when stock found) -->
+                                <template x-if="!binsLoading && availableBins.length > 0">
+                                    <div class="mb-2 space-y-1.5">
+                                        <div class="flex items-center justify-between">
+                                            <p class="text-[10px] text-slate-400 font-semibold">All bin locations:</p>
+                                            <p class="text-[10px] text-slate-400">
+                                                Total available:
+                                                <span class="font-black text-emerald-600"
+                                                    x-text="availableBins.reduce((s,b) => s + parseFloat(b.qty_available||0), 0).toFixed(3)">
+                                                </span>
+                                            </p>
+                                        </div>
+                                        <div class="flex flex-wrap gap-2">
+                                            <template x-for="bin in availableBins" :key="bin.bin_code">
+                                                <button type="button"
+                                                    @click="parseFloat(bin.qty_available) > 0 && selectBin(bin)"
+                                                    :disabled="parseFloat(bin.qty_available) <= 0"
+                                                    :class="{
+                                                        'bg-slate-900 text-white border-slate-900': scanForm.bin_barcode === bin.bin_code,
+                                                        'bg-emerald-50 text-emerald-800 border-emerald-200 hover:bg-emerald-100': parseFloat(bin.qty_available) > 0 && scanForm.bin_barcode !== bin.bin_code,
+                                                        'bg-gray-50 text-gray-300 border-gray-100 cursor-not-allowed': parseFloat(bin.qty_available) <= 0,
+                                                    }"
+                                                    class="px-3 py-1.5 rounded-lg text-[10px] font-black border transition-all flex items-center gap-1.5">
+                                                    <span class="material-symbols-outlined text-xs">shelves</span>
+                                                    <span x-text="bin.bin_code"></span>
+                                                    <span class="font-semibold opacity-70"
+                                                        :class="parseFloat(bin.qty_available) > 0 ? 'text-emerald-600' : 'text-gray-300'"
+                                                        x-text="parseFloat(bin.qty_available) > 0 ? '(' + parseFloat(bin.qty_available).toFixed(3) + ')' : '(empty)'">
+                                                    </span>
+                                                </button>
+                                            </template>
+                                        </div>
+                                    </div>
+                                </template>
+
+                                <!-- No bins at all -->
+                                <template x-if="!binsLoading && availableBins.length === 0 && selectedLine">
+                                    <div class="mb-2 px-3 py-2 bg-amber-50 border border-amber-200 rounded-lg flex items-center gap-2">
+                                        <span class="material-symbols-outlined text-amber-500 text-sm">warning</span>
+                                        <span class="text-[10px] text-amber-700 font-bold">No stock records found for this material. Enter bin manually.</span>
+                                    </div>
+                                </template>
+
+                                <input type="text" x-model="scanForm.bin_barcode" required
+                                    placeholder="Select above or enter bin code..."
                                     class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all font-mono placeholder:text-slate-300">
                             </div>
 
-                            <!-- Material Barcode -->
+                            <!-- Material Code — auto-filled, editable -->
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">barcode_scanner</span>
                                     Material Code
+                                    <span class="text-emerald-500 font-semibold normal-case tracking-normal">(auto-filled)</span>
                                 </label>
                                 <input type="text" x-model="scanForm.material_barcode" required
-                                    placeholder="Scan material identifier..."
+                                    placeholder="Material code..."
                                     class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all font-mono placeholder:text-slate-300">
                             </div>
 
-                            <!-- Issue Quantity -->
+                            <!-- Issue Quantity — read-only, pre-filled with remaining qty -->
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">numbers</span>
                                     Issue Quantity
+                                    <span class="text-slate-400 font-semibold normal-case tracking-normal ml-auto"
+                                        x-text="'max: ' + selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></span>
                                 </label>
                                 <div class="relative">
-                                    <input type="number" x-model="scanForm.quantity" step="0.001" required
-                                        class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all">
-                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom?.uom_name || selectedLine?.uom"></span>
+                                    <input type="number"
+                                        :value="scanForm.quantity"
+                                        readonly
+                                        class="w-full px-4 py-3.5 bg-slate-100 border-none rounded-2xl text-sm font-black text-slate-500 cursor-not-allowed select-none">
+                                    <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom_name || selectedLine?.uom || ''"></span>
                                 </div>
                             </div>
                         </div>
@@ -376,6 +485,8 @@
             showScanModal: false,
             showRejectModal: false,
             selectedLine: null,
+            availableBins: [],
+            binsLoading: false,
             scanForm: {
                 bin_barcode: '',
                 material_barcode: '',
@@ -392,12 +503,20 @@
                 this.loading = true;
                 try {
                     const apiUrl = `${window.location.origin}/api/v1/material-issue-requests/${mirId}`;
-                    const res = await fetch(apiUrl, {
-                        headers: headers()
-                    });
+                    const res = await fetch(apiUrl, { headers: headers() });
                     const data = await res.json();
                     if (data.success) {
-                        this.mir = data.data.mir;
+                        // API returns data.data as the MIR object directly (not data.data.mir)
+                        const raw = data.data;
+                        // Flatten nested material fields for template access
+                        raw.lines = (raw.lines || []).map(line => ({
+                            ...line,
+                            material_name: line.material?.name,
+                            material_code: line.material?.code,
+                            material_id: line.material_id || line.material?.id,
+                            transactions: line.transactions || [],
+                        }));
+                        this.mir = raw;
                     } else {
                         window.dispatchEvent(new CustomEvent('notify', {
                             detail: {
@@ -420,8 +539,8 @@
                 window.dispatchEvent(new CustomEvent('open-confirm', {
                     detail: {
                         title: 'Approve MIR',
-                        message: 'Confirm approval for this MIR? This allows the operator to start issuing materials.',
-                        confirmText: 'Approve',
+                        message: 'Approve this MIR? All materials will be marked as approved and the store can start issuing.',
+                        confirmText: 'Approve All',
                         confirmColor: 'blue',
                         onConfirm: () => this.executeApproval()
                     }
@@ -433,7 +552,7 @@
                 try {
                     const apiUrl = `${window.location.origin}/api/v1/material-issue-requests/${mirId}/approve`;
                     const res = await fetch(apiUrl, {
-                        method: 'POST',
+                        method: 'PATCH',
                         headers: headers()
                     });
                     const data = await res.json();
@@ -470,11 +589,9 @@
                 try {
                     const apiUrl = `${window.location.origin}/api/v1/material-issue-requests/${mirId}/reject`;
                     const res = await fetch(apiUrl, {
-                        method: 'POST',
+                        method: 'PATCH',
                         headers: headers(),
-                        body: JSON.stringify({
-                            reason: this.rejectionReason
-                        })
+                        body: JSON.stringify({ rejection_reason: this.rejectionReason })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -503,29 +620,73 @@
 
             openScanModal(line) {
                 this.selectedLine = line;
+                this.availableBins = [];   // reset bins before fetching
+                this.binsLoading = false;
+                this.scanError = '';
                 this.scanForm = {
                     bin_barcode: '',
-                    material_barcode: '',
-                    quantity: line.remaining_qty
+                    material_barcode: line.material_code || line.material?.code || '',
+                    quantity: parseFloat(line.remaining_qty ?? 0),
                 };
-                this.scanError = '';
                 this.showScanModal = true;
-                // Auto-focus bin barcode input
-                setTimeout(() => {
-                    const el = document.querySelector('input[placeholder*="Scan or enter bin"]');
-                    if (el) el.focus();
-                }, 100);
+                this.fetchBins(line);
+            },
+
+            async fetchBins(line) {
+                // Resolve material_id from either the flattened field or nested object
+                const materialId = line.material_id || line.material?.id;
+                if (!materialId) return;
+                this.binsLoading = true;
+                try {
+                    const res = await fetch(
+                        `${window.location.origin}/api/v1/lookup/material-bins?material_id=${materialId}`,
+                        { headers: headers() }
+                    );
+                    const data = await res.json();
+                    // Show ALL bins (including zero-stock), sorted by available qty desc
+                    this.availableBins = data.success ? (data.data || []) : [];
+                    // Auto-select first bin that has available stock
+                    const firstAvailable = this.availableBins.find(b => parseFloat(b.qty_available) > 0);
+                    if (firstAvailable && !this.scanForm.bin_barcode) {
+                        this.selectBin(firstAvailable);
+                    }
+                } catch (e) {
+                    console.error('fetchBins error', e);
+                    this.availableBins = [];
+                } finally {
+                    this.binsLoading = false;
+                }
+            },
+
+            selectBin(bin) {
+                this.scanForm.bin_barcode = bin.bin_code;
             },
 
             async submitScan() {
                 this.processing = true;
                 this.scanError = '';
+                const qty = parseFloat(this.scanForm.quantity);
+                const remaining = parseFloat(this.selectedLine?.remaining_qty ?? 0);
+                if (!qty || qty <= 0) {
+                    this.scanError = 'Issue quantity must be greater than 0.';
+                    this.processing = false;
+                    return;
+                }
+                if (qty > remaining + 0.001) {
+                    this.scanError = `Cannot issue ${qty}. Remaining is ${remaining}.`;
+                    this.processing = false;
+                    return;
+                }
                 try {
-                    const apiUrl = `${window.location.origin}/api/v1/material-issue-requests/${mirId}/lines/${this.selectedLine.id}/scan`;
+                    // Use the new MIR line issue endpoint
+                    const apiUrl = `${window.location.origin}/api/v1/mir-lines/${this.selectedLine.id}/issue`;
                     const res = await fetch(apiUrl, {
                         method: 'POST',
                         headers: headers(),
-                        body: JSON.stringify(this.scanForm)
+                        body: JSON.stringify({
+                            issued_qty: parseFloat(this.scanForm.quantity),
+                            notes: [this.scanForm.bin_barcode, this.scanForm.material_barcode].filter(Boolean).join(' | ')
+                        })
                     });
                     const data = await res.json();
                     if (data.success) {
@@ -533,33 +694,44 @@
                         await this.loadMIR();
                         window.dispatchEvent(new CustomEvent('notify', {
                             detail: {
-                                message: data.data.all_issued ? 'All materials issued successfully!' : 'Material issued successfully.',
+                                message: data.data?.line?.status === 'FULLY_PICKED'
+                                    ? 'Material fully issued!'
+                                    : 'Partial issue recorded.',
                                 type: 'success'
                             }
                         }));
                     } else {
-                        this.scanError = data.message || 'Scan validation failed';
+                        this.scanError = data.message || 'Issue failed. Please try again.';
                     }
                 } catch (e) {
                     this.scanError = 'A connection error occurred. Please try again.';
-                    console.error('Error scanning:', e);
+                    console.error('Error issuing material:', e);
                 } finally {
                     this.processing = false;
                 }
             },
 
-            scanStatusClass(status) {
+            lineStatusLabel(status) {
+                const map = {
+                    'PENDING': 'Pending',
+                    'APPROVED': 'Approved',
+                    'PARTIALLY_PICKED': 'Partial',
+                    'FULLY_PICKED': 'Issued',
+                    'REJECTED': 'Rejected',
+                };
+                return map[status] || status || '—';
+            },
+
+            lineStatusClass(status) {
                 switch (status) {
-                    case 'PENDING':
-                        return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
-                    case 'PARTIAL':
-                        return 'bg-orange-50 text-orange-700 ring-1 ring-orange-100';
-                    case 'ISSUED':
-                        return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
-                    default:
-                        return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
+                    case 'PENDING':          return 'bg-amber-50 text-amber-700 ring-1 ring-amber-100';
+                    case 'APPROVED':         return 'bg-blue-50 text-blue-700 ring-1 ring-blue-100';
+                    case 'PARTIALLY_PICKED': return 'bg-orange-50 text-orange-700 ring-1 ring-orange-100';
+                    case 'FULLY_PICKED':     return 'bg-emerald-50 text-emerald-700 ring-1 ring-emerald-100';
+                    case 'REJECTED':         return 'bg-red-50 text-red-700 ring-1 ring-red-100';
+                    default:                 return 'bg-slate-50 text-slate-700 ring-1 ring-slate-100';
                 }
-            }
+            },
         }
     }
 </script>
