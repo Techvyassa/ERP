@@ -268,7 +268,12 @@
                                         </select>
                                     </td>
                                     <td class="px-4 py-2">
-                                        <input type="number" x-model="item.scrap_percent" min="0" max="100" step="0.01" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <div class="relative">
+                                            <input type="number" x-model="item.scrap_percent" min="0" max="100" step="0.1"
+                                                placeholder="0"
+                                                class="w-full px-2 py-1 pr-6 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-2 bg-gray-50">
                                         <input type="text" :value="calculateEffectiveQty(item)" readonly class="w-full px-2 py-1 border rounded bg-gray-100 text-gray-600 cursor-not-allowed font-medium">

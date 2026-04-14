@@ -405,7 +405,7 @@
                                                 <td class="px-4 py-2 text-right text-gray-500 text-xs" x-text="parseFloat(line.qty_required).toFixed(4)"></td>
                                                 <td class="px-4 py-2 text-right text-xs"
                                                     :class="parseFloat(line.scrap_percent) > 0 ? 'text-amber-600 font-semibold' : 'text-gray-400'"
-                                                    x-text="parseFloat(line.scrap_percent).toFixed(1) + '%'"></td>
+                                                    x-text="parseFloat(line.scrap_percent) > 0 ? parseFloat(line.scrap_percent).toFixed(2) + '%' : '—'"></td>
                                                 <td class="px-4 py-2 text-right font-bold text-orange-600" x-text="line.required_qty"></td>
                                                 <td class="px-4 py-2 text-gray-500" x-text="line.uom?.uom_name || line.uom || ''"></td>
                                             </tr>
