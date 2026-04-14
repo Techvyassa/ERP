@@ -11,10 +11,14 @@ class QCParameterController extends Controller
 {
     public function index(Request $request): JsonResponse
     {
-        $query = QCParameter::with(['material', 'testType']);
+        $query = QCParameter::with(['material', 'product', 'testType']);
 
         if ($request->filled('material_id')) {
             $query->where('material_id', $request->integer('material_id'));
+        }
+
+        if ($request->filled('product_id')) {
+            $query->where('product_id', $request->integer('product_id'));
         }
 
         if ($request->filled('test_type_id')) {
@@ -35,7 +39,6 @@ class QCParameterController extends Controller
         }
 
         $parameters = $query
-            ->orderBy('material_id')
             ->orderBy('display_order')
             ->orderBy('parameter_code')
             ->get();

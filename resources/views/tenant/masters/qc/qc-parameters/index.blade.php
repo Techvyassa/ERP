@@ -230,14 +230,44 @@
                                 <i class="fas fa-plus mr-1"></i>Add new material
                             </a>
                         </div>
-                        <select x-model="form.material_id" required
-                                class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
-                            <option value="">Select material</option>
-                            <template x-for="material in materials" :key="material.id">
-                                <option :value="material.id" x-text="`${material.material_code} - ${material.material_name}`"></option>
-                            </template>
-                        </select>
-                        <p class="mt-1 text-xs text-gray-500">Missing material? Add it in the material master, then come back here.</p>
+
+                        <!-- Source type toggle -->
+                        <div class="flex gap-2 mb-2">
+                            <button type="button" @click="form.source_type = 'material'; form.product_id = ''"
+                                :class="form.source_type !== 'product' ? 'bg-sky-600 text-white' : 'bg-gray-100 text-gray-600'"
+                                class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all">
+                                Raw Material (Inbound QC)
+                            </button>
+                            <button type="button" @click="form.source_type = 'product'; form.material_id = ''"
+                                :class="form.source_type === 'product' ? 'bg-orange-500 text-white' : 'bg-gray-100 text-gray-600'"
+                                class="flex-1 py-1.5 rounded-lg text-xs font-bold transition-all">
+                                Finished Product (FG QC)
+                            </button>
+                        </div>
+
+                        <!-- Material dropdown -->
+                        <div x-show="form.source_type !== 'product'">
+                            <select x-model="form.material_id" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-sky-500 focus:border-transparent">
+                                <option value="">Select material</option>
+                                <template x-for="material in materials" :key="material.id">
+                                    <option :value="material.id" x-text="`${material.material_code} - ${material.material_name}`"></option>
+                                </template>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">Missing material? Add it in the material master, then come back here.</p>
+                        </div>
+
+                        <!-- Product dropdown -->
+                        <div x-show="form.source_type === 'product'">
+                            <select x-model="form.product_id" required
+                                    class="w-full px-4 py-3 border border-gray-300 rounded-xl focus:ring-2 focus:ring-orange-400 focus:border-transparent">
+                                <option value="">Select product</option>
+                                <template x-for="product in products" :key="product.id">
+                                    <option :value="product.id" x-text="`${product.product_code} - ${product.product_name}`"></option>
+                                </template>
+                            </select>
+                            <p class="mt-1 text-xs text-gray-500">These parameters will be used for Finished Goods QC inspections.</p>
+                        </div>
                     </div>
 
                     <div>
@@ -390,6 +420,7 @@ function qcParameterData() {
     return {
         items: [],
         materials: [],
+        products: [],
         testTypes: [],
         loading: false,
         saving: false,
@@ -422,6 +453,7 @@ function qcParameterData() {
             this.resetForm();
             await Promise.all([
                 this.loadMaterials(),
+                this.loadProducts(),
                 this.loadTestTypes()
             ]);
             await this.loadParameters();
@@ -429,7 +461,9 @@ function qcParameterData() {
 
         resetForm() {
             this.form = {
+                source_type: 'material',
                 material_id: '',
+                product_id: '',
                 test_type_id: '',
                 parameter_code: '',
                 parameter_name: '',
@@ -461,6 +495,14 @@ function qcParameterData() {
             const data = await response.json();
             if (data.success) {
                 this.materials = data.data || [];
+            }
+        },
+
+        async loadProducts() {
+            const response = await fetch('/api/v1/products?is_active=1&per_page=500', { headers: headers() });
+            const data = await response.json();
+            if (data.success) {
+                this.products = data.data?.products || data.data || [];
             }
         },
 
