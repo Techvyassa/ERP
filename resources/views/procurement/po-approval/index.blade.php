@@ -508,11 +508,11 @@ function poApprovalData() {
         },
 
         getToken() {
-            return localStorage.getItem('auth_token');
+            return localStorage.getItem('access_token');
         },
 
         setToken(token) {
-            localStorage.setItem('auth_token', token);
+            localStorage.setItem('access_token', token);
         },
 
         async tryRefresh() {

@@ -13,6 +13,7 @@ class VendorQuotation extends Model
     protected $fillable = [
         'pr_number',
         'vendor_id',
+        'item_code',
         'item_name',
         'quantity',
         'unit_price',

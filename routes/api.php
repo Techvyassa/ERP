@@ -308,9 +308,12 @@ Route::prefix('v1')->group(function () {
                 Route::get('/vendors', [App\Http\Controllers\QuotationComparisonController::class, 'getVendors']);
                 Route::get('/selected-prs', [App\Http\Controllers\QuotationComparisonController::class, 'getSelectedPRs']);
                 Route::get('/pr-quotation/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'getPRQuotation']);
+                Route::get('/item-selections/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'getItemSelections']);
                 Route::get('/{prNumber}', [App\Http\Controllers\QuotationComparisonController::class, 'show']);
                 Route::post('/upload', [App\Http\Controllers\QuotationComparisonController::class, 'upload']);
                 Route::post('/select', [App\Http\Controllers\QuotationComparisonController::class, 'selectQuotation']);
+                Route::post('/select-items', [App\Http\Controllers\QuotationComparisonController::class, 'selectItemVendors']);
+                Route::post('/create-pos', [App\Http\Controllers\QuotationComparisonController::class, 'createPOsFromSelections']);
             });
         });
 
@@ -651,6 +654,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
                 Route::patch('/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
                 Route::post('/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/{id}/mark-packed', [App\Http\Controllers\SalesOrderController::class, 'markPacked']);
                 Route::patch('/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
             });
         });
@@ -666,6 +670,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/orders/{id}/check-stock', [App\Http\Controllers\SalesOrderController::class, 'checkStock']);
                 Route::patch('/orders/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
                 Route::post('/orders/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
+                Route::patch('/orders/{id}/mark-packed', [App\Http\Controllers\SalesOrderController::class, 'markPacked']);
                 Route::patch('/orders/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
             });
         });

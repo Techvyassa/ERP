@@ -374,15 +374,38 @@
                 </div>
                 
                 <!-- Vendor Selection -->
-                <div>
+                <div x-data="{ vendorDropdownOpen: false }" @click.outside="vendorDropdownOpen = false">
                     <label class="block text-sm font-semibold text-gray-700 mb-2">Select Vendor(s) <span class="text-red-500">*</span></label>
-                    <select x-model="selectedVendors" multiple size="5" required
-                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400">
-                        <template x-for="vendor in vendors" :key="vendor.id">
-                            <option :value="vendor.id" x-text="vendor.vendor_name + ' (' + (vendor.email || 'No email') + ')'"></option>
+                    <!-- Trigger -->
+                    <button type="button" @click="vendorDropdownOpen = !vendorDropdownOpen"
+                            class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm text-left flex items-center justify-between focus:outline-none focus:ring-2 focus:ring-indigo-100 focus:border-indigo-400 bg-white"
+                            :class="selectedVendors.length === 0 ? 'text-gray-400' : 'text-gray-800'">
+                        <span x-text="selectedVendors.length === 0 ? 'Choose vendors...' : selectedVendors.length + ' vendor(s) selected'"></span>
+                        <span class="material-symbols-outlined text-base text-gray-400 transition-transform" :class="vendorDropdownOpen ? 'rotate-180' : ''">expand_more</span>
+                    </button>
+                    <!-- Selected chips -->
+                    <div x-show="selectedVendors.length > 0" class="flex flex-wrap gap-1.5 mt-2">
+                        <template x-for="vid in selectedVendors" :key="vid">
+                            <span class="inline-flex items-center gap-1 px-2 py-0.5 bg-indigo-100 text-indigo-700 rounded-full text-xs font-medium">
+                                <span x-text="vendors.find(v => v.id == vid)?.vendor_name || vid"></span>
+                                <button type="button" @click="selectedVendors = selectedVendors.filter(id => id != vid)" class="hover:text-indigo-900 leading-none">&times;</button>
+                            </span>
                         </template>
-                    </select>
-                    <p class="text-xs text-gray-500 mt-1">Hold Ctrl/Cmd to select multiple vendors</p>
+                    </div>
+                    <!-- Dropdown list -->
+                    <div x-show="vendorDropdownOpen" x-cloak
+                         class="mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-10 max-h-48 overflow-y-auto">
+                        <template x-for="vendor in vendors" :key="vendor.id">
+                            <label class="flex items-center gap-2.5 px-3 py-2 hover:bg-gray-50 cursor-pointer text-sm">
+                                <input type="checkbox" :value="vendor.id" x-model="selectedVendors"
+                                       class="rounded border-gray-300 text-indigo-600 focus:ring-indigo-500">
+                                <span class="flex-1 min-w-0">
+                                    <span class="block font-medium text-gray-800 truncate" x-text="vendor.vendor_name"></span>
+                                    <span class="block text-xs text-gray-400 truncate" x-text="vendor.email || 'No email'"></span>
+                                </span>
+                            </label>
+                        </template>
+                    </div>
                 </div>
                 
                 <!-- Email Message -->

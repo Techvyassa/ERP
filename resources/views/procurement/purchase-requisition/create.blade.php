@@ -278,6 +278,16 @@
                     </template>
                 </div>
 
+                <!-- Add Item (bottom) -->
+                <template x-if="form.line_items.length > 0">
+                    <div class="mt-3 flex justify-center">
+                        <button type="button" @click="addLineItem()"
+                            class="px-4 py-2 border border-dashed border-primary text-primary rounded-lg hover:bg-primary/5 transition-colors flex items-center gap-2 text-sm">
+                            <span class="material-symbols-outlined text-sm">add</span>Add Item
+                        </button>
+                    </div>
+                </template>
+
                 <!-- Grand Total -->
                 <div x-show="form.line_items.length > 0" class="mt-6 pt-4 border-t flex justify-end">
                     <div class="bg-primary/5 border border-primary/20 rounded-xl px-6 py-4 text-right">

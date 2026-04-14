@@ -15,7 +15,7 @@ class MaterialController extends Controller
         $requestId = Str::uuid()->toString();
 
         try {
-            $query = Material::with(['uom', 'purchaseUom', 'hsnCode', 'defaultWarehouse']);
+            $query = Material::with(['uom', 'purchaseUom', 'hsnCode.defaultGst', 'defaultWarehouse']);
 
             if ($request->has('is_active')) {
                 $query->where('is_active', filter_var($request->input('is_active'), FILTER_VALIDATE_BOOLEAN));

@@ -85,51 +85,67 @@ class PurchaseOrderController extends Controller
         try {
             DB::connection('tenant')->beginTransaction();
 
-            // 1. Create Header
-            $poNumber = PurchaseOrder::generatePoNumber();
-            
-            $purchaseOrder = new PurchaseOrder([
-                'po_number' => $poNumber,
-                'vendor_id' => $request->input('vendor_id'),
-                'currency_id' => $request->input('currency_id'),
-                'billing_address' => $request->input('billing_address'),
-                'ship_to_address' => $request->input('ship_to_address'),
-                'payment_terms' => $request->input('payment_terms', 'NET30'),
-                'credit_days' => $request->input('credit_days', 30),
-                'delivery_terms' => $request->input('delivery_terms'),
-                'po_date' => $request->input('po_date'),
-                'expected_delivery' => $request->input('expected_delivery'),
-                'valid_until' => $request->input('valid_until'),
+            $prNumber  = $request->input('pr_number') ?: null;
+            $vendorId  = $request->input('vendor_id');
+
+            // --- Upsert logic ---
+            // If a DRAFT PO already exists for this pr_number + vendor, update it instead of creating a new one
+            $purchaseOrder = null;
+            if ($prNumber) {
+                $purchaseOrder = PurchaseOrder::where('pr_number', $prNumber)
+                    ->where('vendor_id', $vendorId)
+                    ->where('status', 'DRAFT')
+                    ->first();
+            }
+
+            $headerData = [
+                'vendor_id'        => $vendorId,
+                'pr_number'        => $prNumber,
+                'currency_id'      => $request->input('currency_id'),
+                'billing_address'  => $request->input('billing_address'),
+                'ship_to_address'  => $request->input('ship_to_address'),
+                'payment_terms'    => $request->input('payment_terms', 'NET30'),
+                'credit_days'      => $request->input('credit_days', 30),
+                'delivery_terms'   => $request->input('delivery_terms'),
+                'po_date'          => $request->input('po_date'),
+                'expected_delivery'=> $request->input('expected_delivery'),
+                'valid_until'      => $request->input('valid_until'),
                 'terms_conditions' => $request->input('terms_conditions'),
-                'remarks' => $request->input('remarks'),
-                'status' => 'DRAFT',
-                'created_by' => $authUserId,
-                
-                // These will be calculated
-                'discount_amount' => $request->input('discount_amount', 0),
-                'freight_charges' => $request->input('freight_charges', 0),
-                'subtotal' => 0,
-                'tax_amount' => 0,
-                'grand_total' => 0,
-            ]);
-            
+                'remarks'          => $request->input('remarks'),
+                'status'           => 'PENDING_APPROVAL',
+                'discount_amount'  => $request->input('discount_amount', 0),
+                'freight_charges'  => $request->input('freight_charges', 0),
+                'subtotal'         => 0,
+                'tax_amount'       => 0,
+                'grand_total'      => 0,
+            ];
+
+            if ($purchaseOrder) {
+                // Update existing DRAFT PO
+                $purchaseOrder->fill($headerData);
+                // Delete old line items to replace with fresh ones
+                $purchaseOrder->lineItems()->delete();
+            } else {
+                // Create new PO
+                $headerData['po_number']   = PurchaseOrder::generatePoNumber();
+                $headerData['created_by']  = $authUserId;
+                $purchaseOrder = new PurchaseOrder($headerData);
+            }
+
             $purchaseOrder->save();
 
-            // 2. Process Line Items
-            $lineItems = $request->input('line_items');
-            $lineNumber = 1;
+            // Process Line Items
+            $lineItems      = $request->input('line_items');
+            $lineNumber     = 1;
             $headerSubtotal = 0;
             $headerTaxAmount = 0;
 
             foreach ($lineItems as $item) {
-                $orderedQty = (float) $item['ordered_qty'];
-                $unitPrice = (float) $item['unit_price'];
+                $orderedQty  = (float) $item['ordered_qty'];
+                $unitPrice   = (float) $item['unit_price'];
                 $discountPct = (float) ($item['discount_pct'] ?? 0);
-                
-                // Calculate line total: (qty * price) * (1 - discount%)
-                $lineTotal = ($orderedQty * $unitPrice) * (1 - ($discountPct / 100));
-                
-                // Calculate tax
+                $lineTotal   = ($orderedQty * $unitPrice) * (1 - ($discountPct / 100));
+
                 $taxAmount = 0;
                 if (!empty($item['gst_tax_id'])) {
                     $tax = GSTTax::find($item['gst_tax_id']);
@@ -139,37 +155,36 @@ class PurchaseOrderController extends Controller
                 }
 
                 PoLineItem::create([
-                    'po_id' => $purchaseOrder->id,
-                    'line_number' => $lineNumber++,
-                    'material_id' => $item['material_id'],
-                    'material_description' => $item['material_description'] ?? null,
-                    'ordered_qty' => $orderedQty,
-                    'uom_id' => $item['uom_id'],
-                    'unit_price' => $unitPrice,
-                    'discount_pct' => $discountPct,
-                    'line_total' => $lineTotal,
-                    'gst_tax_id' => $item['gst_tax_id'] ?? null,
-                    'tax_amount' => $taxAmount,
-                    'scheduled_delivery' => $item['scheduled_delivery'] ?? null,
+                    'po_id'                    => $purchaseOrder->id,
+                    'line_number'              => $lineNumber++,
+                    'material_id'              => $item['material_id'],
+                    'material_description'     => $item['material_description'] ?? null,
+                    'ordered_qty'              => $orderedQty,
+                    'uom_id'                   => $item['uom_id'],
+                    'unit_price'               => $unitPrice,
+                    'discount_pct'             => $discountPct,
+                    'line_total'               => $lineTotal,
+                    'gst_tax_id'               => $item['gst_tax_id'] ?? null,
+                    'tax_amount'               => $taxAmount,
+                    'scheduled_delivery'       => $item['scheduled_delivery'] ?? null,
                     'under_delivery_tolerance' => $item['under_delivery_tolerance'] ?? 3.00,
-                    'over_delivery_tolerance' => $item['over_delivery_tolerance'] ?? 5.00,
-                    'receipt_status' => 'OPEN',
-                    'received_qty' => 0
+                    'over_delivery_tolerance'  => $item['over_delivery_tolerance'] ?? 5.00,
+                    'receipt_status'           => 'OPEN',
+                    'received_qty'             => 0,
                 ]);
 
-                $headerSubtotal += $lineTotal;
+                $headerSubtotal  += $lineTotal;
                 $headerTaxAmount += $taxAmount;
             }
 
-            // 3. Update Header Totals
-            $headerDiscount = (float) $purchaseOrder->discount_amount;
-            $freightCharges = (float) $purchaseOrder->freight_charges;
-            
-            $purchaseOrder->subtotal = $headerSubtotal;
+            // Update Header Totals
+            $purchaseOrder->subtotal   = $headerSubtotal;
             $purchaseOrder->tax_amount = $headerTaxAmount;
-            // Grand Total = Subtotal - Header Discount + Tax + Freight
-            $purchaseOrder->grand_total = $headerSubtotal - $headerDiscount + $headerTaxAmount + $freightCharges;
-            
+            $purchaseOrder->grand_total = $headerSubtotal
+                - (float) $purchaseOrder->discount_amount
+                + $headerTaxAmount
+                + (float) $purchaseOrder->freight_charges;
+
             $purchaseOrder->save();
 
             DB::connection('tenant')->commit();
@@ -178,26 +193,21 @@ class PurchaseOrderController extends Controller
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'purchase_order' => $purchaseOrder
-                ],
-                'message' => 'Purchase order created successfully',
+                'data'    => ['purchase_order' => $purchaseOrder],
+                'message' => 'Purchase order saved and submitted for approval',
                 'request_id' => $requestId,
-                'timestamp' => now()->toIso8601String()
+                'timestamp'  => now()->toIso8601String(),
             ], 201);
 
         } catch (\Exception $e) {
             DB::connection('tenant')->rollBack();
-            
+
             return response()->json([
                 'success' => false,
-                'error' => [
-                    'code' => 'PO_CREATION_FAILED',
-                    'details' => []
-                ],
-                'message' => 'Failed to create purchase order: ' . $e->getMessage(),
+                'error'   => ['code' => 'PO_CREATION_FAILED', 'details' => []],
+                'message' => 'Failed to save purchase order: ' . $e->getMessage(),
                 'request_id' => $requestId,
-                'timestamp' => now()->toIso8601String()
+                'timestamp'  => now()->toIso8601String(),
             ], 500);
         }
     }
@@ -276,7 +286,7 @@ class PurchaseOrderController extends Controller
             // 1. Update Header fields
             $fillableFields = [
                 'vendor_id', 'currency_id', 'billing_address', 'ship_to_address',
-                'payment_terms', 'credit_days', 'delivery_terms', 'po_date',
+                'payment_terms', 'delivery_terms', 'po_date',
                 'expected_delivery', 'valid_until', 'terms_conditions', 'remarks'
             ];
 
@@ -284,6 +294,11 @@ class PurchaseOrderController extends Controller
                 if ($request->has($field)) {
                     $purchaseOrder->$field = $request->input($field);
                 }
+            }
+
+            // credit_days: default to 0 if null/missing to satisfy NOT NULL constraint
+            if ($request->has('credit_days')) {
+                $purchaseOrder->credit_days = $request->input('credit_days') ?? 0;
             }
 
             if ($request->has('discount_amount')) {

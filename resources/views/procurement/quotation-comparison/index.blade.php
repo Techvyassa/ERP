@@ -78,6 +78,16 @@
                                             Selected
                                         </span>
                                         <p class="text-xs text-gray-600">Vendor: <span class="font-semibold" x-text="item.selected_vendor"></span></p>
+                                        <template x-if="item.po_numbers && item.po_numbers.length > 0">
+                                            <div class="flex flex-wrap gap-1 mt-1">
+                                                <template x-for="po in item.po_numbers" :key="po">
+                                                    <span class="px-2 py-0.5 bg-blue-100 text-blue-700 rounded text-xs font-medium flex items-center gap-1">
+                                                        <span class="material-symbols-outlined text-xs">receipt</span>
+                                                        <span x-text="po"></span>
+                                                    </span>
+                                                </template>
+                                            </div>
+                                        </template>
                                     </div>
                                 </template>
                                 <template x-if="!item.is_selected">
@@ -132,8 +142,26 @@
                         <select x-model="uploadForm.vendor_id" required 
                                 class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
                             <option value="">Select Vendor</option>
-                            <template x-for="vendor in vendors" :key="vendor.id">
-                                <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                            <!-- Already quoted vendors shown first -->
+                            <template x-if="quotedVendorIds.length > 0">
+                                <optgroup label="── Already Quoted ──">
+                                    <template x-for="vendor in vendors.filter(v => quotedVendorIds.includes(v.id))" :key="'q-' + vendor.id">
+                                        <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                                    </template>
+                                </optgroup>
+                            </template>
+                            <template x-if="quotedVendorIds.length > 0">
+                                <optgroup label="── Other Vendors ──">
+                                    <template x-for="vendor in vendors.filter(v => !quotedVendorIds.includes(v.id))" :key="'o-' + vendor.id">
+                                        <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                                    </template>
+                                </optgroup>
+                            </template>
+                            <!-- No PR selected yet — show flat list -->
+                            <template x-if="quotedVendorIds.length === 0">
+                                <template x-for="vendor in vendors" :key="vendor.id">
+                                    <option :value="vendor.id" x-text="vendor.vendor_code + ' - ' + vendor.vendor_name"></option>
+                                </template>
                             </template>
                         </select>
                     </div>
@@ -165,31 +193,24 @@
                     </div>
                     <input type="file" @change="uploadForm.csv_file = $event.target.files[0]" accept=".csv" 
                            class="w-full px-4 py-2 border border-gray-200 rounded-lg">
-                    <p class="text-xs text-gray-500 mt-1">Format: item_name, quantity, unit_price, delivery_date, remarks</p>
+                    <p class="text-xs text-gray-500 mt-1">Format: item_code, item_name, quantity, unit_price, delivery_date, remarks</p>
                 </div>
 
                 <!-- Manual Form -->
                 <div x-show="uploadForm.upload_type === 'form'">
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="block text-sm font-semibold text-gray-700">Line Items *</label>
-                        <div class="flex items-center gap-2">
-                            <span x-show="loadingPRItems" class="text-xs text-gray-400 flex items-center gap-1">
-                                <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
-                                Loading items...
-                            </span>
-                            <button type="button" @click="addQuotationItem()" 
-                                    x-show="!uploadForm.pr_number"
-                                    class="px-3 py-1 bg-gray-100 text-gray-700 rounded text-xs hover:bg-gray-200">
-                                Add Item
-                            </button>
-                        </div>
+                    <div class="flex items-center justify-end mb-2">
+                        <span x-show="loadingPRItems" class="text-xs text-gray-400 flex items-center gap-1">
+                            <span class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                            Loading items...
+                        </span>
                     </div>
                     <div x-show="uploadForm.quotations.length > 0" class="grid grid-cols-12 gap-2 px-3 mb-1">
-                        <span class="col-span-3 text-xs font-semibold text-gray-500 uppercase">Item Name</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Item Code</span>
+                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Item Name</span>
                         <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Qty</span>
                         <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Unit Price</span>
                         <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Delivery Date</span>
-                        <span class="col-span-2 text-xs font-semibold text-gray-500 uppercase">Remarks</span>
+                        <span class="col-span-1 text-xs font-semibold text-gray-500 uppercase">Remarks</span>
                         <span class="col-span-1"></span>
                     </div>
                     <div class="space-y-3 max-h-60 overflow-y-auto">
@@ -201,13 +222,10 @@
                         </template>
                         <template x-for="(item, index) in uploadForm.quotations" :key="index">
                             <div class="grid grid-cols-12 gap-2 items-start p-3 bg-gray-50 rounded-lg">
-                                <select x-model="item.item_name" required 
-                                        class="col-span-3 px-2 py-1 border border-gray-200 rounded text-sm">
-                                    <option value="">Select Material</option>
-                                    <template x-for="material in materials" :key="material.id">
-                                        <option :value="material.material_name" x-text="material.material_code + ' - ' + material.material_name"></option>
-                                    </template>
-                                </select>
+                                <input type="text" x-model="item.item_code" placeholder="Item code" readonly
+                                       class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm bg-gray-100">
+                                <input type="text" x-model="item.item_name" placeholder="Item name" required
+                                       class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.quantity" placeholder="Qty" required min="0.001" step="0.001" 
                                        class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="number" x-model="item.unit_price" placeholder="Price" required min="0" step="0.01" 
@@ -215,13 +233,24 @@
                                 <input type="date" x-model="item.delivery_date" 
                                        class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <input type="text" x-model="item.remarks" placeholder="Remarks" 
-                                       class="col-span-2 px-2 py-1 border border-gray-200 rounded text-sm">
+                                       class="col-span-1 px-2 py-1 border border-gray-200 rounded text-sm">
                                 <button type="button" @click="uploadForm.quotations.splice(index, 1)" 
                                         class="col-span-1 text-red-600 hover:text-red-800">
                                     <span class="material-symbols-outlined text-base">delete</span>
                                 </button>
                             </div>
                         </template>
+                    </div>
+                </div>
+
+                <!-- Important Note -->
+                <div class="bg-amber-50 border border-amber-200 rounded-lg p-4">
+                    <div class="flex items-start gap-3">
+                        <span class="material-symbols-outlined text-amber-600 text-xl">info</span>
+                        <div>
+                            <p class="text-sm font-semibold text-amber-900 mb-1">Important Note:</p>
+                            <p class="text-sm text-amber-800">Quotation must contain the raw price of item (base price without taxes or additional charges).</p>
+                        </div>
                     </div>
                 </div>
 
@@ -260,6 +289,7 @@ function quotationComparisonData() {
         loadingPRItems: false,
         search: '',
         showUploadModal: false,
+        quotedVendorIds: [],
         uploadForm: {
             pr_number: '',
             vendor_id: '',
@@ -315,7 +345,25 @@ function quotationComparisonData() {
                 });
                 const data = await response.json();
                 if (data.success) {
-                    this.prList = data.data.data ?? data.data ?? [];
+                    const allPRs = data.data.data ?? data.dataa ?? data.data ?? [];
+                    
+                    // Fetch completed comparisons (PRs with selected quotations)
+                    const selectionsResponse = await fetch('/api/v1/quotation-comparison/selected-prs', {
+                        headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                    });
+                    const selectionsData = await selectionsResponse.json();
+                    
+                    // Get list of PR numbers that have been compared (selected)
+                    const comparedPRNumbers = new Set();
+                    if (selectionsData.success && selectionsData.data.selected_prs) {
+                        selectionsData.data.selected_prs.forEach(selection => {
+                            comparedPRNumbers.add(selection.pr_number);
+                        });
+                    }
+                    
+                    // Filter out PRs that have already been compared
+                    this.prList = allPRs.filter(pr => !comparedPRNumbers.has(pr.pr_number));
+                    
                     // Build a map of pr_number -> id for quick lookup
                     this.prIdMap = {};
                     this.prList.forEach(pr => { this.prIdMap[pr.pr_number] = pr.id; });
@@ -326,10 +374,35 @@ function quotationComparisonData() {
         },
 
         onPRSelected() {
-            if (this.uploadForm.upload_type === 'form' && this.uploadForm.pr_number) {
-                this.loadPRLineItems(this.uploadForm.pr_number);
+            this.uploadForm.vendor_id = '';
+            this.quotedVendorIds = [];
+            if (this.uploadForm.pr_number) {
+                this.loadQuotedVendors(this.uploadForm.pr_number);
+                if (this.uploadForm.upload_type === 'form') {
+                    this.loadPRLineItems(this.uploadForm.pr_number);
+                }
             } else {
                 this.uploadForm.quotations = [];
+            }
+        },
+
+        async loadQuotedVendors(prNumber) {
+            try {
+                const token = localStorage.getItem('access_token');
+                const res = await fetch(`/api/v1/quotation-comparison/${prNumber}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success) {
+                    // Collect unique vendor_ids from all items' quotations
+                    const ids = new Set();
+                    (data.data.comparison ?? []).forEach(item => {
+                        item.quotations.forEach(q => ids.add(q.vendor_id));
+                    });
+                    this.quotedVendorIds = [...ids];
+                }
+            } catch (e) {
+                // silently ignore — dropdown still works without grouping
             }
         },
 
@@ -347,6 +420,7 @@ function quotationComparisonData() {
                 if (data.success) {
                     const lineItems = data.data.purchase_requisition?.line_items ?? [];
                     this.uploadForm.quotations = lineItems.map(li => ({
+                        item_code: li.material?.material_code ?? '',
                         item_name: li.item_name ?? li.material?.material_name ?? '',
                         quantity: li.quantity ?? 1,
                         unit_price: li.estimated_unit_price ?? 0,
@@ -363,6 +437,7 @@ function quotationComparisonData() {
 
         addQuotationItem() {
             this.uploadForm.quotations.push({
+                item_code: '',
                 item_name: '',
                 quantity: 1,
                 unit_price: 0,
@@ -443,6 +518,7 @@ function quotationComparisonData() {
                 csv_file: null,
                 quotations: []
             };
+            this.quotedVendorIds = [];
         },
 
         viewComparison(prNumber) {
@@ -455,11 +531,65 @@ function quotationComparisonData() {
             return isNaN(d) ? val : d.toLocaleDateString('en-GB', { day: '2-digit', month: 'short', year: 'numeric' });
         },
 
-        downloadCSVTemplate() {
-            // Create CSV content with headers and sample row
+        async downloadCSVTemplate() {
+            // If PR is selected, fetch its line items and create pre-filled template
+            if (this.uploadForm.pr_number) {
+                const prId = this.prIdMap[this.uploadForm.pr_number];
+                if (prId) {
+                    try {
+                        const token = localStorage.getItem('access_token');
+                        const response = await fetch(`/api/v1/purchase-requisitions/${prId}`, {
+                            headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                        });
+                        const data = await response.json();
+                        
+                        if (data.success) {
+                            const lineItems = data.data.purchase_requisition?.line_items ?? [];
+                            
+                            // Create CSV with header
+                            let csvContent = 'item_code,item_name,quantity,unit_price,delivery_date,remarks\n';
+                            
+                            // Calculate a sample delivery date (30 days from today)
+                            const sampleDate = new Date();
+                            sampleDate.setDate(sampleDate.getDate() + 30);
+                            const formattedDate = sampleDate.toISOString().split('T')[0]; // Format: YYYY-MM-DD
+                            
+                            // Add each line item
+                            lineItems.forEach(li => {
+                                const itemCode = li.material?.material_code ?? '';
+                                const itemName = (li.item_name ?? li.material?.material_name ?? '').replace(/,/g, ';'); // Replace commas
+                                const quantity = li.quantity ?? '';
+                                const unitPrice = li.estimated_unit_price ?? '';
+                                
+                                csvContent += `${itemCode},${itemName},${quantity},${unitPrice},${formattedDate},\n`;
+                            });
+                            
+                            // Create blob and download
+                            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+                            const link = document.createElement('a');
+                            const url = URL.createObjectURL(blob);
+                            
+                            link.setAttribute('href', url);
+                            link.setAttribute('download', `quotation_template_${this.uploadForm.pr_number}.csv`);
+                            link.style.visibility = 'hidden';
+                            
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            
+                            return;
+                        }
+                    } catch (error) {
+                        console.error('Error fetching PR data for template:', error);
+                        this.showToast('Failed to fetch PR data. Downloading blank template.', 'error');
+                    }
+                }
+            }
+            
+            // Fallback: Create blank template with sample data
             const csvContent = [
-                'item_name,quantity,unit_price,delivery_date,remarks',
-                'Sample Item,10,100.50,2026-04-15,Sample remarks here'
+                'item_code,item_name,quantity,unit_price,delivery_date,remarks',
+                'RM-001,Sample Item,10,100.50,2026-04-15,Sample remarks here'
             ].join('\n');
 
             // Create blob and download

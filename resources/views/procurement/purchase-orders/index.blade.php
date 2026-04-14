@@ -65,6 +65,7 @@
                 <thead>
                     <tr class="border-b border-gray-200 bg-gray-50">
                         <th class="text-left py-4 px-6 text-xs font-bold text-gray-500 uppercase">PO Number</th>
+                        <th class="text-left py-4 px-6 text-xs font-bold text-gray-500 uppercase">PR Number</th>
                         <th class="text-left py-4 px-6 text-xs font-bold text-gray-500 uppercase">Vendor</th>
                         <th class="text-left py-4 px-6 text-xs font-bold text-gray-500 uppercase">Date</th>
                         <th class="text-left py-4 px-6 text-xs font-bold text-gray-500 uppercase">Total Amount</th>
@@ -75,7 +76,7 @@
                 <tbody class="divide-y divide-gray-100">
                     <template x-if="loading">
                         <tr>
-                            <td colspan="6" class="py-12 text-center">
+                            <td colspan="7" class="py-12 text-center">
                                 <div class="flex items-center justify-center">
                                     <div class="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                                 </div>
@@ -85,7 +86,7 @@
                     
                     <template x-if="!loading && purchaseOrders.length === 0">
                         <tr>
-                            <td colspan="6" class="py-12 text-center text-gray-500">
+                            <td colspan="7" class="py-12 text-center text-gray-500">
                                 No purchase orders found
                             </td>
                         </tr>
@@ -95,6 +96,10 @@
                         <tr class="hover:bg-gray-50 transition-colors">
                             <td class="py-4 px-6">
                                 <span class="font-semibold text-primary" x-text="po.po_number"></span>
+                            </td>
+                            <td class="py-4 px-6">
+                                <span x-show="po.pr_number" class="text-xs font-mono bg-blue-50 text-blue-700 px-2 py-1 rounded" x-text="po.pr_number"></span>
+                                <span x-show="!po.pr_number" class="text-gray-400 text-xs">—</span>
                             </td>
                             <td class="py-4 px-6 text-gray-900" x-text="po.vendor ? po.vendor.vendor_name : 'N/A'"></td>
                             <td class="py-4 px-6 text-gray-600" x-text="formatDate(po.po_date)"></td>
@@ -207,8 +212,8 @@
                         
                         <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">Credit Days</label>
-                            <input type="number" x-model="form.credit_days" readonly 
-                                   class="w-full px-4 py-2 border border-gray-200 rounded-lg bg-gray-50">
+                            <input type="number" x-model="form.credit_days" min="0"
+                                   class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
                         </div>
                         
                         <div>
@@ -445,6 +450,7 @@ function purchaseOrdersData() {
         loading: false,
         saving: false,
         showModal: false,
+        modalDataLoaded: false,
         modalTitle: 'Create Purchase Order',
         editingId: null,
         filters: {
@@ -467,17 +473,24 @@ function purchaseOrdersData() {
             po_date: new Date().toISOString().split('T')[0],
             expected_delivery_date: '',
             payment_terms: '',
-            credit_days: '',
+            credit_days: 0,
             notes: '',
             line_items: []
         },
         
         async init() {
-            await this.loadCurrencies();
             await this.loadVendors();
-            await this.loadMaterials();
-            await this.loadGstTaxes();
             await this.loadPurchaseOrders();
+        },
+        
+        async loadModalData() {
+            if (this.modalDataLoaded) return;
+            await Promise.all([
+                this.loadCurrencies(),
+                this.loadMaterials(),
+                this.loadGstTaxes()
+            ]);
+            this.modalDataLoaded = true;
         },
         
         async loadGstTaxes() {
@@ -629,7 +642,8 @@ function purchaseOrdersData() {
             }
         },
         
-        openCreateModal() {
+        async openCreateModal() {
+            await this.loadModalData();
             this.modalTitle = 'Create Purchase Order';
             this.editingId = null;
             this.form = {
@@ -640,7 +654,7 @@ function purchaseOrdersData() {
                 po_date: new Date().toISOString().split('T')[0],
                 expected_delivery_date: '',
                 payment_terms: '',
-                credit_days: '',
+                credit_days: 0,
                 delivery_terms: '',
                 valid_until: '',
                 billing_address: '',
@@ -681,7 +695,7 @@ function purchaseOrdersData() {
                 this.form.vendor_name = vendor.vendor_name;
                 this.form.vendor_gstin = vendor.gstin || '';
                 this.form.payment_terms = vendor.payment_terms || '';
-                this.form.credit_days = vendor.credit_days || '';
+                this.form.credit_days = vendor.credit_days ?? 0;
                 // Set currency_id from vendor - this is REQUIRED
                 this.form.currency_id = vendor.currency_id || '';
                 
@@ -969,7 +983,7 @@ function purchaseOrdersData() {
                     po_date: this.form.po_date,
                     expected_delivery: this.form.expected_delivery_date || null,
                     payment_terms: this.form.payment_terms || null,
-                    credit_days: this.form.credit_days ? parseInt(this.form.credit_days) : null,
+                    credit_days: this.form.credit_days !== '' && this.form.credit_days !== null ? parseInt(this.form.credit_days) : 0,
                     delivery_terms: this.form.delivery_terms || null,
                     valid_until: this.form.valid_until || null,
                     billing_address: this.form.billing_address || null,
@@ -1193,6 +1207,7 @@ function purchaseOrdersData() {
         },
         
         async editPO(id) {
+            await this.loadModalData();
             try {
                 const token = localStorage.getItem('access_token');
                 const response = await fetch(`/api/v1/purchase-orders/${id}`, {
@@ -1235,7 +1250,7 @@ function purchaseOrdersData() {
                         po_date: formatDateForInput(po.po_date),
                         expected_delivery_date: formatDateForInput(po.expected_delivery),
                         payment_terms: po.payment_terms || '',
-                        credit_days: po.credit_days || '',
+                        credit_days: po.credit_days ?? 0,
                         delivery_terms: po.delivery_terms || '',
                         valid_until: formatDateForInput(po.valid_until),
                         billing_address: po.billing_address || '',

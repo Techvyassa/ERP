@@ -30,6 +30,7 @@ use App\Models\Control\Organization;
 // VENDOR PORTAL (Public, token-based)
 // ============================================================================
 Route::get('/vendor/po/{token}', [App\Http\Controllers\VendorPortalController::class, 'viewPO'])->name('vendor.po.view');
+Route::get('/vendor/pr/{token}', [App\Http\Controllers\VendorPortalController::class, 'viewPR'])->name('vendor.pr.view');
 Route::post('/vendor/po/{token}/acknowledge', [App\Http\Controllers\VendorPortalController::class, 'acknowledge'])->name('vendor.po.acknowledge');
 Route::post('/vendor/po/{token}/vendor-approve', [App\Http\Controllers\VendorPortalController::class, 'vendorApprove'])->name('vendor.po.vendor-approve');
 Route::post('/vendor/po/{token}/vendor-reject', [App\Http\Controllers\VendorPortalController::class, 'vendorReject'])->name('vendor.po.vendor-reject');
@@ -605,6 +606,14 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                     'tenantType' => $tenantType
                 ]);
             })->name('gate-entry');
+
+            Route::get('/dispatch', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.security.dispatch', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('dispatch');
         });
 
         // Warehouse/store Department Portal
@@ -681,6 +690,14 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 extract($getOrg($orgSlug));
                 return redirect()->route('tenant.sales.orders', $orgSlug);
             })->name('sales-orders');
+
+            Route::get('/outward', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.warehouse.outward', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('outward');
         });
 
         // Quality Portal

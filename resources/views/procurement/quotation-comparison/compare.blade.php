@@ -12,202 +12,253 @@
                 <h2 class="text-2xl font-bold text-gray-900">Quotation Comparison</h2>
                 <p class="text-gray-600 mt-1">PR Number: <span class="font-semibold text-primary" x-text="prNumber"></span></p>
             </div>
-            <a href="{{ url("/org/{$organization->org_slug}/procurement/quotation-comparison") }}"
-                class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
-                <span class="material-symbols-outlined text-sm">arrow_back</span>Back to List
-            </a>
-        </div>
-    </div>
-
-    <!-- Best Vendor Recommendation Summary -->
-    <div x-show="!loading && comparison.length > 0" class="bg-gradient-to-r from-green-50 to-blue-50 rounded-xl shadow-lg p-6 mb-6 border-2 border-green-200">
-        <template x-if="isAlreadySelected">
-            <div class="bg-green-600 text-white rounded-lg p-4 mb-4 flex items-center gap-3">
-                <span class="material-symbols-outlined text-3xl">check_circle</span>
-                <div>
-                    <p class="font-bold text-lg">Quotation Already Selected</p>
-                    <p class="text-sm opacity-90">Selected Vendor: <span class="font-semibold" x-text="selectedVendorName"></span></p>
-                </div>
-            </div>
-        </template>
-        <div class="flex items-start justify-between">
-            <div class="flex-1">
-                <div class="flex items-center gap-2 mb-3">
-                    <span class="material-symbols-outlined text-green-600 text-2xl">verified</span>
-                    <h3 class="text-xl font-bold text-gray-900">Recommended Vendor</h3>
-                </div>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Best Price Vendor</p>
-                        <p class="text-lg font-bold text-green-600" x-text="getBestPriceVendor()"></p>
-                        <p class="text-sm text-gray-600 mt-1">Total: <span class="font-semibold" x-text="'₹' + getLowestTotalPrice().toFixed(2)"></span></p>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Fastest Delivery</p>
-                        <p class="text-lg font-bold text-blue-600" x-text="getFastestDeliveryVendor()"></p>
-                        <p class="text-sm text-gray-600 mt-1">Date: <span class="font-semibold" x-text="getEarliestDeliveryDate()"></span></p>
-                    </div>
-                    <div class="bg-white rounded-lg p-4 shadow-sm">
-                        <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Overall Best</p>
-                        <p class="text-lg font-bold text-primary" x-text="getOverallBestVendor()"></p>
-                        <p class="text-xs text-gray-500 mt-1">Based on price & delivery</p>
-                    </div>
-                </div>
+            <div class="flex items-center gap-3">
+                <!-- Save Selections -->
+                <button @click="saveSelections()"
+                        x-show="!selectionsFinalized && Object.keys(itemSelections).length > 0"
+                        :disabled="saving"
+                        class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50">
+                    <span class="material-symbols-outlined text-sm">save</span>
+                    <span x-show="!saving">Save Selections</span>
+                    <span x-show="saving">Saving...</span>
+                </button>
+                <!-- Create POs -->
+                <button @click="showCreatePOModal = true"
+                        x-show="selectionsFinalized && !poExists"
+                        class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+                    Create Purchase Orders
+                </button>
+                <a href="{{ url("/org/{$organization->org_slug}/procurement/quotation-comparison") }}"
+                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors flex items-center gap-2">
+                    <span class="material-symbols-outlined text-sm">arrow_back</span>Back
+                </a>
             </div>
         </div>
     </div>
 
-    <!-- Comparison Table -->
+    <!-- Selection Summary Banner -->
+    <div x-show="selectionsFinalized && !loading" class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+            <span class="material-symbols-outlined text-green-600 text-2xl">check_circle</span>
+            <div>
+                <p class="font-semibold text-green-800">Vendor selections saved</p>
+                <p class="text-sm text-green-700">
+                    <span x-text="Object.keys(itemSelections).length"></span> item(s) assigned to
+                    <span x-text="getUniqueVendorCount()"></span> vendor(s).
+                    Ready to create Purchase Orders.
+                </p>
+            </div>
+        </div>
+        <button @click="selectionsFinalized = false" class="text-sm text-green-700 underline hover:text-green-900">Edit Selections</button>
+    </div>
+
+    <!-- Vendor Summary Cards -->
+    <div x-show="!loading && comparison.length > 0" class="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+        <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Best Price Vendor</p>
+            <p class="text-lg font-bold text-green-600" x-text="getBestPriceVendor()"></p>
+            <p class="text-sm text-gray-600 mt-1">Total: <span class="font-semibold" x-text="'₹' + getLowestTotalPrice().toFixed(2)"></span></p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Fastest Delivery</p>
+            <p class="text-lg font-bold text-blue-600" x-text="getFastestDeliveryVendor()"></p>
+            <p class="text-sm text-gray-600 mt-1">Date: <span class="font-semibold" x-text="getEarliestDeliveryDate()"></span></p>
+        </div>
+        <div class="bg-white rounded-xl shadow p-4">
+            <p class="text-xs text-gray-500 uppercase font-semibold mb-1">Items Selected</p>
+            <p class="text-lg font-bold text-primary" x-text="Object.keys(itemSelections).length + ' / ' + comparison.length"></p>
+            <p class="text-xs text-gray-500 mt-1">Across <span x-text="getUniqueVendorCount()"></span> vendor(s)</p>
+        </div>
+    </div>
+
+    <!-- Comparison Table (per item) -->
     <div class="bg-white rounded-xl shadow overflow-hidden">
         <template x-if="loading">
             <div class="p-12 text-center text-gray-400">Loading comparison...</div>
         </template>
-
         <template x-if="!loading && comparison.length === 0">
-            <div class="p-12 text-center text-gray-400">No quotations found for comparison</div>
+            <div class="p-12 text-center text-gray-400">No quotations found for this PR</div>
         </template>
 
         <template x-if="!loading && comparison.length > 0">
-            <div class="overflow-x-auto">
+            <div>
+                <!-- Table header hint -->
+                <div class="px-6 py-3 bg-gray-50 border-b border-gray-200 flex items-center justify-between">
+                    <p class="text-sm text-gray-600">Select the best vendor for each item. You can split items across multiple vendors.</p>
+                    <button @click="autoSelectBestPrice()" class="text-xs px-3 py-1.5 bg-primary/10 text-primary rounded-lg hover:bg-primary/20 transition-colors">
+                        Auto-select Best Price
+                    </button>
+                </div>
+
                 <template x-for="(item, itemIndex) in comparison" :key="itemIndex">
                     <div class="border-b border-gray-200 last:border-b-0">
                         <!-- Item Header -->
-                        <div class="bg-gray-50 px-6 py-3 border-b border-gray-200">
-                            <div class="flex items-center justify-between">
-                                <h3 class="font-semibold text-gray-900" x-text="'Item: ' + item.item_name"></h3>
+                        <div class="bg-gray-50 px-6 py-3 border-b border-gray-100 flex items-center justify-between">
+                            <div class="flex items-center gap-3">
+                                <span class="w-6 h-6 rounded-full bg-primary text-white text-xs flex items-center justify-center font-bold" x-text="itemIndex + 1"></span>
+                                <h3 class="font-semibold text-gray-900" x-text="item.item_name"></h3>
                                 <span class="text-xs text-gray-500" x-text="item.quotations.length + ' vendor(s)'"></span>
                             </div>
+                            <!-- Selected vendor badge for this item -->
+                            <template x-if="itemSelections[item.item_name]">
+                                <div class="flex items-center gap-2">
+                                    <span class="text-xs text-gray-500">Selected:</span>
+                                    <span class="px-2 py-1 bg-green-100 text-green-700 rounded-full text-xs font-semibold flex items-center gap-1">
+                                        <span class="material-symbols-outlined text-xs">check_circle</span>
+                                        <span x-text="getSelectedVendorName(item.item_name)"></span>
+                                    </span>
+                                    <button x-show="!selectionsFinalized" @click="delete itemSelections[item.item_name]" class="text-gray-400 hover:text-red-500">
+                                        <span class="material-symbols-outlined text-sm">close</span>
+                                    </button>
+                                </div>
+                            </template>
                         </div>
 
-                        <!-- Vendor Quotations Comparison -->
-                        <div class="overflow-x-auto">
-                            <table class="w-full text-sm">
-                                <thead class="bg-gray-100">
-                                    <tr>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Vendor</th>
-                                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Quantity</th>
-                                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Unit Price</th>
-                                        <th class="px-4 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Total Price</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Delivery Date</th>
-                                        <th class="px-4 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Remarks</th>
-                                        <th class="px-4 py-3 text-center text-xs font-semibold text-gray-500 uppercase">Action</th>
+                        <!-- Vendor rows for this item -->
+                        <table class="w-full text-sm">
+                            <thead class="bg-gray-100">
+                                <tr>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Vendor</th>
+                                    <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Qty</th>
+                                    <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Unit Price</th>
+                                    <th class="px-4 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Delivery</th>
+                                    <th class="px-4 py-2 text-left text-xs font-semibold text-gray-500 uppercase">Remarks</th>
+                                    <th class="px-4 py-2 text-center text-xs font-semibold text-gray-500 uppercase">Select</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <template x-for="quote in item.quotations" :key="quote.id">
+                                    <tr class="hover:bg-gray-50 transition-colors"
+                                        :class="{
+                                            'bg-green-50 border-l-4 border-green-500': itemSelections[item.item_name] === quote.id,
+                                            'opacity-50': selectionsFinalized && itemSelections[item.item_name] !== quote.id
+                                        }">
+                                        <td class="px-4 py-3">
+                                            <div class="flex items-center gap-2 flex-wrap">
+                                                <span class="font-medium text-gray-900" x-text="quote.vendor_name"></span>
+                                                <template x-if="getBestPrice(item.quotations) === parseFloat(quote.total_price)">
+                                                    <span class="px-1.5 py-0.5 bg-green-600 text-white rounded text-xs font-bold">BEST PRICE</span>
+                                                </template>
+                                                <template x-if="getEarliestDelivery(item.quotations) === quote.delivery_date && quote.delivery_date">
+                                                    <span class="px-1.5 py-0.5 bg-blue-600 text-white rounded text-xs font-bold">FASTEST</span>
+                                                </template>
+                                            </div>
+                                        </td>
+                                        <td class="px-4 py-3 text-right text-gray-700" x-text="quote.quantity"></td>
+                                        <td class="px-4 py-3 text-right text-gray-700" x-text="'₹' + parseFloat(quote.unit_price).toFixed(2)"></td>
+                                        <td class="px-4 py-3 text-right font-semibold text-gray-900" x-text="'₹' + parseFloat(quote.total_price).toFixed(2)"></td>
+                                        <td class="px-4 py-3 text-gray-700 text-xs" x-text="quote.delivery_date || '—'"></td>
+                                        <td class="px-4 py-3 text-gray-500 text-xs" x-text="quote.remarks || '—'"></td>
+                                        <td class="px-4 py-3 text-center">
+                                            <template x-if="!selectionsFinalized">
+                                                <button @click="selectItem(item.item_name, quote)"
+                                                        :class="itemSelections[item.item_name] === quote.id
+                                                            ? 'bg-green-600 text-white'
+                                                            : 'bg-gray-100 text-gray-700 hover:bg-primary hover:text-white'"
+                                                        class="px-3 py-1.5 rounded-lg text-xs font-medium transition-colors">
+                                                    <span x-text="itemSelections[item.item_name] === quote.id ? '✓ Selected' : 'Select'"></span>
+                                                </button>
+                                            </template>
+                                            <template x-if="selectionsFinalized">
+                                                <span x-show="itemSelections[item.item_name] === quote.id"
+                                                      class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">✓ Selected</span>
+                                            </template>
+                                        </td>
                                     </tr>
-                                </thead>
-                                <tbody class="divide-y divide-gray-100">
-                                    <template x-for="(quote, quoteIndex) in item.quotations" :key="quote.id">
-                                        <tr class="hover:bg-gray-50 transition-colors"
-                                            :class="{
-                                                'bg-green-100 border-l-4 border-green-500': getBestPrice(item.quotations) === quote.total_price,
-                                                'bg-blue-50': getEarliestDelivery(item.quotations) === quote.delivery_date && quote.delivery_date && getBestPrice(item.quotations) !== quote.total_price
-                                            }">
-                                            <td class="px-4 py-3">
-                                                <div class="flex items-center gap-2">
-                                                    <span class="font-medium text-gray-900" x-text="quote.vendor_name"></span>
-                                                    <template x-if="getBestPrice(item.quotations) === quote.total_price">
-                                                        <span class="px-2 py-0.5 bg-green-600 text-white rounded-full text-xs font-bold flex items-center gap-1">
-                                                            <span class="material-symbols-outlined text-xs">check_circle</span>
-                                                            BEST PRICE
-                                                        </span>
-                                                    </template>
-                                                    <template x-if="getEarliestDelivery(item.quotations) === quote.delivery_date && quote.delivery_date">
-                                                        <span class="px-2 py-0.5 bg-blue-600 text-white rounded-full text-xs font-bold flex items-center gap-1">
-                                                            <span class="material-symbols-outlined text-xs">schedule</span>
-                                                            FASTEST
-                                                        </span>
-                                                    </template>
-                                                </div>
-                                            </td>
-                                            <td class="px-4 py-3 text-right text-gray-700" x-text="quote.quantity"></td>
-                                            <td class="px-4 py-3 text-right text-gray-700" x-text="'₹' + parseFloat(quote.unit_price).toFixed(2)"></td>
-                                            <td class="px-4 py-3 text-right">
-                                                <span class="font-semibold text-gray-900" x-text="'₹' + parseFloat(quote.total_price).toFixed(2)"></span>
-                                            </td>
-                                            <td class="px-4 py-3 text-gray-700" x-text="quote.delivery_date || '—'"></td>
-                                            <td class="px-4 py-3 text-gray-600 text-xs" x-text="quote.remarks || '—'"></td>
-                                            <td class="px-6 py-4 text-center">
-                                                <template x-if="!isAlreadySelected">
-                                                    <button @click="selectQuotation(quote)" 
-                                                            class="px-3 py-1.5 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors text-xs">
-                                                        Select
-                                                    </button>
-                                                </template>
-                                                <template x-if="isAlreadySelected && quote.vendor_name === selectedVendorName">
-                                                    <span class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">
-                                                        ✓ Selected
-                                                    </span>
-                                                </template>
-                                                <template x-if="isAlreadySelected && quote.vendor_name !== selectedVendorName">
-                                                    <span class="px-3 py-1.5 bg-gray-100 text-gray-400 rounded-lg text-xs">
-                                                        —
-                                                    </span>
-                                                </template>
-                                            </td>
-                                        </tr>
-                                    </template>
-                                </tbody>
-                            </table>
-                        </div>
+                                </template>
+                            </tbody>
+                        </table>
                     </div>
                 </template>
+
+                <!-- Footer: selection summary -->
+                <div class="p-6 bg-gray-50 border-t border-gray-200">
+                    <div class="flex items-center justify-between">
+                        <div class="text-sm text-gray-600">
+                            <span x-text="Object.keys(itemSelections).length"></span> of
+                            <span x-text="comparison.length"></span> items selected
+                            <template x-if="getUniqueVendorCount() > 0">
+                                <span> &mdash; will create <strong x-text="getUniqueVendorCount()"></strong> PO(s)</span>
+                            </template>
+                        </div>
+                        <div class="flex items-center gap-3">
+                            <template x-if="!selectionsFinalized">
+                                <button @click="saveSelections()"
+                                        :disabled="saving || Object.keys(itemSelections).length === 0"
+                                        class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium">
+                                    <span x-show="!saving">Save Selections</span>
+                                    <span x-show="saving">Saving...</span>
+                                </button>
+                            </template>
+                            <template x-if="selectionsFinalized && !poExists">
+                                <button @click="showCreatePOModal = true"
+                                        class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm">add_shopping_cart</span>
+                                    Create Purchase Orders
+                                </button>
+                            </template>
+                            <template x-if="selectionsFinalized && poExists">
+                                <span class="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-semibold flex items-center gap-2">
+                                    <span class="material-symbols-outlined text-sm">check_circle</span>
+                                    PO Already Created
+                                </span>
+                            </template>
+                        </div>
+                    </div>
+                </div>
             </div>
         </template>
     </div>
 
-    <!-- Selection Modal -->
-    <div x-show="showSelectionModal" x-cloak 
+    <!-- Create PO Confirmation Modal -->
+    <div x-show="showCreatePOModal" x-cloak
          class="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4"
-         @click.self="showSelectionModal = false">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
+         @click.self="showCreatePOModal = false">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg">
             <div class="p-6 border-b border-gray-100">
-                <h2 class="text-lg font-bold text-gray-900">Confirm Quotation Selection</h2>
-                <p class="text-sm text-gray-500 mt-1">Select this vendor's quotation?</p>
+                <h2 class="text-lg font-bold text-gray-900">Create Purchase Orders</h2>
+                <p class="text-sm text-gray-500 mt-1">The following POs will be created from your selections:</p>
             </div>
-            <div class="p-6 space-y-4">
-                <div class="bg-blue-50 border border-blue-200 rounded-lg p-4">
-                    <div class="grid grid-cols-2 gap-3 text-sm">
-                        <div>
-                            <p class="text-gray-500 text-xs">Vendor</p>
-                            <p class="font-semibold text-gray-900" x-text="selectedQuote?.vendor_name"></p>
+            <div class="p-6 space-y-3 max-h-80 overflow-y-auto">
+                <template x-for="(items, vendorName) in getVendorItemGroups()" :key="vendorName">
+                    <div class="border border-gray-200 rounded-lg p-4">
+                        <div class="flex items-center justify-between mb-2">
+                            <p class="font-semibold text-gray-900" x-text="vendorName"></p>
+                            <span class="text-xs bg-blue-100 text-blue-700 px-2 py-0.5 rounded-full" x-text="items.length + ' item(s)'"></span>
                         </div>
-                        <div>
-                            <p class="text-gray-500 text-xs">Total Price</p>
-                            <p class="font-semibold text-gray-900" x-text="'₹' + parseFloat(selectedQuote?.total_price || 0).toFixed(2)"></p>
-                        </div>
-                        <div>
-                            <p class="text-gray-500 text-xs">Delivery Date</p>
-                            <p class="font-semibold text-gray-900" x-text="selectedQuote?.delivery_date || '—'"></p>
+                        <ul class="space-y-1">
+                            <template x-for="item in items" :key="item.item_name">
+                                <li class="text-sm text-gray-600 flex justify-between">
+                                    <span x-text="item.item_name"></span>
+                                    <span class="font-medium" x-text="'₹' + parseFloat(item.total_price).toFixed(2)"></span>
+                                </li>
+                            </template>
+                        </ul>
+                        <div class="mt-2 pt-2 border-t border-gray-100 flex justify-between text-sm font-semibold">
+                            <span>Total</span>
+                            <span x-text="'₹' + items.reduce((s, i) => s + parseFloat(i.total_price), 0).toFixed(2)"></span>
                         </div>
                     </div>
-                </div>
-
-                <div>
-                    <label class="block text-sm font-semibold text-gray-700 mb-2">Selection Reason (Optional)</label>
-                    <textarea x-model="selectionReason" rows="3" placeholder="Why are you selecting this vendor?"
-                              class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 focus:border-primary resize-none"></textarea>
-                </div>
-
-                <div class="bg-yellow-50 border border-yellow-200 rounded-lg p-3">
-                    <p class="text-xs text-yellow-800">
-                        <span class="font-semibold">Note:</span> At least 2 vendor quotations are required for comparison. This selection will be recorded for audit purposes.
-                    </p>
-                </div>
+                </template>
             </div>
             <div class="flex items-center justify-end gap-3 p-6 border-t border-gray-100 bg-gray-50 rounded-b-xl">
-                <button @click="showSelectionModal = false" 
+                <button @click="showCreatePOModal = false"
                         class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-white transition-colors">
                     Cancel
                 </button>
-                <button @click="confirmSelection()" :disabled="selecting" 
-                        class="px-4 py-2 bg-primary text-white rounded-lg hover:bg-primary/90 transition-colors disabled:opacity-50">
-                    <span x-show="!selecting">Confirm Selection</span>
-                    <span x-show="selecting">Selecting...</span>
+                <button @click="createPOs()" :disabled="creatingPOs"
+                        class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors disabled:opacity-50 font-medium">
+                    <span x-show="!creatingPOs">Confirm & Create POs</span>
+                    <span x-show="creatingPOs">Creating...</span>
                 </button>
             </div>
         </div>
     </div>
 
     <!-- Toast -->
-    <div x-show="toast.show" x-cloak 
+    <div x-show="toast.show" x-cloak
          class="fixed bottom-6 right-6 z-50 px-4 py-3 rounded-xl shadow-lg text-sm font-medium"
          :class="toast.type === 'success' ? 'bg-green-600 text-white' : 'bg-red-600 text-white'">
         <span x-text="toast.message"></span>
@@ -220,196 +271,225 @@ function compareQuotationsData() {
         prNumber: '{{ $prNumber ?? "" }}',
         comparison: [],
         loading: false,
-        selecting: false,
-        showSelectionModal: false,
-        selectedQuote: null,
-        selectionReason: '',
-        isAlreadySelected: false,
-        selectedVendorName: '',
+        saving: false,
+        creatingPOs: false,
+        showCreatePOModal: false,
+        poExists: false,
+        // { item_name: quotation_id }
+        itemSelections: {},
+        // { item_name: { vendor_name, total_price, ... } }
+        itemSelectionDetails: {},
+        selectionsFinalized: false,
         toast: { show: false, message: '', type: 'success' },
 
         async init() {
-            if (!this.prNumber) {
-                this.showToast('PR Number is required', 'error');
-                return;
-            }
+            if (!this.prNumber) { this.showToast('PR Number is required', 'error'); return; }
             await this.loadComparison();
+            await this.loadExistingSelections();
         },
 
         async loadComparison() {
             this.loading = true;
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch(`/api/v1/quotation-comparison/${this.prNumber}`, {
+                const res = await fetch(`/api/v1/quotation-comparison/${this.prNumber}`, {
                     headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
                 });
-                const data = await response.json();
+                const data = await res.json();
                 if (data.success) {
                     this.comparison = data.data.comparison;
-                    this.isAlreadySelected = data.data.is_selected || false;
-                    this.selectedVendorName = data.data.selected_vendor || '';
-                } else {
-                    this.showToast(data.message || 'Failed to load comparison', 'error');
+                    this.poExists = data.data.po_exists ?? false;
                 }
-            } catch (error) {
-                console.error('Error loading comparison:', error);
+            } catch (e) {
                 this.showToast('Failed to load comparison', 'error');
             } finally {
                 this.loading = false;
             }
         },
 
-        getBestPrice(quotations) {
-            if (!quotations || quotations.length === 0) return null;
-            return Math.min(...quotations.map(q => parseFloat(q.total_price)));
-        },
-
-        getEarliestDelivery(quotations) {
-            if (!quotations || quotations.length === 0) return null;
-            const dates = quotations.filter(q => q.delivery_date).map(q => q.delivery_date);
-            if (dates.length === 0) return null;
-            return dates.sort()[0];
-        },
-
-        // Get overall lowest total price across all items
-        getLowestTotalPrice() {
-            if (!this.comparison || this.comparison.length === 0) return 0;
-            const vendorTotals = {};
-            
-            this.comparison.forEach(item => {
-                item.quotations.forEach(quote => {
-                    if (!vendorTotals[quote.vendor_name]) {
-                        vendorTotals[quote.vendor_name] = 0;
-                    }
-                    vendorTotals[quote.vendor_name] += parseFloat(quote.total_price);
-                });
-            });
-            
-            return Math.min(...Object.values(vendorTotals));
-        },
-
-        // Get vendor with best price
-        getBestPriceVendor() {
-            if (!this.comparison || this.comparison.length === 0) return '—';
-            const vendorTotals = {};
-            
-            this.comparison.forEach(item => {
-                item.quotations.forEach(quote => {
-                    if (!vendorTotals[quote.vendor_name]) {
-                        vendorTotals[quote.vendor_name] = 0;
-                    }
-                    vendorTotals[quote.vendor_name] += parseFloat(quote.total_price);
-                });
-            });
-            
-            let bestVendor = '';
-            let lowestPrice = Infinity;
-            
-            for (const [vendor, total] of Object.entries(vendorTotals)) {
-                if (total < lowestPrice) {
-                    lowestPrice = total;
-                    bestVendor = vendor;
-                }
-            }
-            
-            return bestVendor || '—';
-        },
-
-        // Get earliest delivery date across all items
-        getEarliestDeliveryDate() {
-            if (!this.comparison || this.comparison.length === 0) return '—';
-            const allDates = [];
-            
-            this.comparison.forEach(item => {
-                item.quotations.forEach(quote => {
-                    if (quote.delivery_date) {
-                        allDates.push(quote.delivery_date);
-                    }
-                });
-            });
-            
-            if (allDates.length === 0) return '—';
-            return allDates.sort()[0];
-        },
-
-        // Get vendor with fastest delivery
-        getFastestDeliveryVendor() {
-            if (!this.comparison || this.comparison.length === 0) return '—';
-            const earliestDate = this.getEarliestDeliveryDate();
-            if (earliestDate === '—') return '—';
-            
-            for (const item of this.comparison) {
-                for (const quote of item.quotations) {
-                    if (quote.delivery_date === earliestDate) {
-                        return quote.vendor_name;
-                    }
-                }
-            }
-            
-            return '—';
-        },
-
-        // Get overall best vendor (considering both price and delivery)
-        getOverallBestVendor() {
-            const bestPrice = this.getBestPriceVendor();
-            const fastestDelivery = this.getFastestDeliveryVendor();
-            
-            // If same vendor has both best price and fastest delivery
-            if (bestPrice === fastestDelivery && bestPrice !== '—') {
-                return bestPrice + ' ⭐';
-            }
-            
-            // Otherwise, prioritize best price
-            return bestPrice;
-        },
-
-        selectQuotation(quote) {
-            this.selectedQuote = quote;
-            this.selectionReason = '';
-            this.showSelectionModal = true;
-        },
-
-        async confirmSelection() {
-            if (!this.selectedQuote) return;
-
-            this.selecting = true;
+        async loadExistingSelections() {
             try {
                 const token = localStorage.getItem('access_token');
-                const response = await fetch('/api/v1/quotation-comparison/select', {
+                const res = await fetch(`/api/v1/quotation-comparison/item-selections/${this.prNumber}`, {
+                    headers: { 'Authorization': `Bearer ${token}`, 'Accept': 'application/json' }
+                });
+                const data = await res.json();
+                if (data.success && data.data.selections.length > 0) {
+                    data.data.selections.forEach(s => {
+                        this.itemSelections[s.item_name] = s.quotation_id;
+                        // Find full quote details from comparison
+                        const item = this.comparison.find(c => c.item_name === s.item_name);
+                        if (item) {
+                            const quote = item.quotations.find(q => q.id === s.quotation_id);
+                            if (quote) this.itemSelectionDetails[s.item_name] = quote;
+                        }
+                    });
+                    this.selectionsFinalized = true;
+                }
+            } catch (e) {
+                // no existing selections, that's fine
+            }
+        },
+
+        selectItem(itemName, quote) {
+            if (this.selectionsFinalized) return;
+            this.itemSelections[itemName] = quote.id;
+            this.itemSelectionDetails[itemName] = quote;
+            // Trigger Alpine reactivity
+            this.itemSelections = { ...this.itemSelections };
+            this.itemSelectionDetails = { ...this.itemSelectionDetails };
+        },
+
+        getSelectedVendorName(itemName) {
+            return this.itemSelectionDetails[itemName]?.vendor_name ?? '';
+        },
+
+        autoSelectBestPrice() {
+            this.comparison.forEach(item => {
+                const best = item.quotations.reduce((min, q) =>
+                    parseFloat(q.total_price) < parseFloat(min.total_price) ? q : min
+                );
+                this.itemSelections[item.item_name] = best.id;
+                this.itemSelectionDetails[item.item_name] = best;
+            });
+            this.itemSelections = { ...this.itemSelections };
+            this.itemSelectionDetails = { ...this.itemSelectionDetails };
+        },
+
+        async saveSelections() {
+            if (Object.keys(this.itemSelections).length === 0) {
+                this.showToast('Please select a vendor for at least one item', 'error');
+                return;
+            }
+            this.saving = true;
+            try {
+                const token = localStorage.getItem('access_token');
+                const selections = Object.entries(this.itemSelections).map(([item_name, quotation_id]) => ({
+                    item_name,
+                    quotation_id
+                }));
+                const res = await fetch('/api/v1/quotation-comparison/select-items', {
                     method: 'POST',
                     headers: {
                         'Authorization': `Bearer ${token}`,
                         'Content-Type': 'application/json',
                         'Accept': 'application/json'
                     },
-                    body: JSON.stringify({
-                        pr_number: this.prNumber,
-                        quotation_id: this.selectedQuote.id,
-                        selection_reason: this.selectionReason
-                    })
+                    body: JSON.stringify({ pr_number: this.prNumber, selections })
                 });
-
-                const data = await response.json();
+                const data = await res.json();
                 if (data.success) {
-                    this.showToast('Quotation selected successfully', 'success');
-                    this.showSelectionModal = false;
-                    setTimeout(() => {
-                        window.location.href = '{{ url("/org/{$organization->org_slug}/procurement/quotation-comparison") }}';
-                    }, 1500);
+                    this.selectionsFinalized = true;
+                    this.showToast('Selections saved successfully', 'success');
                 } else {
-                    this.showToast(data.message || 'Selection failed', 'error');
+                    this.showToast(data.message || 'Failed to save selections', 'error');
                 }
-            } catch (error) {
-                console.error('Error selecting quotation:', error);
-                this.showToast('Selection failed', 'error');
+            } catch (e) {
+                this.showToast('Failed to save selections', 'error');
             } finally {
-                this.selecting = false;
+                this.saving = false;
             }
+        },
+
+        async createPOs() {
+            this.creatingPOs = true;
+            try {
+                const token = localStorage.getItem('access_token');
+                const res = await fetch('/api/v1/quotation-comparison/create-pos', {
+                    method: 'POST',
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                        'Accept': 'application/json'
+                    },
+                    body: JSON.stringify({ pr_number: this.prNumber })
+                });
+                const data = await res.json();
+                if (data.success) {
+                    const pos = data.data.purchase_orders;
+                    this.showCreatePOModal = false;
+                    this.showToast(`${pos.length} PO(s) created: ${pos.map(p => p.po_number).join(', ')}`, 'success');
+                    setTimeout(() => {
+                        window.location.href = '{{ url("/org/{$organization->org_slug}/procurement/purchase-orders") }}';
+                    }, 2500);
+                } else if (data.error?.code === 'PO_ALREADY_EXISTS') {
+                    this.showCreatePOModal = false;
+                    this.showToast(data.message, 'error');
+                } else {
+                    this.showToast(data.message || 'Failed to create POs', 'error');
+                }
+            } catch (e) {
+                this.showToast('Failed to create POs', 'error');
+            } finally {
+                this.creatingPOs = false;
+            }
+        },
+
+        getUniqueVendorCount() {
+            const vendors = new Set(Object.values(this.itemSelectionDetails).map(d => d?.vendor_name).filter(Boolean));
+            return vendors.size;
+        },
+
+        // Returns { vendorName: [{ item_name, total_price, ... }] }
+        getVendorItemGroups() {
+            const groups = {};
+            Object.entries(this.itemSelectionDetails).forEach(([itemName, quote]) => {
+                if (!quote) return;
+                if (!groups[quote.vendor_name]) groups[quote.vendor_name] = [];
+                groups[quote.vendor_name].push({ item_name: itemName, ...quote });
+            });
+            return groups;
+        },
+
+        getBestPrice(quotations) {
+            return Math.min(...quotations.map(q => parseFloat(q.total_price)));
+        },
+
+        getEarliestDelivery(quotations) {
+            const dates = quotations.filter(q => q.delivery_date).map(q => q.delivery_date);
+            return dates.length ? dates.sort()[0] : null;
+        },
+
+        getLowestTotalPrice() {
+            const totals = {};
+            this.comparison.forEach(item => {
+                item.quotations.forEach(q => {
+                    totals[q.vendor_name] = (totals[q.vendor_name] || 0) + parseFloat(q.total_price);
+                });
+            });
+            return totals ? Math.min(...Object.values(totals)) : 0;
+        },
+
+        getBestPriceVendor() {
+            const totals = {};
+            this.comparison.forEach(item => {
+                item.quotations.forEach(q => {
+                    totals[q.vendor_name] = (totals[q.vendor_name] || 0) + parseFloat(q.total_price);
+                });
+            });
+            return Object.entries(totals).sort((a, b) => a[1] - b[1])[0]?.[0] ?? '—';
+        },
+
+        getEarliestDeliveryDate() {
+            const dates = [];
+            this.comparison.forEach(item => item.quotations.forEach(q => { if (q.delivery_date) dates.push(q.delivery_date); }));
+            return dates.length ? dates.sort()[0] : '—';
+        },
+
+        getFastestDeliveryVendor() {
+            const earliest = this.getEarliestDeliveryDate();
+            if (earliest === '—') return '—';
+            for (const item of this.comparison) {
+                for (const q of item.quotations) {
+                    if (q.delivery_date === earliest) return q.vendor_name;
+                }
+            }
+            return '—';
         },
 
         showToast(message, type = 'success') {
             this.toast = { show: true, message, type };
-            setTimeout(() => { this.toast.show = false; }, 3500);
+            setTimeout(() => { this.toast.show = false; }, 4000);
         }
     }
 }
