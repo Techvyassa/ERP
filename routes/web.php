@@ -771,6 +771,26 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 ]);
             })->name('orders.show');
 
+            // Production Floor Receiving list — orders pending floor receipt confirmation
+            // Production Floor Receiving list — orders pending floor receipt confirmation
+            Route::get('/receiving', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.receiving.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('receiving.index');
+
+            // Production Floor Receiving — confirm materials arrived at workstation
+            Route::get('/orders/{id}/receiving', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.orders.receiving', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'orderId' => $id
+                ]);
+            })->name('orders.receiving');
+
             // Batch Runs — Independent execution units
             Route::get('/batch-runs', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));

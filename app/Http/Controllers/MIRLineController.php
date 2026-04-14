@@ -23,6 +23,19 @@ class MIRLineController extends Controller
 
         $line = MIRLineItem::with(['material', 'uom', 'transactions.issuer'])->findOrFail($id);
 
+        // Check if status column exists
+        $hasStatusColumn = \DB::connection('tenant')->getSchemaBuilder()->hasColumn('mir_line_items', 'status');
+        
+        $status = $hasStatusColumn ? $line->status : null;
+        $isFullyPicked = false;
+        
+        if (!$hasStatusColumn) {
+            // Calculate based on issued_qty
+            $isFullyPicked = ($line->issued_qty ?? 0) >= $line->required_qty;
+        } else {
+            $isFullyPicked = $line->isFullyPicked();
+        }
+
         return response()->json([
             'success' => true,
             'data' => [
@@ -37,10 +50,10 @@ class MIRLineController extends Controller
                 'issued_qty' => $line->issued_qty,
                 'remaining_qty' => $line->getRemainingQty(),
                 'uom' => $line->uom?->uom_code,
-                'status' => $line->status,
+                'status' => $status,
                 'last_issued_at' => $line->last_issued_at,
                 'rejected_reason' => $line->rejected_reason,
-                'is_fully_picked' => $line->isFullyPicked(),
+                'is_fully_picked' => $isFullyPicked,
                 'transactions' => $line->transactions->map(fn($t) => [
                     'id' => $t->id,
                     'issued_qty' => $t->issued_qty,

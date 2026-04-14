@@ -191,9 +191,21 @@
                 </div>
 
                 <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
-                    <button x-show="viewModal.order?.status === 'DRAFT'" @click="startOrder(viewModal.order)"
+                    <button x-show="viewModal.order?.status === 'DRAFT' && viewModal.order?.mir_status === 'CLOSED'"
+                        @click="startOrder(viewModal.order)"
                         class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
-                        Start
+                        Start Production
+                    </button>
+                    <button x-show="viewModal.order?.status === 'DRAFT' && viewModal.order?.mir_status === 'FULLY_ISSUED'"
+                        @click="viewModal.show = false; window.location.href = `/org/{{ $organization->org_slug }}/production/orders/${viewModal.order.id}/receiving`"
+                        class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600">
+                        Confirm Floor Receipt
+                    </button>
+                    <button x-show="viewModal.order?.status === 'DRAFT' && !['FULLY_ISSUED','CLOSED'].includes(viewModal.order?.mir_status)"
+                        disabled
+                        class="px-3 py-2 bg-gray-200 text-gray-400 rounded-lg text-sm cursor-not-allowed"
+                        title="Materials not yet fully issued by Store">
+                        Pending Issue
                     </button>
                     <button x-show="viewModal.order?.status === 'COMPLETED'" @click="openVarianceModal(viewModal.order)"
                         class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
@@ -582,8 +594,23 @@
                                         </span>
                                     </template>
                                     <template x-if="order.mir_status === 'APPROVED'">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-blue-50 text-blue-700 border border-blue-200">
+                                            <span class="w-1 h-1 bg-blue-500 rounded-full"></span> APPROVED
+                                        </span>
+                                    </template>
+                                    <template x-if="order.mir_status === 'PARTIALLY_ISSUED'">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-orange-50 text-orange-700 border border-orange-200">
+                                            <span class="w-1 h-1 bg-orange-500 rounded-full"></span> PARTIAL ISSUE
+                                        </span>
+                                    </template>
+                                    <template x-if="order.mir_status === 'FULLY_ISSUED'">
                                         <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-emerald-50 text-emerald-700 border border-emerald-200">
-                                            <span class="w-1 h-1 bg-emerald-500 rounded-full"></span> ISSUED
+                                            <span class="w-1 h-1 bg-emerald-500 rounded-full"></span> FULLY ISSUED
+                                        </span>
+                                    </template>
+                                    <template x-if="order.mir_status === 'CLOSED'">
+                                        <span class="inline-flex items-center gap-1 px-2 py-1 text-[9px] font-black rounded-md bg-slate-100 text-slate-600 border border-slate-200">
+                                            <span class="w-1 h-1 bg-slate-500 rounded-full"></span> RECEIVED
                                         </span>
                                     </template>
                                     <template x-if="order.mir_status === 'REJECTED'">
@@ -614,10 +641,30 @@
                                         <span class="material-symbols-outlined text-lg">visibility</span>
                                     </button>
                                     <template x-if="order.status === 'DRAFT'">
-                                        <button @click="startOrder(order)"
-                                            class="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-xs font-bold transition-all shadow-sm">
-                                            Start Production
-                                        </button>
+                                        <div class="flex flex-col gap-1">
+                                            <!-- Receiving confirmation pending: show link to receiving page -->
+                                            <template x-if="order.mir_status === 'FULLY_ISSUED'">
+                                                <a :href="`/org/{{ $organization->org_slug }}/production/orders/${order.id}/receiving`"
+                                                    class="px-3 py-1.5 bg-amber-500 text-white hover:bg-amber-600 rounded-lg text-xs font-bold transition-all shadow-sm text-center">
+                                                    Confirm Receipt
+                                                </a>
+                                            </template>
+                                            <!-- MIR closed (materials received): allow start -->
+                                            <template x-if="order.mir_status === 'CLOSED'">
+                                                <button @click="startOrder(order)"
+                                                    class="px-3 py-1.5 bg-blue-600 text-white hover:bg-blue-700 rounded-lg text-xs font-bold transition-all shadow-sm">
+                                                    Start Production
+                                                </button>
+                                            </template>
+                                            <!-- MIR not ready: disabled button with tooltip -->
+                                            <template x-if="!['FULLY_ISSUED','CLOSED'].includes(order.mir_status)">
+                                                <button disabled
+                                                    :title="'Cannot start: MIR is ' + (order.mir_status || 'not generated')"
+                                                    class="px-3 py-1.5 bg-gray-200 text-gray-400 rounded-lg text-xs font-bold cursor-not-allowed">
+                                                    Pending Issue
+                                                </button>
+                                            </template>
+                                        </div>
                                     </template>
                                 </div>
                             </td>

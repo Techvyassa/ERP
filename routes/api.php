@@ -592,6 +592,7 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
                 Route::patch('/{id}/release', [App\Http\Controllers\ProductionOrderController::class, 'release']); // DRAFT → RELEASED
                 Route::patch('/{id}/close', [App\Http\Controllers\ProductionOrderController::class, 'close']); // IN_PROGRESS → CLOSED
+                Route::patch('/{id}/confirm-receipt', [App\Http\Controllers\ProductionOrderController::class, 'confirmReceipt']); // MIR FULLY_ISSUED → CLOSED, unlocks start
                 Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
                 Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
             });
@@ -767,6 +768,48 @@ Route::prefix('v1')->group(function () {
                 ->orderByDesc('qty_available')
                 ->get();
             return response()->json(['success' => true, 'data' => $bins]);
+        });
+
+        // Material bin lookup — for MIR issue modal (uses material_id, not product_id)
+        Route::get('/lookup/material-bins', function (\Illuminate\Http\Request $request) {
+            $tenantDb = $request->input('tenant_db_name');
+            if ($tenantDb) {
+                config(['database.connections.tenant.database' => $tenantDb]);
+                \DB::purge('tenant');
+                \DB::reconnect('tenant');
+            }
+            $materialId = $request->input('material_id');
+            if (!$materialId) {
+                return response()->json(['success' => false, 'message' => 'material_id required'], 422);
+            }
+
+            // All stock rows for this material across all buckets and bins
+            $bins = \DB::connection('tenant')
+                ->table('stock_balances as sb')
+                ->leftJoin('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
+                ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
+                ->where('sb.material_id', $materialId)
+                ->where('sb.bucket', 'AVAILABLE')
+                ->select(
+                    'bl.id as bin_id',
+                    \DB::raw("COALESCE(bl.bin_code, 'No Bin') as bin_code"),
+                    'wm.warehouse_name',
+                    'wm.id as warehouse_id',
+                    'sb.qty_on_hand',
+                    'sb.qty_reserved',
+                    \DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available'),
+                    'sb.batch_number',
+                    'sb.bucket'
+                )
+                ->orderByDesc('qty_available')
+                ->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $bins,
+                'total_available' => $bins->sum('qty_available'),
+                'bin_count' => $bins->count(),
+            ]);
         });
 
         // Sales Order Endpoints (Outward Flow)

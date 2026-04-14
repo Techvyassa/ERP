@@ -51,7 +51,7 @@
 
             <!-- Navigation -->
             <nav class="flex-1 overflow-y-auto p-4">
-                <ul class="space-y-2">
+                <ul class="space-y-1">
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/production/dashboard") }}"
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.dashboard') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
@@ -61,33 +61,52 @@
                     </li>
 
                     <li class="pt-2 border-t border-gray-200"></li>
-
-                    <li x-show="sidebarOpen" class="px-3 py-2">
-                        <span class="text-xs font-semibold text-gray-400 uppercase">Production</span>
+                    <li x-show="sidebarOpen" class="px-3 pt-2 pb-1">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Production Flow</span>
                     </li>
 
+                    {{-- Step 1: Production Orders --}}
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/production/orders") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.orders') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.orders') || request()->routeIs('tenant.production.orders.show') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">factory</span>
                             <span x-show="sidebarOpen" class="font-medium">Production Orders</span>
                         </a>
                     </li>
 
+                    {{-- Step 2: Material Issued (MIR list — what store issued) --}}
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/material-issue-requests") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.mir.index') || request()->routeIs('tenant.production.mir.show') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">outbox</span>
+                            <span x-show="sidebarOpen" class="font-medium">Issued Materials</span>
+                        </a>
+                    </li>
 
+                    {{-- Step 3: Floor Receiving — confirm materials arrived --}}
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/receiving") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.receiving.index') || request()->routeIs('tenant.production.orders.receiving') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">move_to_inbox</span>
+                            <span x-show="sidebarOpen" class="font-medium">Floor Receiving</span>
+                        </a>
+                    </li>
+
+                    {{-- Step 4: FG Confirmation --}}
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/fg-confirmation") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.fg-confirmation') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">task_alt</span>
+                            <span x-show="sidebarOpen" class="font-medium">FG Confirmation</span>
+                        </a>
+                    </li>
+
+                    {{-- Step 5: Packing Orders --}}
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/production/packing") }}"
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.packing') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">inventory_2</span>
                             <span x-show="sidebarOpen" class="font-medium">Packing Orders</span>
-                        </a>
-                    </li>
-
-                    <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/production/fg-confirmation") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('production.fg-confirmation') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">task_alt</span>
-                            <span x-show="sidebarOpen" class="font-medium">FG Confirmation</span>
                         </a>
                     </li>
                 </ul>
