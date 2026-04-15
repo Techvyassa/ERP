@@ -693,15 +693,22 @@
                 },
 
                 showMinField() {
-                    return this.form.data_type === 'NUMERIC' && ['RANGE', 'MIN_ONLY'].includes(this.form.tolerance_type);
+                    // Show for NUMERIC or any custom data type when tolerance is RANGE or MIN_ONLY
+                    const isNumericLike = this.form.data_type === 'NUMERIC' || this.customDataType;
+                    return isNumericLike && ['RANGE', 'MIN_ONLY'].includes(this.form.tolerance_type);
                 },
 
                 showMaxField() {
-                    return this.form.data_type === 'NUMERIC' && ['RANGE', 'MAX_ONLY'].includes(this.form.tolerance_type);
+                    // Show for NUMERIC or any custom data type when tolerance is RANGE or MAX_ONLY
+                    const isNumericLike = this.form.data_type === 'NUMERIC' || this.customDataType;
+                    return isNumericLike && ['RANGE', 'MAX_ONLY'].includes(this.form.tolerance_type);
                 },
 
                 showExactField() {
-                    return this.form.tolerance_type === 'EXACT' || this.form.data_type !== 'NUMERIC';
+                    // Show for EXACT tolerance, or non-numeric preset types, or custom tolerance
+                    return this.form.tolerance_type === 'EXACT'
+                        || this.customToleranceType
+                        || (this.form.data_type !== 'NUMERIC' && !this.customDataType);
                 },
 
                 exactPlaceholder() {
@@ -728,7 +735,7 @@
                             standard_min: this.showMinField() ? (this.form.standard_min || null) : null,
                             standard_max: this.showMaxField() ? (this.form.standard_max || null) : null,
                             standard_value: this.showExactField() ? (this.form.standard_value || null) : null,
-                            unit_of_measurement: this.form.data_type === 'NUMERIC' ? (this.form.unit_of_measurement || null) : null,
+                            unit_of_measurement: this.form.unit_of_measurement || null,
                             test_method: this.form.test_method || null,
                             is_critical: this.form.is_critical ?? false,
                             display_order: this.form.display_order ?? 0,
