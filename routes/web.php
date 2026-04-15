@@ -761,7 +761,9 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
             })->name('qc-parameters');
         });
 
+        // ====================================================================
         // Production Portal
+        // ====================================================================
         Route::prefix('production')->middleware(['check.module.permission:PRODUCTION'])->name('production.')->group(function () use ($getOrg) {
             Route::get('/dashboard', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
@@ -962,7 +964,7 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
         // MAINTENANCE PORTAL
         // ====================================================================
         Route::prefix('maintenance')->middleware(['check.module.permission:MAINTENANCE'])->name('maintenance.')->group(function () {
-            
+
             // Dashboard
             Route::get('/dashboard', [\App\Http\Controllers\Maintenance\DashboardController::class, 'index'])->name('dashboard');
             Route::get('/dashboard/work-orders-json', [\App\Http\Controllers\Maintenance\DashboardController::class, 'workOrdersJson'])->name('dashboard.work-orders-json');

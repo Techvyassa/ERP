@@ -109,7 +109,7 @@ class ProductionRequestController extends Controller
         try {
             $this->switchTenantDb($request);
             
-            $productionRequest = ProductionRequest::with(['product', 'bom', 'bom.details', 'bom.outputUom', 'uom', 'creator', 'approver', 'mir', 'mir.lineItems', 'productionOrder'])
+            $productionRequest = ProductionRequest::with(['product', 'bom', 'bom.bomDetails', 'bom.outputUom', 'uom', 'creator', 'approver', 'mir', 'mir.lineItems', 'productionOrder'])
                 ->findOrFail($id);
 
             return response()->json([
@@ -140,10 +140,10 @@ class ProductionRequestController extends Controller
             $this->switchTenantDb($request);
 
             $validated = $request->validate([
-                'product_id' => 'required|exists:products,id',
-                'bom_id' => 'required|exists:bom_headers,id',
+                'product_id' => 'required|exists:tenant.product_master,id',
+                'bom_id' => 'required|exists:tenant.bom_header,id',
                 'target_qty' => 'required|numeric|min:0.001',
-                'uom_id' => 'required|exists:uom_master,id',
+                'uom_id' => 'required|exists:tenant.uom_master,id',
                 'planned_date' => 'required|date',
                 'remarks' => 'nullable|string|max:1000',
             ]);
@@ -311,7 +311,7 @@ class ProductionRequestController extends Controller
         try {
             $this->switchTenantDb($request);
 
-            $productionRequest = ProductionRequest::with(['bom.details', 'bom.outputUom'])->findOrFail($id);
+            $productionRequest = ProductionRequest::with(['bom.bomDetails.material', 'bom.bomDetails.uom', 'bom.outputUom'])->findOrFail($id);
             
             if (!in_array($productionRequest->status, ['APPROVED', 'CONVERTED_TO_MIR'])) {
                 return response()->json([
@@ -325,19 +325,16 @@ class ProductionRequestController extends Controller
             // Create MIR from production request
             $mir = MaterialIssueRequest::create([
                 'mir_no' => MaterialIssueRequest::generateMirNo(),
-                'production_order_id' => null, // Will be linked later when PO is created
-                'request_type' => 'PRODUCTION',
+                'production_order_id' => null, 
                 'status' => 'PENDING',
-                'requested_by' => $productionRequest->created_by,
                 'remarks' => "Created from Production Request: {$productionRequest->request_no}",
             ]);
 
-            // Create MIR line items from BOM details
-            $bomDetails = $productionRequest->bom->details;
+            $bomDetails = $productionRequest->bom->bomDetails;
             $targetQty = $productionRequest->target_qty;
 
             foreach ($bomDetails as $detail) {
-                $requiredQty = $detail->quantity * $targetQty;
+                $requiredQty = $detail->qty_required * $targetQty;
                 
                 MIRLineItem::create([
                     'mir_id' => $mir->id,
@@ -449,14 +446,14 @@ class ProductionRequestController extends Controller
             $this->switchTenantDb($request);
 
             $products = Product::where('is_active', true)
-                ->whereHas('boms', fn($q) => $q->where('is_active', true))
-                ->with(['boms' => fn($q) => $q->where('is_active', true)->orderByDesc('version')])
+                ->whereHas('bomHeaders', fn($q) => $q->where('bom_status', 'ACTIVE'))
+                ->with(['bomHeaders' => fn($q) => $q->where('bom_status', 'ACTIVE')->orderByDesc('version')])
                 ->get()
                 ->map(fn($p) => [
                     'id' => $p->id,
                     'product_name' => $p->product_name,
                     'product_code' => $p->product_code,
-                    'boms' => $p->boms->map(fn($b) => [
+                    'boms' => $p->bomHeaders->map(fn($b) => [
                         'id' => $b->id,
                         'bom_code' => $b->bom_code,
                         'version' => $b->version,
@@ -495,18 +492,18 @@ class ProductionRequestController extends Controller
         try {
             $this->switchTenantDb($request);
 
-            $productionRequest = ProductionRequest::with(['bom.details.material', 'bom.details.uom', 'bom.outputUom'])->findOrFail($id);
+            $productionRequest = ProductionRequest::with(['bom.bomDetails.material', 'bom.bomDetails.uom', 'bom.outputUom'])->findOrFail($id);
             
-            $bomDetails = $productionRequest->bom->details;
+            $bomDetails = $productionRequest->bom->bomDetails;
             $targetQty = $productionRequest->target_qty;
 
             $materials = $bomDetails->map(fn($detail) => [
                 'material_id' => $detail->material_id,
                 'material_name' => $detail->material?->product_name ?? $detail->material?->material_name,
                 'material_code' => $detail->material?->product_code ?? $detail->material?->material_code,
-                'base_qty' => $detail->quantity,
+                'base_qty' => $detail->qty_required,
                 'scrap_percent' => $detail->scrap_percent ?? 0,
-                'required_qty' => ($detail->quantity * $targetQty) * (1 + ($detail->scrap_percent ?? 0) / 100),
+                'required_qty' => ($detail->qty_required * $targetQty) * (1 + ($detail->scrap_percent ?? 0) / 100),
                 'uom' => $detail->uom ? [
                     'id' => $detail->uom->id,
                     'uom_code' => $detail->uom->uom_code,

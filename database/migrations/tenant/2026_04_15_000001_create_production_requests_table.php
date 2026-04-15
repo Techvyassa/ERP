@@ -11,8 +11,8 @@ return new class extends Migration
         Schema::create('production_requests', function (Blueprint $table) {
             $table->id();
             $table->string('request_no', 50)->unique();
-            $table->foreignId('product_id')->constrained('products')->onDelete('restrict');
-            $table->foreignId('bom_id')->constrained('bom_headers')->onDelete('restrict');
+            $table->foreignId('product_id')->constrained('product_master')->onDelete('restrict');
+            $table->foreignId('bom_id')->constrained('bom_header')->onDelete('restrict');
             $table->decimal('target_qty', 15, 3);
             $table->foreignId('uom_id')->constrained('uom_master')->onDelete('restrict');
             $table->date('planned_date');

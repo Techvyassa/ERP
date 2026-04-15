@@ -141,4 +141,25 @@ class MaterialIssueRequest extends Model
     {
         return $this->status === 'PENDING';
     }
+
+    /**
+     * Generate unique MIR number
+     */
+    public static function generateMirNo(): string
+    {
+        $prefix = 'MIR';
+        $date = now()->format('ymd');
+        $lastMIR = self::where('mir_no', 'like', "{$prefix}{$date}%")
+            ->orderByDesc('mir_no')
+            ->first();
+
+        if ($lastMIR) {
+            $lastNumber = (int) substr($lastMIR->mir_no, -4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
 }

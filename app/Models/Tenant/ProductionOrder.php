@@ -124,4 +124,25 @@ class ProductionOrder extends Model
         }
         return round(($this->actual_qty / $this->target_qty) * 100, 2);
     }
+
+    /**
+     * Generate unique production order number
+     */
+    public static function generateOrderNo(): string
+    {
+        $prefix = 'POR';
+        $date = now()->format('ymd');
+        $lastOrder = self::where('order_no', 'like', "{$prefix}{$date}%")
+            ->orderByDesc('order_no')
+            ->first();
+
+        if ($lastOrder) {
+            $lastNumber = (int) substr($lastOrder->order_no, -4);
+            $newNumber = $lastNumber + 1;
+        } else {
+            $newNumber = 1;
+        }
+
+        return $prefix . $date . str_pad($newNumber, 4, '0', STR_PAD_LEFT);
+    }
 }
