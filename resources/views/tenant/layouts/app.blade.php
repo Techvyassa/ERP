@@ -101,7 +101,7 @@
                         <a href="{{ url($tenantType === 'subdomain' ? '/inventory-dashboard' : "/org/{$organization->org_slug}/inventory-dashboard") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.inventory-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">inventory</span>
-                            <span x-show="sidebarOpen" class="font-medium">Inventory</span>
+                            <span x-show="sidebarOpen" class="font-medium">Material Management </span>
                         </a>
                     </li>
                     
@@ -119,7 +119,7 @@
                         <a href="{{ url($tenantType === 'subdomain' ? '/tax-dashboard' : "/org/{$organization->org_slug}/tax-dashboard") }}" 
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.tax-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">receipt_long</span>
-                            <span x-show="sidebarOpen" class="font-medium">Tax & Finance</span>
+                            <span x-show="sidebarOpen" class="font-medium">GST & Tax </span>
                         </a>
                     </li>
                     

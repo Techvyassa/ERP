@@ -1,7 +1,7 @@
 @extends('tenant.layouts.inventory')
 
 @section('title', 'Create Warehouse')
-@section('page-title', 'Create New Warehouse')
+@section('page-title', 'Create New Location')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -24,7 +24,7 @@
         <div class="bg-white rounded-xl shadow p-6 mb-6">
             <div class="flex items-center justify-between">
                 <div>
-                    <h2 class="text-2xl font-bold text-gray-900">Create New Warehouse</h2>
+                    <h2 class="text-2xl font-bold text-gray-900">Create New Location</h2>
                     <p class="text-gray-600 mt-1">Physical storage location master</p>
                 </div>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/warehouses' : '/org/' . $organization->org_slug . '/warehouses') }}" 
@@ -38,12 +38,12 @@
         <form @submit.prevent="submitForm" class="bg-white rounded-xl shadow p-6">
             <!-- Warehouse Information -->
             <div class="mb-6">
-                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Warehouse Information</h3>
+                <h3 class="text-lg font-semibold text-gray-900 mb-4 pb-2 border-b">Location Information</h3>
                 <div class="space-y-6">
                     <!-- Warehouse Code -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Warehouse Code <span class="text-red-500" x-show="!form.auto_generate_code">*</span>
+                            Location Code <span class="text-red-500" x-show="!form.auto_generate_code">*</span>
                         </label>
                         <div class="space-y-3">
                             <!-- Auto-generate option -->
@@ -98,7 +98,7 @@
                                                'border-gray-300 focus:ring-blue-500': !errors.warehouse_code
                                            }"
                                            class="w-full px-4 py-2 border rounded-lg focus:ring-2 focus:border-transparent">
-                                    <p class="text-xs text-gray-500 mt-1">Generated warehouse code (auto-updates from prefix and number)</p>
+                                    <p class="text-xs text-gray-500 mt-1">Generated location code (auto-updates from prefix and number)</p>
                                     <template x-if="errors.warehouse_code">
                                         <p class="mt-1 text-sm text-red-600" x-text="Array.isArray(errors.warehouse_code) ? errors.warehouse_code[0] : errors.warehouse_code"></p>
                                     </template>
@@ -130,7 +130,7 @@
                     <!-- Warehouse Name -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Warehouse Name <span class="text-red-500">*</span>
+                            Location Name <span class="text-red-500">*</span>
                         </label>
                         <input type="text" x-model="form.warehouse_name" required maxlength="100"
                                placeholder="Masala RM Store"
@@ -144,7 +144,7 @@
                     <!-- Warehouse Type -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Warehouse Type <span class="text-red-500">*</span>
+                            Location Type <span class="text-red-500">*</span>
                         </label>
                         <select x-model="form.warehouse_type" 
                                 @change="handleWarehouseTypeChange()"
