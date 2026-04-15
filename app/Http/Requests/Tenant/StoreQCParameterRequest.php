@@ -15,16 +15,20 @@ class StoreQCParameterRequest extends FormRequest
     public function rules(): array
     {
         $parameterId = $this->route('id');
+        $isProduct = $this->input('product_id') && !$this->input('material_id');
+        $scopeId = $isProduct ? $this->input('product_id') : $this->input('material_id');
+        $scopeField = $isProduct ? 'product_id' : 'material_id';
 
         return [
-            'material_id' => 'required|integer|exists:tenant.material_master,id',
+            'material_id' => 'nullable|integer|exists:tenant.material_master,id',
+            'product_id'  => 'nullable|integer|exists:tenant.product_master,id',
             'test_type_id' => 'nullable|integer|exists:tenant.qc_test_types,id',
             'parameter_code' => [
                 'required',
                 'string',
                 'max:50',
                 Rule::unique('tenant.qc_parameters_master', 'parameter_code')
-                    ->where(fn ($query) => $query->where('material_id', $this->input('material_id')))
+                    ->where(fn ($query) => $query->where($scopeField, $scopeId))
                     ->ignore($parameterId),
             ],
             'parameter_name' => [
@@ -32,7 +36,7 @@ class StoreQCParameterRequest extends FormRequest
                 'string',
                 'max:100',
                 Rule::unique('tenant.qc_parameters_master', 'parameter_name')
-                    ->where(fn ($query) => $query->where('material_id', $this->input('material_id')))
+                    ->where(fn ($query) => $query->where($scopeField, $scopeId))
                     ->ignore($parameterId),
             ],
             'parameter_category' => 'nullable|string|max:50',
@@ -47,6 +51,20 @@ class StoreQCParameterRequest extends FormRequest
             'display_order' => 'nullable|integer|min:0|max:65535',
             'is_active' => 'sometimes|boolean',
         ];
+    }
+
+    public function withValidator($validator): void
+    {
+        $validator->after(function ($v) {
+            $hasMaterial = (bool) $this->input('material_id');
+            $hasProduct  = (bool) $this->input('product_id');
+            if (!$hasMaterial && !$hasProduct) {
+                $v->errors()->add('material_id', 'Either a material or a product must be selected.');
+            }
+            if ($hasMaterial && $hasProduct) {
+                $v->errors()->add('product_id', 'A parameter cannot be linked to both a material and a product.');
+            }
+        });
     }
 
     public function messages(): array

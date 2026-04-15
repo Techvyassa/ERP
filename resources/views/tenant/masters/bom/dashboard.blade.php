@@ -96,7 +96,7 @@
                     <p class="text-xs text-gray-500">Headers, components & versions</p>
                 </div>
             </div>
-            <p class="text-sm text-gray-600 mb-4">Create and manage BOMs with components, quantities, scrap rates, and substitute materials — all in one unified view.</p>
+            <p class="text-sm text-gray-600 mb-4">Create and manage BOMs with components, quantities, deviation rates, and substitute materials — all in one unified view.</p>
             <div class="flex items-center justify-between pt-3 border-t border-gray-100">
                 <div class="flex items-center gap-3">
                     <span class="text-sm font-bold text-orange-600" x-text="stats.totalBoms + ' BOMs'">0 BOMs</span>

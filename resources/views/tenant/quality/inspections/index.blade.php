@@ -77,7 +77,7 @@
                     </template>
                     <template x-for="lot in filteredLots" :key="lot.id">
                         <tr class="hover:bg-gray-50 transition">
-                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="lot.batch_number || lot.lot_number || ('QC-' + lot.id)"></td>
+                            <td class="py-3 px-5 font-semibold text-primary text-sm" x-text="lot.lot_number || lot.batch_number || ('IL-' + lot.id)"></td>
                             <td class="py-3 px-5 text-sm text-gray-600" x-text="sourceLabel(lot.source_type || 'GRN')"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="lot.product?.product_name || lot.material?.material_name || '-'"></td>
                             <td class="py-3 px-5 text-sm text-gray-700" x-text="lot.production_order?.order_no || lot.grn?.grn_number || '-'"></td>

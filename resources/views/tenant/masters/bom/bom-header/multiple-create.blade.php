@@ -118,7 +118,7 @@
                                     <th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase">Material</th>
                                     <th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase">Qty</th>
                                     <th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase">UOM</th>
-                                    <th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase">Scrap %</th>
+                                    <th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase">Deviation %</th>
                                     <th class="px-4 py-3 text-left font-semibold text-gray-500 uppercase">Substitute</th>
                                     <th class="px-4 py-3 text-center font-semibold text-gray-500 uppercase">Critical</th>
                                     <th class="px-4 py-3 text-center font-semibold text-gray-500 uppercase">Action</th>

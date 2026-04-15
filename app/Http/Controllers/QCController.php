@@ -413,17 +413,24 @@ class QCController extends Controller
     /**
      * Get QC parameters for a material
      */
-    public function getParameters(int $materialId): JsonResponse
+    public function getParameters(Request $request, int $id): JsonResponse
     {
         try {
-            $parameters = QCParameter::where('material_id', $materialId)
-                ->where('is_active', true)
+            // $id can be either a material_id or product_id depending on the lot source
+            // The caller passes ?type=product to look up by product_id
+            $type = $request->query('type', 'material'); // 'material' or 'product'
+
+            $parameters = QCParameter::where('is_active', true)
+                ->when($type === 'product', fn($q) => $q->where('product_id', $id))
+                ->when($type !== 'product', fn($q) => $q->where('material_id', $id))
                 ->orderBy('display_order')
                 ->get();
-            
+
             return response()->json([
                 'success' => true,
                 'data' => $parameters,
+                'type' => $type,
+                'id' => $id,
             ]);
         } catch (\Exception $e) {
             return response()->json([

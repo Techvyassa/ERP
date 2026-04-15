@@ -172,7 +172,7 @@
                                 <th class="px-4 py-3">Qty <span class="text-red-500">*</span></th>
                                 <th class="px-4 py-3">UOM <span class="text-red-500">*</span></th>
                                 <th class="px-4 py-3">Sub. Material</th>
-                                <th class="px-4 py-3 w-24">Scrap %</th>
+                                <th class="px-4 py-3 w-24">Deviation %</th>
                                 <th class="px-4 py-3 w-32 bg-gray-100 text-gray-700">Effective Qty</th>
                                 <th class="px-4 py-3 w-20 text-center">Critical</th>
                                 <th class="px-4 py-3 w-16 text-center">Actions</th>
@@ -231,9 +231,14 @@
                                             </template>
                                         </select>
                                     </td>
-                                    <!-- Scrap % -->
+                                    <!-- Deviation % -->
                                     <td class="px-4 py-2">
-                                        <input type="number" x-model="item.scrap_percent" min="0" max="100" step="0.01" class="w-full px-2 py-1 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                        <div class="relative">
+                                            <input type="number" x-model="item.scrap_percent" min="0" max="100" step="0.1"
+                                                placeholder="0"
+                                                class="w-full px-2 py-1 pr-6 border rounded focus:ring-2 focus:ring-blue-500 focus:border-transparent">
+                                            <span class="absolute right-2 top-1/2 -translate-y-1/2 text-xs text-gray-400 pointer-events-none">%</span>
+                                        </div>
                                     </td>
                                     <td class="px-4 py-2 bg-gray-50">
                                         <input type="text" :value="calculateEffectiveQty(item)" readonly class="w-full px-2 py-1 border rounded bg-gray-100 text-gray-600 cursor-not-allowed font-medium">
@@ -276,7 +281,7 @@
                         <h4 class="text-sm font-bold text-blue-900 mb-1">About Bill of Materials</h4>
                         <div class="text-xs text-blue-800 space-y-2 leading-relaxed">
                             <p>This BOM defines the recipe for <strong x-text="form.product_name || 'the selected product'"></strong>.</p>
-                            <p><strong>Formulation Logic:</strong> Qty Required is the net weight. Scrap % accounts for processing loss. Effective Qty is calculated as <code>Qty / (1 - Scrap/100)</code>.</p>
+                            <p><strong>Formulation Logic:</strong> Qty Required is the net weight. Deviation % accounts for processing loss. Effective Qty is calculated as <code>Qty / (1 - Deviation/100)</code>.</p>
                         </div>
                     </div>
                 </div>
