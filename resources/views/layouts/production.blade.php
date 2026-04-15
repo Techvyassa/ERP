@@ -65,7 +65,16 @@
                         <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Production Flow</span>
                     </li>
 
-                    {{-- Step 1: Production Orders --}}
+                    {{-- Step 1: Production Requests --}}
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/requests") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.requests.*') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">request_quote</span>
+                            <span x-show="sidebarOpen" class="font-medium">Production Requests</span>
+                        </a>
+                    </li>
+
+                    {{-- Step 2: Production Orders --}}
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/production/orders") }}"
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.orders') || request()->routeIs('tenant.production.orders.show') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">

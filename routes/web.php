@@ -771,6 +771,25 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 ]);
             })->name('dashboard');
 
+            // Production Requests - Material list before production order
+            Route::get('/requests', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.requests.index', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType
+                ]);
+            })->name('requests.index');
+
+            Route::get('/requests/{id}', function ($orgSlug, $id) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.production.requests.show', [
+                    'organization' => $org,
+                    'tenantType' => $tenantType,
+                    'requestId' => $id
+                ]);
+            })->name('requests.show');
+
+            // Production Orders
             Route::get('/orders', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('tenant.production.orders.index', [

@@ -554,6 +554,20 @@ Route::prefix('v1')->group(function () {
 
         // ── PRODUCTION Module ─────────────────────────────────────────────
         Route::middleware(['check.module.permission:PRODUCTION'])->group(function () {
+            // Production Requests - Material list before production order
+            Route::prefix('production-requests')->group(function () {
+                Route::get('/', [App\Http\Controllers\ProductionRequestController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\ProductionRequestController::class, 'store']);
+                Route::get('/products', [App\Http\Controllers\ProductionRequestController::class, 'products']);
+                Route::get('/{id}', [App\Http\Controllers\ProductionRequestController::class, 'show']);
+                Route::post('/{id}/submit', [App\Http\Controllers\ProductionRequestController::class, 'submit']);
+                Route::patch('/{id}/approve', [App\Http\Controllers\ProductionRequestController::class, 'approve']);
+                Route::patch('/{id}/reject', [App\Http\Controllers\ProductionRequestController::class, 'reject']);
+                Route::post('/{id}/convert-to-mir', [App\Http\Controllers\ProductionRequestController::class, 'convertToMIR']);
+                Route::post('/{id}/convert-to-order', [App\Http\Controllers\ProductionRequestController::class, 'convertToOrder']);
+                Route::get('/{id}/materials', [App\Http\Controllers\ProductionRequestController::class, 'materials']);
+            });
+
             // Production Orders
             Route::prefix('production-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
