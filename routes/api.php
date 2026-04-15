@@ -419,16 +419,20 @@ Route::prefix('v1')->group(function () {
         // QC Test Type Master (ADMINISTRATION permission)
         Route::middleware(['check.module.permission:ADMIN'])->prefix('qc-test-types')->group(function () {
             Route::get('/', [App\Http\Controllers\QCTestTypeController::class, 'index']);
+            Route::get('/import/template', [App\Http\Controllers\QCTestTypeController::class, 'downloadTemplate']);
             Route::get('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'show']);
             Route::post('/', [App\Http\Controllers\QCTestTypeController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\QCTestTypeController::class, 'importCSV']);
             Route::put('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\QCTestTypeController::class, 'destroy']);
         });
 
         Route::middleware(['check.module.permission:ADMIN'])->prefix('qc-parameters')->group(function () {
             Route::get('/', [App\Http\Controllers\QCParameterController::class, 'index']);
+            Route::get('/import/template', [App\Http\Controllers\QCParameterController::class, 'downloadTemplate']);
             Route::get('/{id}', [App\Http\Controllers\QCParameterController::class, 'show']);
             Route::post('/', [App\Http\Controllers\QCParameterController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\QCParameterController::class, 'importCSV']);
             Route::put('/{id}', [App\Http\Controllers\QCParameterController::class, 'update']);
             Route::delete('/{id}', [App\Http\Controllers\QCParameterController::class, 'destroy']);
         });

@@ -3,6 +3,12 @@
 @section('title', 'QC Test Types - ' . $organization->org_name)
 @section('page-title', 'QC Test Type Master')
 
+@push('head')
+<style>
+[x-cloak] { display: none !important; }
+</style>
+@endpush
+
 @section('content')
 <div x-data="qcTestTypeData()" x-init="init()">
 
@@ -15,6 +21,14 @@
                 <p class="text-cyan-50 mt-1">Create reusable test categories first, then use them while adding QC parameters.</p>
             </div>
             <div class="flex items-center gap-3">
+                <button @click="downloadTemplate()" 
+                        class="px-4 py-3 bg-green-600 text-white rounded-xl hover:bg-green-700 transition-colors font-semibold">
+                    <i class="fas fa-download mr-2"></i>Download CSV Template
+                </button>
+                <button @click="openImportModal()" 
+                        class="px-4 py-3 bg-purple-600 text-white rounded-xl hover:bg-purple-700 transition-colors font-semibold">
+                    <i class="fas fa-upload mr-2"></i>Import CSV
+                </button>
                 <a href="{{ url($tenantType === 'subdomain' ? '/quality-dashboard' : "/org/{$organization->org_slug}/quality-dashboard") }}"
                    class="px-4 py-3 border border-white/20 bg-white/10 text-white rounded-xl hover:bg-white/20 transition-colors">
                     Back
@@ -157,6 +171,132 @@
         </div>
     </div>
 
+    <!-- Import CSV Modal -->
+    <div x-show="showImportModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4">
+            <div class="fixed inset-0 bg-gray-900/50" @click="closeImportModal()"></div>
+            <div class="relative bg-white rounded-xl shadow-2xl w-full max-w-2xl">
+                <div class="flex items-center justify-between px-6 py-4 border-b border-gray-200">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <i class="fas fa-upload text-purple-600"></i>
+                        Import QC Test Types from CSV
+                    </h3>
+                    <button @click="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+                
+                <div class="p-6">
+                    <template x-if="!uploadComplete">
+                        <div>
+                            <!-- File Upload Area -->
+                            <div class="mb-6">
+                                <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                                <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center"
+                                     :class="{'border-purple-500 bg-purple-50': dragOver}"
+                                     @dragover.prevent="dragOver = true"
+                                     @dragleave.prevent="dragOver = false"
+                                     @drop.prevent="handleFileDrop($event)">
+                                    <input type="file" 
+                                           id="csvFileInput" 
+                                           accept=".csv" 
+                                           @change="handleFileSelect($event)" 
+                                           class="hidden">
+                                    
+                                    <template x-if="!selectedFile">
+                                        <div>
+                                            <i class="fas fa-cloud-upload-alt text-5xl text-gray-400 mb-3"></i>
+                                            <p class="text-gray-600 mb-2">Drag and drop your CSV file here, or</p>
+                                            <button @click="document.getElementById('csvFileInput').click()" 
+                                                    class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                                Browse Files
+                                            </button>
+                                        </div>
+                                    </template>
+                                    
+                                    <template x-if="selectedFile">
+                                        <div class="flex items-center justify-center gap-3">
+                                            <i class="fas fa-file-csv text-3xl text-green-600"></i>
+                                            <div class="text-left">
+                                                <p class="text-sm font-medium text-gray-900" x-text="selectedFile.name"></p>
+                                                <p class="text-xs text-gray-500" x-text="(selectedFile.size / 1024).toFixed(2) + ' KB'"></p>
+                                            </div>
+                                            <button @click="clearFile()" class="text-red-600 hover:text-red-800">
+                                                <i class="fas fa-trash"></i>
+                                            </button>
+                                        </div>
+                                    </template>
+                                </div>
+                            </div>
+
+                            <!-- Instructions -->
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                                <h4 class="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                    <i class="fas fa-info-circle"></i>
+                                    Import Instructions
+                                </h4>
+                                <ul class="text-xs text-blue-800 space-y-1 ml-6 list-disc">
+                                    <li>Download the CSV template first to see the required format</li>
+                                    <li><strong>type_code column must be BLANK</strong> - it will be auto-generated from type_name</li>
+                                    <li>Required field: type_name</li>
+                                    <li>Auto-generated type_code format: First 20 chars of type_name (uppercase, alphanumeric only)</li>
+                                    <li>is_active: use "true" or "false" (default: true)</li>
+                                    <li>Duplicate type_code entries will be skipped</li>
+                                </ul>
+                            </div>
+
+                            <!-- Action Buttons -->
+                            <div class="flex justify-end gap-3">
+                                <button @click="closeImportModal()" 
+                                        class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                    Cancel
+                                </button>
+                                <button @click="uploadCSV()" 
+                                        :disabled="!selectedFile || uploading"
+                                        :class="!selectedFile || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'"
+                                        class="px-6 py-2 bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2">
+                                    <i class="fas" :class="uploading ? 'fa-spinner fa-spin' : 'fa-upload'"></i>
+                                    <span x-text="uploading ? 'Uploading...' : 'Upload & Import'"></span>
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+
+                    <!-- Upload Complete -->
+                    <template x-if="uploadComplete">
+                        <div>
+                            <div class="text-center py-6">
+                                <i class="fas text-6xl mb-4"
+                                   :class="uploadErrors.length === 0 ? 'fa-check-circle text-green-500' : 'fa-exclamation-triangle text-yellow-500'"></i>
+                                <h4 class="text-lg font-semibold text-gray-900 mb-2" x-text="uploadMessage"></h4>
+                                
+                                <template x-if="uploadErrors.length > 0">
+                                    <div class="mt-4 max-h-60 overflow-y-auto">
+                                        <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                                            <h5 class="text-sm font-semibold text-red-900 mb-2">Errors:</h5>
+                                            <ul class="text-xs text-red-800 space-y-1">
+                                                <template x-for="error in uploadErrors" :key="error">
+                                                    <li x-text="error"></li>
+                                                </template>
+                                            </ul>
+                                        </div>
+                                    </div>
+                                </template>
+                            </div>
+                            
+                            <div class="flex justify-end">
+                                <button @click="closeImportModal()" 
+                                        class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                    Close
+                                </button>
+                            </div>
+                        </div>
+                    </template>
+                </div>
+            </div>
+        </div>
+    </div>
+
 </div>
 
 <script>
@@ -171,6 +311,16 @@ function qcTestTypeData() {
         saving: false,
         showModal: false,
         editId: null,
+        
+        // Import modal state
+        showImportModal: false,
+        selectedFile: null,
+        uploading: false,
+        uploadComplete: false,
+        uploadMessage: '',
+        uploadErrors: [],
+        dragOver: false,
+        
         presets: [
             { type_code: 'VISUAL', type_name: 'Visual Inspection', description: 'Appearance, color, packaging, and visible defects', is_active: true },
             { type_code: 'PHYSICAL', type_name: 'Physical Test', description: 'Dimensions, weight, density, hardness, and measurable attributes', is_active: true },
@@ -232,6 +382,106 @@ function qcTestTypeData() {
             const data = await res.json();
             if (data.success) await this.loadTestTypes();
             else alert(data.message || 'Failed to deactivate');
+        },
+
+        downloadTemplate() {
+            window.location.href = '/api/v1/qc-test-types/import/template';
+        },
+
+        openImportModal() {
+            this.showImportModal = true;
+            this.selectedFile = null;
+            this.uploading = false;
+            this.uploadComplete = false;
+            this.uploadMessage = '';
+            this.uploadErrors = [];
+        },
+
+        closeImportModal() {
+            this.showImportModal = false;
+            this.selectedFile = null;
+            this.uploading = false;
+            this.uploadComplete = false;
+            this.uploadMessage = '';
+            this.uploadErrors = [];
+            if (this.uploadComplete) {
+                this.loadTestTypes();
+            }
+        },
+
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                this.selectedFile = file;
+            } else {
+                alert('Please select a valid CSV file');
+            }
+        },
+
+        handleFileDrop(event) {
+            this.dragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                this.selectedFile = file;
+            } else {
+                alert('Please drop a valid CSV file');
+            }
+        },
+
+        clearFile() {
+            this.selectedFile = null;
+            document.getElementById('csvFileInput').value = '';
+        },
+
+        async uploadCSV() {
+            if (!this.selectedFile) {
+                alert('Please select a file first');
+                return;
+            }
+
+            this.uploading = true;
+            this.uploadComplete = false;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', this.selectedFile);
+
+                // Remove Content-Type header for FormData
+                const uploadHeaders = {
+                    'Authorization': `Bearer ${token()}`,
+                    'Accept': 'application/json',
+                    'X-Org-Slug': orgSlug
+                };
+
+                const response = await fetch('/api/v1/qc-test-types/import', {
+                    method: 'POST',
+                    headers: uploadHeaders,
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                this.uploading = false;
+                this.uploadComplete = true;
+
+                if (data.success) {
+                    this.uploadMessage = data.message;
+                    this.uploadErrors = data.data?.errors || [];
+                    
+                    // Reload data after successful import
+                    setTimeout(() => {
+                        this.loadTestTypes();
+                    }, 2000);
+                } else {
+                    this.uploadMessage = 'Import failed';
+                    this.uploadErrors = [data.message];
+                }
+            } catch (error) {
+                this.uploading = false;
+                this.uploadComplete = true;
+                this.uploadMessage = 'Import failed';
+                this.uploadErrors = ['Network error occurred'];
+            }
         },
 
         activeCount() {
