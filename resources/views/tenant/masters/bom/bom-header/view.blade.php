@@ -102,7 +102,7 @@
                                         <th class="px-4 py-3">Material</th>
                                         <th class="px-4 py-3">Qty Required</th>
                                         <th class="px-4 py-3">UOM</th>
-                                        <th class="px-4 py-3">Scrap %</th>
+                                        <th class="px-4 py-3">Deviation %</th>
                                         <th class="px-4 py-3">Sub. Material</th>
                                         <th class="px-4 py-3 text-center">Critical</th>
                                         <th class="px-4 py-3">Remarks</th>

@@ -231,7 +231,7 @@
                                 <th class="px-4 py-3">Qty <span class="text-red-500">*</span></th>
                                 <th class="px-4 py-3">UOM <span class="text-red-500">*</span></th>
                                 <th class="px-4 py-3">Sub. Material</th>
-                                <th class="px-4 py-3 w-24">Scrap %</th>
+                                <th class="px-4 py-3 w-24">Deviation %</th>
                                 <th class="px-4 py-3 w-32 bg-gray-100 text-gray-700">Effective Qty</th>
                                 <th class="px-4 py-3 w-20 text-center">Critical</th>
                                 <th class="px-4 py-3 w-16 text-center">Actions</th>

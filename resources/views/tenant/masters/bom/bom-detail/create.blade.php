@@ -97,10 +97,10 @@
                         <p class="text-xs text-gray-500 mt-1">Unit of measurement for quantity</p>
                     </div>
 
-                    <!-- Scrap Percentage -->
+                    <!-- Deviation Percentage -->
                     <div>
                         <label class="block text-sm font-medium text-gray-700 mb-2">
-                            Scrap Percentage
+                            Deviation Percentage
                         </label>
                         <input type="number" x-model.number="form.scrap_percent" min="0" max="100" step="0.01"
                                placeholder="0.00" @input="calculateEffectiveQty"
@@ -113,7 +113,7 @@
                         <div class="flex justify-between items-center">
                             <div>
                                 <span class="text-sm font-medium text-gray-700">Effective Quantity:</span>
-                                <p class="text-xs text-gray-500 mt-1">qty × (1 + scrap%/100)</p>
+                                <p class="text-xs text-gray-500 mt-1">qty × (1 + deviation%/100)</p>
                             </div>
                             <span class="text-lg font-bold text-blue-600" x-text="effectiveQty.toFixed(4)"></span>
                         </div>

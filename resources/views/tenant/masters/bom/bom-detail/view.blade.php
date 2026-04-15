@@ -84,9 +84,9 @@
                             <p class="text-lg text-gray-900" x-text="detail.uom?.uom_code + ' - ' + detail.uom?.uom_name"></p>
                         </div>
 
-                        <!-- Scrap Percentage -->
+                        <!-- Deviation Percentage -->
                         <div>
-                            <label class="block text-sm font-medium text-gray-600 mb-1">Scrap Percentage</label>
+                            <label class="block text-sm font-medium text-gray-600 mb-1">Deviation Percentage</label>
                             <p class="text-lg text-gray-900" x-text="parseFloat(detail.scrap_percent || 0).toFixed(2) + '%'"></p>
                         </div>
 
