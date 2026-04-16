@@ -13,6 +13,7 @@ class MaterialIssueRequest extends Model
         'mir_no',
         'batch_run_id',
         'production_order_id',
+        'production_request_id',
         'status',
         'remarks',
         'rejection_reason',
@@ -27,6 +28,11 @@ class MaterialIssueRequest extends Model
         'fully_issued_at' => 'datetime',
         'closed_at' => 'datetime',
     ];
+
+    public function productionRequest()
+    {
+        return $this->belongsTo(ProductionRequest::class, 'production_request_id');
+    }
 
     public function productionOrder()
     {

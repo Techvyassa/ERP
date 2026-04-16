@@ -203,15 +203,15 @@
                                         <p class="text-lg text-gray-900" x-text="viewModal.request.planned_date"></p>
                                     </div>
                                     <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4">
-                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-2">Flow
+                                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-2">
                                             Stage</p>
                                         <span
                                             class="inline-flex px-3 py-1 text-[10px] font-black rounded-full shadow-sm ring-1 ring-inset uppercase tracking-[0.05em]"
                                             :class="{
-                                                        'bg-orange-50 text-orange-700 ring-orange-100': viewModal.request.status === 'CONVERTED_TO_MIR',
-                                                        'bg-indigo-50 text-indigo-700 ring-indigo-100': viewModal.request.status === 'CONVERTED_TO_ORDER',
-                                                        'bg-rose-50 text-rose-700 ring-rose-100': viewModal.request.status === 'REJECTED'
-                                                    }"
+                                                            'bg-orange-50 text-orange-700 ring-orange-100': viewModal.request.status === 'CONVERTED_TO_MIR',
+                                                            'bg-indigo-50 text-indigo-700 ring-indigo-100': viewModal.request.status === 'CONVERTED_TO_ORDER',
+                                                            'bg-rose-50 text-rose-700 ring-rose-100': viewModal.request.status === 'REJECTED'
+                                                        }"
                                             x-text="viewModal.request.status === 'CONVERTED_TO_MIR' ? 'MIR GENERATED' : (viewModal.request.status === 'RECEIVED' ? 'RECEIVED' : viewModal.request.status)"></span>
                                     </div>
                                     <div class="bg-slate-50 border border-slate-100 rounded-2xl p-4">
@@ -220,13 +220,13 @@
                                         <span
                                             class="inline-flex px-3 py-1 text-[10px] font-black rounded-full ring-1 ring-inset uppercase tracking-[0.05em]"
                                             :class="{
-                                                        'bg-amber-50 text-amber-700 ring-amber-100': viewModal.request.mir_status === 'PENDING',
-                                                        'bg-blue-50 text-blue-700 ring-blue-100': viewModal.request.mir_status === 'APPROVED',
-                                                        'bg-indigo-50 text-indigo-700 ring-indigo-100': viewModal.request.mir_status === 'PARTIALLY_ISSUED',
-                                                        'bg-emerald-50 text-emerald-700 ring-emerald-100': viewModal.request.mir_status === 'FULLY_ISSUED',
-                                                        'bg-rose-50 text-rose-700 ring-rose-100': viewModal.request.mir_status === 'REJECTED',
-                                                        'bg-gray-50 text-gray-400 ring-gray-100': !viewModal.request.mir_status
-                                                    }" x-text="viewModal.request.mir_status || 'Not Generated'"></span>
+                                                            'bg-amber-50 text-amber-700 ring-amber-100': viewModal.request.mir_status === 'PENDING',
+                                                            'bg-blue-50 text-blue-700 ring-blue-100': viewModal.request.mir_status === 'APPROVED',
+                                                            'bg-indigo-50 text-indigo-700 ring-indigo-100': viewModal.request.mir_status === 'PARTIALLY_ISSUED',
+                                                            'bg-emerald-50 text-emerald-700 ring-emerald-100': viewModal.request.mir_status === 'FULLY_ISSUED',
+                                                            'bg-rose-50 text-rose-700 ring-rose-100': viewModal.request.mir_status === 'REJECTED',
+                                                            'bg-gray-50 text-gray-400 ring-gray-100': !viewModal.request.mir_status
+                                                        }" x-text="viewModal.request.mir_status || 'Not Generated'"></span>
                                     </div>
                                 </div>
 
@@ -302,8 +302,7 @@
             <div class="flex items-center justify-center min-h-screen px-4 py-8">
                 <div class="fixed inset-0 bg-slate-900/50" @click="closeModal()"></div>
                 <div class="relative bg-white rounded-xl shadow-xl w-full max-w-lg z-10"
-                    x-transition:enter="transition ease-out duration-300"
-                    x-transition:enter-start="opacity-0 scale-95"
+                    x-transition:enter="transition ease-out duration-300" x-transition:enter-start="opacity-0 scale-95"
                     x-transition:enter-end="opacity-100 scale-100" @click.stop>
 
                     <!-- Header -->
@@ -323,7 +322,9 @@
                                 class="w-full px-3 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-orange-500 focus:border-orange-500">
                                 <option value="">Select Product</option>
                                 <template x-for="p in products" :key="p.id">
-                                    <option :value="p.id" x-text="p.product_name + (p.product_code ? ' (' + p.product_code + ')' : '')"></option>
+                                    <option :value="p.id"
+                                        x-text="p.product_name + (p.product_code ? ' (' + p.product_code + ')' : '')">
+                                    </option>
                                 </template>
                             </select>
                         </div>
@@ -333,7 +334,8 @@
                             <label class="block text-sm font-medium text-gray-700 mb-1">BOM</label>
                             <template x-if="boms.length === 1">
                                 <div class="p-3 bg-orange-50 border border-orange-100 rounded-lg">
-                                    <p class="font-medium text-gray-900" x-text="boms[0].bom_code + ' (v' + boms[0].version + ')'"></p>
+                                    <p class="font-medium text-gray-900"
+                                        x-text="boms[0].bom_code + ' (v' + boms[0].version + ')'"></p>
                                 </div>
                             </template>
                             <template x-if="boms.length > 1">
@@ -364,7 +366,8 @@
 
                         <!-- Materials Preview -->
                         <div x-show="rmLines.length > 0" x-collapse class="border-t pt-4">
-                            <p class="text-sm font-medium text-gray-700 mb-2">Materials (<span x-text="rmLines.length"></span>)</p>
+                            <p class="text-sm font-medium text-gray-700 mb-2">Materials (<span
+                                    x-text="rmLines.length"></span>)</p>
                             <div class="bg-gray-50 rounded-lg overflow-hidden">
                                 <table class="w-full text-sm">
                                     <thead class="bg-gray-100 text-xs font-medium text-gray-500">
@@ -379,11 +382,14 @@
                                         <template x-for="line in rmLines" :key="line.material_id">
                                             <tr>
                                                 <td class="px-3 py-2 text-gray-900" x-text="line.material_name"></td>
-                                                <td class="px-3 py-2 text-right text-gray-600" x-text="parseFloat(line.qty_required).toFixed(4)"></td>
+                                                <td class="px-3 py-2 text-right text-gray-600"
+                                                    x-text="parseFloat(line.qty_required).toFixed(4)"></td>
                                                 <td class="px-3 py-2 text-right">
-                                                    <span class="text-amber-600 font-medium" x-text="(parseFloat(line.scrap_percent) || 0) + '%'"></span>
+                                                    <span class="text-amber-600 font-medium"
+                                                        x-text="(parseFloat(line.scrap_percent) || 0) + '%'"></span>
                                                 </td>
-                                                <td class="px-3 py-2 text-right font-medium text-gray-900" x-text="line.required_qty"></td>
+                                                <td class="px-3 py-2 text-right font-medium text-gray-900"
+                                                    x-text="line.required_qty"></td>
                                             </tr>
                                         </template>
                                     </tbody>
@@ -408,8 +414,8 @@
                             <span x-show="submitting">Creating...</span>
                         </button>
                     </div>
-        </div>
-        </div>
+                </div>
+            </div>
         </div>
 
         <!-- Page Header -->
@@ -586,10 +592,10 @@
                                     <span
                                         class="inline-flex items-center px-3 py-1 text-[10px] font-black rounded-full shadow-sm ring-1 ring-inset uppercase tracking-[0.05em]"
                                         :class="{
-                                                    'bg-orange-50 text-orange-700 ring-orange-100': request.status === 'CONVERTED_TO_MIR',
-                                                    'bg-blue-50 text-blue-700 ring-blue-100': request.mir_status === 'FULLY_ISSUED',
-                                                    'bg-rose-50 text-rose-700 ring-rose-100': request.status === 'REJECTED'
-                                                }">
+                                                        'bg-orange-50 text-orange-700 ring-orange-100': request.status === 'CONVERTED_TO_MIR',
+                                                        'bg-blue-50 text-blue-700 ring-blue-100': request.mir_status === 'FULLY_ISSUED',
+                                                        'bg-rose-50 text-rose-700 ring-rose-100': request.status === 'REJECTED'
+                                                    }">
                                         <span
                                             x-text="request.mir_status === 'FULLY_ISSUED' ? 'MIR ISSUED' : (request.status === 'CONVERTED_TO_MIR' ? 'MIR GENERATED' : (request.status === 'RECEIVED' ? 'RECEIVED' : request.status))"></span>
                                     </span>
@@ -609,7 +615,7 @@
                                             </button>
                                         </template>
 
-                                        
+
                                     </div>
                                 </td>
                             </tr>
@@ -922,7 +928,7 @@
                     }
                 },
 
-                
+
 
                 async viewRequest(request) {
                     this.viewModal.show = true;

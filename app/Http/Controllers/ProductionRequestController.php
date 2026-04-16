@@ -349,6 +349,7 @@ class ProductionRequestController extends Controller
             $mir = MaterialIssueRequest::create([
                 'mir_no' => MaterialIssueRequest::generateMirNo(),
                 'production_order_id' => null, 
+                'production_request_id' => $productionRequest->id,
                 'status' => 'PENDING',
                 'remarks' => "Created from Production Request: {$productionRequest->request_no}",
             ]);

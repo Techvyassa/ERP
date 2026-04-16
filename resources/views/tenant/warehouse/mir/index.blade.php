@@ -89,7 +89,7 @@
                 <thead>
                     <tr class="bg-slate-50/50">
                         <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">MIR Details</th>
-                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Production Order</th>
+                        <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Production Request</th>
                         <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Main Product</th>
                         <th class="px-6 py-4 text-center text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Issue Status</th>
                         <th class="px-6 py-4 text-left text-[10px] font-black text-slate-400 uppercase tracking-widest leading-none">Request Date</th>
@@ -133,7 +133,9 @@
                                 </div>
                             </td>
                             <td class="px-6 py-4 leading-none">
-                                <span class="text-xs font-extrabold text-slate-700" x-text="mir.order_no || '—'"></span>
+                                <div class="flex flex-col gap-1">
+                                    <span class="text-xs font-extrabold text-slate-700" x-text="mir.request_no || mir.order_no || '—'"></span>
+                                </div>
                             </td>
                             <td class="px-6 py-4 leading-none">
                                 <div class="flex flex-col gap-1">

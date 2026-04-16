@@ -63,6 +63,11 @@ class ProductionOrder extends Model
         return $this->hasOne(MaterialIssueRequest::class, 'production_order_id');
     }
 
+    public function productionRequest()
+    {
+        return $this->hasOne(ProductionRequest::class, 'production_order_id');
+    }
+
     public function fgBin()
     {
         return $this->belongsTo(BinLocation::class, 'fg_bin_id');
