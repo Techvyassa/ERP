@@ -1,7 +1,7 @@
 @extends('layouts.production')
 
-@section('title', 'Receiving')
-@section('page-title', 'Receiving')
+@section('title', 'Material Receiving')
+@section('page-title', 'Material Receiving')
 
 @section('content')
 <div x-data="receivingList()" x-init="init()">

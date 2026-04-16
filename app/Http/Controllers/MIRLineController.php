@@ -4,11 +4,22 @@ namespace App\Http\Controllers;
 
 use App\Models\Tenant\MIRLineItem;
 use App\Models\Tenant\MIRIssueTransaction;
+use App\Models\Tenant\MaterialIssueRequest;
+use App\Models\Tenant\StockBalance;
+use App\Services\StockService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 class MIRLineController extends Controller
 {
+    protected StockService $stockService;
+
+    public function __construct()
+    {
+        $this->stockService = app(StockService::class);
+    }
     /**
      * Get MIR line details with transaction history
      */
@@ -153,12 +164,14 @@ class MIRLineController extends Controller
 
     /**
      * Issue material (partial or full)
-     * Creates transaction record and updates line status
+     * Creates transaction record, deducts stock, and updates line status
      */
     public function issue(Request $request, int $id): JsonResponse
     {
         $validated = $request->validate([
-            'issued_qty' => 'required|numeric|min:0.01',
+            'issued_qty' => 'required|numeric|min:0.001',
+            'bin_id' => 'nullable|integer',
+            'batch_number' => 'nullable|string',
             'notes' => 'nullable|string|max:500',
         ]);
 
@@ -169,7 +182,7 @@ class MIRLineController extends Controller
             \DB::reconnect('tenant');
         }
 
-        $line = MIRLineItem::findOrFail($id);
+        $line = MIRLineItem::with(['material', 'mir'])->findOrFail($id);
 
         // Validate preconditions
         if (!$line->canIssue()) {
@@ -180,6 +193,7 @@ class MIRLineController extends Controller
         }
 
         $remaining = $line->getRemainingQty();
+        
         if ($validated['issued_qty'] > $remaining) {
             return response()->json([
                 'success' => false,
@@ -187,22 +201,102 @@ class MIRLineController extends Controller
             ], 422);
         }
 
-        // Create transaction record
-        $transaction = MIRIssueTransaction::create([
-            'mir_line_id' => $line->id,
-            'issued_qty' => $validated['issued_qty'],
-            'issued_by' => $request->input('auth_user_id'),
-            'issued_at' => now(),
-            'notes' => $validated['notes'],
-        ]);
-
-        // Update line issued_qty
-        $line->issued_qty += $validated['issued_qty'];
-        $line->updateStatus();
-
-        // Recalculate MIR header status
+        // Get material and warehouse info
+        $material = $line->material;
         $mir = $line->mir;
-        $mir->updateHeaderStatus();
+        
+        // Determine warehouse - use default or from MIR
+        $warehouseId = 1; // Default warehouse - can be made configurable
+        $binId = $validated['bin_id'] ?? null;
+        $batchNumber = $validated['batch_number'] ?? null;
+
+        // Check available stock
+        $availableStock = $this->getAvailableStockForMaterial($material->id, $warehouseId, $binId);
+        
+        if ($availableStock < $validated['issued_qty']) {
+            return response()->json([
+                'success' => false,
+                'message' => "Insufficient stock. Available: {$availableStock}, Requested: {$validated['issued_qty']}",
+            ], 422);
+        }
+
+        // Use database transaction for atomic stock deduction
+        try {
+            DB::connection('tenant')->transaction(function () use (
+                $line, $mir, $material, $warehouseId, $binId, $batchNumber, $validated, $request
+            ) {
+                $userId = $request->input('auth_user_id') ?? 1;
+                $issuedQty = $validated['issued_qty'];
+                
+                // If no specific bin/batch provided, use FIFO - get oldest stock
+                if (!$binId || !$batchNumber) {
+                    $stockAllocation = $this->allocateStockFIFO(
+                        $material->id,
+                        $warehouseId,
+                        $issuedQty,
+                        $line->uom_id
+                    );
+                    
+                    if (!$stockAllocation) {
+                        throw new \Exception('No stock available for allocation');
+                    }
+                    
+                    $binId = $stockAllocation['bin_id'];
+                    $batchNumber = $stockAllocation['batch_number'];
+                    $allocatedQty = $stockAllocation['qty'];
+                } else {
+                    $allocatedQty = $issuedQty;
+                }
+
+                // Deduct stock using StockService
+                $this->stockService->post(
+                    item: [
+                        'material_id' => $material->id,
+                        'uom_id' => $line->uom_id,
+                        'warehouse_id' => $warehouseId,
+                        'batch_number' => $batchNumber,
+                    ],
+                    bucket: 'AVAILABLE',
+                    qtyChange: -$allocatedQty,
+                    transactionType: 'PRODUCTION_ISSUE',
+                    referenceType: 'MaterialIssueRequest',
+                    referenceId: $mir->id,
+                    referenceNumber: $mir->mir_no,
+                    userId: $userId,
+                    binId: $binId,
+                    remarks: $validated['notes'] ?? "MIR Issue - {$mir->mir_no}"
+                );
+
+                // Create MIR transaction record
+                $transaction = MIRIssueTransaction::create([
+                    'mir_line_id' => $line->id,
+                    'issued_qty' => $issuedQty,
+                    'issued_by' => $userId,
+                    'issued_at' => now(),
+                    'notes' => $validated['notes'] ?? "Bin: {$binId}, Batch: {$batchNumber}",
+                ]);
+
+                // Update line issued_qty
+                $line->issued_qty += $issuedQty;
+                $line->updateStatus();
+
+                // Recalculate MIR header status
+                $mir->updateHeaderStatus();
+            });
+        } catch (\Exception $e) {
+            Log::error('MIRLineController@issue: Stock deduction failed', [
+                'line_id' => $line->id,
+                'error' => $e->getMessage(),
+            ]);
+            
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to issue material: ' . $e->getMessage(),
+            ], 500);
+        }
+
+        // Reload line to get updated values
+        $line->refresh();
 
         return response()->json([
             'success' => true,
@@ -216,12 +310,69 @@ class MIRLineController extends Controller
                     'status' => $line->status,
                 ],
                 'transaction' => [
-                    'id' => $transaction->id,
-                    'issued_qty' => $transaction->issued_qty,
-                    'issued_at' => $transaction->issued_at,
+                    'id' => null,
+                    'issued_qty' => $validated['issued_qty'],
+                    'issued_at' => now(),
                 ],
                 'mir_status' => $mir->status,
             ],
         ]);
+    }
+
+    /**
+     * Get available stock for a material
+     */
+    private function getAvailableStockForMaterial(int $materialId, int $warehouseId, ?int $binId = null): float
+    {
+        $query = StockBalance::where('material_id', $materialId)
+            ->where('warehouse_id', $warehouseId)
+            ->where('bucket', 'AVAILABLE');
+
+        if ($binId) {
+            $query->where('bin_id', $binId);
+        }
+
+        return (float) $query->sum('qty_on_hand');
+    }
+
+    /**
+     * Allocate stock using FIFO (First In First Out) method
+     * Returns the bin and batch with the oldest stock
+     */
+    private function allocateStockFIFO(int $materialId, int $warehouseId, float $requiredQty, int $uomId): ?array
+    {
+        $stocks = StockBalance::where('material_id', $materialId)
+            ->where('warehouse_id', $warehouseId)
+            ->where('bucket', 'AVAILABLE')
+            ->where('qty_on_hand', '>', 0)
+            ->orderBy('last_transaction_at', 'asc')
+            ->orderBy('id', 'asc')
+            ->get();
+
+        if ($stocks->isEmpty()) {
+            return null;
+        }
+
+        $allocatedQty = 0;
+        $allocations = [];
+
+        foreach ($stocks as $stock) {
+            if ($allocatedQty >= $requiredQty) break;
+
+            $takeQty = min($stock->qty_on_hand, $requiredQty - $allocatedQty);
+            $allocations[] = [
+                'bin_id' => $stock->bin_id,
+                'batch_number' => $stock->batch_number,
+                'qty' => $takeQty,
+            ];
+            $allocatedQty += $takeQty;
+        }
+
+        if ($allocatedQty < $requiredQty) {
+            return null;
+        }
+
+        // Return first allocation (FIFO)
+        return $allocations[0];
     }
 }

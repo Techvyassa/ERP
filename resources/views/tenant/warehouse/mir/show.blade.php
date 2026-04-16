@@ -403,7 +403,7 @@
                                     class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all font-mono placeholder:text-slate-300">
                             </div>
 
-                            <!-- Issue Quantity — read-only, pre-filled with remaining qty -->
+                            <!-- Issue Quantity - editable, pre-filled with remaining qty -->
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">numbers</span>
@@ -412,10 +412,9 @@
                                         x-text="'max: ' + selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></span>
                                 </label>
                                 <div class="relative">
-                                    <input type="number"
-                                        :value="scanForm.quantity"
-                                        readonly
-                                        class="w-full px-4 py-3.5 bg-slate-100 border-none rounded-2xl text-sm font-black text-slate-500 cursor-not-allowed select-none">
+                                    <input type="number" step="0.001" min="0"
+                                        x-model="scanForm.quantity"
+                                        class="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-sm font-black text-slate-800 focus:border-emerald-500 focus:ring-0 transition-all">
                                     <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom_name || selectedLine?.uom || ''"></span>
                                 </div>
                             </div>
@@ -749,6 +748,10 @@
                     return;
                 }
                 try {
+                    // Get bin_id from selected bin
+                    const selectedBin = this.availableBins.find(b => b.bin_code === this.scanForm.bin_barcode);
+                    const binId = selectedBin ? selectedBin.id : null;
+                    
                     // Use the new MIR line issue endpoint
                     const apiUrl = `${window.location.origin}/api/v1/mir-lines/${this.selectedLine.id}/issue`;
                     const res = await fetch(apiUrl, {
@@ -756,6 +759,8 @@
                         headers: headers(),
                         body: JSON.stringify({
                             issued_qty: parseFloat(this.scanForm.quantity),
+                            bin_id: binId,
+                            batch_number: selectedBin?.batch_number || null,
                             notes: [this.scanForm.bin_barcode, this.scanForm.material_barcode].filter(Boolean).join(' | ')
                         })
                     });
@@ -763,6 +768,7 @@
                     if (data.success) {
                         this.showScanModal = false;
                         await this.loadMIR();
+                        await this.loadStockData(); // Refresh stock data after issue
                         window.dispatchEvent(new CustomEvent('notify', {
                             detail: {
                                 message: data.data?.line?.status === 'FULLY_PICKED'
