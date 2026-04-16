@@ -565,6 +565,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/reject', [App\Http\Controllers\ProductionRequestController::class, 'reject']);
                 Route::post('/{id}/convert-to-mir', [App\Http\Controllers\ProductionRequestController::class, 'convertToMIR']);
                 Route::post('/{id}/convert-to-order', [App\Http\Controllers\ProductionRequestController::class, 'convertToOrder']);
+                Route::patch('/{id}/confirm-receipt', [App\Http\Controllers\ProductionRequestController::class, 'confirmReceipt']);
                 Route::get('/{id}/materials', [App\Http\Controllers\ProductionRequestController::class, 'materials']);
             });
 

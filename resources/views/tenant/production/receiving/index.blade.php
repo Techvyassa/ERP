@@ -10,8 +10,8 @@
     <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-amber-50 rounded-xl text-amber-600">
-                    <span class="material-symbols-outlined text-2xl">pending</span>
+                <div class="p-3 bg-amber-100 rounded-xl w-12 h-12 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-xl text-amber-600">pending</span>
                 </div>
                 <div>
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Pending Receipt</p>
@@ -21,8 +21,8 @@
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-orange-50 rounded-xl text-orange-600">
-                    <span class="material-symbols-outlined text-2xl">pending_partial</span>
+                <div class="p-3 bg-orange-100 rounded-xl w-12 h-12 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-xl text-orange-600">more_horiz</span>
                 </div>
                 <div>
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Partial Issue</p>
@@ -32,8 +32,8 @@
         </div>
         <div class="bg-white rounded-2xl p-5 shadow-sm border border-gray-100">
             <div class="flex items-center gap-4">
-                <div class="p-3 bg-emerald-50 rounded-xl text-emerald-600">
-                    <span class="material-symbols-outlined text-2xl">check_circle</span>
+                <div class="p-3 bg-emerald-100 rounded-xl w-12 h-12 flex items-center justify-center">
+                    <span class="material-symbols-outlined text-xl text-emerald-600">check_circle</span>
                 </div>
                 <div>
                     <p class="text-xs font-bold text-gray-500 uppercase tracking-wider mb-1">Received</p>
@@ -132,19 +132,19 @@
                             <td class="px-6 py-4 text-right leading-none">
                                 <!-- FULLY_ISSUED: needs floor confirmation -->
                                 <template x-if="order.mir_status === 'FULLY_ISSUED'">
-                                    <a :href="`/org/{{ $organization->org_slug }}/warehouse/mir/${order.mir_id}`"
+                                    <button @click="confirmReceipt(order)"
                                         class="inline-flex items-center gap-1.5 px-4 py-2 bg-amber-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-amber-600 transition-all shadow-sm active:scale-95">
                                         <span class="material-symbols-outlined text-sm">move_to_inbox</span>
                                         Confirm Receipt
-                                    </a>
+                                    </button>
                                 </template>
                                 <!-- PARTIALLY_ISSUED: can still confirm partial -->
                                 <template x-if="order.mir_status === 'PARTIALLY_ISSUED'">
-                                    <a :href="`/org/{{ $organization->org_slug }}/warehouse/mir/${order.mir_id}`"
+                                    <button @click="confirmReceipt(order)"
                                         class="inline-flex items-center gap-1.5 px-4 py-2 bg-orange-500 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-all shadow-sm active:scale-95">
                                         <span class="material-symbols-outlined text-sm">move_to_inbox</span>
                                         Partial Receipt
-                                    </a>
+                                    </button>
                                 </template>
                                 <!-- CLOSED: already confirmed -->
                                 <template x-if="order.mir_status === 'CLOSED'">
@@ -158,6 +158,123 @@
                     </template>
                 </tbody>
             </table>
+        </div>
+    </div>
+
+    <!-- Confirm Receipt Modal -->
+    <div x-show="showConfirmModal" x-cloak class="fixed inset-0 z-50 overflow-y-auto">
+        <div class="flex items-center justify-center min-h-screen px-4 py-8">
+            <div class="fixed inset-0 bg-black/50 backdrop-blur-sm" @click="showConfirmModal = false"></div>
+            
+            <div class="relative bg-white rounded-2xl shadow-2xl w-full max-w-2xl p-6 z-10 max-h-[90vh] overflow-y-auto">
+                <div class="flex items-center justify-between mb-4">
+                    <h3 class="text-lg font-black text-slate-900">Confirm Material Receipt</h3>
+                    <button @click="showConfirmModal = false" class="text-slate-400 hover:text-slate-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+
+                <template x-if="selectedOrder">
+                    <div class="space-y-4">
+                        <!-- Order Info -->
+                        <div class="bg-slate-50 rounded-xl p-4 grid grid-cols-2 gap-4">
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500">Request No:</span>
+                                <span class="font-bold text-slate-900" x-text="selectedOrder.request_no"></span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500">Product:</span>
+                                <span class="font-bold text-slate-900" x-text="selectedOrder.product_name"></span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500">Target Qty:</span>
+                                <span class="font-bold text-slate-900" x-text="selectedOrder.target_qty"></span>
+                            </div>
+                            <div class="flex justify-between text-sm">
+                                <span class="text-slate-500">MIR Status:</span>
+                                <span class="font-black" 
+                                      :class="{
+                                          'text-amber-600': selectedOrder.mir_status === 'FULLY_ISSUED',
+                                          'text-orange-600': selectedOrder.mir_status === 'PARTIALLY_ISSUED'
+                                      }"
+                                      x-text="selectedOrder.mir_status"></span>
+                            </div>
+                        </div>
+
+                        <!-- Materials List -->
+                        <div>
+                            <h4 class="text-xs font-black text-slate-700 uppercase tracking-widest mb-2">Materials to Receive</h4>
+                            <div class="border border-gray-200 rounded-xl overflow-hidden">
+                                <table class="w-full text-left">
+                                    <thead class="bg-slate-50">
+                                        <tr>
+                                            <th class="px-3 py-2 text-[9px] font-black text-slate-500 uppercase">Material</th>
+                                            <th class="px-3 py-2 text-[9px] font-black text-slate-500 uppercase text-center">Required</th>
+                                            <th class="px-3 py-2 text-[9px] font-black text-slate-500 uppercase text-center">Issued</th>
+                                            <th class="px-3 py-2 text-[9px] font-black text-slate-500 uppercase text-center">Receive Qty</th>
+                                            <th class="px-3 py-2 text-[9px] font-black text-slate-500 uppercase text-center">UOM</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody class="divide-y divide-gray-100">
+                                        <template x-for="(line, index) in mirLines" :key="line.id">
+                                            <tr>
+                                                <td class="px-3 py-2">
+                                                    <div class="flex flex-col">
+                                                        <span class="text-xs font-bold text-slate-800" x-text="line.material_name"></span>
+                                                        <span class="text-[9px] text-slate-400 font-mono" x-text="line.material_code"></span>
+                                                    </div>
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <span class="text-xs font-black text-slate-600" x-text="line.required_qty"></span>
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <span class="text-xs font-black text-emerald-600" x-text="line.issued_qty"></span>
+                                                </td>
+                                                <td class="px-3 py-2">
+                                                    <input type="number" step="0.001" min="0" :max="line.remaining_qty"
+                                                        x-model="line.received_qty"
+                                                        class="w-full px-2 py-1.5 text-center text-xs font-black border-2 border-slate-200 rounded-lg focus:border-emerald-500 focus:outline-none">
+                                                </td>
+                                                <td class="px-3 py-2 text-center">
+                                                    <span class="text-[9px] text-slate-500 uppercase" x-text="line.uom"></span>
+                                                </td>
+                                            </tr>
+                                        </template>
+                                    </tbody>
+                                </table>
+                            </div>
+                        </div>
+
+                        <!-- Notes -->
+                        <div>
+                            <label class="block text-xs font-bold text-slate-700 mb-1">Receiving Notes (Optional)</label>
+                            <textarea x-model="receivingNotes" rows="2" 
+                                class="w-full px-3 py-2 border border-gray-200 rounded-xl text-sm focus:outline-none focus:ring-2 focus:ring-orange-500"
+                                placeholder="Add any notes about material condition, discrepancies, etc."></textarea>
+                        </div>
+
+                        <!-- Error Message -->
+                        <template x-if="confirmError">
+                            <div class="bg-red-50 border border-red-200 rounded-xl p-3">
+                                <p class="text-xs text-red-700 font-bold" x-text="confirmError"></p>
+                            </div>
+                        </template>
+
+                        <!-- Actions -->
+                        <div class="flex gap-3 pt-2">
+                            <button @click="showConfirmModal = false" 
+                                class="flex-1 px-4 py-2.5 bg-white border border-gray-200 text-slate-700 text-xs font-black uppercase tracking-widest rounded-xl hover:bg-slate-50 transition-all">
+                                Cancel
+                            </button>
+                            <button @click="submitConfirmReceipt" :disabled="processing"
+                                class="flex-1 px-4 py-2.5 bg-orange-500 text-white text-xs font-black uppercase tracking-widest rounded-xl hover:bg-orange-600 transition-all disabled:opacity-50 disabled:cursor-not-allowed flex items-center justify-center gap-2">
+                                <span x-show="processing" class="material-symbols-outlined text-sm animate-spin">progress_activity</span>
+                                <span x-text="processing ? 'Processing...' : 'Confirm Receipt'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
         </div>
     </div>
 </div>
@@ -180,6 +297,12 @@
             orders: [],
             loading: false,
             filter: 'FULLY_ISSUED',
+            showConfirmModal: false,
+            selectedOrder: null,
+            receivingNotes: '',
+            confirmError: '',
+            processing: false,
+            mirLines: [],
 
             async init() {
                 await this.loadOrders();
@@ -215,6 +338,96 @@
                     console.error(e);
                 } finally {
                     this.loading = false;
+                }
+            },
+
+            confirmReceipt(order) {
+                this.selectedOrder = order;
+                this.receivingNotes = '';
+                this.confirmError = '';
+                this.mirLines = [];
+                this.loadMirDetails(order.mir_id);
+                this.showConfirmModal = true;
+            },
+
+            async loadMirDetails(mirId) {
+                try {
+                    const res = await fetch(`/api/v1/material-issue-requests/${mirId}`, { headers: headers() });
+                    const data = await res.json();
+                    if (data.success) {
+                        const mirStatus = data.data.status;
+                        this.mirLines = (data.data.lines || []).map(line => {
+                            const required = parseFloat(line.required_qty || 0);
+                            const issued = parseFloat(line.issued_qty || 0);
+                            const remaining = parseFloat(line.remaining_qty || 0);
+                            
+                            // Prefill logic: for FULLY_ISSUED use issued_qty, for PARTIALLY use remaining
+                            const prefilledQty = mirStatus === 'FULLY_ISSUED' ? issued : remaining;
+                            
+                            return {
+                                id: line.id,
+                                material_name: line.material?.name || '',
+                                material_code: line.material?.code || '',
+                                required_qty: required.toFixed(3),
+                                issued_qty: issued.toFixed(3),
+                                remaining_qty: remaining.toFixed(3),
+                                uom: line.uom_name || line.uom || '',
+                                received_qty: prefilledQty.toFixed(3)
+                            };
+                        });
+                    }
+                } catch (e) {
+                    console.error('Error loading MIR details:', e);
+                }
+            },
+
+            async submitConfirmReceipt() {
+                this.confirmError = '';
+                this.processing = true;
+                
+                // Prepare line items with received quantities
+                const lineItems = this.mirLines.map(line => ({
+                    mir_line_id: line.id,
+                    received_qty: parseFloat(line.received_qty) || 0
+                }));
+                
+                try {
+                    const res = await fetch(`/api/v1/production-requests/${this.selectedOrder.id}/confirm-receipt`, {
+                        method: 'PATCH',
+                        headers: {
+                            ...headers(),
+                            'Content-Type': 'application/json'
+                        },
+                        body: JSON.stringify({
+                            receiving_notes: this.receivingNotes || null,
+                            line_items: lineItems
+                        })
+                    });
+                    
+                    const data = await res.json();
+                    
+                    if (!data.success) {
+                        throw new Error(data.message || 'Failed to confirm receipt');
+                    }
+
+                    // Success - close modal and reload
+                    this.showConfirmModal = false;
+                    
+                    // Show success notification
+                    window.dispatchEvent(new CustomEvent('notify', {
+                        detail: { 
+                            message: data.message || 'Materials confirmed successfully!', 
+                            type: 'success' 
+                        }
+                    }));
+                    
+                    // Reload orders to reflect the changes
+                    await this.loadOrders();
+                    
+                } catch (e) {
+                    this.confirmError = e.message || 'An error occurred. Please try again.';
+                } finally {
+                    this.processing = false;
                 }
             },
 

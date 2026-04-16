@@ -322,7 +322,7 @@
                         </div>
                         <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
                             <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Remaining</p>
-                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
+                            <p class="text-base font-black text-amber-700" x-text="parseFloat((selectedLine?.remaining_qty || 0).toFixed(3)) + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
                         </div>
                     </div>
 
@@ -409,7 +409,7 @@
                                     <span class="material-symbols-outlined text-xs">numbers</span>
                                     Issue Quantity
                                     <span class="text-slate-400 font-semibold normal-case tracking-normal ml-auto"
-                                        x-text="'max: ' + selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></span>
+                                        x-text="'max: ' + parseFloat(selectedLine?.remaining_qty || 0).toFixed(3) + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></span>
                                 </label>
                                 <div class="relative">
                                     <input type="number" step="0.001" min="0"
@@ -696,7 +696,7 @@
                 this.scanForm = {
                     bin_barcode: '',
                     material_barcode: line.material_code || line.material?.code || '',
-                    quantity: parseFloat(line.remaining_qty ?? 0),
+                    quantity: parseFloat((line.remaining_qty ?? 0).toFixed(3)),
                 };
                 this.showScanModal = true;
                 this.fetchBins(line);
@@ -736,7 +736,7 @@
                 this.processing = true;
                 this.scanError = '';
                 const qty = parseFloat(this.scanForm.quantity);
-                const remaining = parseFloat(this.selectedLine?.remaining_qty ?? 0);
+                const remaining = parseFloat((this.selectedLine?.remaining_qty ?? 0).toFixed(3));
                 if (!qty || qty <= 0) {
                     this.scanError = 'Issue quantity must be greater than 0.';
                     this.processing = false;

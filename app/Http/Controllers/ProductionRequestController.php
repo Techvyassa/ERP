@@ -563,4 +563,150 @@ class ProductionRequestController extends Controller
             ], 500);
         }
     }
+
+    /**
+     * PATCH /api/v1/production-requests/{id}/confirm-receipt
+     * Production floor confirms materials received from Store.
+     * Closes the MIR and creates a Production Order from the request.
+     */
+    public function confirmReceipt(Request $request, int $id): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            $this->switchTenantDb($request);
+
+            $productionRequest = ProductionRequest::with(['mir.lines'])->findOrFail($id);
+
+            if (!$productionRequest->mir) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'No MIR found for this production request.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            // Check if production order already exists
+            if ($productionRequest->production_order_id) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Production order already exists for this request.',
+                    'request_id' => $requestId,
+                    'data' => [
+                        'production_order_id' => $productionRequest->production_order_id,
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 409);
+            }
+
+            $notes = $request->input('receiving_notes');
+            $lineItems = $request->input('line_items', []);
+            $userId = (int) $request->input('auth_user_id', 0);
+
+            // Validate MIR status - allow both FULLY_ISSUED and PARTIALLY_ISSUED
+            $allowedStatuses = ['FULLY_ISSUED', 'PARTIALLY_ISSUED'];
+            if (!in_array($productionRequest->mir->status, $allowedStatuses)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => "Cannot confirm receipt. MIR status is '{$productionRequest->mir->status}', must be FULLY_ISSUED or PARTIALLY_ISSUED.",
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
+            DB::beginTransaction();
+            try {
+                // Step 1: Update MIR line items with received quantities if provided
+                if (!empty($lineItems)) {
+                    foreach ($lineItems as $item) {
+                        $mirLineId = $item['mir_line_id'] ?? null;
+                        $receivedQty = floatval($item['received_qty'] ?? 0);
+                        
+                        if ($mirLineId && $receivedQty >= 0) {
+                            $mirLine = \App\Models\Tenant\MIRLineItem::find($mirLineId);
+                            if ($mirLine) {
+                                // Update issued_qty to reflect received quantity
+                                $mirLine->issued_qty = $receivedQty;
+                                $mirLine->save();
+                            }
+                        }
+                    }
+                }
+
+                // Step 2: Close the MIR — marks handover from Store to Production
+                $productionRequest->mir->update([
+                    'status'    => 'CLOSED',
+                    'closed_at' => now(),
+                ]);
+
+                // Step 3: Create Production Order from the request
+                $order = ProductionOrder::create([
+                    'order_no' => ProductionOrder::generateOrderNo(),
+                    'product_id' => $productionRequest->product_id,
+                    'bom_id' => $productionRequest->bom_id,
+                    'target_qty' => $productionRequest->target_qty,
+                    'planned_date' => $productionRequest->planned_date,
+                    'status' => 'DRAFT',
+                    'created_by' => $productionRequest->created_by,
+                ]);
+
+                // Link MIR to the new production order
+                $productionRequest->mir->update([
+                    'production_order_id' => $order->id,
+                ]);
+
+                // Update production request with order ID
+                $productionRequest->update([
+                    'production_order_id' => $order->id,
+                ]);
+
+                DB::commit();
+
+                Log::info('[ProductionRequest] Floor receipt confirmed and order created', [
+                    'request_id' => $productionRequest->id,
+                    'request_no' => $productionRequest->request_no,
+                    'order_id'   => $order->id,
+                    'order_no'   => $order->order_no,
+                    'mir_id'     => $productionRequest->mir->id,
+                    'user_id'    => $userId,
+                    'notes'      => $notes,
+                ]);
+
+                return response()->json([
+                    'success' => true,
+                    'data' => [
+                        'request_id'        => $productionRequest->id,
+                        'request_no'        => $productionRequest->request_no,
+                        'production_order_id' => $order->id,
+                        'order_no'          => $order->order_no,
+                        'mir_status'        => 'CLOSED',
+                        'can_start'         => true,
+                    ],
+                    'message' => 'Materials confirmed received. Production order created successfully.',
+                    'request_id' => $requestId,
+                    'timestamp' => now()->toIso8601String(),
+                ]);
+            } catch (\Exception $e) {
+                DB::rollBack();
+                throw $e;
+            }
+        } catch (\Illuminate\Database\Eloquent\ModelNotFoundException $e) {
+            return $this->errorResponse($requestId, 'Production request not found', 404);
+        } catch (\Exception $e) {
+            return $this->errorResponse($requestId, $e->getMessage(), 500);
+        }
+    }
+
+    /**
+     * Format error response
+     */
+    private function errorResponse(string $requestId, string $message, int $status): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+            'request_id' => $requestId,
+            'timestamp' => now()->toIso8601String(),
+        ], $status);
+    }
 }
