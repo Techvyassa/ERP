@@ -1,7 +1,7 @@
 @extends('layouts.production')
 
-@section('title', 'Floor Receiving')
-@section('page-title', 'Floor Receiving')
+@section('title', 'Receiving')
+@section('page-title', 'Receiving')
 
 @section('content')
 <div x-data="receivingList()" x-init="init()">
@@ -164,56 +164,64 @@
 </div>
 
 <script>
-function receivingList() {
-    const orgSlug = '{{ $organization->org_slug }}';
-    const token = () => localStorage.getItem('access_token');
-    const headers = () => {
-        const h = { 'Accept': 'application/json', 'X-Org-Slug': orgSlug };
-        const t = token();
-        if (t && t !== 'null') h['Authorization'] = `Bearer ${t}`;
-        return h;
-    };
+    function receivingList() {
+        const orgSlug = '{{ $organization->org_slug }}';
+        const token = () => localStorage.getItem('access_token');
+        const headers = () => {
+            const h = {
+                'Accept': 'application/json',
+                'X-Org-Slug': orgSlug
+            };
+            const t = token();
+            if (t && t !== 'null') h['Authorization'] = `Bearer ${t}`;
+            return h;
+        };
 
-    return {
-        orders: [],
-        loading: false,
-        filter: 'FULLY_ISSUED',
+        return {
+            orders: [],
+            loading: false,
+            filter: 'FULLY_ISSUED',
 
-        async init() {
-            await this.loadOrders();
-        },
+            async init() {
+                await this.loadOrders();
+            },
 
-        async loadOrders() {
-            this.loading = true;
-            try {
-                // Load orders that have MIR in FULLY_ISSUED or CLOSED state
-                const res = await fetch(`/api/v1/production-orders?per_page=100`, { headers: headers() });
-                const data = await res.json();
-                const all = data?.data?.orders || data?.data || [];
-                // Only show orders relevant to receiving flow
-                this.orders = all.filter(o =>
-                    ['FULLY_ISSUED', 'CLOSED', 'PARTIALLY_ISSUED'].includes(o.mir_status)
-                    || o.status === 'IN_PROGRESS'
-                );
-            } catch (e) {
-                console.error(e);
-            } finally {
-                this.loading = false;
+            async loadOrders() {
+                this.loading = true;
+                try {
+                    // Load orders that have MIR in FULLY_ISSUED or CLOSED state
+                    const res = await fetch(`/api/v1/production-orders?per_page=100`, {
+                        headers: headers()
+                    });
+                    const data = await res.json();
+                    const all = data?.data?.orders || data?.data || [];
+                    // Only show orders relevant to receiving flow
+                    this.orders = all.filter(o => ['FULLY_ISSUED', 'CLOSED', 'PARTIALLY_ISSUED'].includes(o.mir_status) ||
+                        o.status === 'IN_PROGRESS'
+                    );
+                } catch (e) {
+                    console.error(e);
+                } finally {
+                    this.loading = false;
+                }
+            },
+
+            filteredOrders() {
+                if (!this.filter) return this.orders;
+                if (this.filter === 'FULLY_ISSUED') return this.orders.filter(o => o.mir_status === 'FULLY_ISSUED');
+                if (this.filter === 'CLOSED') return this.orders.filter(o => o.mir_status === 'CLOSED' || o.status === 'IN_PROGRESS');
+                return this.orders;
+            },
+
+            formatDate(d) {
+                if (!d) return '—';
+                return new Date(d).toLocaleDateString('en-IN', {
+                    day: '2-digit',
+                    month: 'short',
+                    year: 'numeric'
+                });
             }
-        },
-
-        filteredOrders() {
-            if (!this.filter) return this.orders;
-            if (this.filter === 'FULLY_ISSUED') return this.orders.filter(o => o.mir_status === 'FULLY_ISSUED');
-            if (this.filter === 'CLOSED') return this.orders.filter(o => o.mir_status === 'CLOSED' || o.status === 'IN_PROGRESS');
-            return this.orders;
-        },
-
-        formatDate(d) {
-            if (!d) return '—';
-            return new Date(d).toLocaleDateString('en-IN', { day: '2-digit', month: 'short', year: 'numeric' });
-        }
-    };
-}
+        };
+    }
 </script>
 @endsection

@@ -79,6 +79,7 @@ class ProductionRequestController extends Controller
                 'mir_status' => $r->mir?->status,
                 'production_order_id' => $r->production_order_id,
                 'production_order_no' => $r->productionOrder?->order_no,
+                'yield_percent' => $r->productionOrder?->yield_percent,
                 'created_at' => $r->created_at?->format('Y-m-d H:i'),
             ]);
 
@@ -109,12 +110,32 @@ class ProductionRequestController extends Controller
         try {
             $this->switchTenantDb($request);
             
-            $productionRequest = ProductionRequest::with(['product', 'bom', 'bom.bomDetails', 'bom.outputUom', 'uom', 'creator', 'approver', 'mir', 'mir.lineItems', 'productionOrder'])
+            $productionRequest = ProductionRequest::with(['product', 'bom', 'bom.bomDetails', 'bom.outputUom', 'uom', 'creator', 'approver', 'mir', 'mir.lines', 'productionOrder'])
                 ->findOrFail($id);
+
+            $requestData = [
+                'id' => $productionRequest->id,
+                'request_no' => $productionRequest->request_no,
+                'product_id' => $productionRequest->product_id,
+                'product_name' => $productionRequest->product?->product_name,
+                'product_code' => $productionRequest->product?->product_code,
+                'bom_id' => $productionRequest->bom_id,
+                'bom_code' => $productionRequest->bom?->bom_code,
+                'target_qty' => $productionRequest->target_qty,
+                'uom' => $productionRequest->uom ? [
+                    'uom_code' => $productionRequest->uom->uom_code,
+                    'uom_name' => $productionRequest->uom->uom_name,
+                ] : null,
+                'planned_date' => $productionRequest->planned_date?->format('Y-m-d'),
+                'status' => $productionRequest->status,
+                'mir_id' => $productionRequest->mir_id,
+                'mir_status' => $productionRequest->mir?->status,
+                'production_order_id' => $productionRequest->production_order_id,
+            ];
 
             return response()->json([
                 'success' => true,
-                'data' => ['request' => $productionRequest],
+                'data' => ['request' => $requestData],
                 'message' => 'Production request retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
@@ -155,9 +176,11 @@ class ProductionRequestController extends Controller
                 'target_qty' => $validated['target_qty'],
                 'uom_id' => $validated['uom_id'],
                 'planned_date' => $validated['planned_date'],
-                'status' => 'DRAFT',
+                'status' => 'APPROVED', // Skip DRAFT/PENDING — direct to APPROVED for immediate MIR generation
+                'approved_by' => $request->user()?->id ?? 1,
+                'approved_at' => now(),
                 'remarks' => $validated['remarks'] ?? null,
-                'created_by' => $request->user()->id ?? 1,
+                'created_by' => $request->user()?->id ?? 1,
             ]);
 
             return response()->json([

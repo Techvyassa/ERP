@@ -45,11 +45,11 @@ class ProductionOrderController extends Controller
         $requestId = Str::uuid()->toString();
         try {
             $this->switchTenantDb($request);
-            $query = ProductionOrder::with(['product', 'bom', 'mir']);
+            $ordersQuery = ProductionOrder::with(['product', 'bom', 'mir']);
 
             if ($request->filled('search')) {
                 $s = $request->input('search');
-                $query->where(function ($q) use ($s) {
+                $ordersQuery->where(function ($q) use ($s) {
                     $q->where('order_no', 'like', "%{$s}%")
                         ->orWhereHas('product', fn($p) => $p->where('product_name', 'like', "%{$s}%")
                             ->orWhere('product_code', 'like', "%{$s}%"));
@@ -57,11 +57,12 @@ class ProductionOrderController extends Controller
             }
 
             if ($request->filled('status')) {
-                $query->where('status', $request->input('status'));
+                $ordersQuery->where('status', $request->input('status'));
             }
 
-            $orders = $query->orderByDesc('created_at')->get()->map(fn($o) => [
+            $orders = $ordersQuery->orderByDesc('created_at')->get()->map(fn($o) => [
                 'id' => $o->id,
+                'is_request' => false,
                 'order_no' => $o->order_no,
                 'product_id' => $o->product_id,
                 'product_name' => $o->product?->product_name,
@@ -85,6 +86,47 @@ class ProductionOrderController extends Controller
                 'remaining_qty' => max(0, (float)$o->target_qty - (float)($o->confirmed_qty_total ?? 0)),
                 'created_at' => $o->created_at?->format('Y-m-d H:i'),
             ]);
+
+            // Add ready-to-start requests if not filtering by order status
+            if (!$request->filled('status')) {
+                $reqQuery = \App\Models\Tenant\ProductionRequest::with(['product', 'bom.outputUom', 'mir'])
+                    ->where('status', '!=', 'COMPLETED')
+                    ->whereHas('mir', fn($m) => $m->where('status', 'CLOSED'))
+                    ->whereNull('production_order_id');
+
+                if ($request->filled('search')) {
+                    $s = $request->input('search');
+                    $reqQuery->where(function ($q) use ($s) {
+                        $q->where('request_no', 'like', "%{$s}%")
+                            ->orWhereHas('product', fn($p) => $p->where('product_name', 'like', "%{$s}%")
+                                ->orWhere('product_code', 'like', "%{$s}%"));
+                    });
+                }
+
+                $requests = $reqQuery->orderByDesc('created_at')->get()->map(fn($r) => [
+                    'id' => $r->id,
+                    'is_request' => true,
+                    'order_no' => $r->request_no, // Labeling as request no but in the same column
+                    'product_id' => $r->product_id,
+                    'product_name' => $r->product?->product_name,
+                    'product_code' => $r->product?->product_code,
+                    'target_qty' => $r->target_qty,
+                    'uom' => $r->bom?->outputUom ? [
+                        'uom_code' => $r->bom->outputUom->uom_code,
+                        'uom_name' => $r->bom->outputUom->uom_name,
+                    ] : null,
+                    'planned_date' => $r->planned_date?->format('Y-m-d'),
+                    'status' => 'READY', // Custom status for the UI
+                    'mir_status' => 'CLOSED',
+                    'mir_id' => $r->mir_id,
+                    'actual_qty' => 0,
+                    'yield_percent' => 0,
+                    'created_at' => $r->created_at?->format('Y-m-d H:i'),
+                ]);
+
+                // Merge and sort again
+                $orders = $orders->concat($requests)->sortByDesc('created_at')->values();
+            }
 
             return response()->json([
                 'success' => true,
