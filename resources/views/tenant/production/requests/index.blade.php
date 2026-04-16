@@ -206,7 +206,7 @@
                                                     </td>
                                                     <td class="px-5 py-3.5 text-right">
                                                         <div class="inline-flex flex-col items-end">
-                                                            <div class="text-production font-black text-sm" x-text="line.required_qty"></div>
+                                                            <div class="text-production font-black text-sm" x-text="parseFloat(line.required_qty).toFixed(4)"></div>
                                                             <div class="text-[9px] font-black text-gray-400 uppercase" x-text="line.uom?.uom_code || line.uom || ''"></div>
                                                         </div>
                                                     </td>
@@ -429,8 +429,8 @@
                                                 <div class="text-[9px] font-mono text-gray-400 uppercase tracking-tight" x-text="line.material_code"></div>
                                             </td>
                                             <td class="px-4 py-3 text-right">
-                                                <div class="text-gray-900 font-bold" x-text="parseFloat(line.qty_required).toFixed(3)"></div>
-                                                <div class="text-[10px] text-amber-600 font-black" x-text="parseFloat(line.scrap_percent) > 0 ? '+' + parseFloat(line.scrap_percent).toFixed(1) + '%' : '0% scrap'"></div>
+                                                <div class="text-gray-900 font-bold" x-text="parseFloat(line.qty_required).toFixed(4)"></div>
+                                                <div class="text-[10px] text-amber-600 font-black" x-text="parseFloat(line.scrap_percent) > 0 ? '+' + parseFloat(line.scrap_percent).toFixed(2) + '%' : '0% scrap'"></div>
                                             </td>
                                             <td class="px-4 py-3 text-right">
                                                 <div class="inline-flex flex-col items-end">
@@ -611,10 +611,10 @@
                                     </div>
                                 </div>
                             </td>
-                                <div class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg w-fit border border-gray-100">
-                                    <span class="text-sm font-black text-gray-900" x-text="request.target_qty"></span>
-                                    <span class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" x-text="request.uom?.uom_code || request.uom || ''"></span>
-                                </div>
+                            <div class="flex items-center gap-1.5 px-3 py-1.5 bg-gray-50 rounded-lg w-fit border border-gray-100">
+                                <span class="text-sm font-black text-gray-900" x-text="request.target_qty"></span>
+                                <span class="text-[9px] text-gray-400 font-bold uppercase tracking-widest" x-text="request.uom?.uom_code || request.uom || ''"></span>
+                            </div>
                             </td>
                             <td class="px-6 py-5">
                                 <template x-if="request.yield_percent">
@@ -851,7 +851,7 @@
                             scrap_percent: scrapPercent,
                             effective_qty: effectiveQty,
                             // required_qty = effective_qty × target_qty
-                            required_qty: (effectiveQty * targetQty).toFixed(3),
+                            required_qty: (effectiveQty * targetQty).toFixed(4),
                             uom: d.uom ? {
                                 uom_code: d.uom.uom_code,
                                 uom_name: d.uom.uom_name
@@ -924,7 +924,9 @@
 
             async submitForApproval(request) {
                 try {
-                    const res = await this._fetch(`/api/v1/production-requests/${request.id}/submit`, { method: 'POST' });
+                    const res = await this._fetch(`/api/v1/production-requests/${request.id}/submit`, {
+                        method: 'POST'
+                    });
                     const data = await res.json();
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to submit request');
                     this.notify('Request submitted for approval');
@@ -937,7 +939,9 @@
             async approveRequest(request) {
                 this.confirm('Approve Request', `Approve production request ${request.request_no}?`, async () => {
                     try {
-                        const res = await this._fetch(`/api/v1/production-requests/${request.id}/approve`, { method: 'PATCH' });
+                        const res = await this._fetch(`/api/v1/production-requests/${request.id}/approve`, {
+                            method: 'PATCH'
+                        });
                         const data = await res.json();
                         if (!res.ok || !data.success) throw new Error(data.message || 'Failed to approve');
                         this.notify('Request approved');
@@ -951,7 +955,9 @@
             async rejectRequest(request) {
                 this.confirm('Reject Request', `Reject production request ${request.request_no}?`, async () => {
                     try {
-                        const res = await this._fetch(`/api/v1/production-requests/${request.id}/reject`, { method: 'PATCH' });
+                        const res = await this._fetch(`/api/v1/production-requests/${request.id}/reject`, {
+                            method: 'PATCH'
+                        });
                         const data = await res.json();
                         if (!res.ok || !data.success) throw new Error(data.message || 'Failed to reject');
                         this.notify('Request rejected', 'warning');
@@ -964,7 +970,9 @@
 
             async convertToMir(request) {
                 try {
-                    const res = await this._fetch(`/api/v1/production-requests/${request.id}/convert-to-mir`, { method: 'POST' });
+                    const res = await this._fetch(`/api/v1/production-requests/${request.id}/convert-to-mir`, {
+                        method: 'POST'
+                    });
                     const data = await res.json();
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to generate MIR');
                     this.notify('MIR generated and sent to Warehouse');
@@ -976,7 +984,9 @@
 
             async convertToOrder(request) {
                 try {
-                    const res = await this._fetch(`/api/v1/production-requests/${request.id}/convert-to-order`, { method: 'POST' });
+                    const res = await this._fetch(`/api/v1/production-requests/${request.id}/convert-to-order`, {
+                        method: 'POST'
+                    });
                     const data = await res.json();
                     if (!res.ok || !data.success) throw new Error(data.message || 'Failed to create order');
                     this.notify('Production Order created and sent to Floor');
