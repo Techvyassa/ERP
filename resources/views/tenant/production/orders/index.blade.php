@@ -169,6 +169,14 @@
                                                           'bg-gray-100 text-gray-500': !viewModal.order.mir_status
                                                       }" x-text="viewModal.order.mir_status || 'Not Generated'"></span>
                                 </div>
+                                <div class="bg-gray-50 rounded-lg p-3">
+                                    <p class="text-xs text-gray-500 mb-1">MIR No</p>
+                                    <p class="font-bold text-gray-900" x-text="viewModal.order.mir_no || '—'"></p>
+                                </div>
+                                <div x-show="viewModal.order.request_no" class="bg-amber-50 rounded-lg p-3">
+                                    <p class="text-xs text-amber-600 mb-1">Production Request No</p>
+                                    <p class="font-bold text-amber-800 font-mono" x-text="viewModal.order.request_no"></p>
+                                </div>
                             </div>
 
                             <!-- RM Lines -->
@@ -547,6 +555,7 @@
                         </th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Yield & Batch</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Planned Date</th>
+                        <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">MIR No</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">MIR Status</th>
                         <th class="px-5 py-3 text-left text-xs font-semibold text-gray-500 uppercase">Status</th>
                         <th class="px-5 py-3 text-right text-xs font-semibold text-gray-500 uppercase">Actions</th>
@@ -632,6 +641,19 @@
                                 <div class="font-bold" x-text="order.planned_date"></div>
                                 <div x-show="order.actual_end_at" class="text-[10px] text-gray-400 mt-0.5"
                                     x-text="'Done: ' + order.actual_end_at"></div>
+                            </td>
+                            <td class="px-5 py-4">
+                                <div class="flex flex-col gap-1">
+                                    <template x-if="order.mir_no">
+                                        <span class="text-xs font-mono font-bold text-indigo-600" x-text="order.mir_no"></span>
+                                    </template>
+                                    <template x-if="order.request_no">
+                                        <span class="text-[10px] font-mono text-amber-600 font-semibold" x-text="order.request_no"></span>
+                                    </template>
+                                    <template x-if="!order.mir_no && !order.request_no">
+                                        <span class="text-xs text-gray-400">—</span>
+                                    </template>
+                                </div>
                             </td>
                             <td class="px-5 py-4">
                                 <div class="flex flex-col gap-1">
@@ -962,6 +984,8 @@
                             product_name: detail.product?.product_name || order.product_name,
                             product_code: detail.product?.product_code || order.product_code,
                             uom: detail.bom?.output_uom?.uom_code || order.uom,
+                            mir_no: detail.mir?.mir_no || order.mir_no,
+                            request_no: order.request_no,
                         };
                         // MIR lines come from the nested mir.lines
                         this.viewModal.rmLines = (detail.mir?.lines || []).map(l => ({

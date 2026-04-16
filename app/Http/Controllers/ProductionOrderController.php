@@ -45,7 +45,7 @@ class ProductionOrderController extends Controller
         $requestId = Str::uuid()->toString();
         try {
             $this->switchTenantDb($request);
-            $ordersQuery = ProductionOrder::with(['product', 'bom', 'mir']);
+            $ordersQuery = ProductionOrder::with(['product', 'bom', 'mir', 'productionRequest']);
 
             if ($request->filled('search')) {
                 $s = $request->input('search');
@@ -76,6 +76,8 @@ class ProductionOrderController extends Controller
                 'status' => $o->status,
                 'mir_status' => $o->mir?->status,
                 'mir_id' => $o->mir?->id,
+                'mir_no' => $o->mir?->mir_no,
+                'request_no' => $o->productionRequest?->request_no,
                 'confirmed_qty_total' => $o->confirmed_qty_total ?? 0,
                 'rejected_qty_total'  => $o->rejected_qty_total ?? 0,
                 'actual_qty' => $o->actual_qty ?? 0,
@@ -119,6 +121,8 @@ class ProductionOrderController extends Controller
                     'status' => 'READY', // Custom status for the UI
                     'mir_status' => 'CLOSED',
                     'mir_id' => $r->mir_id,
+                    'mir_no' => $r->mir?->mir_no,
+                    'request_no' => $r->request_no,
                     'actual_qty' => 0,
                     'yield_percent' => 0,
                     'created_at' => $r->created_at?->format('Y-m-d H:i'),
