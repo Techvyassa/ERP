@@ -193,6 +193,20 @@
                         </div>
                         
                         <div>
+                            <label class="block text-sm font-semibold text-gray-700 mb-2">Your Company GSTIN</label>
+                            <input type="text" x-model="form.company_gstin" @input="reapplyGstToAllItems()" 
+                                   placeholder="e.g. 27AABCU9603R1ZX"
+                                   maxlength="15"
+                                   class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary uppercase">
+                            <p class="text-xs text-gray-500 mt-1">
+                                Used to determine 
+                                <span x-show="!isInterState()" class="font-medium text-green-700">Intrastate (CGST + SGST)</span>
+                                <span x-show="isInterState()" class="font-medium text-orange-600">Interstate (IGST)</span>
+                                tax type
+                            </p>
+                        </div>
+                        
+                        <div>
                             <label class="block text-sm font-semibold text-gray-700 mb-2">PO Date *</label>
                             <input type="date" x-model="form.po_date" required 
                                    class="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary/20 focus:border-primary">
@@ -269,7 +283,7 @@
                     <div>
                         <div class="flex items-center justify-between mb-4">
                             <h4 class="text-lg font-bold text-gray-900">Line Items</h4>
-                            <button type="button" @click="addLineItem()" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
+                            <button type="button" @click="addLineItem()" x-show="!editingId" class="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 transition-colors">
                                 Add Item
                             </button>
                         </div>
@@ -295,31 +309,35 @@
                                             <th class="px-3 py-2 text-left text-xs font-semibold text-gray-500 uppercase">UOM</th>
                                             <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Unit Price</th>
                                             <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Disc %</th>
-                                            <template x-if="hasAnyCGST()">
-                                                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">CGST</th>
-                                            </template>
-                                            <template x-if="hasAnySGST()">
-                                                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">SGST</th>
-                                            </template>
-                                            <template x-if="hasAnyIGST()">
-                                                <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">IGST</th>
-                                            </template>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase" x-show="!isInterState()">CGST</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase" x-show="!isInterState()">SGST</th>
+                                            <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase" x-show="isInterState()">IGST</th>
                                             <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Total GST</th>
                                             <th class="px-3 py-2 text-right text-xs font-semibold text-gray-500 uppercase">Total</th>
-                                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase">Action</th>
+                                            <th class="px-3 py-2 text-center text-xs font-semibold text-gray-500 uppercase" x-show="!editingId">Action</th>
                                         </tr>
                                     </thead>
                                     <tbody class="divide-y divide-gray-100">
                                         <template x-for="(item, index) in form.line_items" :key="index">
                                             <tr class="hover:bg-gray-50">
                                                 <td class="px-3 py-2">
-                                                    <select x-model="item.material_id" @change="onMaterialSelect(index)" required 
-                                                            class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
-                                                        <option value="">Select Material</option>
-                                                        <template x-for="material in materials" :key="material.id">
-                                                            <option :value="material.id" x-text="material.material_code + ' - ' + material.material_name"></option>
-                                                        </template>
-                                                    </select>
+                                                    <!-- Edit mode: show dropdown -->
+                                                    <template x-if="!editingId">
+                                                        <select x-model="item.material_id" @change="onMaterialSelect(index)" required 
+                                                                class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                            <option value="">Select Material</option>
+                                                            <template x-for="material in materials" :key="material.id">
+                                                                <option :value="material.id" x-text="material.material_code + ' - ' + material.material_name"></option>
+                                                            </template>
+                                                        </select>
+                                                    </template>
+                                                    <!-- View mode: show read-only material name -->
+                                                    <template x-if="editingId">
+                                                        <div class="px-2 py-1 text-xs font-medium text-gray-800">
+                                                            <span class="font-mono text-gray-500 mr-1" x-text="item.material_code"></span>
+                                                            <span x-text="item.material_name"></span>
+                                                        </div>
+                                                    </template>
                                                 </td>
                                                 <td class="px-3 py-2">
                                                     <input type="text" x-model="item.material_type" readonly 
@@ -327,7 +345,9 @@
                                                 </td>
                                                 <td class="px-3 py-2">
                                                     <input type="number" x-model="item.ordered_qty" @input="calculateItemTotal(index)" required min="1" 
-                                                           class="w-16 px-2 py-1 border border-gray-200 rounded text-xs">
+                                                           :readonly="editingId"
+                                                           class="w-16 px-2 py-1 border border-gray-200 rounded text-xs"
+                                                           :class="{'bg-gray-50': editingId}">
                                                 </td>
                                                 <td class="px-3 py-2">
                                                     <input type="text" x-model="item.uom" readonly 
@@ -335,34 +355,32 @@
                                                 </td>
                                                 <td class="px-3 py-2 text-right">
                                                     <input type="number" x-model="item.unit_price" @input="calculateItemTotal(index)" required min="0" step="0.01" 
-                                                           class="w-24 px-2 py-1 border border-gray-200 rounded text-xs text-right">
+                                                           :readonly="editingId"
+                                                           class="w-24 px-2 py-1 border border-gray-200 rounded text-xs text-right"
+                                                           :class="{'bg-gray-50': editingId}">
                                                 </td>
                                                 <td class="px-3 py-2 text-right">
                                                     <input type="number" x-model="item.discount_pct" @input="calculateItemTotal(index)" min="0" max="100" step="0.01" placeholder="0"
-                                                           class="w-16 px-2 py-1 border border-gray-200 rounded text-xs text-right">
+                                                           :readonly="editingId"
+                                                           class="w-16 px-2 py-1 border border-gray-200 rounded text-xs text-right"
+                                                           :class="{'bg-gray-50': editingId}">
                                                 </td>
-                                                <template x-if="hasAnyCGST()">
-                                                    <td class="px-3 py-2 text-right">
-                                                        <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemCGST(index))"></span>
-                                                    </td>
-                                                </template>
-                                                <template x-if="hasAnySGST()">
-                                                    <td class="px-3 py-2 text-right">
-                                                        <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemSGST(index))"></span>
-                                                    </td>
-                                                </template>
-                                                <template x-if="hasAnyIGST()">
-                                                    <td class="px-3 py-2 text-right">
-                                                        <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemIGST(index))"></span>
-                                                    </td>
-                                                </template>
+                                                <td class="px-3 py-2 text-right" x-show="!isInterState()">
+                                                    <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemCGST(index))"></span>
+                                                </td>
+                                                <td class="px-3 py-2 text-right" x-show="!isInterState()">
+                                                    <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemSGST(index))"></span>
+                                                </td>
+                                                <td class="px-3 py-2 text-right" x-show="isInterState()">
+                                                    <span class="text-xs font-medium text-gray-700" x-text="formatCurrency(getItemIGST(index))"></span>
+                                                </td>
                                                 <td class="px-3 py-2 text-right">
                                                     <span class="text-xs font-semibold text-blue-600" x-text="formatCurrency(getItemTotalGST(index))"></span>
                                                 </td>
                                                 <td class="px-3 py-2 text-right">
                                                     <span class="text-xs font-bold text-gray-900" x-text="formatCurrency(getItemTotal(index))"></span>
                                                 </td>
-                                                <td class="px-3 py-2 text-center">
+                                                <td class="px-3 py-2 text-center" x-show="!editingId">
                                                     <button type="button" @click="removeLineItem(index)" class="text-red-600 hover:text-red-800" title="Remove">
                                                         <span class="material-symbols-outlined text-base">delete</span>
                                                     </button>
@@ -370,12 +388,14 @@
                                             </tr>
                                             <!-- Additional row for GST Tax selection and other details -->
                                             <tr class="bg-gray-50">
-                                                <td colspan="12" class="px-3 py-2">
+                                                <td :colspan="editingId ? 11 : 12" class="px-3 py-2">
                                                     <div class="grid grid-cols-4 gap-3">
                                                         <div>
                                                             <label class="block text-xs font-medium text-gray-500 mb-1">GST Tax</label>
                                                             <select x-model="item.gst_tax_id" @change="calculateItemTotal(index)" 
-                                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                                    :disabled="editingId"
+                                                                    class="w-full px-2 py-1 border border-gray-200 rounded text-xs"
+                                                                    :class="{'bg-gray-50': editingId}">
                                                                 <option value="">Select Tax</option>
                                                                 <template x-for="tax in gstTaxes" :key="tax.id">
                                                                     <option :value="tax.id" x-text="tax.tax_code + ' - ' + tax.total_tax_rate + '%'"></option>
@@ -385,17 +405,23 @@
                                                         <div>
                                                             <label class="block text-xs font-medium text-gray-500 mb-1">Scheduled Delivery</label>
                                                             <input type="date" x-model="item.scheduled_delivery" 
-                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                                   :readonly="editingId"
+                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs"
+                                                                   :class="{'bg-gray-50': editingId}">
                                                         </div>
                                                         <div>
                                                             <label class="block text-xs font-medium text-gray-500 mb-1">Under Tolerance %</label>
                                                             <input type="number" x-model="item.under_delivery_tolerance" min="0" max="100" step="0.01" placeholder="3"
-                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                                   :readonly="editingId"
+                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs"
+                                                                   :class="{'bg-gray-50': editingId}">
                                                         </div>
                                                         <div>
                                                             <label class="block text-xs font-medium text-gray-500 mb-1">Over Tolerance %</label>
                                                             <input type="number" x-model="item.over_delivery_tolerance" min="0" max="100" step="0.01" placeholder="5"
-                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs">
+                                                                   :readonly="editingId"
+                                                                   class="w-full px-2 py-1 border border-gray-200 rounded text-xs"
+                                                                   :class="{'bg-gray-50': editingId}">
                                                         </div>
                                                     </div>
                                                 </td>
@@ -650,6 +676,7 @@ function purchaseOrdersData() {
                 vendor_id: '',
                 vendor_gstin: '',
                 vendor_name: '',
+                company_gstin: '',
                 currency_id: '',
                 po_date: new Date().toISOString().split('T')[0],
                 expected_delivery_date: '',
@@ -827,8 +854,85 @@ function purchaseOrdersData() {
             item._updated = Date.now();
         },
         
+        // Determine if transaction is interstate based on GSTIN state codes (first 2 digits)
+        isInterState() {
+            const vendorGstin = this.form.vendor_gstin || '';
+            const companyGstin = this.form.company_gstin || '';
+            // If vendor has no GSTIN, treat as intrastate (CGST+SGST)
+            if (!vendorGstin || vendorGstin.length < 2) return false;
+            // If company has no GSTIN, default to intrastate
+            if (!companyGstin || companyGstin.length < 2) return false;
+            const vendorState = vendorGstin.substring(0, 2);
+            const companyState = companyGstin.substring(0, 2);
+            return vendorState !== companyState;
+        },
+        
+        // Re-apply correct GST to all line items when company GSTIN changes
+        reapplyGstToAllItems() {
+            this.form.line_items.forEach((item, index) => {
+                if (item.material_id && item.gst_tax_id) {
+                    // Recalculate to trigger reactivity
+                    this.calculateItemTotal(index);
+                }
+            });
+        },
+        
+        // Get the appropriate GST tax for a material based on inter/intra state
+        getDefaultGstForMaterial(material) {
+            if (!material || !this.gstTaxes.length) return '';
+            const interstate = this.isInterState();
+
+            // Try to get GST rate from material's HSN code default_gst_id
+            let targetRate = null;
+            if (material.hsn_code && material.hsn_code.default_gst_id) {
+                const hsnTax = this.gstTaxes.find(t => t.id == material.hsn_code.default_gst_id);
+                if (hsnTax) {
+                    // Get the total rate from this tax to find matching tax of correct type
+                    targetRate = parseFloat(hsnTax.igst_rate || 0) || 
+                                 (parseFloat(hsnTax.cgst_rate || 0) + parseFloat(hsnTax.sgst_rate || 0));
+                }
+            }
+
+            if (interstate) {
+                // Find IGST-only tax matching the rate
+                if (targetRate) {
+                    const match = this.gstTaxes.find(t => 
+                        parseFloat(t.igst_rate || 0) === targetRate &&
+                        parseFloat(t.cgst_rate || 0) === 0 &&
+                        parseFloat(t.sgst_rate || 0) === 0
+                    );
+                    if (match) return match.id;
+                }
+                // Fallback: any IGST tax
+                const igstTax = this.gstTaxes.find(t => 
+                    parseFloat(t.igst_rate || 0) > 0 &&
+                    parseFloat(t.cgst_rate || 0) === 0
+                );
+                return igstTax ? igstTax.id : (this.gstTaxes[0]?.id || '');
+            } else {
+                // Find CGST+SGST tax matching the rate
+                if (targetRate) {
+                    const halfRate = targetRate / 2;
+                    const match = this.gstTaxes.find(t => 
+                        parseFloat(t.cgst_rate || 0) === halfRate &&
+                        parseFloat(t.sgst_rate || 0) === halfRate &&
+                        parseFloat(t.igst_rate || 0) === 0
+                    );
+                    if (match) return match.id;
+                }
+                // Fallback: any CGST+SGST tax
+                const cgstTax = this.gstTaxes.find(t => 
+                    parseFloat(t.cgst_rate || 0) > 0 &&
+                    parseFloat(t.sgst_rate || 0) > 0 &&
+                    parseFloat(t.igst_rate || 0) === 0
+                );
+                return cgstTax ? cgstTax.id : (this.gstTaxes[0]?.id || '');
+            }
+        },
+        
         // Check if any line item uses CGST
         hasAnyCGST() {
+            if (this.isInterState()) return false;
             return this.form.line_items.some(item => {
                 if (!item.gst_tax_id) return false;
                 const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
@@ -838,6 +942,7 @@ function purchaseOrdersData() {
         
         // Check if any line item uses SGST
         hasAnySGST() {
+            if (this.isInterState()) return false;
             return this.form.line_items.some(item => {
                 if (!item.gst_tax_id) return false;
                 const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
@@ -847,6 +952,7 @@ function purchaseOrdersData() {
         
         // Check if any line item uses IGST
         hasAnyIGST() {
+            if (!this.isInterState()) return false;
             return this.form.line_items.some(item => {
                 if (!item.gst_tax_id) return false;
                 const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
@@ -856,6 +962,7 @@ function purchaseOrdersData() {
         
         // Get CGST amount for a line item
         getItemCGST(index) {
+            if (this.isInterState()) return 0;
             const item = this.form.line_items[index];
             if (!item.gst_tax_id) return 0;
             
@@ -875,6 +982,7 @@ function purchaseOrdersData() {
         
         // Get SGST amount for a line item
         getItemSGST(index) {
+            if (this.isInterState()) return 0;
             const item = this.form.line_items[index];
             if (!item.gst_tax_id) return 0;
             
@@ -894,6 +1002,7 @@ function purchaseOrdersData() {
         
         // Get IGST amount for a line item
         getItemIGST(index) {
+            if (!this.isInterState()) return 0;
             const item = this.form.line_items[index];
             if (!item.gst_tax_id) return 0;
             
@@ -913,7 +1022,23 @@ function purchaseOrdersData() {
         
         // Get total GST amount for a line item
         getItemTotalGST(index) {
-            return this.getItemCGST(index) + this.getItemSGST(index) + this.getItemIGST(index);
+            const cgst = this.getItemCGST(index);
+            const sgst = this.getItemSGST(index);
+            const igst = this.getItemIGST(index);
+            const total = cgst + sgst + igst;
+            
+            // Debug logging
+            if (index === 0) {
+                console.log('GST Calculation Debug:', {
+                    isInterState: this.isInterState(),
+                    vendorGstin: this.form.vendor_gstin,
+                    companyGstin: this.form.company_gstin,
+                    gstTaxId: this.form.line_items[index]?.gst_tax_id,
+                    cgst, sgst, igst, total
+                });
+            }
+            
+            return total;
         },
         
         getCurrencyDisplay() {
@@ -1246,6 +1371,7 @@ function purchaseOrdersData() {
                         vendor_id: po.vendor_id || '',
                         vendor_gstin: (po.vendor && po.vendor.gstin) ? po.vendor.gstin : '',
                         vendor_name: (po.vendor && po.vendor.vendor_name) ? po.vendor.vendor_name : '',
+                        company_gstin: po.company_gstin || '',
                         currency_id: po.currency_id || '',
                         po_date: formatDateForInput(po.po_date),
                         expected_delivery_date: formatDateForInput(po.expected_delivery),
@@ -1276,8 +1402,37 @@ function purchaseOrdersData() {
                             gst_tax_id: item.gst_tax_id || '',
                             scheduled_delivery: item.scheduled_delivery ? formatDateForInput(item.scheduled_delivery) : '',
                             under_delivery_tolerance: parseFloat(item.under_delivery_tolerance) || 3,
-                            over_delivery_tolerance: parseFloat(item.over_delivery_tolerance) || 5
+                            over_delivery_tolerance: parseFloat(item.over_delivery_tolerance) || 5,
+                            material: item.material // Keep the full material object for GST calculation
                         }));
+                        
+                        // Recalculate GST tax for each item based on current Vendor/Company GSTIN
+                        this.$nextTick(() => {
+                            this.form.line_items.forEach((item, index) => {
+                                console.log(`Line item ${index}:`, {
+                                    material_id: item.material_id,
+                                    gst_tax_id: item.gst_tax_id,
+                                    qty: item.ordered_qty,
+                                    price: item.unit_price,
+                                    discount: item.discount_pct
+                                });
+                                
+                                // Recalculate GST tax based on material and inter/intra state
+                                if (item.material) {
+                                    const newGstTaxId = this.getDefaultGstForMaterial(item.material);
+                                    if (newGstTaxId) {
+                                        item.gst_tax_id = newGstTaxId;
+                                        console.log(`Updated GST tax for item ${index} from ${item.gst_tax_id} to ${newGstTaxId}`);
+                                    }
+                                }
+                                
+                                // Find the GST tax
+                                const tax = this.gstTaxes.find(t => t.id == item.gst_tax_id);
+                                console.log(`GST Tax for item ${index}:`, tax);
+                                
+                                this.calculateItemTotal(index);
+                            });
+                        });
                     } else {
                         this.form.line_items = [{ 
                             material_id: '', 
@@ -1297,7 +1452,19 @@ function purchaseOrdersData() {
                     }
                     
                     console.log('Form populated for editing:', this.form);
-                    this.showModal = true;
+                    console.log('GST Taxes available:', this.gstTaxes.length);
+                    console.log('Is Interstate?', this.isInterState());
+                    console.log('Vendor GSTIN:', this.form.vendor_gstin);
+                    console.log('Company GSTIN:', this.form.company_gstin);
+                    console.log('Line items:', this.form.line_items);
+                    console.log('Has CGST?', this.hasAnyCGST());
+                    console.log('Has SGST?', this.hasAnySGST());
+                    console.log('Has IGST?', this.hasAnyIGST());
+                    
+                    // Force Alpine to re-evaluate by showing modal after a tick
+                    this.$nextTick(() => {
+                        this.showModal = true;
+                    });
                 } else {
                     alert('Failed to load purchase order for editing');
                 }

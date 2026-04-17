@@ -166,10 +166,10 @@
                                 </button>
                             </div>
 
-                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-
+                            <!-- Row 1: Material, Material Type, Item Name, Quantity -->
+                            <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-4">
                                 <!-- Material dropdown -->
-                                <div class="lg:col-span-2">
+                                <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">
                                         Material <span class="text-gray-400">(optional — auto-fills fields)</span>
                                     </label>
@@ -193,7 +193,7 @@
                                 </div>
 
                                 <!-- Item Name -->
-                                <div class="lg:col-span-2">
+                                <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">
                                         Item Name <span class="text-red-500">*</span>
                                     </label>
@@ -211,24 +211,25 @@
                                         @input="calcTotal(index)"
                                         class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white">
                                 </div>
+                            </div>
 
+                            <!-- Row 2: UOM, Est. Unit Price, Est. Total, Delivery Warehouse, Description, Purpose -->
+                            <div class="grid grid-cols-1 md:grid-cols-6 gap-4">
                                 <!-- UOM -->
-                              <div>
-    <label class="block text-xs font-medium text-gray-600 mb-1">
-        UOM <span class="text-red-500">*</span>
-    </label>
-
-    <input 
-        type="text" 
-        :value="getUOMName(item.uom_id)" 
-        readonly
-        placeholder="Auto-filled from material"
-        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100 cursor-not-allowed"
-    >
-
-    <!-- Hidden field to store UOM ID -->
-    <input type="hidden" x-model="item.uom_id">
-</div>
+                                <div>
+                                    <label class="block text-xs font-medium text-gray-600 mb-1">
+                                        UOM <span class="text-red-500">*</span>
+                                    </label>
+                                    <input 
+                                        type="text" 
+                                        :value="getUOMName(item.uom_id)" 
+                                        readonly
+                                        placeholder="Auto-filled from material"
+                                        class="w-full px-3 py-2 border border-gray-200 rounded-lg text-sm bg-gray-100 cursor-not-allowed"
+                                    >
+                                    <!-- Hidden field to store UOM ID -->
+                                    <input type="hidden" x-model="item.uom_id">
+                                </div>
 
                                 <!-- Estimated Unit Price -->
                                 <div>
@@ -259,19 +260,19 @@
                                 </div>
 
                                 <!-- Description -->
-                                <div class="lg:col-span-2">
+                                <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Description</label>
-                                    <textarea x-model="item.description" rows="2"
-                                        placeholder="Detailed specs: model, SKU, grade, service scope..."
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"></textarea>
+                                    <textarea x-model="item.description" rows="1"
+                                        placeholder="Detailed specs: model, SKU, grade..."
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white resize-none"></textarea>
                                 </div>
 
                                 <!-- Purpose -->
                                 <div>
                                     <label class="block text-xs font-medium text-gray-600 mb-1">Purpose</label>
-                                    <textarea x-model="item.purpose" rows="2" maxlength="500"
+                                    <textarea x-model="item.purpose" rows="1" maxlength="500"
                                         placeholder="Reason for this item..."
-                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white"></textarea>
+                                        class="w-full px-3 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary bg-white resize-none"></textarea>
                                 </div>
                             </div>
                         </div>
@@ -426,18 +427,18 @@ function createPR() {
                 });
                 const json = await res.json();
                 if (json.success && json.data) {
-                    // Use PO data if available
+                    // Use PO data if available (from last PO)
                     item.uom_id               = json.data.uom_id || '';
                     item.estimated_unit_price = parseFloat(json.data.unit_price) || 0;
                 } else {
-                    // No PO history - leave empty for manual entry
-                    item.uom_id               = '';
-                    item.estimated_unit_price = 0;
+                    // No PO history - use material master defaults
+                    item.uom_id               = material.purchase_uom_id || material.uom_id || '';
+                    item.estimated_unit_price = parseFloat(material.standard_cost) || 0;
                 }
             } catch (e) {
-                // Network error - leave empty
-                item.uom_id               = '';
-                item.estimated_unit_price = 0;
+                // Network error - use material master defaults
+                item.uom_id               = material.purchase_uom_id || material.uom_id || '';
+                item.estimated_unit_price = parseFloat(material.standard_cost) || 0;
             }
 
             this.calcTotal(index);
