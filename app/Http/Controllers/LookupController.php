@@ -10,9 +10,12 @@ use App\Models\Tenant\Customer;
 use App\Models\Tenant\User;
 use App\Models\Tenant\Product;
 use App\Models\Tenant\UOM;
+use App\Services\StockQueryService;
 
 class LookupController extends Controller
 {
+    public function __construct(protected StockQueryService $stockQueryService) {}
+
     private function switchTenant(Request $request): void
     {
         $tenantDb = $request->input('tenant_db_name');
@@ -99,14 +102,45 @@ class LookupController extends Controller
     {
         $this->switchTenant($request);
 
-        $products = Product::where('is_active', true)
+        $stockByProduct = collect($this->stockQueryService->getGlobalStockSummary())
+            ->where('item_type', 'Product')
+            ->keyBy('item_id');
+
+        $products = Product::query()
+            ->where('product_master.is_active', true)
             ->when($request->filled('search'), fn($q) => $q->where(
                 fn($q2) => $q2
-                    ->where('product_name', 'like', '%' . $request->search . '%')
-                    ->orWhere('product_code', 'like', '%' . $request->search . '%')
+                    ->where('product_master.product_name', 'like', '%' . $request->search . '%')
+                    ->orWhere('product_master.product_code', 'like', '%' . $request->search . '%')
             ))
-            ->orderBy('product_name')
-            ->get(['id', 'product_code', 'product_name', 'pack_size', 'pack_uom_id', 'standard_cost', 'mrp']);
+            ->orderBy('product_master.product_name')
+            ->get([
+                'product_master.id',
+                'product_master.product_code',
+                'product_master.product_name',
+                'product_master.pack_size',
+                'product_master.pack_uom_id',
+                'product_master.standard_cost',
+                'product_master.mrp',
+            ])
+            ->map(function ($product) use ($stockByProduct) {
+                $stock = $stockByProduct->get($product->id, []);
+                $currentStock = (float) ($stock['available'] ?? 0);
+
+                return [
+                    'id'            => $product->id,
+                    'product_code'  => $product->product_code,
+                    'product_name'  => $product->product_name,
+                    'pack_size'     => $product->pack_size,
+                    'pack_uom_id'   => $product->pack_uom_id,
+                    'standard_cost' => $product->standard_cost,
+                    'mrp'           => $product->mrp,
+                    'qty_on_hand'   => (float) ($stock['on_hand'] ?? 0),
+                    'qty_reserved'  => (float) ($stock['reserved'] ?? 0),
+                    'current_stock' => $currentStock,
+                    'stock_status'  => $currentStock > 0 ? 'IN_STOCK' : 'OUT_OF_STOCK',
+                ];
+            });
 
         return response()->json(['success' => true, 'data' => $products]);
     }
@@ -138,20 +172,7 @@ class LookupController extends Controller
             return response()->json(['success' => false, 'message' => 'product_id required'], 422);
         }
 
-        $bins = DB::connection('tenant')
-            ->table('stock_balances as sb')
-            ->join('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
-            ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
-            ->where('sb.product_id', $productId)
-            ->where('sb.bucket', 'AVAILABLE')
-            ->whereRaw('(sb.qty_on_hand - sb.qty_reserved) > 0')
-            ->select(
-                'bl.bin_code',
-                'wm.warehouse_name',
-                DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available')
-            )
-            ->orderByDesc('qty_available')
-            ->get();
+        $bins = $this->stockQueryService->getProductBinAvailability((int) $productId);
 
         return response()->json(['success' => true, 'data' => $bins]);
     }
@@ -169,25 +190,7 @@ class LookupController extends Controller
             return response()->json(['success' => false, 'message' => 'material_id required'], 422);
         }
 
-        $bins = DB::connection('tenant')
-            ->table('stock_balances as sb')
-            ->leftJoin('bin_locations as bl', 'sb.bin_id', '=', 'bl.id')
-            ->join('warehouse_master as wm', 'sb.warehouse_id', '=', 'wm.id')
-            ->where('sb.material_id', $materialId)
-            ->where('sb.bucket', 'AVAILABLE')
-            ->select(
-                'bl.id as bin_id',
-                DB::raw("COALESCE(bl.bin_code, 'No Bin') as bin_code"),
-                'wm.warehouse_name',
-                'wm.id as warehouse_id',
-                'sb.qty_on_hand',
-                'sb.qty_reserved',
-                DB::raw('(sb.qty_on_hand - sb.qty_reserved) as qty_available'),
-                'sb.batch_number',
-                'sb.bucket'
-            )
-            ->orderByDesc('qty_available')
-            ->get();
+        $bins = collect($this->stockQueryService->getMaterialBinAvailability((int) $materialId));
 
         return response()->json([
             'success'         => true,

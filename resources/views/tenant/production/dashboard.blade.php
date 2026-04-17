@@ -109,29 +109,34 @@
                                 <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Product</th>
                                 <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Available</th>
                                 <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">QC Hold</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Putaway</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Blocked</th>
                                 <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Reserved</th>
                                 <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Total</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-sm">
-                            <template x-for="item in stats.fgStock" :key="item.product_id">
+                            <template x-for="item in stats.fgStock" :key="item.product_id + '-' + (item.uom_id || item.uom_code || 'na')">
                                 <tr class="hover:bg-gray-50/50 transition-colors">
                                     <td class="px-6 py-4">
                                         <p class="font-bold text-gray-900" x-text="item.product_name"></p>
                                         <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest" x-text="item.product_code"></p>
+                                        <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mt-0.5" x-text="'UOM: ' + (item.uom_code || 'NA')"></p>
                                     </td>
                                     <td class="px-6 py-4 text-right">
                                         <span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md font-black text-[10px]"
                                             x-text="(item.buckets.AVAILABLE || 0).toFixed(2)"></span>
                                     </td>
                                     <td class="px-6 py-4 text-right font-medium text-amber-600" x-text="(item.buckets.QC_HOLD || 0).toFixed(2)"></td>
+                                    <td class="px-6 py-4 text-right font-medium text-indigo-600" x-text="(item.buckets.PUTAWAY_PENDING || 0).toFixed(2)"></td>
+                                    <td class="px-6 py-4 text-right font-medium text-red-600" x-text="(item.buckets.BLOCKED || 0).toFixed(2)"></td>
                                     <td class="px-6 py-4 text-right font-medium text-blue-600" x-text="(item.buckets.RESERVED || 0).toFixed(2)"></td>
                                     <td class="px-6 py-4 text-right font-black text-gray-900" x-text="item.total_on_hand.toFixed(2) + ' ' + item.uom_code"></td>
                                 </tr>
                             </template>
                             <template x-if="!stats.fgStock || stats.fgStock.length === 0">
                                 <tr>
-                                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">
                                         <span class="material-symbols-outlined text-4xl mb-2 opacity-50">inventory_2</span>
                                         <p class="text-[10px] font-black uppercase tracking-widest">No stock data available</p>
                                     </td>
@@ -215,6 +220,9 @@
                         }
                     });
                     const data = await response.json();
+
+                    console.log(data);
+
                     if (data.success) {
                         this.stats = data.data;
                     }

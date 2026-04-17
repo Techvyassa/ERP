@@ -13,13 +13,28 @@ class SalesOrder extends Model
     protected $table = 'sales_orders';
 
     protected $fillable = [
-        'so_number', 'customer_id', 'billing_address', 'shipping_address',
-        'so_date', 'required_delivery_date', 'payment_terms',
-        'subtotal', 'discount_amount', 'tax_amount', 'grand_total',
-        'status', 'stock_status', 'remarks',
-        'created_by', 'confirmed_by', 'confirmed_at',
-        'vehicle_number', 'driver_name', 'logistics_partner',
-        'dispatched_at', 'dispatched_by',
+        'so_number',
+        'customer_id',
+        'billing_address',
+        'shipping_address',
+        'so_date',
+        'required_delivery_date',
+        'payment_terms',
+        'subtotal',
+        'discount_amount',
+        'tax_amount',
+        'grand_total',
+        'status',
+        'stock_status',
+        'remarks',
+        'created_by',
+        'confirmed_by',
+        'confirmed_at',
+        'vehicle_number',
+        'driver_name',
+        'logistics_partner',
+        'dispatched_at',
+        'dispatched_by',
     ];
 
     protected $casts = [

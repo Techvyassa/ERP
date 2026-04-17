@@ -686,10 +686,13 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 ]);
             })->name('mir.show');
 
-            Route::get('/sales-orders', function ($orgSlug) use ($getOrg) {
-                extract($getOrg($orgSlug));
-                return redirect()->route('tenant.sales.orders', $orgSlug);
-            })->name('sales-orders');
+            // Route::get('/sales-orders', function ($orgSlug) use ($getOrg) {
+            //     extract($getOrg($orgSlug));
+            //     return view('tenant.warehouse.sales-orders.index', [
+            //         'organization' => $org,
+            //         'tenantType' => $tenantType
+            //     ]);
+            // })->name('sales-orders');
 
             Route::get('/outward', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));

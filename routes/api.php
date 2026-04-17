@@ -507,6 +507,9 @@ Route::prefix('v1')->group(function () {
             // Read-only endpoints. All mutations go via domain controllers above.
             // Buckets: QC_HOLD | PUTAWAY_PENDING | AVAILABLE | RESERVED | BLOCKED | CONSUMED | SHIPPED
             Route::prefix('stock')->group(function () {
+                // Unified current stock summary for both products and raw materials
+                Route::get('/current', [App\Http\Controllers\StockController::class, 'current']);
+
                 // ATP check: net available qty = on_hand - reserved (AVAILABLE bucket only)
                 Route::get('/available/{materialId}', [App\Http\Controllers\StockController::class, 'available']);
 
@@ -675,6 +678,7 @@ Route::prefix('v1')->group(function () {
             // Sales Orders
             Route::prefix('sales-orders')->group(function () {
                 Route::get('/dashboard-stats', [App\Http\Controllers\SalesOrderController::class, 'dashboardStats']);
+                Route::get('/fg-stock', [App\Http\Controllers\SalesOrderController::class, 'fgStock']);
                 Route::get('/', [App\Http\Controllers\SalesOrderController::class, 'index']);
                 Route::get('/{id}', [App\Http\Controllers\SalesOrderController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\SalesOrderController::class, 'store']);
@@ -691,6 +695,7 @@ Route::prefix('v1')->group(function () {
         Route::middleware(['check.module.permission:SALES'])->group(function () {
             Route::prefix('sales')->group(function () {
                 Route::get('/dashboard-stats', [App\Http\Controllers\SalesOrderController::class, 'dashboardStats']);
+                Route::get('/orders/fg-stock', [App\Http\Controllers\SalesOrderController::class, 'fgStock']);
                 Route::get('/orders', [App\Http\Controllers\SalesOrderController::class, 'index']);
                 Route::get('/orders/{id}', [App\Http\Controllers\SalesOrderController::class, 'show']);
                 Route::post('/orders', [App\Http\Controllers\SalesOrderController::class, 'store']);

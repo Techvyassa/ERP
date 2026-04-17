@@ -370,6 +370,226 @@ class StockService
     }
 
     /**
+     * Reserve finished goods by moving qty from AVAILABLE to RESERVED.
+     * Allocation is done across available balance rows, highest availability first.
+     */
+    public function reserveProduct(
+        array $item,
+        float $qty,
+        string $referenceType,
+        int $referenceId,
+        string $referenceNumber,
+        int $userId
+    ): void {
+        DB::connection('tenant')->transaction(function () use (
+            $item,
+            $qty,
+            $referenceType,
+            $referenceId,
+            $referenceNumber,
+            $userId
+        ) {
+            $remaining = $qty;
+
+            $balances = StockBalance::query()
+                ->where('product_id', $item['product_id'])
+                ->where('bucket', 'AVAILABLE')
+                ->whereRaw('(qty_on_hand - qty_reserved) > 0')
+                ->orderByRaw('(qty_on_hand - qty_reserved) desc')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($balances as $balance) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $availableQty = $balance->available_qty;
+                if ($availableQty <= 0) {
+                    continue;
+                }
+
+                $reserveQty = min($remaining, $availableQty);
+
+                $this->transfer(
+                    [
+                        'product_id'   => $item['product_id'],
+                        'uom_id'       => $item['uom_id'],
+                        'warehouse_id' => $balance->warehouse_id,
+                        'batch_number' => $balance->batch_number,
+                    ],
+                    'AVAILABLE',
+                    'RESERVED',
+                    $reserveQty,
+                    'SALES_RESERVE',
+                    $referenceType,
+                    $referenceId,
+                    $referenceNumber,
+                    $userId,
+                    $balance->bin_id,
+                    $balance->bin_id,
+                    null,
+                    'Reserved for sales order fulfillment'
+                );
+
+                $remaining -= $reserveQty;
+            }
+
+            if ($remaining > 0.0001) {
+                throw new \Exception(
+                    "Insufficient available FG stock. Requested: {$qty}, Available: " . ($qty - $remaining)
+                );
+            }
+        });
+    }
+
+    /**
+     * Release finished goods reservation by moving RESERVED back to AVAILABLE.
+     */
+    public function releaseProductReservation(
+        array $item,
+        float $qty,
+        string $referenceType,
+        int $referenceId,
+        string $referenceNumber,
+        int $userId
+    ): void {
+        DB::connection('tenant')->transaction(function () use (
+            $item,
+            $qty,
+            $referenceType,
+            $referenceId,
+            $referenceNumber,
+            $userId
+        ) {
+            $remaining = $qty;
+
+            $balances = StockBalance::query()
+                ->where('product_id', $item['product_id'])
+                ->where('bucket', 'RESERVED')
+                ->withStock()
+                ->orderByDesc('qty_on_hand')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($balances as $balance) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $reservedQty = (float) $balance->qty_on_hand;
+                if ($reservedQty <= 0) {
+                    continue;
+                }
+
+                $releaseQty = min($remaining, $reservedQty);
+
+                $this->transfer(
+                    [
+                        'product_id'   => $item['product_id'],
+                        'uom_id'       => $item['uom_id'],
+                        'warehouse_id' => $balance->warehouse_id,
+                        'batch_number' => $balance->batch_number,
+                    ],
+                    'RESERVED',
+                    'AVAILABLE',
+                    $releaseQty,
+                    'CANCELLATION',
+                    $referenceType,
+                    $referenceId,
+                    $referenceNumber,
+                    $userId,
+                    $balance->bin_id,
+                    $balance->bin_id,
+                    null,
+                    'Released sales reservation'
+                );
+
+                $remaining -= $releaseQty;
+            }
+
+            if ($remaining > 0.0001) {
+                throw new \Exception(
+                    "Unable to release full FG reservation. Requested: {$qty}, Unreleased: {$remaining}"
+                );
+            }
+        });
+    }
+
+    /**
+     * Ship finished goods by moving RESERVED stock to SHIPPED.
+     */
+    public function shipReservedProduct(
+        array $item,
+        float $qty,
+        string $referenceType,
+        int $referenceId,
+        string $referenceNumber,
+        int $userId
+    ): void {
+        DB::connection('tenant')->transaction(function () use (
+            $item,
+            $qty,
+            $referenceType,
+            $referenceId,
+            $referenceNumber,
+            $userId
+        ) {
+            $remaining = $qty;
+
+            $balances = StockBalance::query()
+                ->where('product_id', $item['product_id'])
+                ->where('bucket', 'RESERVED')
+                ->withStock()
+                ->orderByDesc('qty_on_hand')
+                ->lockForUpdate()
+                ->get();
+
+            foreach ($balances as $balance) {
+                if ($remaining <= 0) {
+                    break;
+                }
+
+                $reservedQty = (float) $balance->qty_on_hand;
+                if ($reservedQty <= 0) {
+                    continue;
+                }
+
+                $shipQty = min($remaining, $reservedQty);
+
+                $this->transfer(
+                    [
+                        'product_id'   => $item['product_id'],
+                        'uom_id'       => $item['uom_id'],
+                        'warehouse_id' => $balance->warehouse_id,
+                        'batch_number' => $balance->batch_number,
+                    ],
+                    'RESERVED',
+                    'SHIPPED',
+                    $shipQty,
+                    'SALES_SHIP',
+                    $referenceType,
+                    $referenceId,
+                    $referenceNumber,
+                    $userId,
+                    $balance->bin_id,
+                    $balance->bin_id,
+                    null,
+                    'Shipped against sales order'
+                );
+
+                $remaining -= $shipQty;
+            }
+
+            if ($remaining > 0.0001) {
+                throw new \Exception(
+                    "Insufficient reserved FG stock to ship. Requested: {$qty}, Pending: {$remaining}"
+                );
+            }
+        });
+    }
+
+    /**
      * Get the current stock snapshot for a material across all buckets and warehouses.
      * This is the primary method for the "Full Stock Snapshot" API response.
      *
