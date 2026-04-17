@@ -220,6 +220,11 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 return view('tenant.masters.qc.dashboard', ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('quality-dashboard');
 
+            Route::get('/customer-dashboard', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.masters.customer.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('customer-dashboard');
+
             // --- Organization Masters ---
             Route::get('/departments', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));

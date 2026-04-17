@@ -33,11 +33,48 @@ class Customer extends Model
         return $query->where('is_active', true);
     }
 
-    public static function generateCode(): string
+    public static function generateCode(string $customerName, ?string $contactPerson = null): string
     {
-        $prefix = 'CUST-';
-        $last = self::where('customer_code', 'like', $prefix . '%')->orderBy('id', 'desc')->first();
-        $next = $last ? ((int) str_replace($prefix, '', $last->customer_code)) + 1 : 1;
-        return $prefix . str_pad($next, 4, '0', STR_PAD_LEFT);
+        // Extract initials from customer name (first letter of each word)
+        $words = preg_split('/\s+/', trim($customerName));
+        $initials = '';
+        foreach ($words as $word) {
+            if (!empty($word)) {
+                $initials .= strtoupper($word[0]);
+            }
+        }
+        
+        // Format contact person name (remove spaces, capitalize first letter of each word)
+        $contactFormatted = '';
+        if (!empty($contactPerson)) {
+            $contactWords = preg_split('/\s+/', trim($contactPerson));
+            foreach ($contactWords as $word) {
+                if (!empty($word)) {
+                    $contactFormatted .= ucfirst(strtolower($word));
+                }
+            }
+        }
+        
+        // Build base code pattern
+        $basePattern = $initials;
+        if (!empty($contactFormatted)) {
+            $basePattern .= '-' . $contactFormatted;
+        }
+        
+        // Find the next increment number for this pattern
+        $lastCustomer = self::where('customer_code', 'like', $basePattern . '-%')
+            ->orderBy('id', 'desc')
+            ->first();
+        
+        $increment = 1;
+        if ($lastCustomer) {
+            // Extract the last number from the code
+            if (preg_match('/-(\d+)$/', $lastCustomer->customer_code, $matches)) {
+                $increment = ((int) $matches[1]) + 1;
+            }
+        }
+        
+        // Format: AGI-JohnDoe-01
+        return $basePattern . '-' . str_pad($increment, 2, '0', STR_PAD_LEFT);
     }
 }

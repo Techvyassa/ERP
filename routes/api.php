@@ -437,6 +437,17 @@ Route::prefix('v1')->group(function () {
             Route::delete('/{id}', [App\Http\Controllers\QCParameterController::class, 'destroy']);
         });
 
+        // Customer Master (ADMINISTRATION permission)
+        Route::middleware(['check.module.permission:ADMIN'])->prefix('customers')->group(function () {
+            Route::get('/', [App\Http\Controllers\CustomerController::class, 'index']);
+            Route::get('/import/template', [App\Http\Controllers\CustomerController::class, 'downloadTemplate']);
+            Route::get('/{id}', [App\Http\Controllers\CustomerController::class, 'show']);
+            Route::post('/', [App\Http\Controllers\CustomerController::class, 'store']);
+            Route::post('/import', [App\Http\Controllers\CustomerController::class, 'import']);
+            Route::put('/{id}', [App\Http\Controllers\CustomerController::class, 'update']);
+            Route::delete('/{id}', [App\Http\Controllers\CustomerController::class, 'destroy']);
+        });
+
         // Quality Control (QC) Endpoints
         // Roles: QC_TECH (record tests), QC_MGR (make decisions), ADMIN (all)
         // Status Flow: PENDING → IN_PROGRESS → COMPLETED → DECISION_MADE

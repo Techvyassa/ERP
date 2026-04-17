@@ -140,6 +140,17 @@
                             <span x-show="sidebarOpen" class="font-medium">Quality</span>
                         </a>
                     </li>
+
+                    <!-- Customer Master -->
+                    <li>
+                        <a href="{{ url($tenantType === 'subdomain' ? '/customer-dashboard' : "/org/{$organization->org_slug}/customer-dashboard") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.customer-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">groups</span>
+                            <span x-show="sidebarOpen" class="font-medium">Customer Master</span>
+                        </a>
+                    </li>
+
+                    
                     
                     <li class="pt-2 border-t border-gray-200"></li>
                     
@@ -240,6 +251,7 @@
                             { name: 'QC Dashboard', url: '{{ url($tenantType === 'subdomain' ? '/quality-dashboard' : "/org/{$organization->org_slug}/quality-dashboard") }}', icon: 'biotech', category: 'Quality', keywords: ['quality', 'qc', 'inspection'] },
                             { name: 'QC Test Types', url: '{{ url($tenantType === 'subdomain' ? '/qc-test-types' : "/org/{$organization->org_slug}/qc-test-types") }}', icon: 'science', category: 'Quality', keywords: ['qc', 'test type', 'quality master'] },
                             { name: 'QC Parameters', url: '{{ url($tenantType === 'subdomain' ? '/qc-parameters' : "/org/{$organization->org_slug}/qc-parameters") }}', icon: 'biotech', category: 'Quality', keywords: ['qc parameter', 'specification', 'quality parameter'] },
+                            { name: 'Customer Master', url: '{{ url($tenantType === 'subdomain' ? '/customer-dashboard' : "/org/{$organization->org_slug}/customer-dashboard") }}', icon: 'groups', category: 'Customer', keywords: ['customer', 'client', 'buyer', 'account'] },
                             { name: 'Reports', url: '{{ url($tenantType === 'subdomain' ? '/reports' : "/org/{$organization->org_slug}/reports") }}', icon: 'bar_chart', category: 'Other', keywords: ['report', 'analytics', 'dashboard'] },
                             { name: 'Settings', url: '{{ url($tenantType === 'subdomain' ? '/settings' : "/org/{$organization->org_slug}/settings") }}', icon: 'settings', category: 'Other', keywords: ['setting', 'configuration', 'preferences'] }
                         ],
