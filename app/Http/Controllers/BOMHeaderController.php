@@ -310,6 +310,7 @@ class BOMHeaderController extends Controller
             'bom_code',
             'product_code',
             'version',
+            'batch_size',
             'effective_from',
             'effective_to',
             'bom_status',
@@ -326,34 +327,36 @@ class BOMHeaderController extends Controller
 
         $sampleRows = [
             [
-                'BOM-FG001-0001',
+                '',  // bom_code - BLANK (auto-generated)
                 'FG-0001',
                 '1',
+                '1',  // batch_size - default 1
                 now()->format('Y-m-d'),
                 '',
                 'DRAFT',
-                'NOS',
+                'Piece',  // Use full UOM name instead of code
                 'Starter BOM import',
                 'RM-0001',
                 '80',
-                'KG',
+                'Kilogram',  // Use full UOM name instead of code
                 '2.5',
                 '',
                 'true',
                 'Main raw material',
             ],
             [
-                'BOM-FG001-0001',
+                '',  // bom_code - BLANK (auto-generated)
                 'FG-0001',
                 '1',
+                '1',  // batch_size - default 1
                 now()->format('Y-m-d'),
                 '',
                 'DRAFT',
-                'NOS',
+                'Piece',  // Use full UOM name instead of code
                 'Starter BOM import',
                 'PKG-0001',
                 '20',
-                'NOS',
+                'Piece',  // Use full UOM name instead of code
                 '0',
                 '',
                 'false',
@@ -420,7 +423,7 @@ class BOMHeaderController extends Controller
             }
 
             $headers = array_map([$this, 'normalizeCsvHeader'], array_shift($csvData));
-            $requiredHeaders = ['bom_code', 'version', 'effective_from', 'bom_status', 'remarks', 'qty_required', 'scrap_percent', 'is_critical', 'item_remarks'];
+            $requiredHeaders = ['bom_code', 'version', 'batch_size', 'effective_from', 'bom_status', 'remarks', 'qty_required', 'scrap_percent', 'is_critical', 'item_remarks'];
             foreach ($requiredHeaders as $header) {
                 if (!in_array($header, $headers, true)) {
                     return response()->json([
@@ -489,21 +492,20 @@ class BOMHeaderController extends Controller
                     $mapped[$header] = $val === '' ? null : $val;
                 }
 
-                if (empty($mapped['bom_code'])) {
-                    $rowErrors[] = [
-                        'row' => $rowNumber,
-                        'error' => 'bom_code is required',
-                    ];
-                    continue;
-                }
-
-                $groupKey = $mapped['bom_code'] . '::' . ($mapped['version'] ?? '1');
+                // Generate a unique group key for grouping rows
+                // If bom_code is empty, use product_code + version as the key
+                $bomCodeForGrouping = !empty($mapped['bom_code']) 
+                    ? $mapped['bom_code'] 
+                    : 'AUTO_' . ($mapped['product_code'] ?? 'UNKNOWN') . '_' . ($mapped['version'] ?? '1');
+                
+                $groupKey = $bomCodeForGrouping . '::' . ($mapped['version'] ?? '1');
 
                 $headerData = [
                     'bom_code' => $mapped['bom_code'] ?? null,
                     'product_id' => $mapped['product_id'] ?? null,
                     'product_code' => $mapped['product_code'] ?? null,
                     'version' => $mapped['version'] ?? null,
+                    'batch_size' => $mapped['batch_size'] ?? 1,
                     'effective_from' => $mapped['effective_from'] ?? null,
                     'effective_to' => $mapped['effective_to'] ?? null,
                     'bom_status' => $mapped['bom_status'] ?? null,
@@ -550,11 +552,27 @@ class BOMHeaderController extends Controller
                 try {
                     $payload = $group['header'];
                     $payload['items'] = $group['items'];
+                    
+                    // Log payload for debugging
+                    \Log::info('BOM Import Payload', [
+                        'bom_code' => $payload['bom_code'] ?? 'EMPTY',
+                        'product_code' => $payload['product_code'] ?? 'EMPTY',
+                        'version' => $payload['version'] ?? 'EMPTY',
+                        'items_count' => count($payload['items']),
+                    ]);
+                    
                     $created[] = $this->createBomRecord($payload, $request->input('auth_user_id'));
                 } catch (\Throwable $e) {
+                    \Log::error('BOM Import Error', [
+                        'rows' => $group['rows'],
+                        'error' => $e->getMessage(),
+                        'trace' => $e->getTraceAsString(),
+                    ]);
+                    
                     $errors[] = [
                         'row' => implode(', ', $group['rows']),
-                        'bom_code' => $group['header']['bom_code'] ?? null,
+                        'bom_code' => $group['header']['bom_code'] ?? 'AUTO',
+                        'product_code' => $group['header']['product_code'] ?? 'N/A',
                         'error' => $e->getMessage(),
                     ];
                 }
@@ -762,9 +780,28 @@ class BOMHeaderController extends Controller
 
     private function createBomRecord(array $payload, $authUserId = null): BOMHeader
     {
+        // Auto-generate bom_code if not provided
+        if (empty($payload['bom_code'])) {
+            $product = $this->resolveProduct($payload['product_id'] ?? null, $payload['product_code'] ?? null);
+            $version = (int) ($payload['version'] ?? 1);
+            
+            // Generate code format: BOM-{PRODUCT_CODE}-{VERSION}
+            $productCode = str_replace(['FG-', 'SPCE-', 'PRD-'], '', $product->product_code);
+            $payload['bom_code'] = 'BOM-' . $productCode . '-' . str_pad($version, 4, '0', STR_PAD_LEFT);
+            
+            // Ensure uniqueness
+            $counter = 1;
+            $originalCode = $payload['bom_code'];
+            while (BOMHeader::where('bom_code', $payload['bom_code'])->exists()) {
+                $payload['bom_code'] = $originalCode . '-' . $counter;
+                $counter++;
+            }
+        }
+
         $validator = Validator::make($payload, [
             'bom_code' => 'required|string|max:30',
             'version' => 'required|integer|min:1',
+            'batch_size' => 'nullable|numeric|min:0.0001',
             'effective_from' => 'required|date',
             'effective_to' => 'nullable|date|after:effective_from',
             'bom_status' => 'required|in:DRAFT,ACTIVE,OBSOLETE',
@@ -796,6 +833,7 @@ class BOMHeaderController extends Controller
                 'bom_code' => $payload['bom_code'],
                 'product_id' => $product->id,
                 'version' => (int) $payload['version'],
+                'batch_size' => !empty($payload['batch_size']) ? (float) $payload['batch_size'] : 1,
                 'effective_from' => $payload['effective_from'],
                 'effective_to' => !empty($payload['effective_to']) ? $payload['effective_to'] : null,
                 'bom_status' => $payload['bom_status'],

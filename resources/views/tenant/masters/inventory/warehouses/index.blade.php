@@ -1,7 +1,7 @@
 @extends('tenant.layouts.inventory')
 
-@section('title', 'Warehouses')
-@section('page-title', 'Warehouse Master')
+@section('title', 'Location')
+@section('page-title', 'Location Master')
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
@@ -152,7 +152,7 @@
     <div class="bg-white rounded-xl shadow p-6 mb-6">
         <div class="flex items-center justify-between">
             <div>
-                <h2 class="text-2xl font-bold text-gray-900">Warehouse Master</h2>
+                <h2 class="text-2xl font-bold text-gray-900">Location Master</h2>
                 <p class="text-gray-600 mt-1">Manage warehouse locations and storage facilities</p>
             </div>
             <div class="flex gap-3">
@@ -164,7 +164,7 @@
                 </button>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/warehouses/create' : '/org/' . $organization->org_slug . '/warehouses/create') }}" 
                    class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-                    <i class="fas fa-plus mr-2"></i>Add Warehouse
+                    <i class="fas fa-plus mr-2"></i>Add Location
                 </a>
             </div>
         </div>

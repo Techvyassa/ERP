@@ -14,6 +14,7 @@ class BOMHeader extends Model
         'bom_code',
         'version',
         'product_id',
+        'batch_size',
         'effective_from',
         'effective_to',
         'bom_status',

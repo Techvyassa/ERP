@@ -5,6 +5,9 @@
 
 @push('head')
 <meta name="csrf-token" content="{{ csrf_token() }}">
+<style>
+[x-cloak] { display: none !important; }
+</style>
 @endpush
 
 @section('content')
@@ -23,11 +26,16 @@
                 </div>
             </div>
             <div class="flex items-center gap-3">
-                <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header/bulk-upload' : '/org/' . $organization->org_slug . '/bom-header/bulk-upload') }}" 
-                   class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-50 transition-all shadow-sm font-medium">
-                    <span class="material-symbols-outlined text-lg">upload_file</span>
-                    Bulk Upload CSV
-                </a>
+                <button @click="downloadTemplate()" 
+                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-all shadow-sm font-medium">
+                    <span class="material-symbols-outlined text-lg">download</span>
+                    Download CSV Template
+                </button>
+                <button @click="openImportModal()" 
+                        class="inline-flex items-center gap-2 px-4 py-2.5 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-all shadow-sm font-medium">
+                    <span class="material-symbols-outlined text-lg">upload</span>
+                    Import CSV
+                </button>
                 <a href="{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header/multiple-create' : '/org/' . $organization->org_slug . '/bom-header/multiple-create') }}" 
                    class="inline-flex items-center gap-2 px-4 py-2.5 bg-white border border-orange-200 text-orange-700 rounded-lg hover:bg-orange-50 transition-all shadow-sm font-medium">
                     <span class="material-symbols-outlined text-lg">library_add</span>
@@ -242,6 +250,139 @@
             </p>
         </div>
     </div>
+
+    <!-- Import CSV Modal -->
+    <div x-show="showImportModal" 
+         x-cloak
+         class="fixed inset-0 bg-black bg-opacity-50 z-50 flex items-center justify-center"
+         @click.self="closeImportModal()">
+        <div class="bg-white rounded-xl shadow-2xl max-w-2xl w-full mx-4" @click.stop>
+            <div class="p-6 border-b border-gray-200">
+                <div class="flex items-center justify-between">
+                    <h3 class="text-xl font-bold text-gray-900 flex items-center gap-2">
+                        <span class="material-symbols-outlined text-purple-600">upload_file</span>
+                        Import BOM Headers from CSV
+                    </h3>
+                    <button @click="closeImportModal()" class="text-gray-400 hover:text-gray-600">
+                        <span class="material-symbols-outlined">close</span>
+                    </button>
+                </div>
+            </div>
+            
+            <div class="p-6">
+                <template x-if="!uploadComplete">
+                    <div>
+                        <!-- File Upload Area -->
+                        <div class="mb-6">
+                            <label class="block text-sm font-medium text-gray-700 mb-2">Select CSV File</label>
+                            <div class="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center"
+                                 :class="{'border-purple-500 bg-purple-50': dragOver}"
+                                 @dragover.prevent="dragOver = true"
+                                 @dragleave.prevent="dragOver = false"
+                                 @drop.prevent="handleFileDrop($event)">
+                                <input type="file" 
+                                       id="csvFileInput" 
+                                       accept=".csv" 
+                                       @change="handleFileSelect($event)" 
+                                       class="hidden">
+                                
+                                <template x-if="!selectedFile">
+                                    <div>
+                                        <span class="material-symbols-outlined text-5xl text-gray-400 mb-3">cloud_upload</span>
+                                        <p class="text-gray-600 mb-2">Drag and drop your CSV file here, or</p>
+                                        <button @click="document.getElementById('csvFileInput').click()" 
+                                                class="px-4 py-2 bg-purple-600 text-white rounded-lg hover:bg-purple-700 transition-colors">
+                                            Browse Files
+                                        </button>
+                                    </div>
+                                </template>
+                                
+                                <template x-if="selectedFile">
+                                    <div class="flex items-center justify-center gap-3">
+                                        <span class="material-symbols-outlined text-3xl text-green-600">description</span>
+                                        <div class="text-left">
+                                            <p class="text-sm font-medium text-gray-900" x-text="selectedFile.name"></p>
+                                            <p class="text-xs text-gray-500" x-text="(selectedFile.size / 1024).toFixed(2) + ' KB'"></p>
+                                        </div>
+                                        <button @click="clearFile()" class="text-red-600 hover:text-red-800">
+                                            <span class="material-symbols-outlined">delete</span>
+                                        </button>
+                                    </div>
+                                </template>
+                            </div>
+                        </div>
+
+                        <!-- Instructions -->
+                        <div class="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-6">
+                            <h4 class="text-sm font-semibold text-blue-900 mb-2 flex items-center gap-2">
+                                <span class="material-symbols-outlined text-lg">info</span>
+                                Import Instructions
+                            </h4>
+                            <ul class="text-xs text-blue-800 space-y-1 ml-6 list-disc">
+                                <li>Download the CSV template first to see the required format</li>
+                                <li><strong>bom_code column must be BLANK</strong> - it will be auto-generated</li>
+                                <li>Fill in all required fields: product_code, version, batch_size, output_uom_code, effective_from</li>
+                                <li><strong>batch_size:</strong> Quantity produced per batch (default: 1)</li>
+                                <li>Use valid product codes (e.g., FG-0001, SPCE-0011) from your Product Master</li>
+                                <li><strong>UOM codes:</strong> Use full names like "Kilogram", "Piece", "Liter" or codes like "KG", "PC", "LTR" that exist in your UOM Master</li>
+                                <li>Material codes must exist in your Material Master (e.g., RM-0001, PKG-0001)</li>
+                                <li>Date format: YYYY-MM-DD (e.g., 2024-04-15)</li>
+                                <li>Multiple rows with same product_code will create BOM with multiple materials</li>
+                            </ul>
+                        </div>
+
+                        <!-- Action Buttons -->
+                        <div class="flex justify-end gap-3">
+                            <button @click="closeImportModal()" 
+                                    class="px-4 py-2 border border-gray-300 rounded-lg hover:bg-gray-50 transition-colors">
+                                Cancel
+                            </button>
+                            <button @click="uploadCSV()" 
+                                    :disabled="!selectedFile || uploading"
+                                    :class="!selectedFile || uploading ? 'opacity-50 cursor-not-allowed' : 'hover:bg-purple-700'"
+                                    class="px-6 py-2 bg-purple-600 text-white rounded-lg transition-colors flex items-center gap-2">
+                                <span class="material-symbols-outlined" x-show="!uploading">upload</span>
+                                <span class="material-symbols-outlined animate-spin" x-show="uploading">progress_activity</span>
+                                <span x-text="uploading ? 'Uploading...' : 'Upload & Import'"></span>
+                            </button>
+                        </div>
+                    </div>
+                </template>
+
+                <!-- Upload Complete -->
+                <template x-if="uploadComplete">
+                    <div>
+                        <div class="text-center py-6">
+                            <span class="material-symbols-outlined text-6xl mb-4"
+                                  :class="uploadErrors.length === 0 ? 'text-green-500' : 'text-yellow-500'"
+                                  x-text="uploadErrors.length === 0 ? 'check_circle' : 'warning'"></span>
+                            <h4 class="text-lg font-semibold text-gray-900 mb-2" x-text="uploadMessage"></h4>
+                            
+                            <template x-if="uploadErrors.length > 0">
+                                <div class="mt-4 max-h-60 overflow-y-auto">
+                                    <div class="bg-red-50 border border-red-200 rounded-lg p-4 text-left">
+                                        <h5 class="text-sm font-semibold text-red-900 mb-2">Errors:</h5>
+                                        <ul class="text-xs text-red-800 space-y-1">
+                                            <template x-for="error in uploadErrors" :key="error">
+                                                <li x-text="error"></li>
+                                            </template>
+                                        </ul>
+                                    </div>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <div class="flex justify-end">
+                            <button @click="closeImportModal()" 
+                                    class="px-6 py-2 bg-gray-600 text-white rounded-lg hover:bg-gray-700 transition-colors">
+                                Close
+                            </button>
+                        </div>
+                    </div>
+                </template>
+            </div>
+        </div>
+    </div>
 </div>
 
 <script>
@@ -266,6 +407,15 @@ function bomData() {
         items: [],
         loading: false,
         filters: { search: '', product: '', bom_status: '' },
+        
+        // Import modal state
+        showImportModal: false,
+        selectedFile: null,
+        uploading: false,
+        uploadComplete: false,
+        uploadMessage: '',
+        uploadErrors: [],
+        dragOver: false,
 
         get filteredItems() {
             let result = this.items;
@@ -333,12 +483,12 @@ function bomData() {
         },
         
         viewDetails(item) {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
+            const baseUrl = '{{ url(request()->get("tenant_type") === "subdomain" ? "/bom-header" : "/org/" . $organization->org_slug . "/bom-header") }}';
             window.location.href = `${baseUrl}/${item.id}/view`;
         },
         
         edit(item) {
-            const baseUrl = '{{ url(request()->get('tenant_type') === 'subdomain' ? '/bom-header' : '/org/' . $organization->org_slug . '/bom-header') }}';
+            const baseUrl = '{{ url(request()->get("tenant_type") === "subdomain" ? "/bom-header" : "/org/" . $organization->org_slug . "/bom-header") }}';
             window.location.href = `${baseUrl}/${item.id}/edit`;
         },
         
@@ -397,6 +547,120 @@ function bomData() {
             }
         },
 
+        downloadTemplate() {
+            window.location.href = '/api/v1/bom-headers/import/template';
+        },
+
+        openImportModal() {
+            this.showImportModal = true;
+            this.selectedFile = null;
+            this.uploading = false;
+            this.uploadComplete = false;
+            this.uploadMessage = '';
+            this.uploadErrors = [];
+        },
+
+        closeImportModal() {
+            this.showImportModal = false;
+            this.selectedFile = null;
+            this.uploading = false;
+            this.uploadComplete = false;
+            this.uploadMessage = '';
+            this.uploadErrors = [];
+            if (this.uploadComplete) {
+                this.loadData();
+            }
+        },
+
+        handleFileSelect(event) {
+            const file = event.target.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                this.selectedFile = file;
+            } else {
+                alert('Please select a valid CSV file');
+            }
+        },
+
+        handleFileDrop(event) {
+            this.dragOver = false;
+            const file = event.dataTransfer.files[0];
+            if (file && file.name.endsWith('.csv')) {
+                this.selectedFile = file;
+            } else {
+                alert('Please drop a valid CSV file');
+            }
+        },
+
+        clearFile() {
+            this.selectedFile = null;
+            document.getElementById('csvFileInput').value = '';
+        },
+
+        async uploadCSV() {
+            if (!this.selectedFile) {
+                alert('Please select a file first');
+                return;
+            }
+
+            this.uploading = true;
+            this.uploadComplete = false;
+
+            try {
+                const formData = new FormData();
+                formData.append('file', this.selectedFile);
+
+                const response = await fetch('/api/v1/bom-headers/import', {
+                    method: 'POST',
+                    credentials: 'same-origin',
+                    headers: {
+                        'Accept': 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').getAttribute('content')
+                    },
+                    body: formData
+                });
+
+                const data = await response.json();
+                
+                console.log('Import response:', data); // Debug log
+                
+                this.uploading = false;
+                this.uploadComplete = true;
+
+                if (data.success) {
+                    this.uploadMessage = data.message;
+                    this.uploadErrors = data.data?.errors || [];
+                    
+                    // Reload data after successful import
+                    setTimeout(() => {
+                        this.loadData();
+                    }, 2000);
+                } else {
+                    this.uploadMessage = 'Import failed';
+                    // Show detailed errors
+                    if (data.error && data.error.details) {
+                        if (Array.isArray(data.error.details)) {
+                            this.uploadErrors = data.error.details.map(err => {
+                                if (typeof err === 'object') {
+                                    return `Row ${err.row || '?'}: ${err.error || JSON.stringify(err)}`;
+                                }
+                                return String(err);
+                            });
+                        } else {
+                            this.uploadErrors = [JSON.stringify(data.error.details)];
+                        }
+                    } else {
+                        this.uploadErrors = [data.message || 'Unknown error'];
+                    }
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                this.uploading = false;
+                this.uploadComplete = true;
+                this.uploadMessage = 'Import failed';
+                this.uploadErrors = ['Network error occurred: ' + error.message];
+            }
+        },
+        
         showNotification(message, type = 'info') {
             const colors = {
                 success: 'bg-green-500',
