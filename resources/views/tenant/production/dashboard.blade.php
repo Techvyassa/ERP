@@ -96,9 +96,9 @@
                 <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
                     <div>
                         <h3 class="font-black text-gray-900 uppercase tracking-widest text-xs">Finished Goods Stock</h3>
-                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Inventory snapshot across all buckets</p>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">All products with stock status</p>
                     </div>
-                    <button @click="init()" class="text-orange-600">
+                    <button @click="init()" class="text-orange-600 hover:bg-orange-50 p-2 rounded-lg transition-colors">
                         <span class="material-symbols-outlined text-sm">refresh</span>
                     </button>
                 </div>
@@ -106,39 +106,38 @@
                     <table class="w-full text-left border-collapse">
                         <thead class="bg-gray-50">
                             <tr>
-                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Product</th>
-                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Available</th>
-                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">QC Hold</th>
-                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Putaway</th>
-                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Blocked</th>
-                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Reserved</th>
-                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Total</th>
+                                <th class="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100">Product</th>
+                                <th class="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">Available</th>
+                                <th class="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">QC Hold</th>
+                                <th class="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">Reserved</th>
+                                <th class="px-4 py-3 text-[10px] font-black text-gray-500 uppercase tracking-widest border-b border-gray-100 text-right">Total</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100 text-sm">
-                            <template x-for="item in stats.fgStock" :key="item.product_id + '-' + (item.uom_id || item.uom_code || 'na')">
+                            <template x-for="item in stockData" :key="item.item_id + '-' + item.uom_id">
                                 <tr class="hover:bg-gray-50/50 transition-colors">
-                                    <td class="px-6 py-4">
-                                        <p class="font-bold text-gray-900" x-text="item.product_name"></p>
-                                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest" x-text="item.product_code"></p>
-                                        <p class="text-[10px] text-gray-400 font-semibold uppercase tracking-widest mt-0.5" x-text="'UOM: ' + (item.uom_code || 'NA')"></p>
+                                    <td class="px-4 py-3">
+                                        <p class="font-bold text-gray-900" x-text="item.item_name"></p>
+                                        <p class="text-[10px] text-gray-400 font-mono" x-text="item.item_code"></p>
                                     </td>
-                                    <td class="px-6 py-4 text-right">
-                                        <span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md font-black text-[10px]"
-                                            x-text="(item.buckets.AVAILABLE || 0).toFixed(2)"></span>
+                                    <td class="px-4 py-3 text-right">
+                                        <span class="inline-block px-2 py-0.5 bg-emerald-50 text-emerald-700 rounded font-semibold text-xs" 
+                                            x-text="item.available.toFixed(2)"></span>
                                     </td>
-                                    <td class="px-6 py-4 text-right font-medium text-amber-600" x-text="(item.buckets.QC_HOLD || 0).toFixed(2)"></td>
-                                    <td class="px-6 py-4 text-right font-medium text-indigo-600" x-text="(item.buckets.PUTAWAY_PENDING || 0).toFixed(2)"></td>
-                                    <td class="px-6 py-4 text-right font-medium text-red-600" x-text="(item.buckets.BLOCKED || 0).toFixed(2)"></td>
-                                    <td class="px-6 py-4 text-right font-medium text-blue-600" x-text="(item.buckets.RESERVED || 0).toFixed(2)"></td>
-                                    <td class="px-6 py-4 text-right font-black text-gray-900" x-text="item.total_on_hand.toFixed(2) + ' ' + item.uom_code"></td>
+                                    <td class="px-4 py-3 text-right">
+                                        <span class="font-medium text-amber-600" x-text="item.qc_hold.toFixed(2)"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-right">
+                                        <span class="font-medium text-blue-600" x-text="item.reserved.toFixed(2)"></span>
+                                    </td>
+                                    <td class="px-4 py-3 text-right font-black text-gray-900" x-text="item.on_hand.toFixed(2) + ' ' + item.uom"></td>
                                 </tr>
                             </template>
-                            <template x-if="!stats.fgStock || stats.fgStock.length === 0">
+                            <template x-if="!stockData || stockData.length === 0">
                                 <tr>
-                                    <td colspan="7" class="px-6 py-12 text-center text-gray-400">
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
                                         <span class="material-symbols-outlined text-4xl mb-2 opacity-50">inventory_2</span>
-                                        <p class="text-[10px] font-black uppercase tracking-widest">No stock data available</p>
+                                        <p class="text-xs font-bold uppercase tracking-widest">No products found</p>
                                     </td>
                                 </tr>
                             </template>
@@ -210,24 +209,30 @@
                 avgYieldLast30Days: 0,
                 fgStock: []
             },
+            stockData: [],
             loading: false,
             async init() {
                 this.loading = true;
                 try {
-                    const response = await fetch(`/api/v1/production-orders/stats`, {
-                        headers: {
-                            'Accept': 'application/json'
-                        }
+                    // Load stats
+                    const statsResponse = await fetch(`/api/v1/production-orders/stats`, {
+                        headers: { 'Accept': 'application/json' }
                     });
-                    const data = await response.json();
+                    const statsData = await statsResponse.json();
+                    if (statsData.success) {
+                        this.stats = statsData.data;
+                    }
 
-                    console.log(data);
-
-                    if (data.success) {
-                        this.stats = data.data;
+                    // Load stock data (all products with stock info)
+                    const stockResponse = await fetch(`/api/v1/stock/current?item_type=Product`, {
+                        headers: { 'Accept': 'application/json' }
+                    });
+                    const stockResult = await stockResponse.json();
+                    if (stockResult.success) {
+                        this.stockData = stockResult.data;
                     }
                 } catch (e) {
-                    console.error('Failed to load stats', e);
+                    console.error('Failed to load data', e);
                 } finally {
                     this.loading = false;
                 }
