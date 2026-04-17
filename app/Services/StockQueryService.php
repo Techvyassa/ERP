@@ -83,15 +83,53 @@ class StockQueryService
     {
         return StockBalance::inWarehouse($warehouseId)
             ->withStock()
-            ->with(['material', 'uom'])
+            ->with(['material', 'product', 'uom'])
             ->get()
-            ->groupBy('material_id')
-            ->map(function ($rows, $materialId) {
+            ->groupBy(function ($item) {
+                return $item->material_id ? 'M' . $item->material_id : 'P' . $item->product_id;
+            })
+            ->map(function ($rows) {
                 $first = $rows->first();
+                $isProduct = (bool) $first->product_id;
+
                 return [
-                    'material_id'   => $materialId,
-                    'material_code' => $first->material?->material_code,
-                    'material_name' => $first->material?->material_name,
+                    'item_id'       => $isProduct ? $first->product_id : $first->material_id,
+                    'item_type'     => $isProduct ? 'Product' : 'Material',
+                    'item_code'     => $isProduct ? $first->product?->product_code : $first->material?->material_code,
+                    'item_name'     => $isProduct ? $first->product?->product_name : $first->material?->material_name,
+                    'uom'           => $first->uom?->uom_code,
+                    'on_hand'       => $rows->sum(fn($r) => (float) $r->qty_on_hand),
+                    'available'     => $rows->where('bucket', 'AVAILABLE')->sum(fn($r) => $r->available_qty),
+                    'qc_hold'       => $rows->where('bucket', 'QC_HOLD')->sum(fn($r) => (float) $r->qty_on_hand),
+                    'putaway_pending' => $rows->where('bucket', 'PUTAWAY_PENDING')->sum(fn($r) => (float) $r->qty_on_hand),
+                    'blocked'       => $rows->where('bucket', 'BLOCKED')->sum(fn($r) => (float) $r->qty_on_hand),
+                    'reserved'      => $rows->sum(fn($r) => (float) $r->qty_reserved),
+                ];
+            })
+            ->values()
+            ->toArray();
+    }
+
+    /**
+     * getGlobalStockSummary — Aggregate stock for all materials/products across all warehouses.
+     */
+    public function getGlobalStockSummary(): array
+    {
+        return StockBalance::with(['material', 'product', 'uom'])
+            ->withStock()
+            ->get()
+            ->groupBy(function ($item) {
+                return $item->material_id ? 'M' . $item->material_id : 'P' . $item->product_id;
+            })
+            ->map(function ($rows) {
+                $first = $rows->first();
+                $isProduct = (bool) $first->product_id;
+
+                return [
+                    'item_id'       => $isProduct ? $first->product_id : $first->material_id,
+                    'item_type'     => $isProduct ? 'Product' : 'Material',
+                    'item_code'     => $isProduct ? $first->product?->product_code : $first->material?->material_code,
+                    'item_name'     => $isProduct ? $first->product?->product_name : $first->material?->material_name,
                     'uom'           => $first->uom?->uom_code,
                     'on_hand'       => $rows->sum(fn($r) => (float) $r->qty_on_hand),
                     'available'     => $rows->where('bucket', 'AVAILABLE')->sum(fn($r) => $r->available_qty),

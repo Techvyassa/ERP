@@ -195,6 +195,7 @@ Route::prefix('v1')->group(function () {
             Route::prefix('warehouses')->group(function () {
                 Route::get('/', [App\Http\Controllers\WarehouseController::class, 'index']);
                 Route::get('/barcode', [App\Http\Controllers\WarehouseController::class, 'barcode']);
+                Route::get('/dashboard-stats', [App\Http\Controllers\WarehouseController::class, 'dashboardData']);
                 Route::get('/all-stock', [App\Http\Controllers\WarehouseController::class, 'allWarehouseStock']);
                 Route::get('/{id}', [App\Http\Controllers\WarehouseController::class, 'show']);
                 Route::post('/', [App\Http\Controllers\WarehouseController::class, 'store']);
