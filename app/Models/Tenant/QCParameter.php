@@ -25,6 +25,7 @@ class QCParameter extends Model
         'test_method',
         'is_critical',
         'display_order',
+        'sample_size',
         'is_active',
         'created_by',
     ];

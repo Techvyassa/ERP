@@ -41,7 +41,7 @@
         </div>
     </div>
 
-    <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+    <div class="grid grid-cols-2 md:grid-cols-5 gap-4 mb-6">
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Lot No</p>
             <p class="text-sm font-black text-slate-900 font-mono" x-text="lot.lot_number || ('LOT-' + lot.id)"></p>
@@ -49,6 +49,10 @@
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Source</p>
             <p class="text-sm font-semibold text-slate-800" x-text="lot.source_type || 'GRN'"></p>
+        </div>
+        <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
+            <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Lot Qty</p>
+            <p class="text-sm font-black text-slate-900" x-text="lot.lot_qty || '0'"></p>
         </div>
         <div class="bg-white rounded-2xl border border-gray-100 shadow-sm p-4">
             <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Sample Size</p>
@@ -73,13 +77,16 @@
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Parameter</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Tolerance</th>
                                 <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Observed</th>
+                                <th class="px-4 py-3 text-right text-xs font-bold text-gray-500 uppercase">Sample Size</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Status</th>
                                 <th class="px-4 py-3 text-left text-xs font-bold text-gray-500 uppercase">Remarks</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-100">
                             <template x-if="qcResults.length === 0">
-                                <tr><td colspan="5" class="px-4 py-10 text-center text-gray-400">No test results recorded yet.</td></tr>
+                                <tr>
+                                    <td colspan="5" class="px-4 py-10 text-center text-gray-400">No test results recorded yet.</td>
+                                </tr>
                             </template>
                             <template x-for="result in qcResults" :key="result.id">
                                 <tr>
@@ -89,6 +96,7 @@
                                     </td>
                                     <td class="px-4 py-3 text-gray-600" x-text="formatTolerance(result)"></td>
                                     <td class="px-4 py-3 text-right font-semibold text-gray-900" x-text="result.observed_value + ' ' + (result.unit_of_measurement || '')"></td>
+                                    <td class="px-4 py-3 text-right text-gray-600" x-text="result.sample_size || '—'"></td>
                                     <td class="px-4 py-3"><span class="px-2 py-1 rounded-full text-xs font-bold" :class="result.is_pass ? 'bg-green-100 text-green-700' : 'bg-red-100 text-red-700'" x-text="result.is_pass ? 'PASS' : 'FAIL'"></span></td>
                                     <td class="px-4 py-3 text-gray-600" x-text="result.remarks || '—'"></td>
                                 </tr>
@@ -111,11 +119,7 @@
                             <div>
                                 <p class="text-sm font-black text-amber-800">No QC parameters configured for this material.</p>
                                 <p class="text-xs text-amber-700 mt-1">Please set up QC parameters in the master data before recording test results. You can add a general remark below.</p>
-                                <a href="/org/{{ $organization->org_slug }}/quality/qc-parameters"
-                                    class="inline-flex items-center gap-1 mt-2 text-xs font-black text-amber-700 underline underline-offset-2 hover:text-amber-900">
-                                    <span class="material-symbols-outlined text-xs">open_in_new</span>
-                                    Go to QC Parameters
-                                </a>
+
                             </div>
                         </div>
                         <div>
@@ -143,8 +147,8 @@
                                 <option value="">— Choose a configured parameter —</option>
                                 <template x-for="param in qcParameters" :key="param.id">
                                     <option :value="param.id"
-                                            :disabled="isParameterRecorded(param.parameter_name)"
-                                            x-text="param.parameter_name + (isParameterRecorded(param.parameter_name) ? ' ✓' : '')"></option>
+                                        :disabled="isParameterRecorded(param.parameter_name)"
+                                        x-text="param.parameter_name + (isParameterRecorded(param.parameter_name) ? ' ✓' : '')"></option>
                                 </template>
                             </select>
                         </div>
@@ -235,6 +239,12 @@
                                     placeholder="Enter measured value"
                                     class="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
                             </div>
+                            <div>
+                                <label class="block text-xs font-semibold text-gray-600 mb-1">Sample Size</label>
+                                <input type="number" step="0.001" x-model="newResult.sample_size"
+                                    placeholder="Recorded sample size"
+                                    class="w-full px-3 py-2 border border-gray-300 bg-white rounded-lg text-sm focus:ring-2 focus:ring-primary/20 focus:border-primary">
+                            </div>
                         </div>
 
                         <div>
@@ -289,13 +299,13 @@
                                     <p class="text-2xl font-bold text-gray-900" x-text="lot.lot_number || ('LOT-' + lot.id)"></p>
                                 </div>
                                 <span class="px-3 py-1.5 rounded-full text-sm font-bold"
-                                      :class="{
+                                    :class="{
                                           'bg-green-100 text-green-700': lot.usage_decision?.decision === 'ACCEPTED',
                                           'bg-red-100 text-red-700': lot.usage_decision?.decision === 'REJECTED',
                                           'bg-amber-100 text-amber-700': lot.usage_decision?.decision === 'CONDITIONALLY_ACCEPTED',
                                           'bg-blue-100 text-blue-700': lot.usage_decision?.decision === 'REWORK_REQUIRED',
                                       }"
-                                      x-text="(lot.usage_decision?.decision || '').replace(/_/g, ' ')">
+                                    x-text="(lot.usage_decision?.decision || '').replace(/_/g, ' ')">
                                 </span>
                             </div>
 
@@ -403,16 +413,16 @@
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">
                                             <span class="inline-flex items-center gap-1">
                                                 <span class="w-2 h-2 rounded-full bg-red-500 inline-block"></span>
-                                                Return to Vendor
+                                                <span x-text="lot.source_type === 'PRODUCTION' ? 'Return to Production / Rework' : 'Return to Vendor'"></span>
                                             </span>
                                         </label>
                                         <input type="number" step="0.001" min="0"
-                                               x-model="decision.return_qty"
-                                               @input="syncDisposition('return')"
-                                               @blur="normalizeDisposition()"
-                                               placeholder="0.000"
-                                               class="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400">
-                                        <input type="text" x-model="decision.return_remarks" placeholder="Return reason (optional)" class="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs">
+                                            x-model="decision.return_qty"
+                                            @input="syncDisposition('return')"
+                                            @blur="normalizeDisposition()"
+                                            placeholder="0.000"
+                                            class="w-full px-3 py-2 border border-red-200 rounded-lg text-sm focus:ring-2 focus:ring-red-200 focus:border-red-400">
+                                        <input type="text" x-model="decision.return_remarks" :placeholder="lot.source_type === 'PRODUCTION' ? 'Rework details (optional)' : 'Return reason (optional)'" class="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs">
                                     </div>
                                     <div>
                                         <label class="block text-xs font-semibold text-gray-700 mb-1">
@@ -422,11 +432,11 @@
                                             </span>
                                         </label>
                                         <input type="number" step="0.001" min="0"
-                                               x-model="decision.scrap_qty"
-                                               @input="syncDisposition('scrap')"
-                                               @blur="normalizeDisposition()"
-                                               placeholder="0.000"
-                                               class="w-full px-3 py-2 border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
+                                            x-model="decision.scrap_qty"
+                                            @input="syncDisposition('scrap')"
+                                            @blur="normalizeDisposition()"
+                                            placeholder="0.000"
+                                            class="w-full px-3 py-2 border border-orange-200 rounded-lg text-sm focus:ring-2 focus:ring-orange-200 focus:border-orange-400">
                                         <input type="text" x-model="decision.scrap_remarks" placeholder="Scrap reason (optional)" class="w-full mt-1 px-3 py-1.5 border border-gray-200 rounded-lg text-xs">
                                     </div>
                                 </div>
@@ -434,10 +444,10 @@
                                 <div class="flex items-center justify-between text-xs pt-1 border-t border-red-200">
                                     <span class="text-gray-500">Allocated:</span>
                                     <span :class="dispositionBalanced() ? 'text-green-600 font-bold' : 'text-red-600 font-bold'"
-                                          x-text="(parseFloat(decision.return_qty||0) + parseFloat(decision.scrap_qty||0)).toFixed(3) + ' / ' + parseFloat(decision.rejected_qty).toFixed(3)"></span>
+                                        x-text="(parseFloat(decision.return_qty||0) + parseFloat(decision.scrap_qty||0)).toFixed(3) + ' / ' + parseFloat(decision.rejected_qty).toFixed(3)"></span>
                                 </div>
                                 <p x-show="!dispositionBalanced() && (parseFloat(decision.return_qty||0) + parseFloat(decision.scrap_qty||0)) > 0"
-                                   class="text-xs text-red-600">Return + Scrap must equal the rejected qty.</p>
+                                    class="text-xs text-red-600">Return + Scrap must equal the rejected qty.</p>
                             </div>
 
                             <!-- Remarks -->
@@ -468,7 +478,7 @@
                     <template x-if="parseFloat(lot.usage_decision?.rejected_qty) > 0">
                         <div class="pl-3 border-l-2 border-red-200 space-y-1">
                             <div class="flex items-center justify-between text-xs">
-                                <span class="text-red-600">↩ Return to Vendor</span>
+                                <span class="text-red-600" x-text="lot.source_type === 'PRODUCTION' ? '↩ Return to Production / Rework' : '↩ Return to Vendor'"></span>
                                 <span class="font-semibold text-gray-800" x-text="lot.usage_decision?.return_qty || '0.000'"></span>
                             </div>
                             <div class="flex items-center justify-between text-xs">
@@ -477,7 +487,10 @@
                             </div>
                         </div>
                     </template>
-                    <div><p class="text-gray-500 mb-1">Remarks</p><p class="text-gray-900" x-text="lot.usage_decision?.remarks || '—'"></p></div>
+                    <div>
+                        <p class="text-gray-500 mb-1">Remarks</p>
+                        <p class="text-gray-900" x-text="lot.usage_decision?.remarks || '—'"></p>
+                    </div>
                 </div>
                 <button @click="openBarcodeModal()" class="mt-4 w-full px-4 py-2 border border-indigo-200 text-indigo-700 rounded-lg text-sm hover:bg-indigo-50 transition flex items-center justify-center gap-2">
                     <span class="material-symbols-outlined text-base">barcode</span>
@@ -489,212 +502,207 @@
 </div>
 
 <script>
-function qcInspectionDetail() {
-    const token = () => localStorage.getItem('access_token');
-    const orgSlug = '{{ $organization->org_slug }}';
-    const lotId = {{ $lotId }};
-    const headers = () => ({ 'Authorization': `Bearer ${token()}`, 'Accept': 'application/json', 'X-Org-Slug': orgSlug, 'Content-Type': 'application/json' });
+    function qcInspectionDetail() {
+        const token = () => localStorage.getItem('access_token');
+        const orgSlug = '{{ $organization->org_slug }}';
+        const lotId = {{ $lotId }};
+        const headers = () => ({
+            'Authorization': `Bearer ${token()}`,
+            'Accept': 'application/json',
+            'X-Org-Slug': orgSlug,
+            'Content-Type': 'application/json'
+        });
 
-    return {
-        lot: {},
-        qcResults: [],
-        qcParameters: [],
-        selectedParameterId: '',
-        newResult: { parameter_name: '', parameter_code: '', standard_min: '', standard_max: '', standard_value: '', unit_of_measurement: '', tolerance_type: 'RANGE', observed_value: '', remarks: '' },
-        decision: { decision: '', accepted_qty: '', rejected_qty: '', return_qty: '', scrap_qty: '', return_remarks: '', scrap_remarks: '', remarks: '' },
-        showDecisionModal: false,
-        showBarcodeModal: false,
-        barcodeValue: '',
-        saving: false,
-
-        async init() { await this.loadLot(); },
-
-        async loadLot() {
-            const res = await fetch(`/api/v1/qc/${lotId}`, { headers: headers() });
-            const data = await res.json();
-            this.lot = data.data || {};
-            this.qcResults = this.lot.test_results || [];
-
-            // Fetch parameters: use product_id for FG lots, material_id for GRN lots
-            const isProduction = this.lot.source_type === 'PRODUCTION';
-            const paramId = isProduction ? this.lot.product_id : this.lot.material_id;
-            const paramType = isProduction ? 'product' : 'material';
-
-            if (paramId) {
-                const paramRes = await fetch(`/api/v1/qc/parameters/${paramId}?type=${paramType}`, { headers: headers() });
-                const paramData = await paramRes.json();
-                this.qcParameters = paramData.data || [];
-            } else {
-                this.qcParameters = [];
-            }
-        },
-
-        onParameterChange() {
-            const param = this.qcParameters.find(item => item.id == this.selectedParameterId);
-            if (!param) return;
-            this.newResult = {
-                parameter_name: param.parameter_name || '',
-                parameter_code: param.parameter_code || '',
-                standard_min: param.standard_min || '',
-                standard_max: param.standard_max || '',
-                standard_value: param.standard_value || '',
-                unit_of_measurement: param.unit_of_measurement || '',
-                tolerance_type: param.tolerance_type || 'RANGE',
+        return {
+            lot: {},
+            qcResults: [],
+            qcParameters: [],
+            selectedParameterId: '',
+            newResult: {
+                parameter_name: '',
+                parameter_code: '',
+                standard_min: '',
+                standard_max: '',
+                standard_value: '',
+                unit_of_measurement: '',
+                tolerance_type: 'RANGE',
                 observed_value: '',
+                sample_size: '',
                 remarks: ''
-            };
-        },
+            },
+            decision: {
+                decision: '',
+                accepted_qty: '',
+                rejected_qty: '',
+                return_qty: '',
+                scrap_qty: '',
+                return_remarks: '',
+                scrap_remarks: '',
+                remarks: ''
+            },
+            showDecisionModal: false,
+            showBarcodeModal: false,
+            barcodeValue: '',
+            saving: false,
 
-        async startInspection() {
-            const res = await fetch(`/api/v1/qc/${lotId}/start`, { method: 'PATCH', headers: headers() });
-            const data = await res.json();
-            if (!data.success) return alert(data.message || 'Failed to start inspection');
-            await this.loadLot();
-        },
+            async init() {
+                await this.loadLot();
+            },
 
-        async completeInspection() {
-            const res = await fetch(`/api/v1/qc/${lotId}/complete`, { method: 'PATCH', headers: headers() });
-            const data = await res.json();
-            if (!data.success) return alert(data.message || 'Failed to complete inspection');
-            await this.loadLot();
-        },
+            async loadLot() {
+                const res = await fetch(`/api/v1/qc/${lotId}`, {
+                    headers: headers()
+                });
+                const data = await res.json();
+                this.lot = data.data || {};
+                this.qcResults = this.lot.test_results || [];
 
-        async addResult() {
-            // Validate observed value before sending
-            if (!this.newResult.observed_value || this.newResult.observed_value === '') {
-                return alert('Please enter an observed value');
-            }
-            
-            // Validate parameter name
-            if (!this.newResult.parameter_name || this.newResult.parameter_name === '') {
-                return alert('Please enter a parameter name');
-            }
-            
-            // Validate tolerance type
-            if (!this.newResult.tolerance_type || this.newResult.tolerance_type === '') {
-                return alert('Please select a tolerance type (Range, Min Only, Max Only, or Exact)');
-            }
-            
-            // Validate standard values based on tolerance type
-            if (this.newResult.tolerance_type === 'RANGE') {
-                if (!this.newResult.standard_min && !this.newResult.standard_max) {
-                    return alert('For RANGE tolerance, please enter at least Standard Min OR Standard Max');
-                }
-            } else if (this.newResult.tolerance_type === 'MIN_ONLY') {
-                if (!this.newResult.standard_min) {
-                    return alert('For MIN ONLY tolerance, please enter Standard Min value');
-                }
-            } else if (this.newResult.tolerance_type === 'MAX_ONLY') {
-                if (!this.newResult.standard_max) {
-                    return alert('For MAX ONLY tolerance, please enter Standard Max value');
-                }
-            } else if (this.newResult.tolerance_type === 'EXACT') {
-                if (!this.newResult.standard_value) {
-                    return alert('For EXACT tolerance, please enter Standard Value');
-                }
-            }
-            
-            // DUPLICATE CHECK: Prevent re-entering the same parameter name
-            const isDuplicate = this.qcResults.some(result =>
-                result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase()
-            );
+                // Fetch parameters: use product_id for FG lots, material_id for GRN lots
+                const isProduction = this.lot.source_type === 'PRODUCTION';
+                const paramId = isProduction ? this.lot.product_id : this.lot.material_id;
+                const paramType = isProduction ? 'product' : 'material';
 
-            if (isDuplicate) {
-                return alert(`⚠️ Duplicate Parameter!\n\nA test result for "${this.newResult.parameter_name}" has already been recorded for this lot.\n\nEach parameter can only be recorded once.`);
-            }
-            
-            const payload = { 
-                ...this.newResult, 
-                observed_value: parseFloat(this.newResult.observed_value) 
-            };
-            
-            // Remove empty/null fields to avoid validation issues
-            if (!payload.parameter_code) delete payload.parameter_code;
-            if (!payload.standard_min) delete payload.standard_min;
-            if (!payload.standard_max) delete payload.standard_max;
-            if (!payload.standard_value) delete payload.standard_value;
-            if (!payload.unit_of_measurement) delete payload.unit_of_measurement;
-            if (!payload.remarks) delete payload.remarks;
-            
-            const res = await fetch(`/api/v1/qc/${lotId}/test-results`, {
-                method: 'POST',
-                headers: headers(),
-                body: JSON.stringify(payload)
-            });
-            const data = await res.json();
-            if (!data.success) {
-                // Show detailed error message
-                let errorMsg = data.message || 'Failed to record result';
-                if (data.error?.details) {
-                    Object.entries(data.error.details).forEach(([field, errors]) => {
-                        errorMsg += '\n\n' + field + ':\n  - ' + (Array.isArray(errors) ? errors.join('\n  - ') : errors);
+                if (paramId) {
+                    const paramRes = await fetch(`/api/v1/qc/parameters/${paramId}?type=${paramType}`, {
+                        headers: headers()
                     });
+                    const paramData = await paramRes.json();
+                    this.qcParameters = paramData.data || [];
+                } else {
+                    this.qcParameters = [];
                 }
-                return alert(errorMsg);
-            }
-            this.selectedParameterId = '';
-            this.newResult = { parameter_name: '', parameter_code: '', standard_min: '', standard_max: '', standard_value: '', unit_of_measurement: '', tolerance_type: 'RANGE', observed_value: '', remarks: '' };
-            await this.loadLot();
-        },
+            },
 
-        async makeDecision() {
-            // Validate decision
-            if (!this.decision.decision) {
-                return alert('Please select a decision');
-            }
-            
-            // Validate quantities
-            const acceptedQty = parseFloat(this.decision.accepted_qty) || 0;
-            const rejectedQty = parseFloat(this.decision.rejected_qty) || 0;
-            
-            if (acceptedQty < 0 || rejectedQty < 0) {
-                return alert('Quantities cannot be negative');
-            }
-            
-            if (acceptedQty === 0 && rejectedQty === 0) {
-                return alert('At least one of Accepted Qty or Rejected Qty must be greater than zero');
-            }
-
-            // Validate disposition split when rejected qty > 0
-            if (rejectedQty > 0) {
-                const returnQty = parseFloat(this.decision.return_qty) || 0;
-                const scrapQty  = parseFloat(this.decision.scrap_qty)  || 0;
-                if (Math.round((returnQty + scrapQty) * 1000) > Math.round(rejectedQty * 1000)) {
-                    return alert('Return qty + Scrap qty cannot exceed rejected qty (' + rejectedQty.toFixed(3) + ')');
-                }
-                // Default: all rejected goes to return if nothing entered
-                if (returnQty === 0 && scrapQty === 0) {
-                    this.decision.return_qty = rejectedQty.toFixed(3);
-                }
-            }
-
-            if (!this.decision.remarks || this.decision.remarks.trim() === '') {
-                return alert('Please provide remarks for your decision');
-            }
-            
-            this.saving = true;
-            
-            try {
-                const payload = {
-                    decision:       this.decision.decision,
-                    accepted_qty:   acceptedQty,
-                    rejected_qty:   rejectedQty,
-                    return_qty:     rejectedQty > 0 ? (parseFloat(this.decision.return_qty) || 0) : 0,
-                    scrap_qty:      rejectedQty > 0 ? (parseFloat(this.decision.scrap_qty)  || 0) : 0,
-                    return_remarks: this.decision.return_remarks || null,
-                    scrap_remarks:  this.decision.scrap_remarks  || null,
-                    remarks:        this.decision.remarks,
+            onParameterChange() {
+                const param = this.qcParameters.find(item => item.id == this.selectedParameterId);
+                if (!param) return;
+                this.newResult = {
+                    parameter_name: param.parameter_name || '',
+                    parameter_code: param.parameter_code || '',
+                    standard_min: param.standard_min || '',
+                    standard_max: param.standard_max || '',
+                    standard_value: param.standard_value || '',
+                    unit_of_measurement: param.unit_of_measurement || '',
+                    tolerance_type: param.tolerance_type || 'RANGE',
+                    observed_value: '',
+                    sample_size: param.sample_size || this.lot.sample_size || '',
+                    remarks: ''
                 };
-                
-                const res = await fetch(`/api/v1/qc/${lotId}/decision`, {
+            },
+
+            addQuickResult(param) {
+                this.newResult = {
+                    parameter_id: param.id,
+                    parameter_name: param.parameter_name,
+                    unit_of_measurement: param.unit_of_measurement || '',
+                    tolerance_type: param.tolerance_type || 'RANGE',
+                    observed_value: '',
+                    sample_size: param.sample_size || this.lot.sample_size || '',
+                    remarks: ''
+                };
+                this.showAddModal = true;
+            },
+
+            async startInspection() {
+                const res = await fetch(`/api/v1/qc/${lotId}/start`, {
+                    method: 'PATCH',
+                    headers: headers()
+                });
+                const data = await res.json();
+                if (!data.success) return alert(data.message || 'Failed to start inspection');
+                await this.loadLot();
+            },
+
+            async completeInspection() {
+                const res = await fetch(`/api/v1/qc/${lotId}/complete`, {
+                    method: 'PATCH',
+                    headers: headers()
+                });
+                const data = await res.json();
+                if (!data.success) return alert(data.message || 'Failed to complete inspection');
+                await this.loadLot();
+            },
+
+            async addResult() {
+                // Handle case where no parameters are configured - allow saving a general remark
+                if (this.qcParameters.length === 0) {
+                    if (!this.newResult.remarks || this.newResult.remarks.trim() === '') {
+                        return alert('Please enter a remark before saving.');
+                    }
+                    // Automatically fill mandatory fields for a general observation entry
+                    this.newResult.parameter_name = 'General Observation';
+                    this.newResult.observed_value = 0;
+                    this.newResult.tolerance_type = 'RANGE';
+                    this.newResult.standard_min = '0';
+                    this.newResult.standard_max = '1'; // Dummy range as string to satisfy API validation
+                }
+
+                // Validate observed value (allow 0)
+                if (this.newResult.observed_value === undefined || this.newResult.observed_value === '') {
+                    return alert('Please enter an observed value');
+                }
+
+                // Validate parameter name
+                if (!this.newResult.parameter_name || this.newResult.parameter_name === '') {
+                    return alert('Please enter a parameter name');
+                }
+
+                // Validate tolerance type
+                if (!this.newResult.tolerance_type || this.newResult.tolerance_type === '') {
+                    return alert('Please select a tolerance type (Range, Min Only, Max Only, or Exact)');
+                }
+
+                // Validate standard values based on tolerance type
+                if (this.newResult.tolerance_type === 'RANGE') {
+                    if ((this.newResult.standard_min === undefined || this.newResult.standard_min === '') && 
+                        (this.newResult.standard_max === undefined || this.newResult.standard_max === '')) {
+                        return alert('For RANGE tolerance, please enter at least Standard Min OR Standard Max');
+                    }
+                } else if (this.newResult.tolerance_type === 'MIN_ONLY') {
+                    if (this.newResult.standard_min === undefined || this.newResult.standard_min === '') {
+                        return alert('For MIN ONLY tolerance, please enter Standard Min value');
+                    }
+                } else if (this.newResult.tolerance_type === 'MAX_ONLY') {
+                    if (this.newResult.standard_max === undefined || this.newResult.standard_max === '') {
+                        return alert('For MAX ONLY tolerance, please enter Standard Max value');
+                    }
+                } else if (this.newResult.tolerance_type === 'EXACT') {
+                    if (this.newResult.standard_value === undefined || this.newResult.standard_value === '') {
+                        return alert('For EXACT tolerance, please enter Standard Value');
+                    }
+                }
+
+                // DUPLICATE CHECK: Prevent re-entering the same parameter name
+                const isDuplicate = this.qcResults.some(result =>
+                    result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase()
+                );
+
+                if (isDuplicate) {
+                    return alert(`⚠️ Duplicate Parameter!\n\nA test result for "${this.newResult.parameter_name}" has already been recorded for this lot.\n\nEach parameter can only be recorded once.`);
+                }
+
+                const payload = {
+                    ...this.newResult,
+                    observed_value: parseFloat(this.newResult.observed_value)
+                };
+
+                // Remove empty/null fields to avoid validation issues
+                if (!payload.parameter_code) delete payload.parameter_code;
+                if (!payload.standard_min) delete payload.standard_min;
+                if (!payload.standard_max) delete payload.standard_max;
+                if (!payload.standard_value) delete payload.standard_value;
+                if (!payload.unit_of_measurement) delete payload.unit_of_measurement;
+                if (!payload.remarks) delete payload.remarks;
+
+                const res = await fetch(`/api/v1/qc/${lotId}/test-results`, {
                     method: 'POST',
                     headers: headers(),
                     body: JSON.stringify(payload)
                 });
                 const data = await res.json();
-                
                 if (!data.success) {
-                    let errorMsg = data.message || 'Failed to make decision';
+                    // Show detailed error message
+                    let errorMsg = data.message || 'Failed to record result';
                     if (data.error?.details) {
                         Object.entries(data.error.details).forEach(([field, errors]) => {
                             errorMsg += '\n\n' + field + ':\n  - ' + (Array.isArray(errors) ? errors.join('\n  - ') : errors);
@@ -702,280 +710,370 @@ function qcInspectionDetail() {
                     }
                     return alert(errorMsg);
                 }
-                
-                // Success - show barcode certificate modal
-                this.showDecisionModal = false;
+                this.selectedParameterId = '';
+                this.newResult = {
+                    parameter_name: '',
+                    parameter_code: '',
+                    standard_min: '',
+                    standard_max: '',
+                    standard_value: '',
+                    unit_of_measurement: '',
+                    tolerance_type: 'RANGE',
+                    observed_value: '',
+                    sample_size: '',
+                    remarks: ''
+                };
                 await this.loadLot();
-                this.openBarcodeModal();
-            } catch (error) {
-                console.error('Decision error:', error);
-                alert('An error occurred while submitting the decision');
-            } finally {
-                this.saving = false;
-            }
-        },
+            },
 
-        openDecisionModal() {
-            // Reset decision form
-            this.decision = { decision: '', accepted_qty: '', rejected_qty: '', return_qty: '', scrap_qty: '', return_remarks: '', scrap_remarks: '', remarks: '' };
-            
-            // Auto-calculate quantities from test results
-            this.calculateDefaultQuantities();
-            
-            this.showDecisionModal = true;
-        },
+            async makeDecision() {
+                // Validate decision
+                if (!this.decision.decision) {
+                    return alert('Please select a decision');
+                }
 
-        calculateDefaultQuantities() {
-            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
-            if (lotQty <= 0) {
-                return;
-            }
-            
-            const passCount = this.qcResults.filter(r => r.is_pass === true).length;
-            const failCount = this.qcResults.filter(r => r.is_pass === false).length;
-            const totalCount = this.qcResults.length;
-            
-            // If all results PASS → Set as accepted
-            if (passCount === totalCount && passCount > 0) {
-                this.decision.decision = 'ACCEPTED';
-                this.decision.accepted_qty = lotQty.toFixed(3);
-                this.decision.rejected_qty = '0.000';
-            }
-            // If all results FAIL → Set as rejected
-            else if (failCount === totalCount && failCount > 0) {
-                this.decision.decision = 'REJECTED';
-                this.decision.accepted_qty = '0.000';
-                this.decision.rejected_qty = lotQty.toFixed(3);
-            }
-            // Mixed results → Split based on pass/fail ratio
-            else {
-                this.decision.decision = totalCount > 0 ? 'CONDITIONALLY_ACCEPTED' : 'ACCEPTED';
-                this.decision.accepted_qty = lotQty.toFixed(3);
-                this.decision.rejected_qty = '0.000';
-            }
-            this.applyDecisionDefaults();
-        },
+                // Validate quantities
+                const acceptedQty = parseFloat(this.decision.accepted_qty) || 0;
+                const rejectedQty = parseFloat(this.decision.rejected_qty) || 0;
 
-        applyDecisionDefaults() {
-            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
-            const currentRemarks = (this.decision.remarks || '').trim();
-            const hasManualRemarks = currentRemarks !== '' && !this.isAutoDecisionRemark(currentRemarks);
+                if (acceptedQty < 0 || rejectedQty < 0) {
+                    return alert('Quantities cannot be negative');
+                }
 
-            if (this.decision.decision === 'ACCEPTED') {
-                this.decision.accepted_qty = lotQty.toFixed(3);
-                this.decision.rejected_qty = '0.000';
-                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('ACCEPTED');
-            } else if (this.decision.decision === 'REJECTED') {
-                this.decision.accepted_qty = '0.000';
-                this.decision.rejected_qty = lotQty.toFixed(3);
-                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REJECTED');
-            } else if (this.decision.decision === 'CONDITIONALLY_ACCEPTED') {
-                if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                if (acceptedQty === 0 && rejectedQty === 0) {
+                    return alert('At least one of Accepted Qty or Rejected Qty must be greater than zero');
+                }
+
+                // Validate disposition split when rejected qty > 0
+                if (rejectedQty > 0) {
+                    const returnQty = parseFloat(this.decision.return_qty) || 0;
+                    const scrapQty = parseFloat(this.decision.scrap_qty) || 0;
+                    if (Math.round((returnQty + scrapQty) * 1000) > Math.round(rejectedQty * 1000)) {
+                        return alert('Return qty + Scrap qty cannot exceed rejected qty (' + rejectedQty.toFixed(3) + ')');
+                    }
+                    // Default: all rejected goes to return if nothing entered
+                    if (returnQty === 0 && scrapQty === 0) {
+                        this.decision.return_qty = rejectedQty.toFixed(3);
+                    }
+                }
+
+                if (!this.decision.remarks || this.decision.remarks.trim() === '') {
+                    return alert('Please provide remarks for your decision');
+                }
+
+                this.saving = true;
+
+                try {
+                    const payload = {
+                        decision: this.decision.decision,
+                        accepted_qty: acceptedQty,
+                        rejected_qty: rejectedQty,
+                        return_qty: rejectedQty > 0 ? (parseFloat(this.decision.return_qty) || 0) : 0,
+                        scrap_qty: rejectedQty > 0 ? (parseFloat(this.decision.scrap_qty) || 0) : 0,
+                        return_remarks: this.decision.return_remarks || null,
+                        scrap_remarks: this.decision.scrap_remarks || null,
+                        remarks: this.decision.remarks,
+                    };
+
+                    const res = await fetch(`/api/v1/qc/${lotId}/decision`, {
+                        method: 'POST',
+                        headers: headers(),
+                        body: JSON.stringify(payload)
+                    });
+                    const data = await res.json();
+
+                    if (!data.success) {
+                        let errorMsg = data.message || 'Failed to make decision';
+                        if (data.error?.details) {
+                            Object.entries(data.error.details).forEach(([field, errors]) => {
+                                errorMsg += '\n\n' + field + ':\n  - ' + (Array.isArray(errors) ? errors.join('\n  - ') : errors);
+                            });
+                        }
+                        return alert(errorMsg);
+                    }
+
+                    // Success - show barcode certificate modal
+                    this.showDecisionModal = false;
+                    await this.loadLot();
+                    this.openBarcodeModal();
+                } catch (error) {
+                    console.error('Decision error:', error);
+                    alert('An error occurred while submitting the decision');
+                } finally {
+                    this.saving = false;
+                }
+            },
+
+            openDecisionModal() {
+                // Reset decision form
+                this.decision = {
+                    decision: '',
+                    accepted_qty: '',
+                    rejected_qty: '',
+                    return_qty: '',
+                    scrap_qty: '',
+                    return_remarks: '',
+                    scrap_remarks: '',
+                    remarks: ''
+                };
+
+                // Auto-calculate quantities from test results
+                this.calculateDefaultQuantities();
+
+                this.showDecisionModal = true;
+            },
+
+            calculateDefaultQuantities() {
+                const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+                if (lotQty <= 0) {
+                    return;
+                }
+
+                const passCount = this.qcResults.filter(r => r.is_pass === true).length;
+                const failCount = this.qcResults.filter(r => r.is_pass === false).length;
+                const totalCount = this.qcResults.length;
+
+                // If all results PASS → Set as accepted
+                if (passCount === totalCount && passCount > 0) {
+                    this.decision.decision = 'ACCEPTED';
                     this.decision.accepted_qty = lotQty.toFixed(3);
                     this.decision.rejected_qty = '0.000';
                 }
-                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('CONDITIONALLY_ACCEPTED');
-            } else if (this.decision.decision === 'REWORK_REQUIRED') {
-                if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                // If all results FAIL → Set as rejected
+                else if (failCount === totalCount && failCount > 0) {
+                    this.decision.decision = 'REJECTED';
                     this.decision.accepted_qty = '0.000';
                     this.decision.rejected_qty = lotQty.toFixed(3);
                 }
-                if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REWORK_REQUIRED');
-            }
-        },
-
-        getDefaultDecisionRemark(decision) {
-            return {
-                ACCEPTED: 'Accepted after QC inspection.',
-                REJECTED: 'Rejected after QC inspection.',
-                CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
-                REWORK_REQUIRED: 'Rework required based on QC inspection.'
-            }[decision] || '';
-        },
-
-        isAutoDecisionRemark(remarks) {
-            return Object.values({
-                ACCEPTED: 'Accepted after QC inspection.',
-                REJECTED: 'Rejected after QC inspection.',
-                CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
-                REWORK_REQUIRED: 'Rework required based on QC inspection.'
-            }).includes(remarks);
-        },
-
-        syncDecisionQty(changedField) {
-            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
-            if (lotQty <= 0) {
-                return;
-            }
-
-            if (changedField === 'rejected') {
-                let rejectedQty = parseFloat(this.decision.rejected_qty);
-                if (!Number.isFinite(rejectedQty)) {
+                // Mixed results → Split based on pass/fail ratio
+                else {
+                    this.decision.decision = totalCount > 0 ? 'CONDITIONALLY_ACCEPTED' : 'ACCEPTED';
                     this.decision.accepted_qty = lotQty.toFixed(3);
+                    this.decision.rejected_qty = '0.000';
+                }
+                this.applyDecisionDefaults();
+            },
+
+            applyDecisionDefaults() {
+                const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+                const currentRemarks = (this.decision.remarks || '').trim();
+                const hasManualRemarks = currentRemarks !== '' && !this.isAutoDecisionRemark(currentRemarks);
+
+                if (this.decision.decision === 'ACCEPTED') {
+                    this.decision.accepted_qty = lotQty.toFixed(3);
+                    this.decision.rejected_qty = '0.000';
+                    if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('ACCEPTED');
+                } else if (this.decision.decision === 'REJECTED') {
+                    this.decision.accepted_qty = '0.000';
+                    this.decision.rejected_qty = lotQty.toFixed(3);
+                    if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REJECTED');
+                } else if (this.decision.decision === 'CONDITIONALLY_ACCEPTED') {
+                    if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                        this.decision.accepted_qty = lotQty.toFixed(3);
+                        this.decision.rejected_qty = '0.000';
+                    }
+                    if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('CONDITIONALLY_ACCEPTED');
+                } else if (this.decision.decision === 'REWORK_REQUIRED') {
+                    if (!this.decision.accepted_qty && !this.decision.rejected_qty) {
+                        this.decision.accepted_qty = '0.000';
+                        this.decision.rejected_qty = lotQty.toFixed(3);
+                    }
+                    if (!hasManualRemarks) this.decision.remarks = this.getDefaultDecisionRemark('REWORK_REQUIRED');
+                }
+            },
+
+            getDefaultDecisionRemark(decision) {
+                return {
+                    ACCEPTED: 'Accepted after QC inspection.',
+                    REJECTED: 'Rejected after QC inspection.',
+                    CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
+                    REWORK_REQUIRED: 'Rework required based on QC inspection.'
+                } [decision] || '';
+            },
+
+            isAutoDecisionRemark(remarks) {
+                return Object.values({
+                    ACCEPTED: 'Accepted after QC inspection.',
+                    REJECTED: 'Rejected after QC inspection.',
+                    CONDITIONALLY_ACCEPTED: 'Conditionally accepted after QC inspection.',
+                    REWORK_REQUIRED: 'Rework required based on QC inspection.'
+                }).includes(remarks);
+            },
+
+            syncDecisionQty(changedField) {
+                const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+                if (lotQty <= 0) {
                     return;
                 }
-                rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
-                this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
-                return;
-            }
 
-            let acceptedQty = parseFloat(this.decision.accepted_qty);
-            if (!Number.isFinite(acceptedQty)) {
-                this.decision.rejected_qty = lotQty.toFixed(3);
-                return;
-            }
-            acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
-            this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
-        },
-
-        normalizeDecisionQty(changedField) {
-            const lotQty = parseFloat(this.lot?.lot_qty) || 0;
-            if (lotQty <= 0) {
-                return;
-            }
-
-            if (changedField === 'rejected') {
-                let rejectedQty = parseFloat(this.decision.rejected_qty);
-                rejectedQty = Number.isFinite(rejectedQty) ? rejectedQty : 0;
-                rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
-                this.decision.rejected_qty = rejectedQty.toFixed(3);
-                this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
-                return;
-            }
-
-            let acceptedQty = parseFloat(this.decision.accepted_qty);
-            acceptedQty = Number.isFinite(acceptedQty) ? acceptedQty : 0;
-            acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
-            this.decision.accepted_qty = acceptedQty.toFixed(3);
-            this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
-        },
-
-        formatTolerance(result) {
-            // If no tolerance type, show "No tolerance set"
-            if (!result.tolerance_type || result.tolerance_type === '') {
-                return 'No tolerance set';
-            }
-            
-            // Show based on tolerance type
-            if (result.tolerance_type === 'RANGE') {
-                if (result.standard_min && result.standard_max) {
-                    return `${result.standard_min} to ${result.standard_max}`;
-                }
-                return 'Range not set';
-            }
-            if (result.tolerance_type === 'MIN_ONLY') {
-                if (result.standard_min) {
-                    return `>= ${result.standard_min}`;
-                }
-                return 'Min not set';
-            }
-            if (result.tolerance_type === 'MAX_ONLY') {
-                if (result.standard_max) {
-                    return `<= ${result.standard_max}`;
-                }
-                return 'Max not set';
-            }
-            if (result.tolerance_type === 'EXACT') {
-                if (result.standard_value) {
-                    return result.standard_value;
-                }
-                return 'Target not set';
-            }
-            return '—';
-        },
-
-        statusClass(value) {
-            return {
-                'PENDING': 'bg-amber-100 text-amber-700',
-                'IN_PROGRESS': 'bg-blue-100 text-blue-700',
-                'COMPLETED': 'bg-green-100 text-green-700',
-                'DECISION_MADE': 'bg-purple-100 text-purple-700'
-            }[value] || 'bg-gray-100 text-gray-600';
-        },
-
-        // Check if the current parameter name is already recorded
-        hasDuplicate() {
-            if (!this.newResult.parameter_name) return false;
-            return this.qcResults.some(result =>
-                result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase()
-            );
-        },
-
-        // Get duplicate warning message
-        getDuplicateMessage() {
-            if (!this.newResult.parameter_name) return '';
-            return `"${this.newResult.parameter_name}" has already been recorded for this lot. Each parameter can only be recorded once.`;
-        },
-
-        // Sync return/scrap qty so they don't exceed rejected_qty
-        syncDisposition(changed) {
-            const rejected = parseFloat(this.decision.rejected_qty) || 0;
-            if (rejected <= 0) return;
-            if (changed === 'return') {
-                let v = parseFloat(this.decision.return_qty) || 0;
-                v = Math.min(Math.max(v, 0), rejected);
-                this.decision.scrap_qty = (rejected - v).toFixed(3);
-            } else {
-                let v = parseFloat(this.decision.scrap_qty) || 0;
-                v = Math.min(Math.max(v, 0), rejected);
-                this.decision.return_qty = (rejected - v).toFixed(3);
-            }
-        },
-
-        normalizeDisposition() {
-            const rejected = parseFloat(this.decision.rejected_qty) || 0;
-            let r = Math.min(Math.max(parseFloat(this.decision.return_qty) || 0, 0), rejected);
-            let s = Math.min(Math.max(parseFloat(this.decision.scrap_qty)  || 0, 0), rejected);
-            if (Math.round((r + s) * 1000) > Math.round(rejected * 1000)) s = rejected - r;
-            this.decision.return_qty = r.toFixed(3);
-            this.decision.scrap_qty  = s.toFixed(3);
-        },
-
-        dispositionBalanced() {
-            const rejected  = Math.round((parseFloat(this.decision.rejected_qty) || 0) * 1000);
-            const allocated = Math.round(((parseFloat(this.decision.return_qty) || 0) + (parseFloat(this.decision.scrap_qty) || 0)) * 1000);
-            return rejected === 0 || allocated === rejected;
-        },
-
-        isParameterRecorded(parameterName) {
-            return this.qcResults.some(result =>
-                result.parameter_name.toLowerCase() === parameterName.toLowerCase()
-            );
-        },
-
-        openBarcodeModal() {
-            // Build barcode value: QC-{lotId}-{decision}-{date}
-            const decision = (this.lot.usage_decision?.decision || 'DECISION').substring(0, 3);
-            const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
-            const lotLabel = this.lot.lot_number || ('LOT-' + lotId);
-            this.barcodeValue = `QC-${lotLabel}-${decision}-${date}`;
-            this.showBarcodeModal = true;
-
-            this.$nextTick(() => {
-                try {
-                    JsBarcode('#qc-barcode', this.barcodeValue, {
-                        format: 'CODE128',
-                        width: 1.2,
-                        height: 50,
-                        displayValue: false,
-                        margin: 6,
-                    });
-                    // Scale SVG to fit container
-                    const svg = document.getElementById('qc-barcode');
-                    if (svg) {
-                        svg.setAttribute('width', '100%');
-                        svg.style.maxWidth = '100%';
+                if (changedField === 'rejected') {
+                    let rejectedQty = parseFloat(this.decision.rejected_qty);
+                    if (!Number.isFinite(rejectedQty)) {
+                        this.decision.accepted_qty = lotQty.toFixed(3);
+                        return;
                     }
-                } catch (e) {
-                    console.error('Barcode generation failed', e);
+                    rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
+                    this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
+                    return;
                 }
-            });
-        },
 
-        printCertificate() {
-            const el = document.getElementById('qc-certificate');
-            const win = window.open('', '_blank', 'width=600,height=700');
-            win.document.write(`
+                let acceptedQty = parseFloat(this.decision.accepted_qty);
+                if (!Number.isFinite(acceptedQty)) {
+                    this.decision.rejected_qty = lotQty.toFixed(3);
+                    return;
+                }
+                acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
+                this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
+            },
+
+            normalizeDecisionQty(changedField) {
+                const lotQty = parseFloat(this.lot?.lot_qty) || 0;
+                if (lotQty <= 0) {
+                    return;
+                }
+
+                if (changedField === 'rejected') {
+                    let rejectedQty = parseFloat(this.decision.rejected_qty);
+                    rejectedQty = Number.isFinite(rejectedQty) ? rejectedQty : 0;
+                    rejectedQty = Math.min(Math.max(rejectedQty, 0), lotQty);
+                    this.decision.rejected_qty = rejectedQty.toFixed(3);
+                    this.decision.accepted_qty = (lotQty - rejectedQty).toFixed(3);
+                    return;
+                }
+
+                let acceptedQty = parseFloat(this.decision.accepted_qty);
+                acceptedQty = Number.isFinite(acceptedQty) ? acceptedQty : 0;
+                acceptedQty = Math.min(Math.max(acceptedQty, 0), lotQty);
+                this.decision.accepted_qty = acceptedQty.toFixed(3);
+                this.decision.rejected_qty = (lotQty - acceptedQty).toFixed(3);
+            },
+
+            formatTolerance(result) {
+                // If no tolerance type, show "No tolerance set"
+                if (!result.tolerance_type || result.tolerance_type === '') {
+                    return 'No tolerance set';
+                }
+
+                // Show based on tolerance type
+                if (result.tolerance_type === 'RANGE') {
+                    if (result.standard_min && result.standard_max) {
+                        return `${result.standard_min} to ${result.standard_max}`;
+                    }
+                    return 'Range not set';
+                }
+                if (result.tolerance_type === 'MIN_ONLY') {
+                    if (result.standard_min) {
+                        return `>= ${result.standard_min}`;
+                    }
+                    return 'Min not set';
+                }
+                if (result.tolerance_type === 'MAX_ONLY') {
+                    if (result.standard_max) {
+                        return `<= ${result.standard_max}`;
+                    }
+                    return 'Max not set';
+                }
+                if (result.tolerance_type === 'EXACT') {
+                    if (result.standard_value) {
+                        return result.standard_value;
+                    }
+                    return 'Target not set';
+                }
+                return '—';
+            },
+
+            statusClass(value) {
+                return {
+                    'PENDING': 'bg-amber-100 text-amber-700',
+                    'IN_PROGRESS': 'bg-blue-100 text-blue-700',
+                    'COMPLETED': 'bg-green-100 text-green-700',
+                    'DECISION_MADE': 'bg-purple-100 text-purple-700'
+                } [value] || 'bg-gray-100 text-gray-600';
+            },
+
+            // Check if the current parameter name is already recorded
+            hasDuplicate() {
+                if (!this.newResult.parameter_name) return false;
+                return this.qcResults.some(result =>
+                    result.parameter_name.toLowerCase() === this.newResult.parameter_name.toLowerCase()
+                );
+            },
+
+            // Get duplicate warning message
+            getDuplicateMessage() {
+                if (!this.newResult.parameter_name) return '';
+                return `"${this.newResult.parameter_name}" has already been recorded for this lot. Each parameter can only be recorded once.`;
+            },
+
+            // Sync return/scrap qty so they don't exceed rejected_qty
+            syncDisposition(changed) {
+                const rejected = parseFloat(this.decision.rejected_qty) || 0;
+                if (rejected <= 0) return;
+                if (changed === 'return') {
+                    let v = parseFloat(this.decision.return_qty) || 0;
+                    v = Math.min(Math.max(v, 0), rejected);
+                    this.decision.scrap_qty = (rejected - v).toFixed(3);
+                } else {
+                    let v = parseFloat(this.decision.scrap_qty) || 0;
+                    v = Math.min(Math.max(v, 0), rejected);
+                    this.decision.return_qty = (rejected - v).toFixed(3);
+                }
+            },
+
+            normalizeDisposition() {
+                const rejected = parseFloat(this.decision.rejected_qty) || 0;
+                let r = Math.min(Math.max(parseFloat(this.decision.return_qty) || 0, 0), rejected);
+                let s = Math.min(Math.max(parseFloat(this.decision.scrap_qty) || 0, 0), rejected);
+                if (Math.round((r + s) * 1000) > Math.round(rejected * 1000)) s = rejected - r;
+                this.decision.return_qty = r.toFixed(3);
+                this.decision.scrap_qty = s.toFixed(3);
+            },
+
+            dispositionBalanced() {
+                const rejected = Math.round((parseFloat(this.decision.rejected_qty) || 0) * 1000);
+                const allocated = Math.round(((parseFloat(this.decision.return_qty) || 0) + (parseFloat(this.decision.scrap_qty) || 0)) * 1000);
+                return rejected === 0 || allocated === rejected;
+            },
+
+            isParameterRecorded(parameterName) {
+                return this.qcResults.some(result =>
+                    result.parameter_name.toLowerCase() === parameterName.toLowerCase()
+                );
+            },
+
+            openBarcodeModal() {
+                // Build barcode value: QC-{lotId}-{decision}-{date}
+                const decision = (this.lot.usage_decision?.decision || 'DECISION').substring(0, 3);
+                const date = new Date().toISOString().slice(0, 10).replace(/-/g, '');
+                const lotLabel = this.lot.lot_number || ('LOT-' + lotId);
+                this.barcodeValue = `QC-${lotLabel}-${decision}-${date}`;
+                this.showBarcodeModal = true;
+
+                this.$nextTick(() => {
+                    try {
+                        JsBarcode('#qc-barcode', this.barcodeValue, {
+                            format: 'CODE128',
+                            width: 1.2,
+                            height: 50,
+                            displayValue: false,
+                            margin: 6,
+                        });
+                        // Scale SVG to fit container
+                        const svg = document.getElementById('qc-barcode');
+                        if (svg) {
+                            svg.setAttribute('width', '100%');
+                            svg.style.maxWidth = '100%';
+                        }
+                    } catch (e) {
+                        console.error('Barcode generation failed', e);
+                    }
+                });
+            },
+
+            printCertificate() {
+                const el = document.getElementById('qc-certificate');
+                const win = window.open('', '_blank', 'width=600,height=700');
+                win.document.write(`
                 <html><head><title>QC Certificate - ${this.lot.lot_number || ('LOT-' + lotId)}</title>
                 <style>
                     body { font-family: Inter, sans-serif; padding: 24px; color: #111; }
@@ -991,9 +1089,9 @@ function qcInspectionDetail() {
                 <script>window.onload = function(){ window.print(); }<\/script>
                 </body></html>
             `);
-            win.document.close();
-        },
-    };
-}
+                win.document.close();
+            },
+        };
+    }
 </script>
 @endsection

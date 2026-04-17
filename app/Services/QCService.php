@@ -14,14 +14,6 @@ class QCService
 {
     public function createInspectionLotForProduction(ProductionOrder $order, float $lotQty, int $userId): InspectionLot
     {
-        $existing = InspectionLot::where('source_type', 'PRODUCTION')
-            ->where('production_order_id', $order->id)
-            ->first();
-
-        if ($existing) {
-            return $existing;
-        }
-
         return DB::connection('tenant')->transaction(function () use ($order, $lotQty, $userId) {
             $sampleSize = max(1, (int) ceil($lotQty * 0.1));
             $lotNumber = 'IL-' . now()->format('y') . '-' . str_pad(InspectionLot::count() + 1, 4, '0', STR_PAD_LEFT);
@@ -210,6 +202,7 @@ class QCService
                 'standard_max' => $data['standard_max'] ?? null,
                 'standard_value' => $data['standard_value'] ?? null,
                 'observed_value' => $data['observed_value'],
+                'sample_size' => $data['sample_size'] ?? null,
                 'unit_of_measurement' => $data['unit_of_measurement'] ?? null,
                 'is_pass' => $this->calculateIsPass($data),
                 'remarks' => $data['remarks'] ?? null,
@@ -315,8 +308,8 @@ class QCService
                 $returnQty = $rejectedQty;
             }
 
-            if (round($returnQty + $scrapQty, 3) > round($rejectedQty, 3)) {
-                throw new \Exception('Return qty and scrap qty cannot exceed rejected qty.');
+            if (round($returnQty + $scrapQty, 3) !== round($rejectedQty, 3)) {
+                throw new \Exception('The sum of Return Qty and Scrap Qty must equal the Total Rejected Qty (' . $rejectedQty . ').');
             }
 
             $decision = QCDecision::updateOrCreate(
@@ -367,12 +360,12 @@ class QCService
                         );
                     }
 
-                    if ($rejectedQty > 0) {
+                    if ($returnQty > 0) {
                         $stockService->transfer(
                             item: $item,
                             fromBucket: 'QC_HOLD',
-                            toBucket: 'BLOCKED',
-                            qty: $rejectedQty,
+                            toBucket: 'RETURNED',
+                            qty: $returnQty,
                             transactionType: 'QC_REJECT',
                             referenceType: 'InspectionLot',
                             referenceId: $lot->id,
@@ -380,7 +373,24 @@ class QCService
                             userId: $userId,
                             fromBinId: $fromBinId,
                             toBinId: $fromBinId,
-                            remarks: 'FG QC rejected'
+                            remarks: 'FG QC rejected - Return for rework: ' . ($data['return_remarks'] ?? '')
+                        );
+                    }
+
+                    if ($scrapQty > 0) {
+                        $stockService->transfer(
+                            item: $item,
+                            fromBucket: 'QC_HOLD',
+                            toBucket: 'BLOCKED',
+                            qty: $scrapQty,
+                            transactionType: 'QC_REJECT',
+                            referenceType: 'InspectionLot',
+                            referenceId: $lot->id,
+                            referenceNumber: $lot->lot_number,
+                            userId: $userId,
+                            fromBinId: $fromBinId,
+                            toBinId: $fromBinId,
+                            remarks: 'FG QC rejected - Scrap/Blocked: ' . ($data['scrap_remarks'] ?? '')
                         );
                     }
                 }
