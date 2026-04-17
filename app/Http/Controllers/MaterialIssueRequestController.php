@@ -21,7 +21,7 @@ class MaterialIssueRequestController extends Controller
             \DB::reconnect('tenant');
         }
 
-        $query = MaterialIssueRequest::with(['batchRun', 'lines', 'productionOrder.product']);
+        $query = MaterialIssueRequest::with(['batchRun', 'lines', 'productionOrder.product', 'productionRequest']);
 
         // Filter by batch_run_id
         if ($request->filled('batch_run_id')) {
@@ -62,9 +62,11 @@ class MaterialIssueRequestController extends Controller
                     'mir_no' => $mir->mir_no,
                     'batch_run_id' => $mir->batch_run_id,
                     'production_order_id' => $mir->production_order_id,
+                    'production_request_id' => $mir->production_request_id,
                     'order_no' => $mir->productionOrder?->order_no,
-                    'product_name' => $mir->productionOrder?->product?->product_name,
-                    'product_code' => $mir->productionOrder?->product?->product_code,
+                    'request_no' => $mir->productionRequest?->request_no,
+                    'product_name' => $mir->productionOrder?->product?->product_name ?? $mir->productionRequest?->product?->product_name,
+                    'product_code' => $mir->productionOrder?->product?->product_code ?? $mir->productionRequest?->product?->product_code,
                     'status' => $mir->status,
                     'lines_count' => $mir->lines()->count(),
                     'fully_picked_count' => $fullyPickedCount,
@@ -98,6 +100,8 @@ class MaterialIssueRequestController extends Controller
             'batchRun',
             'productionOrder.product',
             'productionOrder.bom.outputUom',
+            'productionRequest.product',
+            'productionRequest.bom.outputUom',
             'lines.material',
             'lines.uom',
             'lines.transactions.issuer',
@@ -181,14 +185,18 @@ class MaterialIssueRequestController extends Controller
                 'mir_no'               => $mir->mir_no,
                 'batch_run_id'         => $mir->batch_run_id,
                 'production_order_id'  => $mir->production_order_id,
+                'production_request_id' => $mir->production_request_id,
                 // Production order fields the UI needs
                 'order_no'             => $mir->productionOrder?->order_no,
-                'product_name'         => $mir->productionOrder?->product?->product_name,
-                'product_code'         => $mir->productionOrder?->product?->product_code,
-                'target_qty'           => $mir->productionOrder?->target_qty,
-                'uom'                  => $mir->productionOrder?->bom?->outputUom?->uom_code,
+                'request_no'           => $mir->productionRequest?->request_no,
+                'product_name'         => $mir->productionOrder?->product?->product_name ?? $mir->productionRequest?->product?->product_name,
+                'product_code'         => $mir->productionOrder?->product?->product_code ?? $mir->productionRequest?->product?->product_code,
+                'target_qty'           => $mir->productionOrder?->target_qty ?? $mir->productionRequest?->target_qty,
+                'uom'                  => $mir->productionOrder?->bom?->outputUom?->uom_code ?? $mir->productionRequest?->bom?->outputUom?->uom_code,
                 'uom_name'             => $mir->productionOrder?->bom?->outputUom?->uom_name
-                                          ?? $mir->productionOrder?->bom?->outputUom?->uom_code,
+                                          ?? $mir->productionOrder?->bom?->outputUom?->uom_code
+                                          ?? $mir->productionRequest?->bom?->outputUom?->uom_name
+                                          ?? $mir->productionRequest?->bom?->outputUom?->uom_code,
                 // MIR fields
                 'status'               => $mir->status,
                 'rejection_reason'     => $mir->rejection_reason,
@@ -326,6 +334,27 @@ class MaterialIssueRequestController extends Controller
             'status' => 'REJECTED',
             'rejection_reason' => $validated['rejection_reason'],
         ]);
+
+        // Update associated Production Request status if linked
+        // Check both production_request_id (new) and mir_id (old relationship from production_requests table)
+        $productionRequest = null;
+        
+        // First try: check production_request_id in MIR (new relationship)
+        if ($mir->production_request_id) {
+            $productionRequest = \App\Models\Tenant\ProductionRequest::find($mir->production_request_id);
+        }
+        
+        // Second try: find Production Request that has this MIR's id as mir_id (old relationship)
+        if (!$productionRequest) {
+            $productionRequest = \App\Models\Tenant\ProductionRequest::where('mir_id', $mir->id)->first();
+        }
+        
+        if ($productionRequest) {
+            $productionRequest->update([
+                'status' => 'REJECTED',
+                // 'mir_id' => null, // Unlink the MIR
+            ]);
+        }
 
         return response()->json([
             'success' => true,

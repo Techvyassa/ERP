@@ -558,9 +558,25 @@ Route::prefix('v1')->group(function () {
 
         // ── PRODUCTION Module ─────────────────────────────────────────────
         Route::middleware(['check.module.permission:PRODUCTION'])->group(function () {
+            // Production Requests - Material list before production order
+            Route::prefix('production-requests')->group(function () {
+                Route::get('/', [App\Http\Controllers\ProductionRequestController::class, 'index']);
+                Route::post('/', [App\Http\Controllers\ProductionRequestController::class, 'store']);
+                Route::get('/products', [App\Http\Controllers\ProductionRequestController::class, 'products']);
+                Route::get('/{id}', [App\Http\Controllers\ProductionRequestController::class, 'show']);
+                Route::post('/{id}/submit', [App\Http\Controllers\ProductionRequestController::class, 'submit']);
+                Route::patch('/{id}/approve', [App\Http\Controllers\ProductionRequestController::class, 'approve']);
+                Route::patch('/{id}/reject', [App\Http\Controllers\ProductionRequestController::class, 'reject']);
+                Route::post('/{id}/convert-to-mir', [App\Http\Controllers\ProductionRequestController::class, 'convertToMIR']);
+                Route::post('/{id}/convert-to-order', [App\Http\Controllers\ProductionRequestController::class, 'convertToOrder']);
+                Route::patch('/{id}/confirm-receipt', [App\Http\Controllers\ProductionRequestController::class, 'confirmReceipt']);
+                Route::get('/{id}/materials', [App\Http\Controllers\ProductionRequestController::class, 'materials']);
+            });
+
             // Production Orders
             Route::prefix('production-orders')->group(function () {
                 Route::get('/', [App\Http\Controllers\ProductionOrderController::class, 'index']);
+                Route::get('/stats', [App\Http\Controllers\ProductionOrderController::class, 'stats']); // Added stats endpoint
                 Route::post('/', [App\Http\Controllers\ProductionOrderController::class, 'store']);
                 Route::get('/for-packing', [App\Http\Controllers\ProductionOrderController::class, 'forPacking']);
                 Route::get('/{id}', [App\Http\Controllers\ProductionOrderController::class, 'show']);
@@ -571,6 +587,13 @@ Route::prefix('v1')->group(function () {
                 Route::post('/{id}/confirm-fg', [App\Http\Controllers\ProductionOrderController::class, 'confirmFG']); // Record FG output
                 Route::get('/{id}/fg-sessions', [App\Http\Controllers\ProductionOrderController::class, 'fgSessions']);
                 Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
+            });
+
+            // Production - Read Access to BOMs (Essential for order creation)
+            Route::prefix('bom-lookup')->group(function () {
+                Route::get('/headers', [App\Http\Controllers\BOMHeaderController::class, 'index']);
+                Route::get('/headers/{id}', [App\Http\Controllers\BOMHeaderController::class, 'show']);
+                Route::get('/details', [App\Http\Controllers\BOMDetailController::class, 'index']);
             });
 
             // Batch Runs — Independent execution units per production order

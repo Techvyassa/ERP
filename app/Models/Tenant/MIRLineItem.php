@@ -114,7 +114,7 @@ class MIRLineItem extends Model
      */
     public function getRemainingQty(): float
     {
-        return max(0, $this->required_qty - $this->issued_qty);
+        return round(max(0, $this->required_qty - $this->issued_qty), 3);
     }
 
     /**

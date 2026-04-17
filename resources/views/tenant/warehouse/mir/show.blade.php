@@ -79,8 +79,8 @@
                 </div>
                 <div class="p-6 grid grid-cols-2 md:grid-cols-4 gap-6">
                     <div>
-                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Order No</p>
-                        <p class="text-sm font-black text-slate-900 font-mono" x-text="mir?.order_no || '—'"></p>
+                        <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Reference No</p>
+                        <p class="text-sm font-black text-slate-900 font-mono" x-text="mir?.request_no || mir?.order_no || '—'"></p>
                     </div>
                     <div>
                         <p class="text-[10px] font-black text-slate-400 uppercase tracking-widest mb-1.5">Final Product</p>
@@ -123,61 +123,74 @@
                     <table class="w-full text-left border-collapse">
                         <thead>
                             <tr class="bg-slate-50/20 border-b border-gray-50">
-                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest">Component</th>
-                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Required</th>
-                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Fitted</th>
-                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
-                                <th class="px-6 py-4 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Operation</th>
+                                <th class="px-4 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest">Component</th>
+                                <th class="px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Required</th>
+                                <th class="px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Available</th>
+                                <th class="px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Issued</th>
+                                <th class="px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-center">Status</th>
+                                <th class="px-3 py-3 text-[10px] font-black text-slate-400 uppercase tracking-widest text-right">Action</th>
                             </tr>
                         </thead>
                         <tbody class="divide-y divide-gray-50">
                             <template x-for="line in mir?.lines" :key="line.id">
                                 <tr class="hover:bg-slate-50/30 transition-all group">
-                                    <td class="px-6 py-4 leading-none">
-                                        <span class="text-sm font-bold text-slate-800" x-text="line.material_name"></span>
+                                    <td class="px-4 py-3 leading-none">
+                                        <div class="flex flex-col">
+                                            <span class="text-sm font-bold text-slate-800" x-text="line.material_name"></span>
+                                            <span class="text-[10px] text-slate-400 font-mono" x-text="line.material_code"></span>
+                                        </div>
                                     </td>
-                                    <td class="px-6 py-4 text-center leading-none">
-                                        <span class="text-sm font-black text-slate-700" x-text="line.required_qty"></span>
-                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom_name || line.uom"></span>
+                                    <td class="px-3 py-3 text-center leading-none">
+                                        <span class="text-sm font-black text-slate-700" x-text="parseFloat(line.required_qty).toFixed(3)"></span>
+                                        <span class="text-[9px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom_name || line.uom"></span>
                                     </td>
-                                    <td class="px-6 py-4 text-center leading-none">
-                                        <span class="text-sm font-black text-emerald-600" x-text="line.issued_qty"></span>
-                                        <span class="text-[10px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom_name || line.uom"></span>
+                                    <td class="px-3 py-3 text-center leading-none">
+                                        <template x-if="getStockForMaterial(line.material_id)">
+                                            <div class="flex flex-col items-center">
+                                                <span class="px-2 py-1 rounded-lg text-xs font-black"
+                                                    :class="parseFloat(getStockForMaterial(line.material_id).total_available) >= parseFloat(line.required_qty) 
+                                                        ? 'bg-emerald-100 text-emerald-700 border border-emerald-200' 
+                                                        : 'bg-red-100 text-red-700 border border-red-200'"
+                                                    x-text="parseFloat(getStockForMaterial(line.material_id).total_available || 0).toFixed(3)"></span>
+                                                <span class="text-[9px] text-slate-400 mt-1" x-text="line.uom_name || line.uom"></span>
+                                            </div>
+                                        </template>
+                                        <template x-if="!getStockForMaterial(line.material_id)">
+                                            <span class="text-[10px] text-slate-400">—</span>
+                                        </template>
                                     </td>
-                                    <td class="px-6 py-4 text-center leading-none">
-                                        <span class="px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest"
+                                    <td class="px-3 py-3 text-center leading-none">
+                                        <span class="text-sm font-black text-emerald-600" x-text="parseFloat(line.issued_qty || 0).toFixed(3)"></span>
+                                        <span class="text-[9px] font-medium text-slate-400 uppercase ml-1" x-text="line.uom_name || line.uom"></span>
+                                    </td>
+                                    <td class="px-3 py-3 text-center leading-none">
+                                        <span class="px-2 py-1 rounded-full text-[9px] font-black uppercase tracking-widest"
                                             :class="lineStatusClass(line.status)" x-text="lineStatusLabel(line.status)"></span>
                                     </td>
-                                    <td class="px-6 py-4 text-right leading-none">
+                                    <td class="px-3 py-3 text-right leading-none">
                                         <!-- APPROVED or PARTIALLY_PICKED: Issue -->
                                         <div x-show="['APPROVED','PARTIALLY_PICKED'].includes(line.status) && ['APPROVED','PARTIALLY_ISSUED','FULLY_ISSUED'].includes(mir?.status)" x-cloak>
                                             <button @click="openScanModal(line)"
-                                                class="inline-flex items-center gap-1.5 px-3 py-1.5 bg-slate-900 text-white text-[10px] font-black uppercase tracking-widest rounded-xl hover:bg-slate-800 transition-all shadow-md active:scale-95">
-                                                <span class="material-symbols-outlined text-sm">outbox</span>
+                                                class="inline-flex items-center gap-1 px-2 py-1.5 bg-slate-900 text-white text-[9px] font-black uppercase tracking-widest rounded-lg hover:bg-slate-800 transition-all shadow-md active:scale-95">
+                                                <span class="material-symbols-outlined text-xs">outbox</span>
                                                 Issue
                                             </button>
                                         </div>
                                         <!-- PENDING: waiting for MIR approval -->
                                         <div x-show="line.status === 'PENDING'" x-cloak>
-                                            <span class="text-[10px] text-slate-400 font-semibold">Awaiting approval</span>
+                                            <span class="text-[9px] text-slate-400 font-semibold">Awaiting</span>
                                         </div>
                                         <!-- FULLY_PICKED -->
-                                        <div x-show="line.status === 'FULLY_PICKED'" x-cloak class="flex flex-col items-end gap-2">
-                                            <!-- Bin locations from transactions -->
-                                            <template x-if="line.transactions && line.transactions.length > 0">
-                                                <div class="flex flex-col items-end gap-1">
-                                                    <template x-for="txn in line.transactions" :key="txn.id">
-                                                        <div class="flex items-center gap-1.5 px-2.5 py-1 bg-emerald-50 border border-emerald-100 rounded-lg">
-                                                            <span class="material-symbols-outlined text-xs text-emerald-600">shelves</span>
-                                                            <span class="text-[10px] font-black text-emerald-800 font-mono" x-text="txn.bin_code || '—'"></span>
-                                                            <span class="text-[9px] text-emerald-600 font-semibold" x-text="parseFloat(txn.issued_qty).toFixed(3)"></span>
-                                                        </div>
-                                                    </template>
-                                                </div>
-                                            </template>
-                                            <div class="flex items-center gap-1 mt-0.5">
-                                                <span class="material-symbols-outlined text-xs text-emerald-500">check_circle</span>
-                                                <span class="text-[9px] text-slate-400 font-medium" x-text="line.last_issued_at ? new Date(line.last_issued_at).toLocaleString() : ''"></span>
+                                        <div x-show="line.status === 'FULLY_PICKED'" x-cloak>
+                                            <div class="flex items-center gap-1 text-emerald-600">
+                                                <span class="material-symbols-outlined text-xs">check_circle</span>
+                                                <span class="text-[9px] font-bold">Done</span>
+                                            </div>
+                                        </div>
+                                        <!-- REJECTED -->
+                                        <div x-show="line.status === 'REJECTED'" x-cloak>
+                                            <span class="text-[9px] text-red-600 font-bold">Rejected</span>
+                                        </div>
                                             </div>
                                         </div>
                                         <!-- PARTIALLY_PICKED: show issued bins + Issue more button -->
@@ -208,43 +221,54 @@
             </div>
         </div>
 
-        <!-- Right Side: Availability Check & Help -->
-        <div class="lg:col-span-1 space-y-6">
-            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-6">
-                <h3 class="font-bold text-gray-900 flex items-center gap-2 mb-4 text-sm">
-                    <span class="material-symbols-outlined text-warehouse">info</span>
-                    Guidelines
+        <!-- Right Side: Summary & Help -->
+        <div class="lg:col-span-1 space-y-4">
+            <!-- Summary Card -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-5">
+                <h3 class="font-bold text-gray-900 flex items-center gap-2 mb-4 text-xs uppercase tracking-widest">
+                    <span class="material-symbols-outlined text-amber-600">summarize</span>
+                    Summary
                 </h3>
-                <ul class="space-y-3">
-                    <li class="flex gap-3">
-                        <span class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0">1</span>
-                        <p class="text-xs text-gray-600 leading-relaxed">Review the requested quantities against physical availability in the warehouse.</p>
-                    </li>
-                    <li class="flex gap-3">
-                        <span class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0">2</span>
-                        <p class="text-xs text-gray-600 leading-relaxed">Approve the MIR to allow the operator to start scanning and issuing materials.</p>
-                    </li>
-                    <li class="flex gap-3">
-                        <span class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0">3</span>
-                        <p class="text-xs text-gray-600 leading-relaxed">Both <strong>Bin Barcode</strong> and <strong>Material Barcode</strong> must be scanned for each line.</p>
-                    </li>
-                    <li class="flex gap-3">
-                        <span class="w-5 h-5 rounded-full bg-blue-50 text-blue-600 flex items-center justify-center text-[10px] font-bold shrink-0">4</span>
-                        <p class="text-xs text-gray-600 leading-relaxed">Partial issuance is allowed; remaining quantities will be flagged as <span class="text-orange-600 font-bold uppercase">Partial</span>.</p>
-                    </li>
-                </ul>
+                <div class="grid grid-cols-2 gap-3">
+                    <div class="bg-slate-50 rounded-lg p-3 text-center">
+                        <p class="text-xl font-black text-slate-800" x-text="mir?.lines?.length || 0"></p>
+                        <p class="text-[9px] font-bold text-slate-400 uppercase">Total Items</p>
+                    </div>
+                    <div class="bg-emerald-50 rounded-lg p-3 text-center">
+                        <p class="text-xl font-black text-emerald-600" x-text="mir?.summary?.fully_picked_lines || 0"></p>
+                        <p class="text-[9px] font-bold text-emerald-400 uppercase">Issued</p>
+                    </div>
+                    <div class="bg-amber-50 rounded-lg p-3 text-center">
+                        <p class="text-xl font-black text-amber-600" x-text="mir?.summary?.pending_lines || 0"></p>
+                        <p class="text-[9px] font-bold text-amber-400 uppercase">Pending</p>
+                    </div>
+                    <div class="bg-orange-50 rounded-lg p-3 text-center">
+                        <p class="text-xl font-black text-orange-600" x-text="mir?.summary?.partially_picked_lines || 0"></p>
+                        <p class="text-[9px] font-bold text-orange-400 uppercase">Partial</p>
+                    </div>
+                </div>
             </div>
 
-            <div class="bg-primary rounded-xl border border-primary shadow-sm overflow-hidden p-6 text-white">
-                <h3 class="font-bold flex items-center gap-2 mb-4 text-sm text-warehouse">
-                    <span class="material-symbols-outlined">inventory</span>
-                    Quick Stock Look
+            <!-- Guidelines -->
+            <div class="bg-white rounded-xl border border-gray-200 shadow-sm overflow-hidden p-5">
+                <h3 class="font-bold text-gray-900 flex items-center gap-2 mb-3 text-xs uppercase tracking-widest">
+                    <span class="material-symbols-outlined text-blue-600">info</span>
+                    Guidelines
                 </h3>
-                <p class="text-[11px] text-blue-200 mb-4">Click on a material in the list to view its current bin locations and available quantities.</p>
-                <div class="space-y-2 max-h-60 overflow-y-auto">
-                    <!-- Placeholder or dynamic stock summary could go here -->
-                    <p class="text-[10px] text-blue-300 italic">Select a line to check bin locations...</p>
-                </div>
+                <ul class="space-y-2">
+                    <li class="flex gap-2 text-[10px] text-gray-600">
+                        <span class="text-blue-500 font-black">•</span>
+                        <span>Review availability before approving</span>
+                    </li>
+                    <li class="flex gap-2 text-[10px] text-gray-600">
+                        <span class="text-blue-500 font-black">•</span>
+                        <span>Scan bin & material barcode for each issue</span>
+                    </li>
+                    <li class="flex gap-2 text-[10px] text-gray-600">
+                        <span class="text-blue-500 font-black">•</span>
+                        <span>Partial issuance is allowed</span>
+                    </li>
+                </ul>
             </div>
         </div>
     </div>
@@ -298,7 +322,7 @@
                         </div>
                         <div class="bg-amber-50 rounded-2xl p-4 border border-amber-100">
                             <p class="text-[10px] font-black text-amber-500 uppercase tracking-widest mb-1">Remaining</p>
-                            <p class="text-base font-black text-amber-700" x-text="selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
+                            <p class="text-base font-black text-amber-700" x-text="parseFloat((selectedLine?.remaining_qty || 0).toFixed(3)) + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></p>
                         </div>
                     </div>
 
@@ -379,19 +403,18 @@
                                     class="w-full px-4 py-3.5 bg-gray-50 border-none rounded-2xl text-sm font-black text-slate-900 focus:ring-2 focus:ring-emerald-500 transition-all font-mono placeholder:text-slate-300">
                             </div>
 
-                            <!-- Issue Quantity — read-only, pre-filled with remaining qty -->
+                            <!-- Issue Quantity - editable, pre-filled with remaining qty -->
                             <div>
                                 <label class="block text-[10px] font-black text-slate-400 uppercase tracking-widest mb-2 flex items-center gap-1.5">
                                     <span class="material-symbols-outlined text-xs">numbers</span>
                                     Issue Quantity
                                     <span class="text-slate-400 font-semibold normal-case tracking-normal ml-auto"
-                                        x-text="'max: ' + selectedLine?.remaining_qty + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></span>
+                                        x-text="'max: ' + parseFloat(selectedLine?.remaining_qty || 0).toFixed(3) + ' ' + (selectedLine?.uom_name || selectedLine?.uom || '')"></span>
                                 </label>
                                 <div class="relative">
-                                    <input type="number"
-                                        :value="scanForm.quantity"
-                                        readonly
-                                        class="w-full px-4 py-3.5 bg-slate-100 border-none rounded-2xl text-sm font-black text-slate-500 cursor-not-allowed select-none">
+                                    <input type="number" step="0.001" min="0"
+                                        x-model="scanForm.quantity"
+                                        class="w-full px-4 py-3.5 bg-white border-2 border-slate-200 rounded-2xl text-sm font-black text-slate-800 focus:border-emerald-500 focus:ring-0 transition-all">
                                     <span class="absolute right-4 top-1/2 -translate-y-1/2 text-[10px] font-black text-slate-400 uppercase" x-text="selectedLine?.uom_name || selectedLine?.uom || ''"></span>
                                 </div>
                             </div>
@@ -494,6 +517,8 @@
             },
             scanError: '',
             rejectionReason: '',
+            stockLoading: false,
+            stockData: [],
 
             async init() {
                 await this.loadMIR();
@@ -528,10 +553,55 @@
                             window.location.href = `/org/${orgSlug}/warehouse/mir`;
                         }, 1500);
                     }
+                    // Load stock data after MIR is loaded
+                    this.loadStockData();
                 } catch (e) {
                     console.error('Error loading MIR:', e);
                 } finally {
                     this.loading = false;
+                }
+            },
+
+            async loadStockData() {
+                if (!this.mir || !this.mir.lines || this.mir.lines.length === 0) return;
+                
+                this.stockLoading = true;
+                this.stockData = [];
+                
+                try {
+                    // Get unique material IDs from MIR lines
+                    const materialIds = [...new Set(this.mir.lines.map(line => line.material_id).filter(Boolean))];
+                    
+                    // Fetch stock for each material
+                    const stockPromises = materialIds.map(materialId => 
+                        fetch(`${window.location.origin}/api/v1/lookup/material-bins?material_id=${materialId}`, { headers: headers() })
+                            .then(res => res.json())
+                            .then(data => {
+                                if (data.success && data.data) {
+                                    const line = this.mir.lines.find(l => l.material_id == materialId);
+                                    return {
+                                        material_id: materialId,
+                                        material_code: line?.material_code || '',
+                                        material_name: line?.material_name || '',
+                                        uom_code: line?.uom_name || line?.uom || '',
+                                        total_available: data.data.reduce((sum, bin) => sum + parseFloat(bin.qty_available || 0), 0),
+                                        bins: data.data
+                                    };
+                                }
+                                return null;
+                            })
+                            .catch(err => {
+                                console.error('Error fetching stock for material', materialId, err);
+                                return null;
+                            })
+                    );
+                    
+                    const results = await Promise.all(stockPromises);
+                    this.stockData = results.filter(r => r !== null);
+                } catch (e) {
+                    console.error('Error loading stock data:', e);
+                } finally {
+                    this.stockLoading = false;
                 }
             },
 
@@ -626,7 +696,7 @@
                 this.scanForm = {
                     bin_barcode: '',
                     material_barcode: line.material_code || line.material?.code || '',
-                    quantity: parseFloat(line.remaining_qty ?? 0),
+                    quantity: parseFloat((line.remaining_qty ?? 0).toFixed(3)),
                 };
                 this.showScanModal = true;
                 this.fetchBins(line);
@@ -666,7 +736,7 @@
                 this.processing = true;
                 this.scanError = '';
                 const qty = parseFloat(this.scanForm.quantity);
-                const remaining = parseFloat(this.selectedLine?.remaining_qty ?? 0);
+                const remaining = parseFloat((this.selectedLine?.remaining_qty ?? 0).toFixed(3));
                 if (!qty || qty <= 0) {
                     this.scanError = 'Issue quantity must be greater than 0.';
                     this.processing = false;
@@ -678,6 +748,10 @@
                     return;
                 }
                 try {
+                    // Get bin_id from selected bin
+                    const selectedBin = this.availableBins.find(b => b.bin_code === this.scanForm.bin_barcode);
+                    const binId = selectedBin ? selectedBin.id : null;
+                    
                     // Use the new MIR line issue endpoint
                     const apiUrl = `${window.location.origin}/api/v1/mir-lines/${this.selectedLine.id}/issue`;
                     const res = await fetch(apiUrl, {
@@ -685,6 +759,8 @@
                         headers: headers(),
                         body: JSON.stringify({
                             issued_qty: parseFloat(this.scanForm.quantity),
+                            bin_id: binId,
+                            batch_number: selectedBin?.batch_number || null,
                             notes: [this.scanForm.bin_barcode, this.scanForm.material_barcode].filter(Boolean).join(' | ')
                         })
                     });
@@ -692,6 +768,7 @@
                     if (data.success) {
                         this.showScanModal = false;
                         await this.loadMIR();
+                        await this.loadStockData(); // Refresh stock data after issue
                         window.dispatchEvent(new CustomEvent('notify', {
                             detail: {
                                 message: data.data?.line?.status === 'FULLY_PICKED'
@@ -720,6 +797,10 @@
                     'REJECTED': 'Rejected',
                 };
                 return map[status] || status || '—';
+            },
+
+            getStockForMaterial(materialId) {
+                return this.stockData.find(s => s.material_id == materialId);
             },
 
             lineStatusClass(status) {

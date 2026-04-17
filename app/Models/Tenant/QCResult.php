@@ -16,6 +16,7 @@ class QCResult extends Model
         'standard_max',
         'standard_value',
         'observed_value',
+        'sample_size',
         'unit_of_measurement',
         'is_pass',
         'remarks',

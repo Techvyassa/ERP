@@ -48,7 +48,7 @@
                     </div>
                     <div class="flex justify-between text-xs mt-2 font-semibold">
                         <span class="text-emerald-600" x-text="'Produced: ' + (modal.order?.confirmed_qty_total || 0)"></span>
-                        <span class="text-orange-600" x-text="'Remaining: ' + (modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
+                        <span class="text-orange-600" x-text="'Balance: ' + (modal.order?.balance_qty ?? modal.order?.remaining_qty ?? modal.order?.target_qty ?? 0)"></span>
                     </div>
                 </div>
 
@@ -62,7 +62,7 @@
                                 class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Already Produced</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Produced Qty</label>
                             <input type="text" readonly
                                 :value="(modal.order?.confirmed_qty_total ?? 0) + ' ' + (typeof modal.order?.uom === 'object' ? (modal.order?.uom?.uom_name || modal.order?.uom?.uom_code) : (modal.order?.uom || ''))"
                                 class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
@@ -71,19 +71,19 @@
 
                     <div class="grid grid-cols-1 md:grid-cols-2 gap-5">
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Confirm Units</label>
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Produced Qty</label>
                             <input type="number" min="0.001" step="0.001"
-                                x-model="form.confirmed_qty"
-                                :max="modal.order?.remaining_qty"
+                                x-model="form.produced_qty"
+                                @input="syncStatus()"
+                                :max="modal.order?.balance_qty ?? modal.order?.remaining_qty"
                                 class="w-full px-4 py-2.5 bg-emerald-50 border border-emerald-200 rounded-xl text-emerald-700 font-bold shadow-inner">
-                            <p class="text-[10px] text-emerald-600">Enter quantity produced in this batch</p>
+                            <p class="text-[10px] text-emerald-600">Enter actual produced quantity for this production confirmation</p>
                         </div>
                         <div class="space-y-1.5">
-                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Reject Units (Optional)</label>
-                            <input type="number" min="0" step="0.001"
-                                x-model="form.rejected_qty"
-                                @input="syncStatus()"
-                                class="w-full px-4 py-2.5 bg-gray-50 border-none rounded-xl focus:ring-2 focus:ring-red-500 font-bold text-gray-900 shadow-inner">
+                            <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Balance Qty</label>
+                            <input type="text" readonly
+                                :value="balancePreview() + ' ' + (typeof modal.order?.uom === 'object' ? (modal.order?.uom?.uom_name || modal.order?.uom?.uom_code) : (modal.order?.uom || ''))"
+                                class="w-full px-4 py-2.5 bg-gray-100 border-none rounded-xl text-gray-600 font-bold shadow-inner cursor-not-allowed">
                         </div>
                     </div>
 
@@ -99,50 +99,26 @@
                             </div>
                         </div>
                         <p class="text-[10px] font-medium text-gray-500 italic max-w-[180px] text-right">
-                            <span x-show="form.completion_status === 'COMPLETED'">Target quantity reached. Order will be closed.</span>
-                            <span x-show="form.completion_status !== 'COMPLETED'">Partial production. Order remains open.</span>
+                            <span x-show="form.completion_status === 'COMPLETED'">Target quantity reached. Produced FG will move to QC pending.</span>
+                            <span x-show="form.completion_status !== 'COMPLETED'">Partial production. Remaining balance stays in WIP.</span>
                         </p>
                     </div>
 
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Rejection Reason</label>
-                        <select x-model="form.rejection_reason_code"
-                            class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 appearance-none shadow-sm transition-all">
+                    <div class="rounded-2xl border border-blue-100 bg-blue-50/70 px-4 py-3 text-sm text-blue-900">
+                        <p class="font-bold">QC controls approval and rejection</p>
+                        <p class="text-[10px] mt-1 uppercase tracking-tighter font-black text-blue-700">Production confirmation accepts only produced qty. Rejection reasons are captured during QC.</p>
+                    </div>
+                    {{--
                             <option value="">— Select Reason —</option>
-                            <option value="DEFECT_VISUAL">Visual Defect</option>
-                            <option value="DEFECT_DIMENSIONAL">Dimensional Defect</option>
-                            <option value="DEFECT_FUNCTIONAL">Functional Defect</option>
-                            <option value="CONTAMINATION">Contamination</option>
-                            <option value="PACKAGING_DAMAGE">Packaging Damage</option>
-                            <option value="OTHER">Other</option>
-                        </select>
-                    </div>
+                    --}}
 
-                    <div x-show="form.rejection_reason_code === 'OTHER'"
-                        x-transition:enter="transition ease-out duration-200"
-                        x-transition:enter-start="opacity-0 -translate-y-2"
-                        x-transition:enter-end="opacity-100 translate-y-0"
-                        class="space-y-1.5">
-                        <label class="block text-xs font-bold text-orange-500 uppercase tracking-wider">Specify Manual Reason</label>
-                        <input type="text" x-model="form.rejection_reason_note"
-                            placeholder="Type details about the rejection reason..."
-                            class="w-full px-4 py-2.5 bg-orange-50/50 border border-orange-100 rounded-xl focus:ring-2 focus:ring-orange-400 font-medium text-gray-900 shadow-inner">
-                    </div>
-
-                    <div class="space-y-1.5">
-                        <label class="block text-xs font-bold text-gray-500 uppercase tracking-wider">Batch Tag / Number</label>
-                        <input type="text" x-model="form.fg_batch_number"
-                            placeholder="e.g. B240409 (Optional)"
-                            class="w-full px-4 py-2.5 bg-white border border-gray-200 rounded-xl focus:ring-2 focus:ring-indigo-500 font-medium text-gray-900 shadow-sm transition-all">
-                    </div>
-
-                    <label class="flex items-center gap-3 rounded-2xl bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800 cursor-pointer border border-emerald-100 hover:bg-emerald-50 transition-colors">
-                        <input type="checkbox" x-model="form.qc_required" class="rounded-lg border-emerald-300 text-emerald-600 focus:ring-emerald-500 w-5 h-5 shadow-inner">
+                    <div class="flex items-center gap-3 rounded-2xl bg-emerald-50/50 px-4 py-3 text-sm text-emerald-800 border border-emerald-100">
+                        <span class="material-symbols-outlined">fact_check</span>
                         <div class="flex-1">
-                            <p class="font-bold">Sent for QC Inspection</p>
-                            <p class="text-[10px] opacity-70 italic uppercase tracking-tighter font-black">Quality check required before packing</p>
+                            <p class="font-bold">All produced FG move to QC Pending</p>
+                            <p class="text-[10px] opacity-70 italic uppercase tracking-tighter font-black">Approval and rejection decisions are recorded only in QC</p>
                         </div>
-                    </label>
+                    </div>
 
                     <div x-show="modal.error"
                         x-transition:enter="transition ease-out duration-300"
@@ -156,13 +132,13 @@
                 <div class="px-6 py-5 border-t border-gray-100 flex justify-end gap-3 bg-gray-50/30">
                     <button @click="closeModal()" class="px-5 py-2.5 bg-white border border-gray-200 rounded-xl text-gray-600 font-bold text-sm hover:bg-gray-50 transition-all shadow-sm">Cancel</button>
                     <button @click="submitConfirmation()"
-                        :disabled="modal.submitting || !form.confirmed_qty"
-                        :class="(!modal.submitting && form.confirmed_qty) ? 'bg-emerald-600 shadow-emerald-200 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'"
+                        :disabled="modal.submitting || !form.produced_qty"
+                        :class="(!modal.submitting && form.produced_qty) ? 'bg-emerald-600 shadow-emerald-200 cursor-pointer' : 'bg-gray-300 cursor-not-allowed'"
                         class="px-6 py-2.5 text-white font-black uppercase tracking-widest text-xs rounded-xl transition-all shadow-lg flex items-center gap-2 active:scale-95">
                         <span class="material-symbols-outlined text-lg"
                             :class="modal.submitting ? 'animate-spin' : ''"
                             x-text="modal.submitting ? 'progress_activity' : 'task_alt'"></span>
-                        <span x-text="modal.submitting ? 'Processing...' : 'Confirm Output'"></span>
+                        <span x-text="modal.submitting ? 'Processing...' : 'Confirm Production'"></span>
                     </button>
                 </div>
             </div>
@@ -217,18 +193,18 @@
                         <p class="font-black text-gray-900 text-base" x-text="drawer.summary?.target_qty ?? '—'"></p>
                     </div>
                     <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm text-center border-l-4 border-l-emerald-500">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 font-black">Confirmed</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 font-black">Produced</p>
                         <p class="font-black text-emerald-600 text-base" x-text="drawer.summary?.confirmed_qty_total ?? '—'"></p>
                     </div>
                     <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm text-center border-l-4 border-l-orange-500">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 font-black">Open</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 font-black">Balance</p>
                         <p class="font-black text-orange-600 text-base" x-text="drawer.summary?.remaining_qty ?? '—'"></p>
                     </div>
                 </div>
 
                 <div class="grid grid-cols-3 gap-3">
                     <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm text-center border-l-4 border-l-red-500">
-                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 font-black">Rejected</p>
+                        <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1 font-black">QC Pending</p>
                         <p class="font-black text-red-600 text-base" x-text="drawer.summary?.rejected_qty_total ?? '—'"></p>
                     </div>
                     <div class="bg-white p-3 rounded-2xl border border-gray-100 shadow-sm text-center border-l-4 border-l-blue-500">
@@ -270,7 +246,7 @@
                             <div class="flex items-center gap-2">
                                 <span class="w-8 h-8 rounded-full bg-emerald-50 text-emerald-600 flex items-center justify-center text-xs font-black" x-text="idx + 1"></span>
                                 <div>
-                                    <p class="text-xs font-black text-gray-900 uppercase tracking-tighter" x-text="s.completion_status === 'COMPLETED' ? 'Final Confirmation' : 'Partial Record'"></p>
+                                    <p class="text-xs font-black text-gray-900 uppercase tracking-tighter" x-text="s.completion_status === 'COMPLETED' ? 'Final Production Record' : 'Partial Production Record'"></p>
                                     <p class="text-[10px] text-gray-400 font-medium" x-text="s.created_at ? new Date(s.created_at).toLocaleString() : ''"></p>
                                 </div>
                             </div>
@@ -281,20 +257,13 @@
 
                         <div class="grid grid-cols-2 gap-4">
                             <div class="bg-gray-50/50 rounded-xl p-3 border border-transparent group-hover:border-emerald-50 transition-colors">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Confirmed</p>
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Produced</p>
                                 <p class="text-sm font-black text-emerald-700" x-text="s.confirmed_qty"></p>
                             </div>
-                            <div class="bg-gray-50/50 rounded-xl p-3 border border-transparent group-hover:border-red-50 transition-colors">
-                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">Rejected</p>
-                                <p class="text-sm font-black text-red-700" x-text="s.rejected_qty"></p>
+                            <div class="bg-gray-50/50 rounded-xl p-3 border border-transparent group-hover:border-blue-50 transition-colors">
+                                <p class="text-[10px] font-black text-gray-400 uppercase tracking-tighter mb-1">QC Route</p>
+                                <p class="text-sm font-black text-blue-700">QC Pending</p>
                             </div>
-
-                            <template x-if="s.rejection_reason_code">
-                                <div class="col-span-2 bg-red-50/30 rounded-xl p-3 border border-red-50">
-                                    <p class="text-[10px] font-black text-red-400 uppercase tracking-tighter mb-1">Rejection Basis</p>
-                                    <p class="text-xs font-bold text-red-800" x-text="s.rejection_reason_code"></p>
-                                </div>
-                            </template>
 
                             <template x-if="s.fg_batch_number">
                                 <div class="col-span-2 bg-indigo-50/30 rounded-xl p-3 border border-indigo-50">
@@ -508,13 +477,9 @@
                 error: ''
             },
             form: {
-                confirmed_qty: '',
-                rejected_qty: 0,
-                rejection_reason_code: '',
-                rejection_reason_note: '',
+                produced_qty: '',
                 fg_batch_number: '',
                 completion_status: 'PARTIALLY_COMPLETED',
-                qc_required: true,
             },
 
             drawer: {
@@ -533,6 +498,12 @@
                 const confirmed = parseFloat(order.confirmed_qty_total ?? 0);
                 const target = parseFloat(order.target_qty ?? 0);
                 return Math.max(0, target - confirmed).toFixed(3).replace(/\.?0+$/, '') || '0';
+            },
+
+            balancePreview() {
+                const balance = parseFloat(this.modal.order?.balance_qty ?? this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
+                const produced = parseFloat(this.form.produced_qty || 0);
+                return Math.max(0, balance - produced).toFixed(3).replace(/\.?0+$/, '') || '0';
             },
 
             async loadOrders() {
@@ -569,31 +540,25 @@
                     /* use cached order data */
                 }
 
-                const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
+                const remaining = parseFloat(this.modal.order?.balance_qty ?? this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
                 this.form = {
-                    confirmed_qty: remaining > 0 ? remaining : '',
-                    rejected_qty: 0,
-                    rejection_reason_code: '',
-                    rejection_reason_note: '',
+                    produced_qty: remaining > 0 ? remaining : '',
                     fg_batch_number: '',
                     completion_status: remaining > 0 ? 'COMPLETED' : 'PARTIALLY_COMPLETED',
-                    qc_required: true,
                 };
                 this.modal.show = true;
             },
 
             syncStatus() {
-                // Auto-adjust confirmed_qty when reject_qty changes
-                const remaining = parseFloat(this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
-                const rejectQty = parseFloat(this.form.rejected_qty || 0);
-                const maxAccept = Math.max(0, remaining - rejectQty);
+                const remaining = parseFloat(this.modal.order?.balance_qty ?? this.modal.order?.remaining_qty ?? this.modal.order?.target_qty ?? 0);
+                const produced = parseFloat(this.form.produced_qty || 0);
 
-                if (parseFloat(this.form.confirmed_qty || 0) > maxAccept) {
-                    this.form.confirmed_qty = maxAccept;
+                if (produced > remaining) {
+                    this.form.produced_qty = remaining;
                 }
 
-                const sessionTotal = parseFloat(this.form.confirmed_qty || 0) + rejectQty;
-                if (sessionTotal >= remaining - 0.001) {
+                const nextProduced = parseFloat(this.form.produced_qty || 0);
+                if (nextProduced >= remaining - 0.001) {
                     this.form.completion_status = 'COMPLETED';
                 } else {
                     this.form.completion_status = 'PARTIALLY_COMPLETED';
@@ -611,20 +576,16 @@
 
             async submitConfirmation() {
                 this.modal.error = '';
-                if (!this.form.confirmed_qty || parseFloat(this.form.confirmed_qty) <= 0) {
-                    this.modal.error = 'Confirmed qty must be greater than 0.';
+                if (!this.form.produced_qty || parseFloat(this.form.produced_qty) <= 0) {
+                    this.modal.error = 'Produced qty must be greater than 0.';
                     return;
                 }
                 this.modal.submitting = true;
                 try {
                     const payload = {
-                        confirmed_qty: parseFloat(this.form.confirmed_qty),
-                        rejected_qty: parseFloat(this.form.rejected_qty || 0),
-                        rejection_reason_code: this.form.rejection_reason_code || null,
-                        rejection_reason_note: this.form.rejection_reason_code === 'OTHER' ? this.form.rejection_reason_note : null,
+                        produced_qty: parseFloat(this.form.produced_qty),
                         fg_batch_number: this.form.fg_batch_number || null,
                         completion_status: this.form.completion_status,
-                        qc_required: !!this.form.qc_required,
                     };
                     const res = await this._fetch(`/api/v1/production-orders/${this.modal.order.id}/confirm-fg`, {
                         method: 'POST',
@@ -676,12 +637,23 @@
             },
 
             notify(message, type = 'success') {
-                window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
+                window.dispatchEvent(new CustomEvent('notify', {
+                    detail: {
+                        message,
+                        type
+                    }
+                }));
             },
 
             confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
                 window.dispatchEvent(new CustomEvent('open-confirm', {
-                    detail: { title, message, onConfirm, confirmText, confirmColor }
+                    detail: {
+                        title,
+                        message,
+                        onConfirm,
+                        confirmText,
+                        confirmColor
+                    }
                 }));
             },
         }

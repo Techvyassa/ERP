@@ -53,6 +53,7 @@ class PackingOrderController extends Controller
         $order = PackingOrder::with([
             'productionOrder.product',
             'productionOrder.bom',
+            'productionOrder.inspectionLots.usageDecision',
             'cartons.items.product',
             'cartons.items.uom',
             'cartons.childCartons',
@@ -156,7 +157,7 @@ class PackingOrderController extends Controller
         }
 
         $carton = Carton::create([
-            'carton_barcode' => $request->input('carton_barcode', 'CTN-' . now()->format('ymd') . '-' . str_pad((Carton::max('id') ?? 0) + 1, 5, '0', STR_PAD_LEFT)),
+            'carton_barcode' => $request->input('carton_barcode', 'PKG-' . now()->format('ymd') . '-' . str_pad((Carton::max('id') ?? 0) + 1, 5, '0', STR_PAD_LEFT)),
             'packing_order_id' => $packingOrder->id,
             'carton_type' => $request->input('carton_type', 'OUTER'),
             'parent_carton_id' => $request->input('parent_carton_id'),
@@ -237,14 +238,21 @@ class PackingOrderController extends Controller
             ], 422);
         }
 
-        // Validate target quantity not exceeded
-        $packedQty = (float) $carton->items()->sum('qty');
-        $newTotalQty = $packedQty + $qty;
+        // Validate packing limit not exceeded (check across all packages in this order)
+        $qcLots = $order->inspectionLots()->where('source_type', 'PRODUCTION')->with('usageDecision')->get();
+        $totalAcceptedQty = (float) $qcLots->sum(fn($l) => $l->usageDecision?->accepted_qty ?? 0);
+        
+        // If no QC lots exist but QC is not required, use actual produced qty as limit
+        $packingLimit = $totalAcceptedQty > 0 ? $totalAcceptedQty : (float) $order->actual_qty;
 
-        if ($newTotalQty > $order->target_qty) {
+        $alreadyPackedTotal = (float) CartonItem::whereHas('carton', function($q) use ($id) {
+            $q->where('packing_order_id', $id);
+        })->sum('qty');
+
+        if ($alreadyPackedTotal + $qty > $packingLimit + 0.0001) {
             return response()->json([
                 'success' => false,
-                'message' => "Cannot scan more than target quantity. Target: {$order->target_qty}, Already packed: {$packedQty}, Attempting to add: {$qty}.",
+                'message' => "Cannot scan more than the available quantity. Limit (QC Passed/Produced): {$packingLimit}, Total packed so far: {$alreadyPackedTotal}, Attempting to add: {$qty}.",
             ], 422);
         }
 
@@ -322,15 +330,22 @@ class PackingOrderController extends Controller
             ], 422);
         }
 
-        // Validate target quantity not exceeded
+        // Validate packing limit not exceeded (check order total)
         $packingOrder = $carton->packingOrder;
         $order = $packingOrder->productionOrder;
-        $totalPackedQty = (float) $carton->items()->sum('qty');
+        
+        $orderTotalPacked = (float) CartonItem::whereHas('carton', function($q) use ($id) {
+            $q->where('packing_order_id', $id);
+        })->sum('qty');
 
-        if ($order && $totalPackedQty > $order->target_qty) {
+        $qcLots = $order->inspectionLots()->where('source_type', 'PRODUCTION')->with('usageDecision')->get();
+        $totalAcceptedQty = (float) $qcLots->sum(fn($l) => $l->usageDecision?->accepted_qty ?? 0);
+        $packingLimit = $totalAcceptedQty > 0 ? $totalAcceptedQty : (float) ($order->actual_qty ?? 0);
+
+        if ($order && $orderTotalPacked > $packingLimit + 0.0001) {
             return response()->json([
                 'success' => false,
-                'message' => "Cannot seal carton. Total packed quantity ({$totalPackedQty}) exceeds target quantity ({$order->target_qty}).",
+                'message' => "Cannot seal package. Total packed quantity across all packages ({$orderTotalPacked}) exceeds available limit ({$packingLimit}).",
             ], 422);
         }
 
@@ -378,10 +393,19 @@ class PackingOrderController extends Controller
         }
 
         $order = $packingOrder->productionOrder;
-        if ($order && $totalPackedQty > $order->target_qty) {
+        
+        $orderTotalPacked = (float) CartonItem::whereHas('carton', function($q) use ($id) {
+            $q->where('packing_order_id', $id);
+        })->sum('qty');
+
+        $qcLots = $order->inspectionLots()->where('source_type', 'PRODUCTION')->with('usageDecision')->get();
+        $totalAcceptedQty = (float) $qcLots->sum(fn($l) => $l->usageDecision?->accepted_qty ?? 0);
+        $packingLimit = $totalAcceptedQty > 0 ? $totalAcceptedQty : (float) ($order->actual_qty ?? 0);
+
+        if ($order && $orderTotalPacked > $packingLimit + 0.0001) {
             return response()->json([
                 'success' => false,
-                'message' => "Cannot complete packing. Total packed quantity ({$totalPackedQty}) exceeds target quantity ({$order->target_qty}).",
+                'message' => "Cannot complete packing. Total packed quantity ({$orderTotalPacked}) exceeds available limit ({$packingLimit}).",
             ], 422);
         }
 

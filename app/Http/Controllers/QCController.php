@@ -208,6 +208,7 @@ class QCController extends Controller
                 'standard_max' => 'nullable|string|max:50',
                 'standard_value' => 'nullable|string|max:100',
                 'observed_value' => 'required|numeric',
+                'sample_size' => 'nullable|numeric|gte:0',
                 'unit_of_measurement' => 'nullable|string|max:20',
                 'remarks' => 'nullable|string',
             ]);
