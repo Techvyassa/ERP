@@ -207,6 +207,7 @@ class ProductionOrderController extends Controller
                     'product_code' => $o->product?->product_code,
                     'fg_batch_number' => $o->fg_batch_number,
                     'actual_qty' => $o->actual_qty ?? 0,
+                    'qc_passed_qty' => (float) ($o->inspectionLots->sum(fn($l) => $l->usageDecision?->accepted_qty ?? 0)),
                     'requires_fg_qc' => $o->product?->requires_fg_qc ?? false,
                 ]);
 
