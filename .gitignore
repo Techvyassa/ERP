@@ -27,3 +27,4 @@ local-note/*
 refactor.py
 test_*.php
 .kiro/*
+.continue/*
