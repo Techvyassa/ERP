@@ -158,6 +158,38 @@ class ProductionOrderController extends Controller
             $approvedMIR = MaterialIssueRequest::where('status', 'APPROVED')->count();
             $productsWithBOM = BOMHeader::where('bom_status', 'ACTIVE')->distinct('product_id')->count();
 
+            // Additional details for the dashboard
+            $completedLast30Days = ProductionOrder::where('status', 'COMPLETED')
+                ->where('updated_at', '>=', now()->subDays(30))
+                ->count();
+            
+            $totalFGConfirmedLast30Days = ProductionOrder::where('status', 'COMPLETED')
+                ->where('updated_at', '>=', now()->subDays(30))
+                ->sum('actual_qty');
+
+            $avgYieldLast30Days = ProductionOrder::where('status', 'COMPLETED')
+                ->where('updated_at', '>=', now()->subDays(30))
+                ->where('yield_percent', '>', 0)
+                ->avg('yield_percent') ?? 0;
+
+            // Stock Details for FG (Products)
+            $fgStock = StockBalance::with(['product', 'uom'])
+                ->whereNotNull('product_id')
+                ->where('qty_on_hand', '>', 0) // Only show active stock
+                ->get()
+                ->groupBy('product_id')
+                ->map(function ($balances) {
+                    $first = $balances->first();
+                    return [
+                        'product_id' => $first->product_id,
+                        'product_name' => $first->product?->product_name,
+                        'product_code' => $first->product?->product_code,
+                        'uom_code' => $first->uom?->uom_code,
+                        'total_on_hand' => (float) $balances->sum('qty_on_hand'),
+                        'buckets' => $balances->groupBy('bucket')->map(fn($b) => (float) $b->sum('qty_on_hand')),
+                    ];
+                })->values();
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -165,8 +197,12 @@ class ProductionOrderController extends Controller
                     'pendingMIR' => $pendingMIR,
                     'approvedMIR' => $approvedMIR,
                     'products' => $productsWithBOM,
+                    'completedLast30Days' => $completedLast30Days,
+                    'totalFGConfirmedLast30Days' => (float) $totalFGConfirmedLast30Days,
+                    'avgYieldLast30Days' => (float) $avgYieldLast30Days,
+                    'fgStock' => $fgStock,
                 ],
-                'message' => 'Production stats retrieved successfully',
+                'message' => 'Production dashboard data retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);

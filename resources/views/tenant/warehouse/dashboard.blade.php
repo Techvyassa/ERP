@@ -5,841 +5,248 @@
 
 @section('content')
 <div x-data="warehouseDashboard()" x-init="init()">
-    <!-- Department Header -->
-    <div class="bg-gradient-to-r from-slate-800 to-slate-900 rounded-xl p-6 mb-6 text-white shadow-lg">
-        <div class="flex items-center justify-between">
-            <div class="flex items-center gap-4">
-                <div class="bg-amber-500 p-4 rounded-xl">
-                    <span class="material-symbols-outlined text-white text-4xl">warehouse</span>
+    <!-- Header/Banner Section -->
+    <div class="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 mb-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border-b-4 border-amber-500">
+        <div class="flex items-center gap-4">
+            <div class="bg-amber-500 p-4 rounded-2xl shadow-lg shadow-amber-900/20">
+                <span class="material-symbols-outlined text-white text-4xl">warehouse</span>
+            </div>
+            <div>
+                <h2 class="text-2xl font-black mb-0.5 uppercase tracking-tight">Warehouse Central</h2>
+                <p class="text-white/50 text-xs font-bold uppercase tracking-widest">{{ $organization->org_name }}</p>
+            </div>
+        </div>
+
+        <div class="flex items-center gap-8 bg-white/5 backdrop-blur-md p-4 rounded-2xl border border-white/10 w-full md:w-auto">
+            <div class="flex items-center gap-3">
+                <div class="text-right">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Pending MIR</p>
+                    <p class="text-2xl font-black text-amber-500 leading-none" x-text="stats.pendingMIR">0</p>
                 </div>
-                <div>
-                    <h2 class="text-2xl font-bold mb-1">Warehouse Portal</h2>
-                    <p class="text-white/90">{{ $organization->org_name }}</p>
+                <div class="h-10 w-px bg-white/10"></div>
+                <div class="text-left">
+                    <p class="text-[10px] font-black uppercase tracking-widest text-white/40 mb-1">Approved</p>
+                    <p class="text-2xl font-black text-emerald-500 leading-none" x-text="stats.approvedMIR">0</p>
                 </div>
+            </div>
+            <div class="hidden lg:block max-w-[200px]">
+                <p class="text-[10px] font-bold text-white/60 leading-tight uppercase tracking-tight">Material Movement: Track all pending issue requests and approved transfers.</p>
             </div>
         </div>
     </div>
 
-    <!-- Key Metrics Grid -->
+    <!-- Stats Grid -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
-        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all">
             <div class="flex items-center justify-between mb-4">
-                <div class="bg-amber-100 p-3 rounded-lg">
-                    <span class="material-symbols-outlined text-amber-600 text-2xl">local_shipping</span>
+                <div class="bg-slate-50 p-3 rounded-xl">
+                    <span class="material-symbols-outlined text-slate-600 text-2xl">category</span>
                 </div>
-                <span class="text-xs font-semibold text-amber-600 bg-amber-50 px-2 py-1 rounded">Expected</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-slate-600 bg-slate-50 px-2 py-1 rounded">Catalog</span>
             </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.expectedToday">0</h3>
-            <p class="text-sm text-gray-600 mb-2">Expected ASNs Today</p>
-            <div class="flex items-center gap-2 text-xs">
-                <span class="text-green-600 font-semibold" x-text="stats.arrivedToday">0</span>
-                <span class="text-gray-500">already arrived</span>
-            </div>
+            <h3 class="text-3xl font-black text-gray-900 mb-1" x-text="stats.materialsCount">0</h3>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Total Materials</p>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all">
             <div class="flex items-center justify-between mb-4">
-                <div class="bg-green-100 p-3 rounded-lg">
-                    <span class="material-symbols-outlined text-green-600 text-2xl">assignment_turned_in</span>
+                <div class="bg-amber-50 p-3 rounded-xl">
+                    <span class="material-symbols-outlined text-amber-600 text-2xl">domain</span>
                 </div>
-                <span class="text-xs font-semibold text-green-600 bg-green-50 px-2 py-1 rounded">Pending</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded">Active</span>
             </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.pendingQC">0</h3>
-            <p class="text-sm text-gray-600 mb-2">Pending QC</p>
+            <h3 class="text-3xl font-black text-gray-900 mb-1" x-text="stats.warehousesCount">0</h3>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Warehouses</p>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all">
             <div class="flex items-center justify-between mb-4">
-                <div class="bg-blue-100 p-3 rounded-lg">
-                    <span class="material-symbols-outlined text-blue-600 text-2xl">warehouse</span>
+                <div class="bg-blue-50 p-3 rounded-xl">
+                    <span class="material-symbols-outlined text-blue-600 text-2xl">pending_actions</span>
                 </div>
-                <span class="text-xs font-semibold text-blue-600 bg-blue-50 px-2 py-1 rounded">Active</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-blue-600 bg-blue-50 px-2 py-1 rounded">Requests</span>
             </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="stats.unloadingBays">0</h3>
-            <p class="text-sm text-gray-600 mb-2">Unloading Bays</p>
-            <div class="flex items-center gap-2 text-xs">
-                <span class="text-gray-500" x-text="stats.bayStatus">0 / 0</span>
-            </div>
+            <h3 class="text-3xl font-black text-gray-900 mb-1" x-text="stats.pendingMIR">0</h3>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Open Issue Requests</p>
         </div>
 
-        <div class="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-shadow">
+        <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all">
             <div class="flex items-center justify-between mb-4">
-                <div class="bg-indigo-100 p-3 rounded-lg">
-                    <span class="material-symbols-outlined text-indigo-600 text-2xl">shopping_cart</span>
+                <div class="bg-emerald-50 p-3 rounded-xl">
+                    <span class="material-symbols-outlined text-emerald-600 text-2xl">task_alt</span>
                 </div>
-                <span class="text-xs font-semibold text-indigo-600 bg-indigo-50 px-2 py-1 rounded">Outward</span>
+                <span class="text-[10px] font-black uppercase tracking-widest text-emerald-600 bg-emerald-50 px-2 py-1 rounded">Ready</span>
             </div>
-            <h3 class="text-3xl font-bold text-gray-900 mb-1" x-text="soStats.total_open">0</h3>
-            <p class="text-sm text-gray-600 mb-2">Open Sales Orders</p>
-            <div class="flex items-center gap-2 text-xs">
-                <span class="text-red-600 font-semibold" x-text="soStats.due_today">0</span>
-                <span class="text-gray-500">due today</span>
-            </div>
+            <h3 class="text-3xl font-black text-gray-900 mb-1" x-text="stats.approvedMIR">0</h3>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Approved for Picking</p>
         </div>
     </div>
 
-    <!-- Tabs -->
-    <div class="bg-white rounded-xl border border-gray-200">
-        <div class="border-b border-gray-200 px-6">
-            <nav class="flex gap-6 -mb-px">
-                <button @click="activeTab = 'receiving'"
-                    :class="activeTab === 'receiving' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                    class="py-4 text-sm font-medium border-b-2 transition-colors whitespace-nowrap">
-                    Live Receiving Queue
-                </button>
-            </nav>
-        </div>
-
-        <!-- Receiving Queue Tab -->
-        <div x-show="activeTab === 'receiving'" class="p-6">
-            <div class="flex items-center justify-between mb-4">
-                <h3 class="text-lg font-bold text-gray-900">Live Receiving Queue</h3>
-                <span class="text-xs font-semibold text-gray-500">Real-time updates</span>
-            </div>
-            <div class="space-y-4">
-                <template x-for="item in receivingQueue" :key="item.id">
-                    <div class="flex items-center justify-between p-4 bg-gray-50 rounded-lg border border-gray-200">
-                        <div class="flex items-center gap-4">
-                            <div class="w-10 h-10 rounded-full flex items-center justify-center font-bold text-white"
-                                 :class="item.priorityClass" x-text="item.position"></div>
-                            <div>
-                                <p class="text-sm font-bold text-gray-900" x-text="item.vehicle"></p>
-                                <p class="text-xs text-gray-500" x-text="item.details"></p>
-                            </div>
-                        </div>
-                        <div class="flex items-center gap-3">
-                            <span class="px-3 py-1 rounded-lg text-xs font-bold text-white"
-                                  :class="item.statusClass" x-text="item.status"></span>
-                        </div>
+    <!-- Main Content Grid -->
+    <div class="grid grid-cols-1 lg:grid-cols-3 gap-8 mb-8">
+        <!-- Stock Details Section -->
+        <div class="lg:col-span-2 space-y-6">
+            <div class="bg-white rounded-2xl border border-gray-200 overflow-hidden shadow-sm">
+                <div class="px-6 py-4 border-b border-gray-100 bg-gray-50/50 flex items-center justify-between">
+                    <div>
+                        <h3 class="font-black text-gray-900 uppercase tracking-widest text-xs">Raw Material Stock</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Availability snapshot for production planning</p>
                     </div>
-                </template>
-            </div>
-        </div>
-
-        <!-- Sales Orders Tab -->
-        <div x-show="activeTab === 'sales'" x-cloak class="p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900">Sales Order Creation</h3>
-                    <p class="text-sm text-gray-500 mt-0.5">Sales team creates orders with customer details, products, quantity and required delivery date. Triggers outward flow and stock availability check.</p>
+                    <button @click="init()" class="text-amber-600">
+                        <span class="material-symbols-outlined text-sm">refresh</span>
+                    </button>
                 </div>
-                <button @click="openCreateModal()"
-                    class="flex items-center gap-2 bg-indigo-600 hover:bg-indigo-700 text-white text-sm font-semibold px-4 py-2 rounded-lg transition-colors">
-                    <span class="material-symbols-outlined text-base">add</span>
-                    New Sales Order
-                </button>
-            </div>
-
-            <!-- SO Stats Row -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-                <div class="bg-indigo-50 rounded-lg p-3 text-center">
-                    <p class="text-2xl font-bold text-indigo-700" x-text="soStats.total_open">0</p>
-                    <p class="text-xs text-indigo-600 mt-1">Open Orders</p>
-                </div>
-                <div class="bg-green-50 rounded-lg p-3 text-center">
-                    <p class="text-2xl font-bold text-green-700" x-text="soStats.stock_available">0</p>
-                    <p class="text-xs text-green-600 mt-1">Stock Available</p>
-                </div>
-                <div class="bg-amber-50 rounded-lg p-3 text-center">
-                    <p class="text-2xl font-bold text-amber-700" x-text="soStats.stock_partial">0</p>
-                    <p class="text-xs text-amber-600 mt-1">Partial Stock</p>
-                </div>
-                <div class="bg-red-50 rounded-lg p-3 text-center">
-                    <p class="text-2xl font-bold text-red-700" x-text="soStats.due_today">0</p>
-                    <p class="text-xs text-red-600 mt-1">Due Today</p>
-                </div>
-            </div>
-
-            <!-- Filter Bar -->
-            <div class="flex items-center gap-3 mb-4">
-                <input x-model="soSearch" @input.debounce.400ms="loadSalesOrders()"
-                    type="text" placeholder="Search SO number..."
-                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-56 focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                <select x-model="soStatusFilter" @change="loadSalesOrders()"
-                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                    <option value="">All Statuses</option>
-                    <option value="DRAFT">Draft</option>
-                    <option value="CONFIRMED">Confirmed</option>
-                    <option value="STOCK_CHECKED">Stock Checked</option>
-                    <option value="PICKING">Picking</option>
-                    <option value="PACKED">Packed</option>
-                    <option value="DISPATCHED">Dispatched</option>
-                    <option value="DELIVERED">Delivered</option>
-                    <option value="CANCELLED">Cancelled</option>
-                </select>
-                <button @click="loadSalesOrders()" class="text-gray-500 hover:text-gray-700">
-                    <span class="material-symbols-outlined text-xl">refresh</span>
-                </button>
-            </div>
-
-            <!-- Sales Orders Table -->
-            <div class="overflow-x-auto rounded-lg border border-gray-200">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
-                        <tr>
-                            <th class="px-4 py-3 text-left font-semibold">SO Number</th>
-                            <th class="px-4 py-3 text-left font-semibold">Customer</th>
-                            <th class="px-4 py-3 text-left font-semibold">SO Date</th>
-                            <th class="px-4 py-3 text-left font-semibold">Delivery Date</th>
-                            <th class="px-4 py-3 text-right font-semibold">Grand Total</th>
-                            <th class="px-4 py-3 text-center font-semibold">Stock</th>
-                            <th class="px-4 py-3 text-center font-semibold">Status</th>
-                            <th class="px-4 py-3 text-center font-semibold">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <template x-if="soLoading">
-                            <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">Loading...</td></tr>
-                        </template>
-                        <template x-if="!soLoading && salesOrders.length === 0">
-                            <tr><td colspan="8" class="px-4 py-8 text-center text-gray-400">No sales orders found.</td></tr>
-                        </template>
-                        <template x-for="so in salesOrders" :key="so.id">
-                            <tr class="hover:bg-gray-50 transition-colors">
-                                <td class="px-4 py-3 font-semibold text-indigo-700" x-text="so.so_number"></td>
-                                <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                <td class="px-4 py-3 text-gray-600" x-text="so.so_date"></td>
-                                <td class="px-4 py-3">
-                                    <span :class="isOverdue(so.required_delivery_date, so.status) ? 'text-red-600 font-semibold' : 'text-gray-600'"
-                                          x-text="so.required_delivery_date"></span>
-                                </td>
-                                <td class="px-4 py-3 text-right font-semibold text-gray-800"
-                                    x-text="'₹' + parseFloat(so.grand_total).toLocaleString('en-IN', {minimumFractionDigits:2})"></td>
-                                <td class="px-4 py-3 text-center">
-                                    <span :class="stockBadgeClass(so.stock_status)"
-                                          class="px-2 py-1 rounded text-xs font-bold" x-text="so.stock_status"></span>
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    <span :class="statusBadgeClass(so.status)"
-                                          class="px-2 py-1 rounded text-xs font-bold" x-text="so.status"></span>
-                                </td>
-                                <td class="px-4 py-3 text-center">
-                                    <div class="flex items-center justify-center gap-2">
-                                        <template x-if="so.status === 'DRAFT'">
-                                            <button @click="confirmSO(so.id)"
-                                                class="text-xs bg-green-100 text-green-700 hover:bg-green-200 px-2 py-1 rounded font-semibold transition-colors">
-                                                Confirm
-                                            </button>
-                                        </template>
-                                        <template x-if="so.status === 'CONFIRMED' || so.status === 'DRAFT'">
-                                            <button @click="checkStock(so.id)"
-                                                class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2 py-1 rounded font-semibold transition-colors">
-                                                Check Stock
-                                            </button>
-                                        </template>
-                                    </div>
-                                </td>
+                <div class="overflow-x-auto">
+                    <table class="w-full text-left border-collapse">
+                        <thead class="bg-gray-50">
+                            <tr>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100">Material</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Available</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">QC Hold</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Pending Putaway</th>
+                                <th class="px-6 py-3 text-[10px] font-black text-gray-400 uppercase tracking-widest border-b border-gray-100 text-right">Total</th>
                             </tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-        <!-- Outward Tab -->
-        <div x-show="activeTab === 'outward'" x-cloak class="p-6">
-            <div class="flex items-center justify-between mb-5">
-                <div>
-                    <h3 class="text-lg font-bold text-gray-900">Outward — Picking, Packing & Dispatch</h3>
-                    <p class="text-sm text-gray-500 mt-0.5">Orders sent to HHT for picking. Mark packed once items are ready, then confirm dispatch.</p>
-                </div>
-                <button @click="loadOutwardOrders()" class="text-gray-500 hover:text-gray-700">
-                    <span class="material-symbols-outlined text-xl">refresh</span>
-                </button>
-            </div>
-
-            <!-- Outward Stats -->
-            <div class="grid grid-cols-3 gap-4 mb-6">
-                <div class="bg-amber-50 rounded-lg p-3 text-center border border-amber-100">
-                    <p class="text-2xl font-bold text-amber-700" x-text="outwardStats.picking">0</p>
-                    <p class="text-xs text-amber-600 mt-1 flex items-center justify-center gap-1">
-                        <span class="material-symbols-outlined text-sm">send_to_mobile</span> In Picking (HHT)
-                    </p>
-                </div>
-                <div class="bg-purple-50 rounded-lg p-3 text-center border border-purple-100">
-                    <p class="text-2xl font-bold text-purple-700" x-text="outwardStats.packed">0</p>
-                    <p class="text-xs text-purple-600 mt-1 flex items-center justify-center gap-1">
-                        <span class="material-symbols-outlined text-sm">inventory_2</span> Packed
-                    </p>
-                </div>
-                <div class="bg-teal-50 rounded-lg p-3 text-center border border-teal-100">
-                    <p class="text-2xl font-bold text-teal-700" x-text="outwardStats.dispatched_today">0</p>
-                    <p class="text-xs text-teal-600 mt-1 flex items-center justify-center gap-1">
-                        <span class="material-symbols-outlined text-sm">local_shipping</span> Dispatched Today
-                    </p>
-                </div>
-            </div>
-
-            <!-- Sub-tabs: Picking / Packed / Dispatched -->
-            <div class="border-b border-gray-200 mb-4">
-                <nav class="flex gap-4">
-                    <button @click="outwardTab = 'picking'"
-                        :class="outwardTab === 'picking' ? 'border-amber-500 text-amber-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                        class="pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1">
-                        <span class="material-symbols-outlined text-base">send_to_mobile</span>
-                        Picking
-                        <span class="bg-amber-100 text-amber-700 text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="outwardStats.picking"></span>
-                    </button>
-                    <button @click="outwardTab = 'packed'"
-                        :class="outwardTab === 'packed' ? 'border-purple-500 text-purple-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                        class="pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1">
-                        <span class="material-symbols-outlined text-base">inventory_2</span>
-                        Packed
-                        <span class="bg-purple-100 text-purple-700 text-xs font-bold px-1.5 py-0.5 rounded-full" x-text="outwardStats.packed"></span>
-                    </button>
-                    <button @click="outwardTab = 'dispatched'"
-                        :class="outwardTab === 'dispatched' ? 'border-teal-500 text-teal-600' : 'border-transparent text-gray-500 hover:text-gray-700'"
-                        class="pb-3 text-sm font-medium border-b-2 transition-colors flex items-center gap-1">
-                        <span class="material-symbols-outlined text-base">local_shipping</span>
-                        Dispatched
-                    </button>
-                </nav>
-            </div>
-
-            <div x-show="outwardLoading" class="flex justify-center py-10">
-                <span class="material-symbols-outlined animate-spin text-3xl text-teal-500">progress_activity</span>
-            </div>
-
-            <div x-show="!outwardLoading" class="overflow-x-auto rounded-lg border border-gray-200">
-                <table class="w-full text-sm">
-                    <thead class="bg-gray-50 text-gray-600 text-xs uppercase">
-                        <tr>
-                            <th class="px-4 py-3 text-left">SO Number</th>
-                            <th class="px-4 py-3 text-left">Customer</th>
-                            <th class="px-4 py-3 text-left">Delivery Date</th>
-                            <th class="px-4 py-3 text-right">Grand Total</th>
-                            <th class="px-4 py-3 text-center">Status</th>
-                            <th class="px-4 py-3 text-left">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody class="divide-y divide-gray-100">
-                        <!-- PICKING sub-tab -->
-                        <template x-if="outwardTab === 'picking'">
-                            <template x-for="so in outwardOrders.filter(o => o.status === 'PICKING')" :key="so.id">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 font-semibold text-teal-700" x-text="so.so_number"></td>
-                                    <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                    <td class="px-4 py-3">
-                                        <span :class="isOverdue(so.required_delivery_date, so.status) ? 'text-red-600 font-semibold' : 'text-gray-600'"
-                                              x-text="so.required_delivery_date ? new Date(so.required_delivery_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—'"></span>
-                                    </td>
-                                    <td class="px-4 py-3 text-right font-semibold text-gray-800"
-                                        x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN',{minimumFractionDigits:2})"></td>
-                                    <td class="px-4 py-3 text-center">
-                                        <span class="bg-amber-100 text-amber-700 px-2 py-1 rounded text-xs font-bold">PICKING</span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <div class="flex gap-1">
-                                            <button @click="markPacked(so.id)"
-                                                class="text-xs bg-purple-600 text-white hover:bg-purple-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
-                                                <span class="material-symbols-outlined text-sm">inventory_2</span> Mark Packed
-                                            </button>
+                        </thead>
+                        <tbody class="divide-y divide-gray-100 text-sm">
+                            <template x-for="item in stats.rmStock" :key="item.item_id">
+                                <tr class="hover:bg-gray-50/50 transition-colors">
+                                    <td class="px-6 py-4">
+                                        <p class="font-bold text-gray-900" x-text="item.item_name"></p>
+                                        <div class="flex items-center gap-2">
+                                            <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest" x-text="item.item_code"></p>
+                                            <span class="text-[9px] px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded font-black uppercase" x-text="item.item_type"></span>
                                         </div>
                                     </td>
+                                    <td class="px-6 py-4 text-right">
+                                        <span class="px-2 py-1 bg-emerald-50 text-emerald-700 rounded-md font-black text-[10px]"
+                                            x-text="parseFloat(item.available).toFixed(2)"></span>
+                                    </td>
+                                    <td class="px-6 py-4 text-right font-medium text-amber-600" x-text="parseFloat(item.qc_hold).toFixed(2)"></td>
+                                    <td class="px-6 py-4 text-right font-medium text-blue-600" x-text="parseFloat(item.putaway_pending).toFixed(2)"></td>
+                                    <td class="px-6 py-4 text-right font-black text-gray-900" x-text="parseFloat(item.on_hand).toFixed(2) + ' ' + (item.uom || '')"></td>
                                 </tr>
                             </template>
-                        </template>
-                        <template x-if="outwardTab === 'picking' && outwardOrders.filter(o => o.status === 'PICKING').length === 0">
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No orders currently in picking.</td></tr>
-                        </template>
-
-                        <!-- PACKED sub-tab -->
-                        <template x-if="outwardTab === 'packed'">
-                            <template x-for="so in outwardOrders.filter(o => o.status === 'PACKED')" :key="so.id">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 font-semibold text-teal-700" x-text="so.so_number"></td>
-                                    <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                    <td class="px-4 py-3">
-                                        <span :class="isOverdue(so.required_delivery_date, so.status) ? 'text-red-600 font-semibold' : 'text-gray-600'"
-                                              x-text="so.required_delivery_date ? new Date(so.required_delivery_date).toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) : '—'"></span>
-                                    </td>
-                                    <td class="px-4 py-3 text-right font-semibold text-gray-800"
-                                        x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN',{minimumFractionDigits:2})"></td>
-                                    <td class="px-4 py-3 text-center">
-                                        <span class="bg-purple-100 text-purple-700 px-2 py-1 rounded text-xs font-bold">PACKED</span>
-                                    </td>
-                                    <td class="px-4 py-3">
-                                        <button @click="openDispatchForm(so)"
-                                            class="text-xs bg-teal-600 text-white hover:bg-teal-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
-                                            <span class="material-symbols-outlined text-sm">local_shipping</span> Dispatch
-                                        </button>
+                            <template x-if="!stats.rmStock || stats.rmStock.length === 0">
+                                <tr>
+                                    <td colspan="5" class="px-6 py-12 text-center text-gray-400">
+                                        <span class="material-symbols-outlined text-4xl mb-2 opacity-50">inventory_2</span>
+                                        <p class="text-[10px] font-black uppercase tracking-widest">No material stock data available</p>
                                     </td>
                                 </tr>
                             </template>
-                        </template>
-                        <template x-if="outwardTab === 'packed' && outwardOrders.filter(o => o.status === 'PACKED').length === 0">
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No packed orders awaiting dispatch.</td></tr>
-                        </template>
-
-                        <!-- DISPATCHED sub-tab -->
-                        <template x-if="outwardTab === 'dispatched'">
-                            <template x-for="so in outwardOrders.filter(o => o.status === 'DISPATCHED')" :key="so.id">
-                                <tr class="hover:bg-gray-50">
-                                    <td class="px-4 py-3 font-semibold text-teal-700" x-text="so.so_number"></td>
-                                    <td class="px-4 py-3 text-gray-800" x-text="so.customer?.customer_name ?? '—'"></td>
-                                    <td class="px-4 py-3 text-gray-600"
-                                        x-text="so.dispatched_at ? new Date(so.dispatched_at).toLocaleString('en-IN',{day:'2-digit',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit',hour12:true}) : '—'"></td>
-                                    <td class="px-4 py-3 text-right font-semibold text-gray-800"
-                                        x-text="'₹' + parseFloat(so.grand_total ?? 0).toLocaleString('en-IN',{minimumFractionDigits:2})"></td>
-                                    <td class="px-4 py-3 text-center">
-                                        <span class="bg-teal-100 text-teal-700 px-2 py-1 rounded text-xs font-bold">DISPATCHED</span>
-                                    </td>
-                                    <td class="px-4 py-3 text-xs text-gray-500"
-                                        x-text="(so.vehicle_number ?? '—') + ' / ' + (so.driver_name ?? '—')"></td>
-                                </tr>
-                            </template>
-                        </template>
-                        <template x-if="outwardTab === 'dispatched' && outwardOrders.filter(o => o.status === 'DISPATCHED').length === 0">
-                            <tr><td colspan="6" class="px-4 py-8 text-center text-gray-400">No dispatched orders today.</td></tr>
-                        </template>
-                    </tbody>
-                </table>
-            </div>
-        </div>
-    </div>
-
-    <!-- Dispatch Form Modal -->
-    <div x-show="showDispatchModal" x-cloak
-         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between p-5 border-b border-gray-200">
-                <div>
-                    <h3 class="text-base font-bold text-gray-900">Confirm Dispatch</h3>
-                    <p class="text-xs text-gray-500 mt-0.5" x-text="dispatchingSO?.so_number"></p>
-                </div>
-                <button @click="showDispatchModal = false" class="text-gray-400 hover:text-gray-600">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
-            </div>
-            <div class="p-5 space-y-4">
-                <div class="grid grid-cols-2 gap-3">
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Vehicle Number <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="dispatchForm.vehicle_number" placeholder="GJ-01-XX-1234"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Driver Name <span class="text-red-500">*</span></label>
-                        <input type="text" x-model="dispatchForm.driver_name" placeholder="Driver name"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Logistics Partner</label>
-                        <input type="text" x-model="dispatchForm.logistics_partner" placeholder="e.g. Delhivery"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
-                    </div>
-                    <div>
-                        <label class="block text-xs font-medium text-gray-700 mb-1">Expected Delivery Date <span class="text-red-500">*</span></label>
-                        <input type="date" x-model="dispatchForm.expected_delivery_date"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-300">
-                    </div>
-                </div>
-                <div x-show="dispatchError" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" x-text="dispatchError"></div>
-                <div class="flex justify-end gap-3 pt-1">
-                    <button @click="showDispatchModal = false"
-                        class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                    <button @click="submitDispatch()" :disabled="dispatchSubmitting"
-                        class="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-semibold flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base">local_shipping</span>
-                        <span x-text="dispatchSubmitting ? 'Dispatching...' : 'Confirm Dispatch'"></span>
-                    </button>
+                        </tbody>
+                    </table>
                 </div>
             </div>
         </div>
-    </div>
 
-    <!-- Create Sales Order Modal -->
-    <div x-show="showCreateModal" x-cloak
-         class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-2xl max-h-[90vh] overflow-y-auto">
-            <div class="flex items-center justify-between p-6 border-b border-gray-200">
-                <h3 class="text-lg font-bold text-gray-900">New Sales Order</h3>
-                <button @click="showCreateModal = false" class="text-gray-400 hover:text-gray-600">
-                    <span class="material-symbols-outlined">close</span>
-                </button>
+        <!-- Sidebar Tools -->
+        <div class="space-y-6">
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <h3 class="font-black text-gray-900 uppercase tracking-widest text-xs mb-6">Inventory Workflows</h3>
+                <div class="space-y-3">
+                    <button @click="window.location.href = '/org/{{ $organization->org_slug }}/warehouse/mir-approvals'"
+                        class="w-full flex items-center justify-between p-4 bg-amber-50/50 rounded-xl hover:bg-amber-50 transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-amber-600">assignment_turned_in</span>
+                            <span class="text-xs font-black text-amber-900 uppercase tracking-widest">MIR Approvals</span>
+                        </div>
+                        <span class="material-symbols-outlined text-amber-200 group-hover:text-amber-500 transition-colors">arrow_forward</span>
+                    </button>
+
+                    <button @click="window.location.href = '/org/{{ $organization->org_slug }}/warehouse/stock-management'"
+                        class="w-full flex items-center justify-between p-4 bg-slate-50/50 rounded-xl hover:bg-slate-50 transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-slate-600">inventory</span>
+                            <span class="text-xs font-black text-slate-900 uppercase tracking-widest">Stock Management</span>
+                        </div>
+                        <span class="material-symbols-outlined text-slate-200 group-hover:text-slate-500 transition-colors">arrow_forward</span>
+                    </button>
+
+                    <button @click="window.location.href = '/org/{{ $organization->org_slug }}/warehouse/barcode-center'"
+                        class="w-full flex items-center justify-between p-4 bg-indigo-50/50 rounded-xl hover:bg-indigo-50 transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-indigo-600">barcode_scanner</span>
+                            <span class="text-xs font-black text-indigo-900 uppercase tracking-widest">Barcode Center</span>
+                        </div>
+                        <span class="material-symbols-outlined text-indigo-200 group-hover:text-indigo-500 transition-colors">arrow_forward</span>
+                    </button>
+
+                    <button @click="window.location.href = '/org/{{ $organization->org_slug }}/warehouse/bin-management'"
+                        class="w-full flex items-center justify-between p-4 bg-emerald-50/50 rounded-xl hover:bg-emerald-50 transition-all group">
+                        <div class="flex items-center gap-3">
+                            <span class="material-symbols-outlined text-emerald-600">grid_view</span>
+                            <span class="text-xs font-black text-emerald-900 uppercase tracking-widest">Bin Visibility</span>
+                        </div>
+                        <span class="material-symbols-outlined text-emerald-200 group-hover:text-emerald-500 transition-colors">arrow_forward</span>
+                    </button>
+                </div>
             </div>
-            <form @submit.prevent="submitSalesOrder()" class="p-6 space-y-5">
-                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+
+            <!-- Storage Efficiency Widget -->
+            <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+                <div class="flex items-center justify-between mb-6">
                     <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Customer <span class="text-red-500">*</span></label>
-                        <select x-model="form.customer_id" required
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                            <option value="">Select customer...</option>
-                            <template x-for="c in customers" :key="c.id">
-                                <option :value="c.id" x-text="c.customer_name"></option>
-                            </template>
-                        </select>
+                        <h3 class="font-black text-gray-900 uppercase tracking-widest text-xs">Storage Efficiency</h3>
+                        <p class="text-[10px] text-gray-400 font-bold uppercase tracking-widest mt-0.5">Bin Occupancy Rate</p>
                     </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Required Delivery Date <span class="text-red-500">*</span></label>
-                        <input type="date" x-model="form.required_delivery_date" required
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Payment Terms</label>
-                        <select x-model="form.payment_terms"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                            <option value="NET30">NET30</option>
-                            <option value="NET60">NET60</option>
-                            <option value="COD">COD</option>
-                            <option value="ADVANCE">ADVANCE</option>
-                        </select>
-                    </div>
-                    <div>
-                        <label class="block text-sm font-medium text-gray-700 mb-1">Remarks</label>
-                        <input type="text" x-model="form.remarks" placeholder="Optional notes"
-                            class="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-300">
-                    </div>
+                    <span class="px-2 py-1 bg-blue-50 text-blue-700 rounded-md font-black text-[9px] uppercase tracking-tighter">Optimal</span>
+                </div>
+                
+                <div class="flex items-end justify-between mb-2">
+                    <h4 class="text-3xl font-black text-gray-900 leading-none">84<span class="text-xl text-gray-400">%</span></h4>
+                    <span class="text-[10px] font-black text-emerald-500 uppercase tracking-widest mb-1">+2.4% vs last week</span>
                 </div>
 
-                <!-- Line Items -->
-                <div>
-                    <div class="flex items-center justify-between mb-2">
-                        <label class="text-sm font-medium text-gray-700">Products <span class="text-red-500">*</span></label>
-                        <button type="button" @click="addLine()"
-                            class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold flex items-center gap-1">
-                            <span class="material-symbols-outlined text-sm">add</span> Add Line
-                        </button>
-                    </div>
-                    <div class="space-y-2">
-                        <template x-for="(line, idx) in form.line_items" :key="idx">
-                            <div class="grid grid-cols-12 gap-2 items-center bg-gray-50 rounded-lg p-2">
-                                <div class="col-span-5">
-                                    <select x-model="line.product_id" required
-                                        class="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300">
-                                        <option value="">Select product...</option>
-                                        <template x-for="p in products" :key="p.id">
-                                            <option :value="p.id" x-text="p.product_name"></option>
-                                        </template>
-                                    </select>
-                                </div>
-                                <div class="col-span-2">
-                                    <input type="number" x-model="line.qty" placeholder="Qty" min="0.001" step="0.001" required
-                                        class="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300">
-                                </div>
-                                <div class="col-span-2">
-                                    <select x-model="line.uom_id" required
-                                        class="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300">
-                                        <option value="">UOM</option>
-                                        <template x-for="u in uoms" :key="u.id">
-                                            <option :value="u.id" x-text="u.uom_code"></option>
-                                        </template>
-                                    </select>
-                                </div>
-                                <div class="col-span-2">
-                                    <input type="number" x-model="line.unit_price" placeholder="Price" min="0" step="0.01"
-                                        class="w-full border border-gray-300 rounded px-2 py-1.5 text-xs focus:outline-none focus:ring-1 focus:ring-indigo-300">
-                                </div>
-                                <div class="col-span-1 flex justify-center">
-                                    <button type="button" @click="removeLine(idx)" class="text-red-400 hover:text-red-600">
-                                        <span class="material-symbols-outlined text-base">delete</span>
-                                    </button>
-                                </div>
-                            </div>
-                        </template>
-                    </div>
+                <div class="h-2 w-full bg-gray-100 rounded-full overflow-hidden mb-6">
+                    <div class="h-full bg-blue-600 rounded-full shadow-[0_0_8px_rgba(37,99,235,0.3)]" style="width: 84%"></div>
                 </div>
 
-                <div x-show="formError" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" x-text="formError"></div>
-
-                <div class="flex justify-end gap-3 pt-2">
-                    <button type="button" @click="showCreateModal = false"
-                        class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">
-                        Cancel
-                    </button>
-                    <button type="submit" :disabled="formSubmitting"
-                        class="px-4 py-2 text-sm bg-indigo-600 text-white rounded-lg hover:bg-indigo-700 disabled:opacity-50 font-semibold">
-                        <span x-text="formSubmitting ? 'Creating...' : 'Create Sales Order'"></span>
-                    </button>
+                <div class="grid grid-cols-2 gap-4">
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 text-center">Empty Bins</p>
+                        <p class="text-lg font-black text-slate-700 text-center">142</p>
+                    </div>
+                    <div class="bg-slate-50 p-3 rounded-xl border border-slate-100">
+                        <p class="text-[9px] font-black uppercase tracking-widest text-slate-400 mb-1 text-center">Fast Moving</p>
+                        <p class="text-lg font-black text-slate-700 text-center">28%</p>
+                    </div>
                 </div>
-            </form>
+            </div>
         </div>
     </div>
 </div>
 
 <script>
-function warehouseDashboard() {
-    return {
-        activeTab: 'receiving',
-        stats: {
-            expectedToday: 0, arrivedToday: 0, pendingQC: 0,
-            unloadingBays: 0, bayStatus: '0 / 0', receiptsToday: 0
-        },
-        receivingQueue: [],
-        // Sales Orders
-        salesOrders: [],
-        soStats: { total_open: 0, due_today: 0, stock_available: 0, stock_partial: 0, pending_dispatch: 0 },
-        soLoading: false,
-        soSearch: '',
-        soStatusFilter: '',
-        // Modal
-        showCreateModal: false,
-        customers: [],
-        products: [],
-        uoms: [],
-        form: { customer_id: '', required_delivery_date: '', payment_terms: 'NET30', remarks: '', line_items: [] },
-        formError: '',
-        formSubmitting: false,
-
-        // Outward
-        outwardOrders: [],
-        outwardStats: { picking: 0, packed: 0, dispatched_today: 0, active: 0 },
-        outwardLoading: false,
-        outwardTab: 'picking',
-        showDispatchModal: false,
-        dispatchingSO: null,
-        dispatchForm: { vehicle_number: '', driver_name: '', logistics_partner: '', expected_delivery_date: '' },
-        dispatchError: '',
-        dispatchSubmitting: false,
-
-        init() {
-            this.loadStats();
-            this.loadReceivingQueue();
-            this.loadSOStats();
-        },
-
-        async loadStats() {
-            this.stats = { expectedToday: 24, arrivedToday: 8, pendingQC: 12, unloadingBays: 3, bayStatus: '3 / 5', receiptsToday: 15 };
-        },
-
-        async loadReceivingQueue() {
-            this.receivingQueue = [
-                { id: 1, position: '01', vehicle: 'Truck GJ-01-XX-1234', details: 'Vendor: Tata Steel • PO: #45021', status: 'UNLOADING', statusClass: 'bg-green-500', priorityClass: 'bg-green-500' },
-                { id: 2, position: '02', vehicle: 'Vehicle MH-12-AB-9876', details: 'Vendor: Reliance Poly • PO: #45025', status: 'DOC VERIFICATION', statusClass: 'bg-amber-500', priorityClass: 'bg-amber-500' }
-            ];
-        },
-
-        async loadSOStats() {
-            try {
-                const token = localStorage.getItem('auth_token');
-                const res = await fetch('/api/v1/sales-orders/dashboard-stats', {
-                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-                });
-                const json = await res.json();
-                if (json.success) this.soStats = json.data.stats;
-            } catch (e) { console.error('SO stats error', e); }
-        },
-
-        async loadSalesOrders() {
-            this.soLoading = true;
-            try {
-                const token = localStorage.getItem('auth_token');
-                const params = new URLSearchParams({ per_page: 20 });
-                if (this.soSearch) params.append('search', this.soSearch);
-                if (this.soStatusFilter) params.append('status', this.soStatusFilter);
-                const res = await fetch('/api/v1/sales-orders?' + params.toString(), {
-                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-                });
-                const json = await res.json();
-                if (json.success) this.salesOrders = json.data.data;
-            } catch (e) { console.error('SO load error', e); }
-            this.soLoading = false;
-        },
-
-        async openCreateModal() {
-            this.form = { customer_id: '', required_delivery_date: '', payment_terms: 'NET30', remarks: '', line_items: [this.emptyLine()] };
-            this.formError = '';
-            this.formSubmitting = false;
-            await this.loadDropdowns();
-            this.showCreateModal = true;
-        },
-
-        async loadDropdowns() {
-            const token = localStorage.getItem('auth_token');
-            const headers = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
-            const [cRes, pRes, uRes] = await Promise.all([
-                fetch('/api/v1/customers?active_only=1', { headers }),
-                fetch('/api/v1/products', { headers }),
-                fetch('/api/v1/uoms', { headers }),
-            ]);
-            const [cJson, pJson, uJson] = await Promise.all([cRes.json(), pRes.json(), uRes.json()]);
-            this.customers = cJson.success ? cJson.data : [];
-            this.products  = pJson.success ? (pJson.data.data ?? pJson.data) : [];
-            this.uoms      = uJson.success ? (uJson.data.data ?? uJson.data) : [];
-        },
-
-        emptyLine() {
-            return { product_id: '', qty: '', uom_id: '', unit_price: 0, discount_percent: 0 };
-        },
-
-        addLine() { this.form.line_items.push(this.emptyLine()); },
-        removeLine(idx) { if (this.form.line_items.length > 1) this.form.line_items.splice(idx, 1); },
-
-        async submitSalesOrder() {
-            this.formError = '';
-            if (!this.form.customer_id || !this.form.required_delivery_date) {
-                this.formError = 'Customer and delivery date are required.'; return;
-            }
-            if (this.form.line_items.some(l => !l.product_id || !l.qty || !l.uom_id)) {
-                this.formError = 'All line items must have product, quantity and UOM.'; return;
-            }
-            this.formSubmitting = true;
-            try {
-                const token = localStorage.getItem('auth_token');
-                const res = await fetch('/api/v1/sales-orders', {
-                    method: 'POST',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.form)
-                });
-                const json = await res.json();
-                if (json.success) {
-                    this.showCreateModal = false;
-                    await this.loadSalesOrders();
-                    await this.loadSOStats();
-                } else {
-                    this.formError = json.message || Object.values(json.errors ?? {}).flat().join(', ');
-                }
-            } catch (e) { this.formError = 'Network error. Please try again.'; }
-            this.formSubmitting = false;
-        },
-
-        confirmSO(id) {
-            this.confirm(
-                'Confirm Order',
-                'Confirm this Sales Order?',
-                async () => {
-                    const token = localStorage.getItem('auth_token');
-                    const res = await fetch('/api/v1/sales-orders/' + id + '/confirm', {
-                        method: 'PATCH',
-                        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
+    function warehouseDashboard() {
+        return {
+            stats: {
+                materialsCount: 0,
+                warehousesCount: 0,
+                pendingMIR: 0,
+                approvedMIR: 0,
+                rmStock: []
+            },
+            loading: false,
+            async init() {
+                this.loading = true;
+                try {
+                    const response = await fetch(`/api/v1/warehouses/dashboard-stats`, {
+                        headers: {
+                            'Accept': 'application/json'
+                        }
                     });
-                    const json = await res.json();
-                    if (json.success) { 
-                        await this.loadSalesOrders(); 
-                        await this.loadSOStats();
-                        this.notify('Sales Order confirmed');
+                    const data = await response.json();
+                    if (data.success) {
+                        this.stats = data.data;
                     }
-                },
-                'Confirm',
-                'green'
-            );
-        },
-
-        checkStock(id) {
-            this.confirm(
-                'Check Stock',
-                'Run stock availability check for this order?',
-                async () => {
-                    const token = localStorage.getItem('auth_token');
-                    const res = await fetch('/api/v1/sales-orders/' + id + '/check-stock', {
-                        method: 'PATCH',
-                        headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-                    });
-                    const json = await res.json();
-                    if (json.success) {
-                        this.notify('Stock check complete. Status: ' + json.stock_status);
-                        await this.loadSalesOrders(); 
-                        await this.loadSOStats();
-                    }
-                },
-                'Check',
-                'blue'
-            );
-        },
-
-        isOverdue(date, status) {
-            if (['DELIVERED', 'CANCELLED'].includes(status)) return false;
-            return new Date(date) < new Date(new Date().toDateString());
-        },
-
-        stockBadgeClass(s) {
-            return { AVAILABLE: 'bg-green-100 text-green-700', PARTIAL: 'bg-amber-100 text-amber-700', UNAVAILABLE: 'bg-red-100 text-red-700', PENDING: 'bg-gray-100 text-gray-600' }[s] ?? 'bg-gray-100 text-gray-600';
-        },
-
-        statusBadgeClass(s) {
-            const map = { DRAFT: 'bg-gray-100 text-gray-600', CONFIRMED: 'bg-blue-100 text-blue-700', STOCK_CHECKED: 'bg-indigo-100 text-indigo-700', PICKING: 'bg-amber-100 text-amber-700', PACKED: 'bg-purple-100 text-purple-700', DISPATCHED: 'bg-teal-100 text-teal-700', DELIVERED: 'bg-green-100 text-green-700', CANCELLED: 'bg-red-100 text-red-700' };
-            return map[s] ?? 'bg-gray-100 text-gray-600';
-        },
-
-        notify(message, type = 'success') {
-            window.dispatchEvent(new CustomEvent('notify', { detail: { message, type } }));
-        },
-
-        confirm(title, message, onConfirm, confirmText = 'Confirm', confirmColor = 'red') {
-            window.dispatchEvent(new CustomEvent('open-confirm', {
-                detail: { title, message, onConfirm, confirmText, confirmColor }
-            }));
-        },
-
-        async loadOutwardOrders() {
-            this.outwardLoading = true;
-            try {
-                const token = localStorage.getItem('auth_token');
-                const h = { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' };
-                const res = await fetch('/api/v1/sales-orders?per_page=100&status=PICKING,PACKED,DISPATCHED', { headers: h });
-                const json = await res.json();
-                if (json.success) {
-                    // API may not support comma-separated status, so fetch all and filter
-                    const all = json.data.data ?? json.data ?? [];
-                    this.outwardOrders = all.filter(o => ['PICKING','PACKED','DISPATCHED'].includes(o.status));
-                    const today = new Date().toDateString();
-                    this.outwardStats = {
-                        picking: this.outwardOrders.filter(o => o.status === 'PICKING').length,
-                        packed:  this.outwardOrders.filter(o => o.status === 'PACKED').length,
-                        dispatched_today: this.outwardOrders.filter(o => o.status === 'DISPATCHED' && o.dispatched_at && new Date(o.dispatched_at).toDateString() === today).length,
-                        active: this.outwardOrders.filter(o => ['PICKING','PACKED'].includes(o.status)).length,
-                    };
+                } catch (e) {
+                    console.error('Failed to load warehouse stats', e);
+                } finally {
+                    this.loading = false;
                 }
-            } catch(e) { console.error('Outward load error', e); }
-            this.outwardLoading = false;
-        },
-
-        async markPacked(id) {
-            if (!confirm('Mark this order as PACKED?')) return;
-            const token = localStorage.getItem('auth_token');
-            const res = await fetch('/api/v1/sales-orders/' + id + '/mark-packed', {
-                method: 'PATCH',
-                headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json' }
-            });
-            const json = await res.json();
-            if (json.success) {
-                this.outwardTab = 'packed';
-                await this.loadOutwardOrders();
-            } else {
-                alert(json.message || 'Failed to mark as packed.');
             }
-        },
-
-        openDispatchForm(so) {
-            this.dispatchingSO = so;
-            this.dispatchForm = {
-                vehicle_number: '',
-                driver_name: '',
-                logistics_partner: '',
-                expected_delivery_date: so.required_delivery_date ? so.required_delivery_date.split('T')[0] : ''
-            };
-            this.dispatchError = '';
-            this.dispatchSubmitting = false;
-            this.showDispatchModal = true;
-        },
-
-        async submitDispatch() {
-            this.dispatchError = '';
-            if (!this.dispatchForm.vehicle_number || !this.dispatchForm.driver_name || !this.dispatchForm.expected_delivery_date) {
-                this.dispatchError = 'Vehicle number, driver name and delivery date are required.'; return;
-            }
-            this.dispatchSubmitting = true;
-            try {
-                const token = localStorage.getItem('auth_token');
-                const res = await fetch('/api/v1/sales-orders/' + this.dispatchingSO.id + '/dispatch', {
-                    method: 'PATCH',
-                    headers: { 'Authorization': 'Bearer ' + token, 'Accept': 'application/json', 'Content-Type': 'application/json' },
-                    body: JSON.stringify(this.dispatchForm)
-                });
-                const json = await res.json();
-                if (json.success) {
-                    this.showDispatchModal = false;
-                    this.outwardTab = 'dispatched';
-                    await this.loadOutwardOrders();
-                    await this.loadSOStats();
-                } else {
-                    this.dispatchError = json.message || 'Dispatch failed.';
-                }
-            } catch(e) { this.dispatchError = 'Network error. Please try again.'; }
-            this.dispatchSubmitting = false;
-        },
+        }
     }
-}
 </script>
 @endsection
