@@ -1222,6 +1222,34 @@
             }
           },
           "response": []
+        },
+        {
+          "name": "Get Warehouse Dashboard Stats",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses/dashboard-stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses", "dashboard-stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get All Warehouse Stock",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/warehouses/all-stock",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "warehouses", "all-stock"]
+            }
+          },
+          "response": []
         }
       ]
     },
@@ -1443,6 +1471,56 @@
               "raw": "{{base_url}}/api/v1/materials/1",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "materials", "1"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Export Materials",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/export",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "export"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Bulk Store Materials",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"materials\": [\n    {\n      \"material_code\": \"MAT002\",\n      \"material_name\": \"Aluminum Plate\",\n      \"material_type\": \"Raw Material\",\n      \"uom_id\": 1\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/bulk",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "bulk"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Import Materials CSV",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [{"key": "csv_file", "type": "file", "src": ""}]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/materials/import",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "materials", "import"]
             }
           },
           "response": []
@@ -2118,6 +2196,76 @@
           "response": []
         },
         {
+          "name": "Get Production Stats",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Orders For Packing",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/for-packing",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "for-packing"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Release Production Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1/release",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1", "release"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Close Production Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1/close",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1", "close"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Material Receipt",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-orders/1/confirm-receipt",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-orders", "1", "confirm-receipt"]
+            }
+          },
+          "response": []
+        },
+        {
           "name": "Get FG Sessions",
           "request": {
             "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
@@ -2422,6 +2570,592 @@
               "raw": "{{base_url}}/api/v1/admin/feature-controls/1",
               "host": ["{{base_url}}"],
               "path": ["api", "v1", "admin", "feature-controls", "1"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Purchase Requisitions",
+      "item": [
+        {
+          "name": "List PRs",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-requisitions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-requisitions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create PR",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"pr_date\": \"2024-01-20\",\n  \"requested_by\": 1,\n  \"items\": [\n    {\n      \"material_id\": 1,\n      \"quantity\": 100,\n      \"uom_id\": 1,\n      \"required_by_date\": \"2024-02-01\"\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-requisitions",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-requisitions"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Submit PR",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-requisitions/1/submit",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-requisitions", "1", "submit"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve PR",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-requisitions/1/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-requisitions", "1", "approve"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quotation Comparison",
+      "item": [
+        {
+          "name": "List Comparisons",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/quotation-comparison",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quotation-comparison"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Upload Quotation",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "body": {
+              "mode": "formdata",
+              "formdata": [
+                {"key": "pr_id", "value": "1", "type": "text"},
+                {"key": "vendor_id", "value": "1", "type": "text"},
+                {"key": "file", "type": "file", "src": ""}
+              ]
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/quotation-comparison/upload",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "quotation-comparison", "upload"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Purchase Orders",
+      "item": [
+        {
+          "name": "List POs",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create PO",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor_id\": 1,\n  \"po_date\": \"2024-01-20\",\n  \"items\": [\n    {\n      \"material_id\": 1,\n      \"quantity\": 100,\n      \"unit_price\": 50.00\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Release PO",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/purchase-orders/1/release",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "purchase-orders", "1", "release"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Gate Entries",
+      "item": [
+        {
+          "name": "List Gate Entries",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/gate-entries",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "gate-entries"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Gate Entry",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"vendor_id\": 1,\n  \"po_id\": 1,\n  \"invoice_number\": \"INV-123\",\n  \"vehicle_number\": \"MH-01-AB-1234\",\n  \"challan_number\": \"CH-456\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/gate-entries",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "gate-entries"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "GRN",
+      "item": [
+        {
+          "name": "List GRN",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/grn",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "grn"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create GRN (Provisional)",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"gate_entry_id\": 1,\n  \"items\": [\n    {\n      \"po_line_id\": 1,\n      \"received_qty\": 100,\n      \"accepted_qty\": 0,\n      \"rejected_qty\": 0\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/grn",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "grn"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Quality Control",
+      "item": [
+        {
+          "name": "List Pending Inspections",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/qc/pending",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "qc", "pending"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Start Inspection",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/qc/1/start",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "qc", "1", "start"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Record Test Result",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"parameter_id\": 1,\n  \"actual_value\": \"5.2\",\n  \"is_passed\": true\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/qc/1/test-results",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "qc", "1", "test-results"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Usage Decision",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"decision\": \"ACCEPTED\",\n  \"remarks\": \"Bulk approved\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/qc/1/decision",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "qc", "1", "decision"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Production Requests",
+      "item": [
+        {
+          "name": "List Requests",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-requests",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-requests"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Approve Request",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/production-requests/1/approve",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "production-requests", "1", "approve"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Batch Runs",
+      "item": [
+        {
+          "name": "Create Batch Run",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"production_order_id\": 1,\n  \"batch_code\": \"BATCH-001\",\n  \"target_qty\": 50\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/batch-runs",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "batch-runs"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Sales Orders",
+      "item": [
+        {
+          "name": "List Sales Orders",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Sales Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"customer_id\": 1,\n  \"order_date\": \"2024-01-20\",\n  \"items\": [\n    {\n      \"product_id\": 1,\n      \"quantity\": 10,\n      \"unit_price\": 100.00\n    }\n  ]\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Confirm Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders/1/confirm",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders", "1", "confirm"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get Sales Dashboard Stats",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders/dashboard-stats",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders", "dashboard-stats"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Get FG Stock For Sales",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders/fg-stock",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders", "fg-stock"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Check Order Stock",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders/1/check-stock",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders", "1", "check-stock"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Generate Picklist",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders/1/generate-picklist",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders", "1", "generate-picklist"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Mark As Packed",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders/1/mark-packed",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders", "1", "mark-packed"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Dispatch Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "PATCH",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/sales-orders/1/dispatch",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "sales-orders", "1", "dispatch"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Maintenance",
+      "item": [
+        {
+          "name": "Get Work Orders",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/maintenance/work-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "maintenance", "work-orders"]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Create Work Order",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"asset_id\": 1,\n  \"priority\": \"HIGH\",\n  \"description\": \"Routine maintenance required\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/maintenance/work-orders",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "maintenance", "work-orders"]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Lookup Utilities",
+      "item": [
+        {
+          "name": "Lookup Customers",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookup/customers?query=john",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lookup", "customers"],
+              "query": [{"key": "query", "value": "john"}]
+            }
+          },
+          "response": []
+        },
+        {
+          "name": "Lookup Products",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "GET",
+            "header": [],
+            "url": {
+              "raw": "{{base_url}}/api/v1/lookup/products?query=fg",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "lookup", "products"],
+              "query": [{"key": "query", "value": "fg"}]
+            }
+          },
+          "response": []
+        }
+      ]
+    },
+    {
+      "name": "Stock Adjustments",
+      "item": [
+        {
+          "name": "Adjust Stock",
+          "request": {
+            "auth": {"type": "bearer", "bearer": [{"key": "token", "value": "{{access_token}}", "type": "string"}]},
+            "method": "POST",
+            "header": [{"key": "Content-Type", "value": "application/json"}],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"material_id\": 1,\n  \"warehouse_id\": 1,\n  \"bin_id\": 1,\n  \"adjustment_qty\": 5,\n  \"adjustment_type\": \"ADD\",\n  \"reason\": \"Cycle count correction\"\n}"
+            },
+            "url": {
+              "raw": "{{base_url}}/api/v1/stock/adjust",
+              "host": ["{{base_url}}"],
+              "path": ["api", "v1", "stock", "adjust"]
             }
           },
           "response": []
