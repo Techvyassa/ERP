@@ -199,10 +199,22 @@ function uomForm() {
             try {
                 console.log('Fetching UOM data for ID:', this.uomId);
                 
+                const token = localStorage.getItem('access_token');
+                
                 // Load UOM data
                 const [uomResponse, baseUomsResponse] = await Promise.all([
-                    fetch(`/api/v1/uoms/${this.uomId}`),
-                    fetch('/api/v1/uoms')
+                    fetch(`/api/v1/uoms/${this.uomId}`, {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json'
+                        }
+                    }),
+                    fetch('/api/v1/uoms', {
+                        headers: {
+                            'Authorization': `Bearer ${token}`,
+                            'Accept': 'application/json'
+                        }
+                    })
                 ]);
                 
                 console.log('UOM Response status:', uomResponse.status);
@@ -230,9 +242,10 @@ function uomForm() {
                     is_active: uomData.data?.uom?.is_active !== undefined ? uomData.data.uom.is_active : true
                 };
                 
-                this.baseUoms = baseUomsData.data?.uoms || [];
+                this.baseUoms = baseUomsData.data?.uoms || baseUomsData.data || [];
                 
                 console.log('Form data loaded:', this.form);
+                console.log('Base UOMs loaded:', this.baseUoms);
                 
             } catch (error) {
                 console.error('Failed to load UOM data:', error);

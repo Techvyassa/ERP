@@ -302,10 +302,17 @@ function uomForm() {
         
         async loadBaseUoms() {
             try {
-                const response = await fetch('/api/v1/uoms');
+                const token = localStorage.getItem('access_token');
+                const response = await fetch('/api/v1/uoms', {
+                    headers: {
+                        'Authorization': `Bearer ${token}`,
+                        'Accept': 'application/json'
+                    }
+                });
                 if (!response.ok) throw new Error('Failed to load UOMs');
                 const data = await response.json();
-                this.baseUoms = data.data?.uoms || [];
+                console.log('Base UOMs loaded:', data);
+                this.baseUoms = data.data?.uoms || data.data || [];
             } catch (error) {
                 console.error('Failed to load base UOMs:', error);
                 this.showNotification('Failed to load base UOMs', 'error');
