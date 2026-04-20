@@ -1,7 +1,7 @@
 @extends('tenant.layouts.tax')
 
 @section('title', $organization->org_name . ' - Tax & Financial')
-@section('page-title', 'Tax & Financial')
+@section('page-title', 'GST & Tax ')
 
 @section('content')
 <div x-data="taxDashboard()" x-init="init()">
@@ -11,7 +11,7 @@
             <a href="{{ route('tenant.dashboard', ['org_slug' => $organization->org_slug]) }}" 
                class="text-gray-600 hover:text-primary">Dashboard</a>
             <span class="text-gray-400">/</span>
-            <span class="text-gray-900 font-semibold">Tax & Financial</span>
+            <span class="text-gray-900 font-semibold"> GST & Tax</span>
         </nav>
     </div>
 
@@ -22,7 +22,7 @@
                 <span class="material-symbols-outlined text-5xl">receipt_long</span>
             </div>
             <div>
-                <h2 class="text-2xl font-bold mb-1">Tax & Financial</h2>
+                <h2 class="text-2xl font-bold mb-1">GST & Tax</h2>
                 <p class="text-white/90">Manage HSN codes, GST taxes, and currency settings</p>
             </div>
         </div>

@@ -61,20 +61,29 @@ class Customer extends Model
             $basePattern .= '-' . $contactFormatted;
         }
         
-        // Find the next increment number for this pattern
-        $lastCustomer = self::where('customer_code', 'like', $basePattern . '-%')
-            ->orderBy('id', 'desc')
-            ->first();
+        // Find the highest increment number for this pattern
+        // Get all customers with codes starting with this pattern
+        $existingCustomers = self::where('customer_code', 'like', $basePattern . '-%')
+            ->orderBy('customer_code', 'desc')
+            ->get();
         
-        $increment = 1;
-        if ($lastCustomer) {
+        $maxIncrement = 0;
+        
+        // Loop through all matching customers to find the highest increment
+        foreach ($existingCustomers as $customer) {
             // Extract the last number from the code
-            if (preg_match('/-(\d+)$/', $lastCustomer->customer_code, $matches)) {
-                $increment = ((int) $matches[1]) + 1;
+            if (preg_match('/-(\d+)$/', $customer->customer_code, $matches)) {
+                $currentIncrement = (int) $matches[1];
+                if ($currentIncrement > $maxIncrement) {
+                    $maxIncrement = $currentIncrement;
+                }
             }
         }
         
-        // Format: AGI-JohnDoe-01
+        // Increment by 1
+        $increment = $maxIncrement + 1;
+        
+        // Format: AGI-JohnDoe-01, AGI-JohnDoe-02, etc.
         return $basePattern . '-' . str_pad($increment, 2, '0', STR_PAD_LEFT);
     }
 }
