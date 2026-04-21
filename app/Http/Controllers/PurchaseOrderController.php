@@ -140,17 +140,39 @@ class PurchaseOrderController extends Controller
             $headerSubtotal = 0;
             $headerTaxAmount = 0;
 
+            // Get vendor GSTIN and organization GSTIN to determine interstate
+            $vendorGstin = $purchaseOrder->vendor->gstin ?? '';
+            $tenantDb = config('database.connections.tenant.database');
+            $organization = Organization::where('tenant_db_name', $tenantDb)->first();
+            $companyGstin = $organization->gstin ?? '';
+            
+            // Determine if interstate (first 2 digits of GSTIN are different)
+            $isInterstate = false;
+            if (strlen($vendorGstin) >= 2 && strlen($companyGstin) >= 2) {
+                $vendorStateCode = substr($vendorGstin, 0, 2);
+                $companyStateCode = substr($companyGstin, 0, 2);
+                $isInterstate = ($vendorStateCode !== $companyStateCode);
+            }
+
             foreach ($lineItems as $item) {
                 $orderedQty  = (float) $item['ordered_qty'];
                 $unitPrice   = (float) $item['unit_price'];
                 $discountPct = (float) ($item['discount_pct'] ?? 0);
                 $lineTotal   = ($orderedQty * $unitPrice) * (1 - ($discountPct / 100));
 
+                // Calculate tax - only applicable GST type
                 $taxAmount = 0;
                 if (!empty($item['gst_tax_id'])) {
                     $tax = GSTTax::find($item['gst_tax_id']);
                     if ($tax) {
-                        $taxAmount = $lineTotal * ($tax->getTotalTaxRate() / 100);
+                        // Calculate only the applicable GST type
+                        if ($isInterstate) {
+                            // Interstate: Use only IGST
+                            $taxAmount = $lineTotal * ($tax->igst_rate / 100);
+                        } else {
+                            // Intrastate: Use only CGST + SGST
+                            $taxAmount = $lineTotal * (($tax->cgst_rate + $tax->sgst_rate) / 100);
+                        }
                     }
                 }
 
@@ -318,6 +340,20 @@ class PurchaseOrderController extends Controller
                 $headerSubtotal = 0;
                 $headerTaxAmount = 0;
 
+                // Get vendor GSTIN and organization GSTIN to determine interstate
+                $vendorGstin = $purchaseOrder->vendor->gstin ?? '';
+                $tenantDb = config('database.connections.tenant.database');
+                $organization = Organization::where('tenant_db_name', $tenantDb)->first();
+                $companyGstin = $organization->gstin ?? '';
+                
+                // Determine if interstate (first 2 digits of GSTIN are different)
+                $isInterstate = false;
+                if (strlen($vendorGstin) >= 2 && strlen($companyGstin) >= 2) {
+                    $vendorStateCode = substr($vendorGstin, 0, 2);
+                    $companyStateCode = substr($companyGstin, 0, 2);
+                    $isInterstate = ($vendorStateCode !== $companyStateCode);
+                }
+
                 foreach ($lineItems as $item) {
                     $orderedQty = (float) $item['ordered_qty'];
                     $unitPrice = (float) $item['unit_price'];
@@ -326,12 +362,19 @@ class PurchaseOrderController extends Controller
                     // Calculate line total
                     $lineTotal = ($orderedQty * $unitPrice) * (1 - ($discountPct / 100));
                     
-                    // Calculate tax
+                    // Calculate tax - only applicable GST type
                     $taxAmount = 0;
                     if (!empty($item['gst_tax_id'])) {
                         $tax = GSTTax::find($item['gst_tax_id']);
                         if ($tax) {
-                            $taxAmount = $lineTotal * ($tax->getTotalTaxRate() / 100);
+                            // Calculate only the applicable GST type
+                            if ($isInterstate) {
+                                // Interstate: Use only IGST
+                                $taxAmount = $lineTotal * ($tax->igst_rate / 100);
+                            } else {
+                                // Intrastate: Use only CGST + SGST
+                                $taxAmount = $lineTotal * (($tax->cgst_rate + $tax->sgst_rate) / 100);
+                            }
                         }
                     }
 

@@ -33,6 +33,7 @@ class Organization extends Model
         'max_users',
         'profile_completion',
         'profile_completion_percentage',
+        'gstin',
     ];
     
     protected $casts = [

@@ -1199,6 +1199,29 @@ function purchaseOrdersData() {
                     let taxBreakdownHtml = '';
                     const taxSummary = {};
                     
+                    // Determine if this is interstate or intrastate based on GSTIN
+                    const vendorGstin = po.vendor_gstin || (po.vendor && po.vendor.gstin) || '';
+                    const companyGstin = po.company_gstin || '';
+                    
+                    // Check if interstate (first 2 digits of GSTIN are different)
+                    const isInterstate = vendorGstin.length >= 2 && companyGstin.length >= 2 && 
+                                        vendorGstin.substring(0, 2) !== companyGstin.substring(0, 2);
+                    
+                    // Function to calculate correct grand total
+                    const calculateCorrectGrandTotal = () => {
+                        const subtotal = parseFloat(po.subtotal) || 0;
+                        const discount = parseFloat(po.discount_amount) || 0;
+                        const freight = parseFloat(po.freight_charges) || 0;
+                        
+                        // Calculate total tax from taxSummary
+                        let totalTax = 0;
+                        for (const amount of Object.values(taxSummary)) {
+                            totalTax += amount;
+                        }
+                        
+                        return subtotal - discount + freight + totalTax;
+                    };
+                    
                     if (po.line_items && po.line_items.length > 0) {
                         po.line_items.forEach(item => {
                             if (item.gst_tax && item.gst_tax_id) {
@@ -1208,35 +1231,42 @@ function purchaseOrdersData() {
                                 const discountAmount = itemSubtotal * (parseFloat(item.discount_pct) || 0) / 100;
                                 const taxableAmount = itemSubtotal - discountAmount;
                                 
-                                // Calculate individual tax components
+                                // Calculate individual tax components based on transaction type
                                 const cgstRate = parseFloat(tax.cgst_rate) || 0;
                                 const sgstRate = parseFloat(tax.sgst_rate) || 0;
                                 const igstRate = parseFloat(tax.igst_rate) || 0;
                                 
-                                const cgstAmount = taxableAmount * cgstRate / 100;
-                                const sgstAmount = taxableAmount * sgstRate / 100;
-                                const igstAmount = taxableAmount * igstRate / 100;
-                                
-                                // Add to summary
-                                if (cgstRate > 0) {
-                                    if (!taxSummary['CGST']) taxSummary['CGST'] = 0;
-                                    taxSummary['CGST'] += cgstAmount;
-                                }
-                                if (sgstRate > 0) {
-                                    if (!taxSummary['SGST']) taxSummary['SGST'] = 0;
-                                    taxSummary['SGST'] += sgstAmount;
-                                }
-                                if (igstRate > 0) {
-                                    if (!taxSummary['IGST']) taxSummary['IGST'] = 0;
-                                    taxSummary['IGST'] += igstAmount;
+                                if (isInterstate) {
+                                    // Interstate: Only IGST applies
+                                    const igstAmount = taxableAmount * igstRate / 100;
+                                    if (igstAmount > 0) {
+                                        if (!taxSummary['IGST']) taxSummary['IGST'] = 0;
+                                        taxSummary['IGST'] += igstAmount;
+                                    }
+                                } else {
+                                    // Intrastate: Only CGST + SGST apply
+                                    const cgstAmount = taxableAmount * cgstRate / 100;
+                                    const sgstAmount = taxableAmount * sgstRate / 100;
+                                    
+                                    if (cgstAmount > 0) {
+                                        if (!taxSummary['CGST']) taxSummary['CGST'] = 0;
+                                        taxSummary['CGST'] += cgstAmount;
+                                    }
+                                    if (sgstAmount > 0) {
+                                        if (!taxSummary['SGST']) taxSummary['SGST'] = 0;
+                                        taxSummary['SGST'] += sgstAmount;
+                                    }
                                 }
                             }
                         });
                         
-                        // Build tax breakdown HTML
+                        // Build tax breakdown HTML - only show tax types that have values
                         if (Object.keys(taxSummary).length > 0) {
                             for (const [taxType, amount] of Object.entries(taxSummary)) {
-                                taxBreakdownHtml += `<div class="text-sm text-gray-600">${taxType}: <span class="font-semibold">${this.formatCurrency(amount)}</span></div>`;
+                                // Only display if amount is greater than 0
+                                if (amount > 0) {
+                                    taxBreakdownHtml += `<div class="text-sm text-gray-600">${taxType}: <span class="font-semibold">${this.formatCurrency(amount)}</span></div>`;
+                                }
                             }
                         } else {
                             taxBreakdownHtml = '<div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>';
@@ -1268,7 +1298,7 @@ function purchaseOrdersData() {
                                 ${po.discount_amount ? '<div class="text-sm text-gray-600">Discount: <span class="font-semibold">-' + this.formatCurrency(po.discount_amount) + '</span></div>' : ''}
                                 ${po.freight_charges ? '<div class="text-sm text-gray-600">Freight: <span class="font-semibold">' + this.formatCurrency(po.freight_charges) + '</span></div>' : ''}
                                 ${taxBreakdownHtml}
-                                <div class="text-lg font-bold text-gray-900 pt-2 border-t">Grand Total: ${this.formatCurrency(po.grand_total || 0)}</div>
+                                <div class="text-lg font-bold text-gray-900 pt-2 border-t">Grand Total: ${this.formatCurrency(calculateCorrectGrandTotal())}</div>
                             </div>
                         </div>
                     `;
