@@ -17,6 +17,7 @@ use Illuminate\Support\Facades\Log;
  * which call StockService internally.
  *
  * API Routes:
+ *   GET /api/v1/stock/current
  *   GET /api/v1/stock/available/{materialId}
  *   GET /api/v1/stock/snapshot/{materialId}
  *   GET /api/v1/stock/history/{materialId}
@@ -29,6 +30,66 @@ class StockController extends Controller
         protected StockQueryService $stockQueryService,
         protected StockService      $stockService
     ) {}
+
+    /**
+     * Get current stock summary for both raw materials and products.
+     *
+     * GET /api/v1/stock/current?item_type=Product|Material&warehouse_id=1&search=abc
+     *
+     * Returns unified current stock rows with available/on_hand/reserved figures.
+     */
+    public function current(Request $request): JsonResponse
+    {
+        try {
+            $warehouseId = $request->has('warehouse_id') ? $request->integer('warehouse_id') : null;
+            $itemType = $request->input('item_type');
+            $search = trim((string) $request->input('search', ''));
+
+            $stockRows = $warehouseId
+                ? $this->stockQueryService->getWarehouseStockSummary($warehouseId)
+                : $this->stockQueryService->getGlobalStockSummary();
+
+            $stockRows = collect($stockRows)
+                ->when($itemType, function ($rows) use ($itemType) {
+                    return $rows->filter(fn($row) => strcasecmp((string) ($row['item_type'] ?? ''), (string) $itemType) === 0);
+                })
+                ->when($search !== '', function ($rows) use ($search) {
+                    return $rows->filter(function ($row) use ($search) {
+                        return str_contains(strtolower((string) ($row['item_code'] ?? '')), strtolower($search))
+                            || str_contains(strtolower((string) ($row['item_name'] ?? '')), strtolower($search));
+                    });
+                })
+                ->values()
+                ->map(fn($row) => [
+                    'item_id'         => $row['item_id'],
+                    'item_type'       => $row['item_type'],
+                    'item_code'       => $row['item_code'],
+                    'item_name'       => $row['item_name'],
+                    'uom_id'          => $row['uom_id'] ?? null,
+                    'uom'             => $row['uom'],
+                    'on_hand'         => (float) ($row['on_hand'] ?? 0),
+                    'available'       => (float) ($row['available'] ?? 0),
+                    'reserved'        => (float) ($row['reserved'] ?? 0),
+                    'qc_hold'         => (float) ($row['qc_hold'] ?? 0),
+                    'putaway_pending' => (float) ($row['putaway_pending'] ?? 0),
+                    'blocked'         => (float) ($row['blocked'] ?? 0),
+                ]);
+
+            return response()->json([
+                'success' => true,
+                'data'    => $stockRows,
+                'meta'    => [
+                    'count'       => $stockRows->count(),
+                    'warehouse_id'=> $warehouseId,
+                    'item_type'   => $itemType,
+                    'search'      => $search !== '' ? $search : null,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            Log::error('[StockController] current() failed', ['error' => $e->getMessage()]);
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
 
     /**
      * Get available stock (ATP) for a material.

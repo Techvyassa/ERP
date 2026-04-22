@@ -5,13 +5,18 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Tenant\SalesOrder;
 use App\Models\Tenant\SalesOrderLineItem;
-use App\Models\Tenant\Customer;
-use App\Models\Tenant\StockBalance;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
+use App\Services\StockQueryService;
+use App\Services\StockService;
 
 class SalesOrderController extends Controller
 {
+    public function __construct(
+        protected StockQueryService $stockQueryService,
+        protected StockService $stockService
+    ) {}
+
     // GET /api/v1/sales-orders
     public function index(Request $request)
     {
@@ -161,13 +166,7 @@ class SalesOrderController extends Controller
             $anyPartial = false;
 
             foreach ($so->lineItems as $line) {
-                // Sum available stock: AVAILABLE bucket qty_on_hand minus qty_reserved
-                $stockQty = DB::connection('tenant')
-                    ->table('stock_balances')
-                    ->where('product_id', $line->product_id)
-                    ->where('bucket', 'AVAILABLE')
-                    ->selectRaw('COALESCE(SUM(qty_on_hand - qty_reserved), 0) as net_available')
-                    ->value('net_available') ?? 0;
+                $stockQty = $this->stockQueryService->getAvailableProductStock((int) $line->product_id);
 
                 if ($stockQty <= 0) {
                     $availability = 'UNAVAILABLE';
@@ -193,11 +192,15 @@ class SalesOrderController extends Controller
                 'stock_status' => $stockStatus,
             ]);
 
+            $message = $stockStatus === 'AVAILABLE'
+                ? 'Stock check complete. FG stock is available. You can generate the picklist now.'
+                : 'Stock check complete. Insufficient stock found. Please review or create a PR.';
+
             DB::connection('tenant')->commit();
 
             return response()->json([
                 'success'      => true,
-                'message'      => 'Stock availability check completed.',
+                'message'      => $message,
                 'stock_status' => $stockStatus,
                 'data'         => $so->load('lineItems.product'),
             ]);
@@ -218,11 +221,20 @@ class SalesOrderController extends Controller
 
         // Release any reserved stock
         if (in_array($so->status, ['PICKING', 'PACKED'])) {
+            $actorId = $this->resolveStockActorId($request, $so);
+
             foreach ($so->lineItems as $line) {
-                DB::connection('tenant')->table('stock_balances')
-                    ->where('product_id', $line->product_id)
-                    ->where('bucket', 'AVAILABLE')
-                    ->update(['qty_reserved' => DB::raw('GREATEST(qty_reserved - ' . $line->qty . ', 0)')]);
+                $this->stockService->releaseProductReservation(
+                    [
+                        'product_id' => (int) $line->product_id,
+                        'uom_id' => (int) $line->uom_id,
+                    ],
+                    (float) $line->qty,
+                    'SalesOrder',
+                    (int) $so->id,
+                    (string) $so->so_number,
+                    $actorId
+                );
             }
         }
 
@@ -242,15 +254,20 @@ class SalesOrderController extends Controller
 
         DB::connection('tenant')->beginTransaction();
         try {
-            // Reserve stock for each line item
+            $actorId = $this->resolveStockActorId($request, $so);
+
             foreach ($so->lineItems as $line) {
-                DB::connection('tenant')->table('stock_balances')
-                    ->where('product_id', $line->product_id)
-                    ->where('bucket', 'AVAILABLE')
-                    ->update([
-                        'qty_reserved' => DB::raw('qty_reserved + ' . $line->qty),
-                        'updated_at'   => now(),
-                    ]);
+                $this->stockService->reserveProduct(
+                    [
+                        'product_id' => (int) $line->product_id,
+                        'uom_id' => (int) $line->uom_id,
+                    ],
+                    (float) $line->qty,
+                    'SalesOrder',
+                    (int) $so->id,
+                    (string) $so->so_number,
+                    $actorId
+                );
             }
 
             $so->update(['status' => 'PICKING', 'updated_at' => now()]);
@@ -307,16 +324,20 @@ class SalesOrderController extends Controller
 
         DB::connection('tenant')->beginTransaction();
         try {
-            // Deduct FG stock and release reservations
+            $actorId = $this->resolveStockActorId($request, $so);
+
             foreach ($so->lineItems as $line) {
-                DB::connection('tenant')->table('stock_balances')
-                    ->where('product_id', $line->product_id)
-                    ->where('bucket', 'AVAILABLE')
-                    ->update([
-                        'qty_on_hand'  => DB::raw('GREATEST(qty_on_hand - ' . $line->qty . ', 0)'),
-                        'qty_reserved' => DB::raw('GREATEST(qty_reserved - ' . $line->qty . ', 0)'),
-                        'updated_at'   => now(),
-                    ]);
+                $this->stockService->shipReservedProduct(
+                    [
+                        'product_id' => (int) $line->product_id,
+                        'uom_id' => (int) $line->uom_id,
+                    ],
+                    (float) $line->qty,
+                    'SalesOrder',
+                    (int) $so->id,
+                    (string) $so->so_number,
+                    $actorId
+                );
             }
 
             $so->update([
@@ -366,5 +387,44 @@ class SalesOrderController extends Controller
             ->get(['id', 'so_number', 'customer_id', 'required_delivery_date', 'grand_total', 'status', 'stock_status', 'created_at']);
 
         return response()->json(['success' => true, 'data' => ['stats' => $stats, 'recent_orders' => $recent]]);
+    }
+
+    // GET /api/v1/sales-orders/fg-stock
+    public function fgStock()
+    {
+        $fgStock = collect($this->stockQueryService->getGlobalStockSummary())
+            ->where('item_type', 'Product')
+            ->values()
+            ->map(fn(array $item) => [
+                'product_id'   => $item['item_id'],
+                'product_code' => $item['item_code'],
+                'product_name' => $item['item_name'],
+                'uom_code'     => $item['uom'],
+                'available'    => (float) ($item['available'] ?? 0),
+                'qc_hold'      => (float) ($item['qc_hold'] ?? 0),
+                'reserved'     => (float) ($item['reserved'] ?? 0),
+                'total'        => (float) ($item['on_hand'] ?? 0),
+            ])
+            ->sortByDesc('available')
+            ->values();
+
+        return response()->json([
+            'success' => true,
+            'data' => $fgStock,
+        ]);
+    }
+
+    private function resolveStockActorId(Request $request, SalesOrder $so): int
+    {
+        $actorId = $request->input('auth_user_id')
+            ?? $so->confirmed_by
+            ?? $so->created_by
+            ?? $so->dispatched_by;
+
+        if (!$actorId) {
+            throw new \RuntimeException('A valid user is required to post stock movements for this sales order.');
+        }
+
+        return (int) $actorId;
     }
 }

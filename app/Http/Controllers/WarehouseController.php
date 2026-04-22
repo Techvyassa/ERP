@@ -12,8 +12,53 @@ use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 use Illuminate\View\View;
 
+use App\Models\Tenant\MaterialIssueRequest;
+use App\Models\Tenant\StockBalance;
+use App\Services\StockQueryService;
+
 class WarehouseController extends Controller
 {
+    public function __construct(protected StockQueryService $stockQueryService) {}
+
+    /**
+     * GET /api/v1/warehouse/dashboard-stats
+     */
+    public function dashboardData(Request $request): JsonResponse
+    {
+        $requestId = Str::uuid()->toString();
+        try {
+            // Stats
+            $totalMaterials = Material::count();
+            $activeWarehouses = Warehouse::where('is_active', true)->count();
+            $pendingMIR = MaterialIssueRequest::where('status', 'PENDING')->count();
+            $approvedMIR = MaterialIssueRequest::where('status', 'APPROVED')->count();
+            
+            // Raw Material Stock
+            $allStock = $this->stockQueryService->getGlobalStockSummary();
+            $rmStock = array_filter($allStock, fn($item) => $item['item_type'] === 'Material');
+
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'materialsCount' => $totalMaterials,
+                    'warehousesCount' => $activeWarehouses,
+                    'pendingMIR' => $pendingMIR,
+                    'approvedMIR' => $approvedMIR,
+                    'rmStock' => array_values($rmStock)
+                ],
+                'message' => 'Dashboard data retrieved successfully',
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'error' => ['message' => $e->getMessage()],
+                'request_id' => $requestId,
+                'timestamp' => now()->toIso8601String()
+            ], 500);
+        }
+    }
     /**
      * Display stock management dashboard page
      */
@@ -34,47 +79,7 @@ class WarehouseController extends Controller
         $requestId = Str::uuid()->toString();
         
         try {
-            $stockData = DB::table('stock_balances')
-                ->join('materials', 'stock_balances.material_id', '=', 'materials.id')
-                ->leftJoin('uoms', 'materials.uom_id', '=', 'uoms.id')
-                ->select(
-                    'materials.id as material_id',
-                    'materials.material_code',
-                    'materials.material_name',
-                    'materials.material_type',
-                    'uoms.uom_code as uom',
-                    DB::raw('SUM(stock_balances.qty_on_hand) as on_hand'),
-                    DB::raw('SUM(stock_balances.available_qty) as available'),
-                    DB::raw('SUM(CASE WHEN stock_balances.bucket = \'QC_HOLD\' THEN stock_balances.qty_on_hand ELSE 0 END) as qc_hold'),
-                    DB::raw('SUM(CASE WHEN stock_balances.bucket = \'PUTAWAY_PENDING\' THEN stock_balances.qty_on_hand ELSE 0 END) as putaway_pending'),
-                    DB::raw('SUM(stock_balances.qty_reserved) as reserved'),
-                    DB::raw('SUM(CASE WHEN stock_balances.bucket = \'BLOCKED\' THEN stock_balances.qty_on_hand ELSE 0 END) as blocked')
-                )
-                ->groupBy(
-                    'materials.id',
-                    'materials.material_code',
-                    'materials.material_name',
-                    'materials.material_type',
-                    'uoms.uom_code'
-                )
-                ->havingRaw('SUM(stock_balances.qty_on_hand) > 0 OR SUM(stock_balances.available_qty) > 0')
-                ->orderBy('materials.material_code')
-                ->get()
-                ->map(function($item) {
-                    return [
-                        'material_id' => $item->material_id,
-                        'material_code' => $item->material_code,
-                        'material_name' => $item->material_name,
-                        'type' => $item->material_type ?? 'Raw Material',
-                        'uom' => $item->uom ?? '-',
-                        'on_hand' => floatval($item->on_hand),
-                        'available' => floatval($item->available),
-                        'qc_hold' => floatval($item->qc_hold),
-                        'putaway_pending' => floatval($item->putaway_pending),
-                        'reserved' => floatval($item->reserved),
-                        'blocked' => floatval($item->blocked),
-                    ];
-                });
+            $stockData = $this->stockQueryService->getGlobalStockSummary();
             
             return response()->json([
                 'success' => true,

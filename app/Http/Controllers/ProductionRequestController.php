@@ -614,9 +614,63 @@ class ProductionRequestController extends Controller
                 ], 422);
             }
 
+            // Step 1: Validate received quantities against required quantities
+            $shortages = [];
+            $allLinesReceived = true;
+            
+            // Reload MIR lines to get latest data
+            $productionRequest->mir->load('lines');
+            
+            foreach ($productionRequest->mir->lines as $mirLine) {
+                // Find matching line item in request (if provided)
+                $receivedQty = null;
+                if (!empty($lineItems)) {
+                    foreach ($lineItems as $item) {
+                        if (($item['mir_line_id'] ?? null) == $mirLine->id) {
+                            $receivedQty = floatval($item['received_qty'] ?? 0);
+                            break;
+                        }
+                    }
+                }
+
+                // If no received_qty provided in request, use the existing issued_qty
+                if ($receivedQty === null) {
+                    $receivedQty = floatval($mirLine->issued_qty ?? 0);
+                }
+
+                $requiredQty = floatval($mirLine->required_qty ?? 0);
+                
+                // Check if received qty is less than required
+                if ($receivedQty < $requiredQty) {
+                    $shortages[] = [
+                        'mir_line_id' => $mirLine->id,
+                        'material_code' => $mirLine->material?->material_code ?? 'N/A',
+                        'material_name' => $mirLine->material?->material_name ?? 'N/A',
+                        'required_qty' => $requiredQty,
+                        'received_qty' => $receivedQty,
+                        'shortage_qty' => $requiredQty - $receivedQty,
+                    ];
+                    $allLinesReceived = false;
+                }
+            }
+
+            // If there are shortages, return error - cannot close MIR
+            if (!empty($shortages)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Cannot confirm receipt. Some materials are short-received.',
+                    'request_id' => $requestId,
+                    'data' => [
+                        'shortages' => $shortages,
+                        'action_required' => 'Request Store to issue remaining materials',
+                    ],
+                    'timestamp' => now()->toIso8601String(),
+                ], 422);
+            }
+
             DB::beginTransaction();
             try {
-                // Step 1: Update MIR line items with received quantities if provided
+                // Step 2: Update MIR line items with received quantities if provided
                 if (!empty($lineItems)) {
                     foreach ($lineItems as $item) {
                         $mirLineId = $item['mir_line_id'] ?? null;
@@ -633,13 +687,13 @@ class ProductionRequestController extends Controller
                     }
                 }
 
-                // Step 2: Close the MIR — marks handover from Store to Production
+                // Step 3: Close the MIR — marks handover from Store to Production
                 $productionRequest->mir->update([
                     'status'    => 'CLOSED',
                     'closed_at' => now(),
                 ]);
 
-                // Step 3: Create Production Order from the request
+                // Step 4: Create Production Order from the request
                 $order = ProductionOrder::create([
                     'order_no' => ProductionOrder::generateOrderNo(),
                     'product_id' => $productionRequest->product_id,

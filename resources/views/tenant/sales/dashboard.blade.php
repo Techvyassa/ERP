@@ -68,7 +68,7 @@
     <!-- Module Cards -->
     <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-emerald-500 hover:shadow-xl transition-all cursor-pointer group p-6"
-             @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/orders'">
+            @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/orders'">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-emerald-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
                     <span class="material-symbols-outlined text-emerald-600 text-3xl">receipt_long</span>
@@ -86,7 +86,7 @@
         </div>
 
         <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-blue-500 hover:shadow-xl transition-all cursor-pointer group p-6"
-             @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/customers'">
+            @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/customers'">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-blue-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
                     <span class="material-symbols-outlined text-blue-600 text-3xl">group</span>
@@ -104,7 +104,7 @@
         </div>
 
         <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-yellow-500 hover:shadow-xl transition-all cursor-pointer group p-6"
-             @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/invoices'">
+            @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/invoices'">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-yellow-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
                     <span class="material-symbols-outlined text-yellow-600 text-3xl">description</span>
@@ -122,7 +122,7 @@
         </div>
 
         <div class="bg-white rounded-xl border-2 border-gray-200 hover:border-purple-500 hover:shadow-xl transition-all cursor-pointer group p-6"
-             @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/dispatch'">
+            @click="window.location.href = '/org/{{ $organization->org_slug }}/sales/dispatch'">
             <div class="flex items-center gap-3 mb-4">
                 <div class="bg-purple-100 p-3 rounded-xl group-hover:scale-110 transition-transform">
                     <span class="material-symbols-outlined text-purple-600 text-3xl">local_shipping</span>
@@ -142,14 +142,24 @@
 </div>
 
 <script>
-function salesDashboard() {
-    return {
-        stats: { openOrders: 0, pendingDispatch: 0, activeCustomers: 0, unpaidInvoices: 0 },
-        async init() {
-            // TODO: replace with real API calls
-            this.stats = { openOrders: 14, pendingDispatch: 5, activeCustomers: 38, unpaidInvoices: 7 };
+    function salesDashboard() {
+        return {
+            stats: {
+                openOrders: 0,
+                pendingDispatch: 0,
+                activeCustomers: 0,
+                unpaidInvoices: 0
+            },
+            async init() {
+                // TODO: replace with real API calls
+                this.stats = {
+                    openOrders: 14,
+                    pendingDispatch: 5,
+                    activeCustomers: 38,
+                    unpaidInvoices: 7
+                };
+            }
         }
     }
-}
 </script>
 @endsection

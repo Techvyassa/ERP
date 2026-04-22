@@ -12,6 +12,7 @@ use App\Models\Tenant\InventoryTransaction;
 use App\Models\Tenant\InspectionLot;
 use App\Models\Tenant\FGConfirmationSession;
 use App\Services\StockService;
+use App\Services\StockQueryService;
 use App\Services\QCService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
@@ -22,7 +23,10 @@ use Illuminate\Support\Str;
 
 class ProductionOrderController extends Controller
 {
-    public function __construct(protected StockService $stockService) {}
+    public function __construct(
+        protected StockService $stockService,
+        protected StockQueryService $stockQueryService
+    ) {}
 
     /**
      * Switch to the tenant DB from request context.
@@ -158,6 +162,62 @@ class ProductionOrderController extends Controller
             $approvedMIR = MaterialIssueRequest::where('status', 'APPROVED')->count();
             $productsWithBOM = BOMHeader::where('bom_status', 'ACTIVE')->distinct('product_id')->count();
 
+            // Additional details for the dashboard
+            $completedLast30Days = ProductionOrder::where('status', 'COMPLETED')
+                ->where('updated_at', '>=', now()->subDays(30))
+                ->count();
+            
+            $totalFGConfirmedLast30Days = ProductionOrder::where('status', 'COMPLETED')
+                ->where('updated_at', '>=', now()->subDays(30))
+                ->sum('actual_qty');
+
+            $avgYieldLast30Days = ProductionOrder::where('status', 'COMPLETED')
+                ->where('updated_at', '>=', now()->subDays(30))
+                ->where('yield_percent', '>', 0)
+                ->avg('yield_percent') ?? 0;
+
+            // Use StockQueryService for consistent stock data (same as /api/v1/stock/current)
+            $warehouseId = $request->has('warehouse_id') ? $request->integer('warehouse_id') : null;
+            $itemType = $request->input('item_type');
+            $search = trim((string) $request->input('search', ''));
+
+            $stockRows = $warehouseId
+                ? $this->stockQueryService->getWarehouseStockSummary($warehouseId)
+                : $this->stockQueryService->getGlobalStockSummary();
+
+            $stockRows = collect($stockRows)
+                ->when($itemType, function ($rows) use ($itemType) {
+                    return $rows->filter(fn($row) => strcasecmp((string) ($row['item_type'] ?? ''), (string) $itemType) === 0);
+                })
+                ->when($search !== '', function ($rows) use ($search) {
+                    return $rows->filter(function ($row) use ($search) {
+                        return str_contains(strtolower((string) ($row['item_code'] ?? '')), strtolower($search))
+                            || str_contains(strtolower((string) ($row['item_name'] ?? '')), strtolower($search));
+                    });
+                })
+                ->values();
+
+            // Aggregate by item_id + item_type to avoid duplicates and normalize UOMs
+            $fgStock = $stockRows
+                ->filter(fn($row) => $row['item_type'] === 'Product')
+                ->map(function ($row) {
+                    return [
+                        'product_id' => $row['item_id'],
+                        'product_name' => $row['item_name'],
+                        'product_code' => $row['item_code'],
+                        'uom_id' => $row['uom_id'] ?? null,
+                        'uom_code' => $row['uom'],
+                        'total_on_hand' => (float) $row['on_hand'],
+                        'buckets' => [
+                            'AVAILABLE' => (float) $row['available'],
+                            'QC_HOLD' => (float) $row['qc_hold'],
+                            'PUTAWAY_PENDING' => (float) $row['putaway_pending'],
+                            'BLOCKED' => (float) $row['blocked'],
+                            'RESERVED' => (float) $row['reserved'],
+                        ],
+                    ];
+                })->values();
+
             return response()->json([
                 'success' => true,
                 'data' => [
@@ -165,8 +225,12 @@ class ProductionOrderController extends Controller
                     'pendingMIR' => $pendingMIR,
                     'approvedMIR' => $approvedMIR,
                     'products' => $productsWithBOM,
+                    'completedLast30Days' => $completedLast30Days,
+                    'totalFGConfirmedLast30Days' => (float) $totalFGConfirmedLast30Days,
+                    'avgYieldLast30Days' => (float) $avgYieldLast30Days,
+                    'fgStock' => $fgStock,
                 ],
-                'message' => 'Production stats retrieved successfully',
+                'message' => 'Production dashboard data retrieved successfully',
                 'request_id' => $requestId,
                 'timestamp' => now()->toIso8601String(),
             ]);
