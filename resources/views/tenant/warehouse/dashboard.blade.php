@@ -1,7 +1,7 @@
 @extends('layouts.warehouse')
 
 @section('title', 'Warehouse Dashboard - ' . $organization->org_name)
-@section('page-title', 'Warehouse Portal')
+@section('page-title', 'Store Portal')
 
 @section('content')
 <div x-data="warehouseDashboard()" x-init="init()">
@@ -9,10 +9,10 @@
     <div class="bg-gradient-to-r from-slate-900 to-indigo-950 rounded-2xl p-6 mb-8 text-white shadow-xl flex flex-col md:flex-row items-center justify-between gap-6 border-b-4 border-amber-500">
         <div class="flex items-center gap-4">
             <div class="bg-amber-500 p-4 rounded-2xl shadow-lg shadow-amber-900/20">
-                <span class="material-symbols-outlined text-white text-4xl">warehouse</span>
+                <span class="material-symbols-outlined text-white text-4xl">Store</span>
             </div>
             <div>
-                <h2 class="text-2xl font-black mb-0.5 uppercase tracking-tight">Warehouse Central</h2>
+                <h2 class="text-2xl font-black mb-0.5 uppercase tracking-tight">Store Central</h2>
                 <p class="text-white/50 text-xs font-bold uppercase tracking-widest">{{ $organization->org_name }}</p>
             </div>
         </div>
@@ -56,7 +56,7 @@
                 <span class="text-[10px] font-black uppercase tracking-widest text-amber-600 bg-amber-50 px-2 py-1 rounded">Active</span>
             </div>
             <h3 class="text-3xl font-black text-gray-900 mb-1" x-text="stats.warehousesCount">0</h3>
-            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Warehouses</p>
+            <p class="text-xs font-bold text-gray-400 uppercase tracking-widest">Store</p>
         </div>
 
         <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm hover:shadow-md transition-all">
