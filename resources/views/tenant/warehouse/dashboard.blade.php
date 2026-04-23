@@ -142,7 +142,7 @@
 
         <!-- Sidebar Tools -->
         <div class="space-y-6">
-            <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
+            <!-- <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
                 <h3 class="font-black text-gray-900 uppercase tracking-widest text-xs mb-6">Inventory Workflows</h3>
                 <div class="space-y-3">
                     <button @click="window.location.href = '/org/{{ $organization->org_slug }}/warehouse/mir-approvals'"
@@ -181,7 +181,7 @@
                         <span class="material-symbols-outlined text-emerald-200 group-hover:text-emerald-500 transition-colors">arrow_forward</span>
                     </button>
                 </div>
-            </div>
+            </div> -->
 
             <!-- Storage Efficiency Widget -->
             <div class="bg-white rounded-2xl border border-gray-200 p-6 shadow-sm">
