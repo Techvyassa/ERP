@@ -17,7 +17,7 @@ class HSNCodeController extends Controller
     public function index(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $query = HSNCode::with('defaultGst');
 
@@ -27,9 +27,9 @@ class HSNCodeController extends Controller
 
             if ($request->has('search')) {
                 $search = $request->input('search');
-                $query->where(function($q) use ($search) {
+                $query->where(function ($q) use ($search) {
                     $q->where('hsn_code', 'like', "%{$search}%")
-                      ->orWhere('description', 'like', "%{$search}%");
+                        ->orWhere('description', 'like', "%{$search}%");
                 });
             }
 
@@ -60,7 +60,7 @@ class HSNCodeController extends Controller
     public function show(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $hsnCode = HSNCode::with('defaultGst')->findOrFail($id);
 
@@ -89,7 +89,7 @@ class HSNCodeController extends Controller
     public function store(Request $request): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
             'hsn_code' => 'required|string|max:10|unique:tenant.hsn_codes,hsn_code',
             'description' => 'required|string|max:300',
@@ -139,7 +139,7 @@ class HSNCodeController extends Controller
     public function update(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         $validator = Validator::make($request->all(), [
             'hsn_code' => "sometimes|string|max:10|unique:tenant.hsn_codes,hsn_code,{$id}",
             'description' => 'sometimes|string|max:300',
@@ -186,7 +186,7 @@ class HSNCodeController extends Controller
     public function destroy(Request $request, int $id): JsonResponse
     {
         $requestId = Str::uuid()->toString();
-        
+
         try {
             $hsnCode = HSNCode::findOrFail($id);
             $hsnCode->is_active = false;
@@ -263,7 +263,8 @@ class HSNCodeController extends Controller
             $gstTaxMap = \App\Models\Tenant\GSTTax::pluck('id', 'tax_code')->toArray();
 
             foreach ($rows as $index => $row) {
-                if (empty(array_filter($row))) continue;
+                if (empty(array_filter($row)))
+                    continue;
 
                 $rowNumber = $index + 2;
 
@@ -302,6 +303,10 @@ class HSNCodeController extends Controller
                     // Resolve GST Tax
                     $gstTaxCode = strtoupper(trim($data['gst_tax_code']));
                     $gstTaxId = $gstTaxMap[$gstTaxCode] ?? null;
+
+                    log::debug("Row {$rowNumber}: Raw GST tax code = '{$data['gst_tax_code']}', Normalized = '{$gstTaxCode}'");
+
+                    Log::debug("GST Tax Map Keys: ", array_keys($gstTaxMap));
                     if (!$gstTaxId) {
                         $errors[] = "Row {$rowNumber}: GST tax code '{$data['gst_tax_code']}' not found";
                         continue;

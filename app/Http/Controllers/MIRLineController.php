@@ -222,13 +222,13 @@ class MIRLineController extends Controller
 
         // Use database transaction for atomic stock deduction
         try {
-            DB::connection('tenant')->transaction(function () use (
+            $transactionId = DB::connection('tenant')->transaction(function () use (
                 $line, $mir, $material, $warehouseId, $binId, $batchNumber, $validated, $request
             ) {
                 $userId = $request->input('auth_user_id') ?? 1;
                 $issuedQty = $validated['issued_qty'];
                 
-                // If no specific bin/batch provided, use FIFO - get oldest stock
+                // If either bin or batch is missing, try to allocate from stock
                 if (!$binId || !$batchNumber) {
                     $stockAllocation = $this->allocateStockFIFO(
                         $material->id,
@@ -241,11 +241,20 @@ class MIRLineController extends Controller
                         throw new \Exception('No stock available for allocation');
                     }
                     
-                    $binId = $stockAllocation['bin_id'];
-                    $batchNumber = $stockAllocation['batch_number'];
-                    $allocatedQty = $stockAllocation['qty'];
+                    // Honor provided values if only one was missing
+                    $binId = $binId ?? $stockAllocation['bin_id'];
+                    $batchNumber = $batchNumber ?? $stockAllocation['batch_number'];
+                    $allocatedQty = $issuedQty;
                 } else {
                     $allocatedQty = $issuedQty;
+                }
+
+                $finalNotes = $validated['notes'] ?? "MIR Issue - {$mir->mir_no}";
+                $allocationInfo = " (Bin: {$binId}, Batch: {$batchNumber})";
+                
+                // Append info to notes if not already there
+                if (!str_contains($finalNotes, $allocationInfo)) {
+                    $finalNotes .= $allocationInfo;
                 }
 
                 // Deduct stock using StockService
@@ -264,7 +273,7 @@ class MIRLineController extends Controller
                     referenceNumber: $mir->mir_no,
                     userId: $userId,
                     binId: $binId,
-                    remarks: $validated['notes'] ?? "MIR Issue - {$mir->mir_no}"
+                    remarks: $finalNotes
                 );
 
                 // Create MIR transaction record
@@ -273,15 +282,18 @@ class MIRLineController extends Controller
                     'issued_qty' => $issuedQty,
                     'issued_by' => $userId,
                     'issued_at' => now(),
-                    'notes' => $validated['notes'] ?? "Bin: {$binId}, Batch: {$batchNumber}",
+                    'notes' => $finalNotes,
                 ]);
 
                 // Update line issued_qty
                 $line->issued_qty += $issuedQty;
+                // Important: refresh the line to ensure status logic uses new issued_qty
                 $line->updateStatus();
 
                 // Recalculate MIR header status
                 $mir->updateHeaderStatus();
+
+                return $transaction->id;
             });
         } catch (\Exception $e) {
             Log::error('MIRLineController@issue: Stock deduction failed', [
@@ -310,7 +322,7 @@ class MIRLineController extends Controller
                     'status' => $line->status,
                 ],
                 'transaction' => [
-                    'id' => null,
+                    'id' => $transactionId,
                     'issued_qty' => $validated['issued_qty'],
                     'issued_at' => now(),
                 ],
