@@ -906,6 +906,33 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                     'tenantType' => $tenantType
                 ]);
             })->name('mir');
+
+            // Production Planning
+            Route::prefix('planning')->name('planning.')->group(function () use ($getOrg) {
+                Route::get('/forecast', function ($orgSlug) use ($getOrg) {
+                    extract($getOrg($orgSlug));
+                    return view('tenant.production.planning.forecast', [
+                        'organization' => $org,
+                        'tenantType' => $tenantType
+                    ]);
+                })->name('forecast');
+
+                Route::get('/gap-analysis', function ($orgSlug) use ($getOrg) {
+                    extract($getOrg($orgSlug));
+                    return view('tenant.production.planning.gap-analysis', [
+                        'organization' => $org,
+                        'tenantType' => $tenantType
+                    ]);
+                })->name('gap-analysis');
+
+                Route::get('/capacity', function ($orgSlug) use ($getOrg) {
+                    extract($getOrg($orgSlug));
+                    return view('tenant.production.planning.capacity', [
+                        'organization' => $org,
+                        'tenantType' => $tenantType
+                    ]);
+                })->name('capacity');
+            });
         });
 
         // ====================================================================
