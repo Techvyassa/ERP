@@ -87,15 +87,18 @@
                         <span class="text-xs font-semibold text-gray-400 uppercase">Master Data</span>
                     </li>
                     
-                    <!-- Organization Dashboard -->
+
+
+                     <!-- Tax Dashboard -->
                     <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/organization-dashboard' : "/org/{$organization->org_slug}/organization-dashboard") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.organization-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">corporate_fare</span>
-                            <span x-show="sidebarOpen" class="font-medium">Organization</span>
+                        <a href="{{ url($tenantType === 'subdomain' ? '/tax-dashboard' : "/org/{$organization->org_slug}/tax-dashboard") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.tax-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">receipt_long</span>
+                            <span x-show="sidebarOpen" class="font-medium">GST & Tax </span>
                         </a>
                     </li>
-                    
+
+
                     <!-- Inventory Dashboard -->
                     <li>
                         <a href="{{ url($tenantType === 'subdomain' ? '/inventory-dashboard' : "/org/{$organization->org_slug}/inventory-dashboard") }}" 
@@ -104,22 +107,13 @@
                             <span x-show="sidebarOpen" class="font-medium">Material Management </span>
                         </a>
                     </li>
-                    
-                    <!-- Vendor Dashboard -->
+
+                    <!-- Organization Dashboard -->
                     <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/vendor-dashboard' : "/org/{$organization->org_slug}/vendor-dashboard") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">handshake</span>
-                            <span x-show="sidebarOpen" class="font-medium">Vendor</span>
-                        </a>
-                    </li>
-                    
-                    <!-- Tax Dashboard -->
-                    <li>
-                        <a href="{{ url($tenantType === 'subdomain' ? '/tax-dashboard' : "/org/{$organization->org_slug}/tax-dashboard") }}" 
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.tax-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">receipt_long</span>
-                            <span x-show="sidebarOpen" class="font-medium">GST & Tax </span>
+                        <a href="{{ url($tenantType === 'subdomain' ? '/organization-dashboard' : "/org/{$organization->org_slug}/organization-dashboard") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.organization-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">corporate_fare</span>
+                            <span x-show="sidebarOpen" class="font-medium">Organization</span>
                         </a>
                     </li>
                     
@@ -140,6 +134,19 @@
                             <span x-show="sidebarOpen" class="font-medium">Quality</span>
                         </a>
                     </li>
+                    
+                    <!-- Vendor Dashboard -->
+                    <li>
+                        <a href="{{ url($tenantType === 'subdomain' ? '/vendor-dashboard' : "/org/{$organization->org_slug}/vendor-dashboard") }}" 
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.vendor-dashboard') ? 'bg-blue-50 text-primary' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">handshake</span>
+                            <span x-show="sidebarOpen" class="font-medium">Vendor</span>
+                        </a>
+                    </li>
+                    
+                   
+                    
+                    
 
                     <!-- Customer Master -->
                     <li>
