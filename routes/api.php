@@ -604,6 +604,18 @@ Route::prefix('v1')->group(function () {
                 Route::get('/{id}/variance', [App\Http\Controllers\ProductionOrderController::class, 'variance']);
             });
 
+            // Production Planning - Forecast & Gap Analysis
+            Route::prefix('production-planning')->group(function () {
+                Route::get('/forecast', [App\Http\Controllers\ProductionPlanningController::class, 'getForecastData']);
+                Route::post('/forecast/generate', [App\Http\Controllers\ProductionPlanningController::class, 'generateForecast']);
+                Route::get('/gap-analysis', [App\Http\Controllers\ProductionPlanningController::class, 'getGapAnalysis']);
+                Route::post('/gap-analysis/run', [App\Http\Controllers\ProductionPlanningController::class, 'runGapAnalysis']);
+                Route::get('/summary', [App\Http\Controllers\ProductionPlanningController::class, 'getPlanningSummary']);
+                Route::get('/capacity', [App\Http\Controllers\ProductionPlanningController::class, 'getCapacity']);
+                Route::post('/capacity', [App\Http\Controllers\ProductionPlanningController::class, 'storeCapacity']);
+                Route::delete('/capacity/{id}', [App\Http\Controllers\ProductionPlanningController::class, 'deleteCapacity']);
+            });
+
             // Production - Read Access to BOMs (Essential for order creation)
             Route::prefix('bom-lookup')->group(function () {
                 Route::get('/headers', [App\Http\Controllers\BOMHeaderController::class, 'index']);

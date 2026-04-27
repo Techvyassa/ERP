@@ -17,7 +17,8 @@
                 extend: {
                     colors: {
                         primary: '#193261',
-                        production: '#F97316'
+                        production: '#F97316',
+                        planning: '#7C3AED'
                     },
                     fontFamily: {
                         sans: ['Inter', 'sans-serif']
@@ -126,6 +127,36 @@
                             class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.packing') ? 'bg-orange-50 text-production font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">inventory_2</span>
                             <span x-show="sidebarOpen" class="font-medium">Packing Orders</span>
+                        </a>
+                    </li>
+
+                    {{-- Production Planning Section --}}
+                    <li class="pt-2 border-t border-gray-200"></li>
+                    <li x-show="sidebarOpen" class="px-3 pt-2 pb-1">
+                        <span class="text-[10px] font-black text-gray-400 uppercase tracking-widest">Planning & Analytics</span>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/planning/forecast") }}"
+                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.planning.forecast') ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">trending_up</span>
+                            <span x-show="sidebarOpen" class="font-medium">Demand Forecast</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/planning/gap-analysis") }}"
+                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.planning.gap-analysis') ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">analytics</span>
+                            <span x-show="sidebarOpen" class="font-medium">Gap Analysis</span>
+                        </a>
+                    </li>
+
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/production/planning/capacity") }}"
+                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.production.planning.capacity') ? 'bg-purple-50 text-purple-700 font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">speed</span>
+                            <span x-show="sidebarOpen" class="font-medium">Capacity Planning</span>
                         </a>
                     </li>
                 </ul>
