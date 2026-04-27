@@ -1269,10 +1269,10 @@ function purchaseOrdersData() {
                                 }
                             }
                         } else {
-                            taxBreakdownHtml = '<div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>';
+                            taxBreakdownHtml = `<div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>`;
                         }
                     } else {
-                        taxBreakdownHtml = '<div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>';
+                        taxBreakdownHtml = `<div class="text-sm text-gray-600">Tax: <span class="font-semibold">${this.formatCurrency(po.tax_amount || 0)}</span></div>`;
                     }
                     
                     const vendorName = (po.vendor && po.vendor.vendor_name) ? po.vendor.vendor_name : 'N/A';

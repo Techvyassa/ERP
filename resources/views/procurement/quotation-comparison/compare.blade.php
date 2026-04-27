@@ -13,18 +13,18 @@
                 <p class="text-gray-600 mt-1">PR Number: <span class="font-semibold text-primary" x-text="prNumber"></span></p>
             </div>
             <div class="flex items-center gap-3">
-                <!-- Save Selections -->
+                <!-- Save Selections - always show if selections exist and PO not created -->
                 <button @click="saveSelections()"
-                        x-show="!selectionsFinalized && Object.keys(itemSelections).length > 0"
+                        x-show="!poExists && Object.keys(itemSelections).length > 0"
                         :disabled="saving"
                         class="px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors flex items-center gap-2 disabled:opacity-50">
                     <span class="material-symbols-outlined text-sm">save</span>
                     <span x-show="!saving">Save Selections</span>
                     <span x-show="saving">Saving...</span>
                 </button>
-                <!-- Create POs -->
+                <!-- Create POs - show after selections are saved -->
                 <button @click="showCreatePOModal = true"
-                        x-show="selectionsFinalized && !poExists"
+                        x-show="selectionsFinalized && !poExists && Object.keys(itemSelections).length > 0"
                         class="px-4 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors flex items-center gap-2">
                     <span class="material-symbols-outlined text-sm">add_shopping_cart</span>
                     Create Purchase Orders
@@ -38,7 +38,7 @@
     </div>
 
     <!-- Selection Summary Banner -->
-    <div x-show="selectionsFinalized && !loading" class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between">
+    <div x-show="selectionsFinalized && !loading && !poExists" class="bg-green-50 border border-green-200 rounded-xl p-4 mb-6 flex items-center justify-between">
         <div class="flex items-center gap-3">
             <span class="material-symbols-outlined text-green-600 text-2xl">check_circle</span>
             <div>
@@ -46,11 +46,10 @@
                 <p class="text-sm text-green-700">
                     <span x-text="Object.keys(itemSelections).length"></span> item(s) assigned to
                     <span x-text="getUniqueVendorCount()"></span> vendor(s).
-                    Ready to create Purchase Orders.
+                    You can still modify selections or proceed to create Purchase Orders.
                 </p>
             </div>
         </div>
-        <button @click="selectionsFinalized = false" class="text-sm text-green-700 underline hover:text-green-900">Edit Selections</button>
     </div>
 
     <!-- Vendor Summary Cards -->
@@ -108,7 +107,8 @@
                                         <span class="material-symbols-outlined text-xs">check_circle</span>
                                         <span x-text="getSelectedVendorName(item.item_name)"></span>
                                     </span>
-                                    <button x-show="!selectionsFinalized" @click="delete itemSelections[item.item_name]" class="text-gray-400 hover:text-red-500">
+                                    <!-- Only allow deletion if PO not created yet -->
+                                    <button x-show="!poExists" @click="delete itemSelections[item.item_name]; delete itemSelectionDetails[item.item_name]" class="text-gray-400 hover:text-red-500">
                                         <span class="material-symbols-outlined text-sm">close</span>
                                     </button>
                                 </div>
@@ -132,8 +132,7 @@
                                 <template x-for="quote in item.quotations" :key="quote.id">
                                     <tr class="hover:bg-gray-50 transition-colors"
                                         :class="{
-                                            'bg-green-50 border-l-4 border-green-500': itemSelections[item.item_name] === quote.id,
-                                            'opacity-50': selectionsFinalized && itemSelections[item.item_name] !== quote.id
+                                            'bg-green-50 border-l-4 border-green-500': itemSelections[item.item_name] === quote.id
                                         }">
                                         <td class="px-4 py-3">
                                             <div class="flex items-center gap-2 flex-wrap">
@@ -152,7 +151,8 @@
                                         <td class="px-4 py-3 text-gray-700 text-xs" x-text="quote.delivery_date || '—'"></td>
                                         <td class="px-4 py-3 text-gray-500 text-xs" x-text="quote.remarks || '—'"></td>
                                         <td class="px-4 py-3 text-center">
-                                            <template x-if="!selectionsFinalized">
+                                            <!-- Always show select button unless PO already exists -->
+                                            <template x-if="!poExists">
                                                 <button @click="selectItem(item.item_name, quote)"
                                                         :class="itemSelections[item.item_name] === quote.id
                                                             ? 'bg-green-600 text-white'
@@ -161,7 +161,8 @@
                                                     <span x-text="itemSelections[item.item_name] === quote.id ? '✓ Selected' : 'Select'"></span>
                                                 </button>
                                             </template>
-                                            <template x-if="selectionsFinalized">
+                                            <!-- Only lock after PO is created -->
+                                            <template x-if="poExists">
                                                 <span x-show="itemSelections[item.item_name] === quote.id"
                                                       class="px-3 py-1.5 bg-green-100 text-green-700 rounded-lg text-xs font-semibold">✓ Selected</span>
                                             </template>
@@ -184,7 +185,8 @@
                             </template>
                         </div>
                         <div class="flex items-center gap-3">
-                            <template x-if="!selectionsFinalized">
+                            <!-- Save button - always available if PO not created -->
+                            <template x-if="!poExists">
                                 <button @click="saveSelections()"
                                         :disabled="saving || Object.keys(itemSelections).length === 0"
                                         class="px-5 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors disabled:opacity-50 text-sm font-medium">
@@ -192,6 +194,7 @@
                                     <span x-show="saving">Saving...</span>
                                 </button>
                             </template>
+                            <!-- Create PO button - show after selections saved -->
                             <template x-if="selectionsFinalized && !poExists">
                                 <button @click="showCreatePOModal = true"
                                         class="px-5 py-2 bg-green-600 text-white rounded-lg hover:bg-green-700 transition-colors text-sm font-medium flex items-center gap-2">
@@ -199,7 +202,7 @@
                                     Create Purchase Orders
                                 </button>
                             </template>
-                            <template x-if="selectionsFinalized && poExists">
+                            <template x-if="poExists">
                                 <span class="px-4 py-2 bg-green-100 text-green-700 rounded-lg text-sm font-semibold flex items-center gap-2">
                                     <span class="material-symbols-outlined text-sm">check_circle</span>
                                     PO Already Created
@@ -332,7 +335,8 @@ function compareQuotationsData() {
         },
 
         selectItem(itemName, quote) {
-            if (this.selectionsFinalized) return;
+            // Allow selection changes until PO is created
+            if (this.poExists) return;
             this.itemSelections[itemName] = quote.id;
             this.itemSelectionDetails[itemName] = quote;
             // Trigger Alpine reactivity

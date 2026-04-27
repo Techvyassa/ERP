@@ -229,27 +229,36 @@
                 </div>
 
                 <div class="px-6 py-4 border-t border-gray-200 flex justify-end gap-3">
+                    <!-- Start button: only when DRAFT and materials received (CLOSED) -->
                     <button x-show="viewModal.order?.status === 'DRAFT' && viewModal.order?.mir_status === 'CLOSED'"
                         @click="startOrder(viewModal.order)"
                         class="px-3 py-2 bg-blue-600 text-white rounded-lg text-sm hover:bg-blue-700">
                         Start Production
                     </button>
+                    
+                    <!-- Confirm receipt button: when DRAFT and materials fully issued -->
                     <button
                         x-show="viewModal.order?.status === 'DRAFT' && viewModal.order?.mir_status === 'FULLY_ISSUED'"
                         @click="viewModal.show = false; window.location.href = `/org/{{ $organization->org_slug }}/production/orders/${viewModal.order.id}/receiving`"
                         class="px-3 py-2 bg-amber-500 text-white rounded-lg text-sm hover:bg-amber-600">
                         Confirm Floor Receipt
                     </button>
+                    
+                    <!-- Pending issue button: when materials not ready -->
                     <button
                         x-show="viewModal.order?.status === 'DRAFT' && !['FULLY_ISSUED','CLOSED'].includes(viewModal.order?.mir_status)"
                         disabled class="px-3 py-2 bg-gray-200 text-gray-400 rounded-lg text-sm cursor-not-allowed"
                         title="Materials not yet fully issued by Store">
                         Pending Issue
                     </button>
+                    
+                    <!-- Variance button: for completed orders -->
                     <button x-show="viewModal.order?.status === 'COMPLETED'" @click="viewModal.show = false; openVarianceModal(viewModal.order)"
                         class="px-3 py-2 border border-gray-300 rounded-lg text-sm text-gray-700 hover:bg-gray-50">
                         Variance
                     </button>
+                    
+                    <!-- Close button: always visible -->
                     <button @click="viewModal.show = false"
                         class="px-4 py-2 border border-gray-300 rounded-lg text-gray-700 hover:bg-gray-50 transition-colors">
                         Close
@@ -723,6 +732,7 @@
                                         title="View Details">
                                         <span class="material-symbols-outlined text-lg">visibility</span>
                                     </button>
+                                    <!-- Show action buttons for DRAFT/READY orders -->
                                     <template x-if="order.status === 'DRAFT' || order.status === 'READY'">
                                         <div class="flex flex-col gap-1">
                                             <!-- Receiving confirmation pending: show link to receiving page (only for orders) -->
@@ -750,6 +760,13 @@
                                                 </button>
                                             </template>
                                         </div>
+                                    </template>
+                                    
+                                    <!-- Show info for IN_PROGRESS orders -->
+                                    <template x-if="order.status === 'IN_PROGRESS'">
+                                        <span class="px-3 py-1.5 bg-blue-50 text-blue-700 rounded-lg text-xs font-bold">
+                                            In Progress
+                                        </span>
                                     </template>
                                 </div>
                             </td>
