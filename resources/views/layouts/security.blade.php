@@ -155,5 +155,8 @@
             @yield('content')
         </main>
     </div>
+
+    <!-- Toast Notifications -->
+    @include('components.toast')
 </body>
 </html>

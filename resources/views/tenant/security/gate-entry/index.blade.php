@@ -421,11 +421,15 @@ function gateEntryData() {
                 };
 
                 if (!payload.po_id) {
-                    alert('Please select a Purchase Order');
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: 'Please select a Purchase Order', type: 'error' } 
+                    }));
                     return;
                 }
                 if (!payload.vendor_id) {
-                    alert('Vendor is missing for selected PO');
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: 'Vendor is missing for selected PO', type: 'error' } 
+                    }));
                     return;
                 }
 
@@ -435,9 +439,14 @@ function gateEntryData() {
                     this.showCreateModal = false;
                     await this.loadEntries();
                     const grnNumber = data.data?.grn?.grn_number;
-                    alert(`Gate entry created successfully!${grnNumber ? '\nGRN auto-created: ' + grnNumber : ''}`);
+                    const message = `Gate entry created successfully!${grnNumber ? '\nGRN auto-created: ' + grnNumber : ''}`;
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: message, type: 'success' } 
+                    }));
                 } else {
-                    alert(data.message || 'Gate entry creation failed');
+                    window.dispatchEvent(new CustomEvent('notify', { 
+                        detail: { message: data.message || 'Gate entry creation failed', type: 'error' } 
+                    }));
                 }
             } finally {
                 this.saving = false;

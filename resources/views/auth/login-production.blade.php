@@ -71,7 +71,7 @@
                         <input type="checkbox" class="w-4 h-4 rounded border-slate-300 text-primary focus:ring-primary/20">
                         <span class="text-sm text-slate-600">Remember me</span>
                     </label>
-                    <a href="/forgot-password" class="text-sm font-semibold text-primary hover:underline">Forgot password?</a>
+                    <!-- <a href="/forgot-password" class="text-sm font-semibold text-primary hover:underline">Forgot password?</a> -->
                 </div>
 
                 <button

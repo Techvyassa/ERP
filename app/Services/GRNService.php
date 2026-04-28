@@ -31,6 +31,12 @@ class GRNService
         return DB::connection('tenant')->transaction(function () use ($ge, $userId) {
             $po = $ge->purchaseOrder()->with('lineItems.material', 'lineItems.uom')->firstOrFail();
 
+            // Validate that PO has line items with material_id
+            $validLineItems = $po->lineItems->filter(fn($line) => !empty($line->material_id));
+            if ($validLineItems->isEmpty()) {
+                throw new \Exception('Purchase Order has no valid line items with material_id. Cannot create GRN.');
+            }
+
             // Create GRN header
             $today = now()->toDateString();
             $grn = GRN::create([
@@ -49,6 +55,15 @@ class GRNService
             $totalTax   = 0;
 
             foreach ($po->lineItems as $poLine) {
+                // Skip line items without material_id
+                if (!$poLine->material_id) {
+                    Log::warning('[GRNService] Skipping PO line without material_id', [
+                        'po_line_id' => $poLine->id,
+                        'po_id' => $po->id,
+                    ]);
+                    continue;
+                }
+
                 // Auto-generate batch: GE-number + material code + sequence
                 $batchNumber = strtoupper($ge->ge_number . '-' . ($poLine->material->material_code ?? $poLine->material_id));
 
