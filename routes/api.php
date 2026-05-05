@@ -607,6 +607,7 @@ Route::prefix('v1')->group(function () {
             // Production Planning - Forecast & Gap Analysis
             Route::prefix('production-planning')->group(function () {
                 Route::get('/forecast', [App\Http\Controllers\ProductionPlanningController::class, 'getForecastData']);
+                Route::post('/forecast', [App\Http\Controllers\ProductionPlanningController::class, 'storeForecast']);
                 Route::post('/forecast/generate', [App\Http\Controllers\ProductionPlanningController::class, 'generateForecast']);
                 Route::get('/gap-analysis', [App\Http\Controllers\ProductionPlanningController::class, 'getGapAnalysis']);
                 Route::post('/gap-analysis/run', [App\Http\Controllers\ProductionPlanningController::class, 'runGapAnalysis']);

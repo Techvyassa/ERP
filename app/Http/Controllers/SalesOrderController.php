@@ -20,7 +20,7 @@ class SalesOrderController extends Controller
     // GET /api/v1/sales-orders
     public function index(Request $request)
     {
-        $query = SalesOrder::with(['customer', 'createdBy'])
+        $query = SalesOrder::with(['customer', 'createdBy', 'lineItems.product'])
             ->orderBy('created_at', 'desc');
 
         if ($request->filled('status')) {
@@ -31,6 +31,14 @@ class SalesOrderController extends Controller
         }
         if ($request->filled('search')) {
             $query->where('so_number', 'like', '%' . $request->search . '%');
+        }
+        
+        // Date range filtering for forecast calculations
+        if ($request->filled('start_date')) {
+            $query->whereDate('so_date', '>=', $request->start_date);
+        }
+        if ($request->filled('end_date')) {
+            $query->whereDate('so_date', '<=', $request->end_date);
         }
 
         $orders = $query->paginate($request->get('per_page', 20));

@@ -12,8 +12,12 @@ class ProductionForecast extends Model
     protected $fillable = [
         'product_id',
         'forecast_date',
+        'forecast_month',
         'forecasted_qty',
         'actual_demand_qty',
+        'previous_month_sales',
+        'growth_percentage',
+        'calculation_formula',
         'current_stock',
         'planned_production',
         'source',
@@ -22,11 +26,13 @@ class ProductionForecast extends Model
     ];
 
     protected $casts = [
-        'forecast_date'      => 'date',
-        'forecasted_qty'     => 'decimal:3',
-        'actual_demand_qty'  => 'decimal:3',
-        'current_stock'      => 'decimal:3',
-        'planned_production' => 'decimal:3',
+        'forecast_date'        => 'date',
+        'forecasted_qty'       => 'decimal:3',
+        'actual_demand_qty'    => 'decimal:3',
+        'previous_month_sales' => 'decimal:3',
+        'growth_percentage'    => 'decimal:2',
+        'current_stock'        => 'decimal:3',
+        'planned_production'   => 'decimal:3',
     ];
 
     public function product()

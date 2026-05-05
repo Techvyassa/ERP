@@ -26,10 +26,17 @@ class ProductionPlanningController extends Controller
     {
         $startDate = $request->input('start_date', now()->startOfMonth()->toDateString());
         $endDate = $request->input('end_date', now()->addMonths(3)->endOfMonth()->toDateString());
+        $productId = $request->input('product_id');
 
-        $forecasts = ProductionForecast::with('product')
-            ->whereBetween('forecast_date', [$startDate, $endDate])
-            ->orderBy('forecast_date')
+        $query = ProductionForecast::with('product')
+            ->whereBetween('forecast_date', [$startDate, $endDate]);
+        
+        // Filter by product if specified
+        if ($productId) {
+            $query->where('product_id', $productId);
+        }
+        
+        $forecasts = $query->orderBy('forecast_date')
             ->get()
             ->map(function ($item) {
                 return [
@@ -153,6 +160,76 @@ class ProductionPlanningController extends Controller
             return response()->json([
                 'success' => false,
                 'message' => 'Failed to generate forecast: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
+
+    /**
+     * Store individual forecast calculation
+     */
+    public function storeForecast(Request $request)
+    {
+        $validated = $request->validate([
+            'product_id' => 'required|integer|exists:tenant.product_master,id',
+            'forecast_month' => 'required|string|size:7', // YYYY-MM format
+            'forecast_quantity' => 'required|numeric|min:0',
+            'previous_month_sales' => 'required|numeric|min:0',
+            'growth_percentage' => 'required|numeric|min:0|max:100',
+            'remarks' => 'nullable|string|max:1000',
+        ]);
+
+        DB::connection('tenant')->beginTransaction();
+        try {
+            // Parse forecast month to get the first day of that month
+            $forecastDate = Carbon::createFromFormat('Y-m', $validated['forecast_month'])->startOfMonth();
+            
+            // Get current stock using StockQueryService
+            $currentStock = $this->stockQueryService->getAvailableProductStock($validated['product_id']);
+            
+            // Get planned production for the forecast month
+            $plannedProduction = ProductionOrder::where('product_id', $validated['product_id'])
+                ->whereYear('planned_date', $forecastDate->year)
+                ->whereMonth('planned_date', $forecastDate->month)
+                ->whereIn('status', ['DRAFT', 'IN_PROGRESS'])
+                ->sum('target_qty');
+            
+            // Create calculation formula
+            $formula = sprintf(
+                '%s × (1 + %s%% / 100) = %s',
+                number_format($validated['previous_month_sales'], 0),
+                number_format($validated['growth_percentage'], 1),
+                number_format($validated['forecast_quantity'], 0)
+            );
+            
+            // Create forecast record
+            $forecast = ProductionForecast::create([
+                'product_id' => $validated['product_id'],
+                'forecast_date' => $forecastDate->toDateString(),
+                'forecast_month' => $validated['forecast_month'],
+                'forecasted_qty' => $validated['forecast_quantity'],
+                'actual_demand_qty' => 0, // Will be updated as actual sales occur
+                'previous_month_sales' => $validated['previous_month_sales'],
+                'growth_percentage' => $validated['growth_percentage'],
+                'calculation_formula' => $formula,
+                'current_stock' => $currentStock,
+                'planned_production' => $plannedProduction,
+                'source' => 'MANUAL',
+                'remarks' => $validated['remarks'],
+                'created_by' => $request->input('auth_user_id'),
+            ]);
+
+            DB::connection('tenant')->commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Forecast saved successfully',
+                'data' => $forecast->load('product'),
+            ], 201);
+        } catch (\Exception $e) {
+            DB::connection('tenant')->rollBack();
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to save forecast: ' . $e->getMessage(),
             ], 500);
         }
     }
