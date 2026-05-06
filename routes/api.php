@@ -611,6 +611,7 @@ Route::prefix('v1')->group(function () {
                 Route::post('/forecast/generate', [App\Http\Controllers\ProductionPlanningController::class, 'generateForecast']);
                 Route::get('/gap-analysis', [App\Http\Controllers\ProductionPlanningController::class, 'getGapAnalysis']);
                 Route::post('/gap-analysis/run', [App\Http\Controllers\ProductionPlanningController::class, 'runGapAnalysis']);
+                Route::get('/product-stock/{productId}', [App\Http\Controllers\ProductionPlanningController::class, 'getProductStock']);
                 Route::get('/summary', [App\Http\Controllers\ProductionPlanningController::class, 'getPlanningSummary']);
                 Route::get('/capacity', [App\Http\Controllers\ProductionPlanningController::class, 'getCapacity']);
                 Route::post('/capacity', [App\Http\Controllers\ProductionPlanningController::class, 'storeCapacity']);

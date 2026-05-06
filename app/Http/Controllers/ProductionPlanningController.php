@@ -482,4 +482,50 @@ class ProductionPlanningController extends Controller
             ],
         ]);
     }
+
+    /**
+     * Get product stock data for gap analysis calculator
+     */
+    public function getProductStock(int $productId)
+    {
+        try {
+            // Get FG (Finished Goods) stock - available stock for the product
+            $fgStock = $this->stockQueryService->getAvailableProductStock($productId);
+            
+            // Get SO Reserved - sum of qty_on_hand in RESERVED bucket for this product
+            $soReserved = DB::connection('tenant')
+                ->table('stock_balances')
+                ->where('product_id', $productId)
+                ->where('bucket', 'RESERVED')
+                ->sum('qty_on_hand');
+            
+            // Get WIP - work in progress from production orders
+            $wipQty = ProductionOrder::where('product_id', $productId)
+                ->whereIn('status', ['DRAFT', 'IN_PROGRESS'])
+                ->sum('target_qty');
+            
+            // Get last forecast quantity from production_forecasts table
+            $lastForecast = ProductionForecast::where('product_id', $productId)
+                ->orderBy('forecast_date', 'desc')
+                ->first();
+            
+            $forecastQty = $lastForecast ? (float) $lastForecast->forecasted_qty : 0;
+            
+            return response()->json([
+                'success' => true,
+                'data' => [
+                    'fg_stock' => (float) $fgStock,
+                    'so_reserved' => (float) $soReserved,
+                    'wip_qty' => (float) $wipQty,
+                    'forecast_qty' => $forecastQty,
+                    'forecast_date' => $lastForecast ? $lastForecast->forecast_date->format('Y-m-d') : null,
+                ],
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to fetch product stock: ' . $e->getMessage(),
+            ], 500);
+        }
+    }
 }
