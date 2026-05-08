@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use Illuminate\Http\Request;
 use App\Models\Tenant\SalesOrder;
 use App\Models\Tenant\SalesOrderLineItem;
+use App\Models\Tenant\SoPickLine;
+use App\Models\Tenant\SoBoxLine;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Validator;
 use App\Services\StockQueryService;
@@ -55,6 +57,43 @@ class SalesOrderController extends Controller
             'lineItems.uom',
             'createdBy',
             'confirmedBy',
+        ])->findOrFail($id);
+
+        return response()->json(['success' => true, 'data' => $so]);
+    }
+
+    // ── Security Portal endpoints ─────────────────────────────────────────
+
+    // GET /api/v1/security/outward/packed
+    public function securityPackedList()
+    {
+        $orders = SalesOrder::with(['customer', 'lineItems.product'])
+            ->where('status', 'PACKED')
+            ->orderBy('updated_at', 'desc')
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $orders]);
+    }
+
+    // GET /api/v1/security/outward/dispatched
+    public function securityDispatchedList()
+    {
+        $orders = SalesOrder::with(['customer', 'lineItems.product'])
+            ->where('status', 'DISPATCHED')
+            ->orderBy('dispatched_at', 'desc')
+            ->limit(100)
+            ->get();
+
+        return response()->json(['success' => true, 'data' => $orders]);
+    }
+
+    // GET /api/v1/security/outward/{id}
+    public function securityShowSO($id)
+    {
+        $so = SalesOrder::with([
+            'customer',
+            'lineItems.product',
+            'lineItems.uom',
         ])->findOrFail($id);
 
         return response()->json(['success' => true, 'data' => $so]);
@@ -296,18 +335,126 @@ class SalesOrderController extends Controller
     // PATCH /api/v1/sales-orders/{id}/dispatch
     public function markPacked(Request $request, $id)
     {
-        $so = SalesOrder::findOrFail($id);
+        $so = SalesOrder::with('lineItems')->findOrFail($id);
 
         if ($so->status !== 'PICKING') {
             return response()->json(['success' => false, 'message' => 'Only PICKING orders can be marked as packed.'], 422);
         }
 
-        $so->update(['status' => 'PACKED', 'updated_at' => now()]);
+        // Validate pick_lines payload
+        $validator = Validator::make($request->all(), [
+            'pick_lines'              => 'required|array|min:1',
+            'pick_lines.*.pallet_no'  => 'required|string|max:60',
+            'pick_lines.*.bin_code'   => 'required|string|max:30',
+            'pick_lines.*.bin_id'     => 'nullable|integer',
+            'pick_lines.*.item_id'    => 'required|integer',
+            'pick_lines.*.qty'        => 'required|numeric|min:0.001',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        // Verify all submitted item_ids belong to this SO's line items
+        $validProductIds = $so->lineItems->pluck('product_id')->map(fn($v) => (int) $v)->toArray();
+        foreach ($request->pick_lines as $line) {
+            if (!in_array((int) $line['item_id'], $validProductIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Item ID ' . $line['item_id'] . ' does not belong to this sales order picklist.',
+                ], 422);
+            }
+        }
+
+        // Resolve actor — auth_user_id is injected by ValidateJWT middleware
+        $actorId = $request->input('auth_user_id') ?? null;
+
+        DB::connection('tenant')->beginTransaction();
+        try {
+            // Store pick lines
+            foreach ($request->pick_lines as $line) {
+                SoPickLine::create([
+                    'so_id'      => $so->id,
+                    'pallet_no'  => $line['pallet_no'],
+                    'bin_id'     => $line['bin_id'] ?? null,
+                    'bin_code'   => $line['bin_code'],
+                    'product_id' => (int) $line['item_id'],
+                    'qty'        => (float) $line['qty'],
+                    'picked_by'  => $actorId,
+                ]);
+            }
+
+            $so->update(['status' => 'PACKED', 'updated_at' => now()]);
+
+            DB::connection('tenant')->commit();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Order marked as PACKED. Ready for dispatch.',
+                'data'    => $so->fresh(['customer', 'lineItems.product', 'pickLines.product']),
+            ]);
+        } catch (\Throwable $e) {
+            DB::connection('tenant')->rollBack();
+            return response()->json(['success' => false, 'message' => $e->getMessage()], 500);
+        }
+    }
+
+    // PATCH /api/v1/sales-orders/{id}/mark-packing-complete
+    public function markPackingComplete(Request $request, $id)
+    {
+        $so = SalesOrder::with('lineItems.product')->findOrFail($id);
+
+        if ($so->status !== 'PACKED') {
+            return response()->json(['success' => false, 'message' => 'Only PACKED orders can have packing completed.'], 422);
+        }
+
+        $validator = Validator::make($request->all(), [
+            'box_lines'             => 'required|array|min:1',
+            'box_lines.*.box_no'    => 'required|string|max:60',
+            'box_lines.*.item_id'   => 'required|integer',
+            'box_lines.*.item_code' => 'nullable|string|max:50',
+            'box_lines.*.item_name' => 'nullable|string|max:200',
+            'box_lines.*.qty'       => 'required|numeric|min:0.001',
+        ]);
+
+        if ($validator->fails()) {
+            return response()->json(['success' => false, 'message' => $validator->errors()->first()], 422);
+        }
+
+        // Verify all submitted item_ids belong to this SO's line items
+        $validProductIds = $so->lineItems->pluck('product_id')->map(fn($v) => (int) $v)->toArray();
+        foreach ($request->box_lines as $line) {
+            if (!in_array((int) $line['item_id'], $validProductIds, true)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'Item ID ' . $line['item_id'] . ' does not belong to this sales order.',
+                ], 422);
+            }
+        }
+
+        $actorId = $request->input('auth_user_id') ?? null;
+
+        // Build enriched packing_data — embed product details for security portal
+        $productMap = $so->lineItems->keyBy('product_id');
+        $packingData = collect($request->box_lines)->map(function ($line) use ($productMap, $actorId) {
+            $li = $productMap->get((int) $line['item_id']);
+            return [
+                'box_no'     => $line['box_no'],
+                'item_id'    => (int) $line['item_id'],
+                'item_code'  => $line['item_code'] ?? ($li?->product?->product_code ?? ''),
+                'item_name'  => $line['item_name'] ?? ($li?->product?->product_name ?? ''),
+                'qty'        => (float) $line['qty'],
+                'packed_by'  => $actorId,
+                'packed_at'  => now()->toIso8601String(),
+            ];
+        })->values()->toArray();
+
+        $so->update(['packing_data' => $packingData]);
 
         return response()->json([
             'success' => true,
-            'message' => 'Order marked as PACKED. Ready for dispatch.',
-            'data'    => $so->fresh(['customer', 'lineItems.product']),
+            'message' => 'Packing complete. Ready for security dispatch.',
+            'data'    => $so->fresh(['customer', 'lineItems.product', 'lineItems.uom']),
         ]);
     }
 

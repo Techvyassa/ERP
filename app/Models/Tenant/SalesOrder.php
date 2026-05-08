@@ -35,6 +35,7 @@ class SalesOrder extends Model
         'logistics_partner',
         'dispatched_at',
         'dispatched_by',
+        'packing_data',
     ];
 
     protected $casts = [
@@ -46,6 +47,7 @@ class SalesOrder extends Model
         'discount_amount'        => 'decimal:2',
         'tax_amount'             => 'decimal:2',
         'grand_total'            => 'decimal:2',
+        'packing_data'           => 'array',
     ];
 
     public static function generateSoNumber(): string
@@ -64,6 +66,16 @@ class SalesOrder extends Model
     public function lineItems()
     {
         return $this->hasMany(SalesOrderLineItem::class, 'so_id');
+    }
+
+    public function pickLines()
+    {
+        return $this->hasMany(SoPickLine::class, 'so_id');
+    }
+
+    public function boxLines()
+    {
+        return $this->hasMany(SoBoxLine::class, 'so_id');
     }
 
     public function createdBy()

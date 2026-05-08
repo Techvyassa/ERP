@@ -369,6 +369,16 @@ Route::prefix('v1')->group(function () {
         // Roles: Security Department (create), ADMIN (all)
         // Status Flow: PENDING → COMPLETED (after GRN auto-created)
         Route::middleware(['check.module.permission:SECURITY'])->group(function () {
+
+            // ── Outward Dispatch (Security Portal) ───────────────────────
+            // Security needs read access to PACKED/DISPATCHED orders and dispatch action
+            Route::prefix('security/outward')->group(function () {
+                Route::get('/packed',       [App\Http\Controllers\SalesOrderController::class, 'securityPackedList']);
+                Route::get('/dispatched',   [App\Http\Controllers\SalesOrderController::class, 'securityDispatchedList']);
+                Route::get('/{id}',         [App\Http\Controllers\SalesOrderController::class, 'securityShowSO']);
+                Route::patch('/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
+            });
+
             Route::prefix('gate-entries')->group(function () {
                 // Lookup endpoints
                 Route::get('/by-vendor/{vendorId}', [App\Http\Controllers\GateEntryController::class, 'byVendor']);
@@ -712,6 +722,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
                 Route::post('/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
                 Route::patch('/{id}/mark-packed', [App\Http\Controllers\SalesOrderController::class, 'markPacked']);
+                Route::patch('/{id}/mark-packing-complete', [App\Http\Controllers\SalesOrderController::class, 'markPackingComplete']);
                 Route::patch('/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
             });
         });
@@ -729,6 +740,7 @@ Route::prefix('v1')->group(function () {
                 Route::patch('/orders/{id}/cancel', [App\Http\Controllers\SalesOrderController::class, 'cancel']);
                 Route::post('/orders/{id}/generate-picklist', [App\Http\Controllers\SalesOrderController::class, 'generatePicklist']);
                 Route::patch('/orders/{id}/mark-packed', [App\Http\Controllers\SalesOrderController::class, 'markPacked']);
+                Route::patch('/orders/{id}/mark-packing-complete', [App\Http\Controllers\SalesOrderController::class, 'markPackingComplete']);
                 Route::patch('/orders/{id}/dispatch', [App\Http\Controllers\SalesOrderController::class, 'dispatch']);
             });
         });

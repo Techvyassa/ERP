@@ -7,6 +7,222 @@
 <!-- JsBarcode for client-side barcode generation -->
 <script src="https://cdn.jsdelivr.net/npm/jsbarcode@3.11.6/dist/JsBarcode.all.min.js"></script>
 
+{{-- dispatchApp must be defined BEFORE Alpine processes x-data --}}
+<script>
+function dispatchApp() {
+    return {
+        tab: 'packed',
+        loading: false,
+        packed: [],
+        dispatched: [],
+        stats: { packed: 0, dispatched_today: 0 },
+
+        // Dispatch modal
+        showModal: false,
+        dispatchSO: null,
+        packingLoading: false,
+        checkedBoxes: {},
+        form: { vehicle_number: '', driver_name: '', logistics_partner: '', expected_delivery_date: '' },
+        error: '',
+        submitting: false,
+
+        // Labels modal
+        showLabels: false,
+        labelSO: null,
+        labels: [],
+        labelsLoading: false,
+
+        token()   { return localStorage.getItem('access_token') || localStorage.getItem('auth_token') || ''; },
+        headers() { return { 'Authorization': 'Bearer ' + this.token(), 'Accept': 'application/json', 'Content-Type': 'application/json' }; },
+
+        async init() { await this.load(); },
+
+        async load() {
+            this.loading = true;
+            try {
+                const h = this.headers();
+                const [pkRes, dRes] = await Promise.all([
+                    fetch('/api/v1/security/outward/packed',     { headers: h }),
+                    fetch('/api/v1/security/outward/dispatched', { headers: h }),
+                ]);
+                const [pkJson, dJson] = await Promise.all([pkRes.json(), dRes.json()]);
+                this.packed     = pkJson.success ? (pkJson.data ?? []) : [];
+                this.dispatched = dJson.success  ? (dJson.data  ?? []) : [];
+                const today = new Date().toDateString();
+                this.stats = {
+                    packed: this.packed.length,
+                    dispatched_today: this.dispatched.filter(o => o.dispatched_at && new Date(o.dispatched_at).toDateString() === today).length,
+                };
+            } catch(e) { console.error('Dispatch load error', e); }
+            this.loading = false;
+        },
+
+        async openDispatch(so) {
+            this.dispatchSO    = { ...so, packing_data: null };
+            this.packingLoading = true;
+            this.checkedBoxes  = {};
+            this.form = {
+                vehicle_number: '',
+                driver_name: '',
+                logistics_partner: '',
+                expected_delivery_date: so.required_delivery_date ? so.required_delivery_date.split('T')[0] : ''
+            };
+            this.error     = '';
+            this.submitting = false;
+            this.showModal  = true;
+
+            try {
+                const res  = await fetch('/api/v1/security/outward/' + so.id, { headers: this.headers() });
+                const json = await res.json();
+                if (json.success) {
+                    this.dispatchSO = json.data;
+                    this.checkedBoxes = {};
+                    (json.data.packing_data ?? []).forEach((_, i) => { this.checkedBoxes[i] = false; });
+                } else {
+                    this.dispatchSO = so;
+                }
+            } catch(e) {
+                console.error('SO detail fetch error', e);
+                this.dispatchSO = so;
+            }
+            this.packingLoading = false;
+        },
+
+        allBoxesChecked() {
+            if (!this.dispatchSO) return true;
+            const data = this.dispatchSO.packing_data ?? [];
+            if (data.length === 0) return true;
+            return data.every((_, i) => !!this.checkedBoxes[i]);
+        },
+
+        toggleAllBoxes() {
+            if (!this.dispatchSO) return;
+            const data       = this.dispatchSO.packing_data ?? [];
+            const allChecked = this.allBoxesChecked();
+            const updated    = {};
+            data.forEach((_, i) => { updated[i] = !allChecked; });
+            this.checkedBoxes = updated;
+        },
+
+        async submitDispatch() {
+            this.error = '';
+            if (!this.form.vehicle_number || !this.form.driver_name || !this.form.expected_delivery_date) {
+                this.error = 'Vehicle number, driver name and delivery date are required.'; return;
+            }
+            if (!this.allBoxesChecked()) {
+                this.error = 'Please verify all boxes are checked before dispatching.'; return;
+            }
+            this.submitting = true;
+            try {
+                const res  = await fetch('/api/v1/security/outward/' + this.dispatchSO.id + '/dispatch', {
+                    method: 'PATCH', headers: this.headers(), body: JSON.stringify(this.form)
+                });
+                const json = await res.json();
+                if (json.success) {
+                    this.showModal = false;
+                    const dispatchedSO = { ...this.dispatchSO, ...this.form, dispatched_at: new Date().toISOString() };
+                    await this.load();
+                    this.tab = 'dispatched';
+                    await this.viewLabels(dispatchedSO);
+                } else {
+                    this.error = json.message || 'Dispatch failed.';
+                }
+            } catch(e) { this.error = 'Network error. Please try again.'; }
+            this.submitting = false;
+        },
+
+        async viewLabels(so) {
+            this.labelSO       = so;
+            this.labels        = [];
+            this.labelsLoading = true;
+            this.showLabels    = true;
+
+            try {
+                const res      = await fetch('/api/v1/security/outward/' + so.id, { headers: this.headers() });
+                const json     = await res.json();
+                const soDetail = json.success ? json.data : so;
+
+                const dispatchDate = (soDetail.dispatched_at || so.dispatched_at)
+                    ? new Date(soDetail.dispatched_at || so.dispatched_at)
+                        .toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
+                    : new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
+
+                const packingData = soDetail.packing_data ?? [];
+                const soLines     = soDetail.line_items ?? soDetail.lineItems ?? [];
+
+                const sourceLines = packingData.length > 0
+                    ? packingData.map(bl => ({
+                        product_name: bl.item_name  ?? '—',
+                        product_code: bl.item_code  ?? '',
+                        qty:          parseFloat(bl.qty ?? 0),
+                        uom_code:     '',
+                        box_no:       bl.box_no ?? '',
+                    }))
+                    : soLines.map(li => ({
+                        product_name: li.product?.product_name ?? '—',
+                        product_code: li.product?.product_code ?? '',
+                        qty:          parseFloat(li.qty ?? 0),
+                        uom_code:     li.uom?.uom_code ?? '',
+                        box_no:       '',
+                    }));
+
+                const soNum = soDetail.so_number ?? so.so_number ?? 'SO';
+
+                this.labels = sourceLines.map((line, idx) => {
+                    const safeBox  = String(line.box_no  || '').replace(/[^A-Za-z0-9]/g, '');
+                    const safeProd = String(line.product_code || '').replace(/[^A-Za-z0-9\-]/g, '');
+                    const barcodeRaw = soNum
+                        + (safeBox  ? '-B' + safeBox  : '-L' + String(idx + 1).padStart(2, '0'))
+                        + (safeProd ? '-'  + safeProd : '');
+
+                    return {
+                        so_number:     soNum,
+                        product_name:  line.product_name,
+                        product_code:  line.product_code,
+                        qty:           line.qty.toFixed(3),
+                        uom:           line.uom_code,
+                        box_no:        line.box_no,
+                        customer:      soDetail.customer?.customer_name ?? so.customer?.customer_name ?? '—',
+                        vehicle:       soDetail.vehicle_number ?? so.vehicle_number ?? '—',
+                        driver:        soDetail.driver_name    ?? so.driver_name    ?? '—',
+                        dispatch_date: dispatchDate,
+                        barcode_value: barcodeRaw,
+                    };
+                });
+            } catch(e) {
+                console.error('Label load error', e);
+            }
+
+            this.labelsLoading = false;
+
+            // Double nextTick + setTimeout: ensure Alpine renders x-show cards AND SVGs are in DOM
+            await this.$nextTick();
+            await this.$nextTick();
+            setTimeout(() => {
+                this.labels.forEach((label, idx) => {
+                    const el = document.getElementById('barcode-' + idx);
+                    if (!el) { console.warn('SVG not found: barcode-' + idx); return; }
+                    try {
+                        JsBarcode(el, label.barcode_value, {
+                            format: 'CODE128', width: 1.8, height: 50,
+                            displayValue: false, margin: 4,
+                        });
+                    } catch(e) {
+                        console.warn('Barcode render failed idx=' + idx, label.barcode_value, e.message);
+                    }
+                });
+            }, 100);
+        },
+
+        printLabels() { window.print(); },
+
+        isOverdue(date) {
+            return date && new Date(date) < new Date(new Date().toDateString());
+        },
+    }
+}
+</script>
+
 <div x-data="dispatchApp()" x-init="init()">
 
     <!-- Stats -->
@@ -160,8 +376,8 @@
 
     <!-- Dispatch Modal -->
     <div x-show="showModal" x-cloak class="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4">
-        <div class="bg-white rounded-xl shadow-2xl w-full max-w-md">
-            <div class="flex items-center justify-between p-5 border-b border-gray-200">
+        <div class="bg-white rounded-xl shadow-2xl w-full max-w-lg max-h-[90vh] flex flex-col">
+            <div class="flex items-center justify-between p-5 border-b border-gray-200 flex-shrink-0">
                 <div>
                     <h3 class="text-base font-bold text-gray-900">Confirm Dispatch</h3>
                     <p class="text-xs text-gray-500 mt-0.5"
@@ -171,7 +387,84 @@
                     <span class="material-symbols-outlined">close</span>
                 </button>
             </div>
-            <div class="p-5 space-y-4">
+            <div class="flex-1 overflow-y-auto p-5 space-y-4">
+
+                <!-- Packing loading indicator -->
+                <div x-show="packingLoading" class="flex items-center gap-2 text-sm text-gray-400 py-1">
+                    <span class="material-symbols-outlined animate-spin text-base">progress_activity</span>
+                    Loading packing details…
+                </div>
+
+                <!-- Packing Summary with verification checkboxes -->
+                <div x-show="!packingLoading && dispatchSO?.packing_data?.length > 0">
+                    <div class="flex items-center justify-between mb-2">
+                        <p class="text-xs font-semibold text-gray-500 uppercase">Verify Packed Boxes</p>
+                        <div class="flex items-center gap-3">
+                            <span class="text-xs font-semibold"
+                                  :class="allBoxesChecked() ? 'text-teal-600' : 'text-amber-600'"
+                                  x-text="Object.values(checkedBoxes).filter(Boolean).length + ' / ' + (dispatchSO.packing_data?.length ?? 0) + ' verified'">
+                            </span>
+                            <button @click="toggleAllBoxes()"
+                                    class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline"
+                                    x-text="allBoxesChecked() ? 'Uncheck All' : 'Check All'">
+                            </button>
+                        </div>
+                    </div>
+                    <div class="rounded-lg border border-indigo-100 overflow-hidden">
+                        <table class="w-full text-xs">
+                            <thead class="bg-indigo-50 text-indigo-700 uppercase">
+                                <tr>
+                                    <th class="px-3 py-2 text-center w-8">
+                                        <input type="checkbox"
+                                               :checked="allBoxesChecked()"
+                                               @change="toggleAllBoxes()"
+                                               class="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer" />
+                                    </th>
+                                    <th class="px-3 py-2 text-left">Box</th>
+                                    <th class="px-3 py-2 text-left">Item</th>
+                                    <th class="px-3 py-2 text-right">Qty</th>
+                                </tr>
+                            </thead>
+                            <tbody class="divide-y divide-gray-100">
+                                <template x-for="(bl, i) in (dispatchSO.packing_data ?? [])" :key="i">
+                                    <tr class="cursor-pointer transition-colors"
+                                        :class="checkedBoxes[i] ? 'bg-teal-50 hover:bg-teal-100' : 'hover:bg-gray-50'"
+                                        @click="checkedBoxes[i] = !checkedBoxes[i]; checkedBoxes = {...checkedBoxes}">
+                                        <td class="px-3 py-2 text-center" @click.stop>
+                                            <input type="checkbox"
+                                                   :checked="checkedBoxes[i]"
+                                                   @change="checkedBoxes[i] = $event.target.checked; checkedBoxes = {...checkedBoxes}"
+                                                   class="w-3.5 h-3.5 rounded accent-indigo-600 cursor-pointer" />
+                                        </td>
+                                        <td class="px-3 py-2">
+                                            <span class="font-semibold"
+                                                  :class="checkedBoxes[i] ? 'text-teal-700' : 'text-indigo-700'"
+                                                  x-text="bl.box_no"></span>
+                                        </td>
+                                        <td class="px-3 py-2 text-gray-700">
+                                            <div x-text="bl.item_name"></div>
+                                            <div class="text-gray-400 font-mono" x-text="bl.item_code"></div>
+                                        </td>
+                                        <td class="px-3 py-2 text-right font-semibold text-gray-800" x-text="bl.qty"></td>
+                                    </tr>
+                                </template>
+                            </tbody>
+                        </table>
+                    </div>
+                    <!-- Not all checked warning -->
+                    <p x-show="!allBoxesChecked()"
+                       class="mt-1.5 text-xs text-amber-600 flex items-center gap-1">
+                        <span class="material-symbols-outlined text-sm">info</span>
+                        Check each box after physical verification to enable dispatch.
+                    </p>
+                </div>
+                <div x-show="!packingLoading && (!dispatchSO?.packing_data || dispatchSO.packing_data.length === 0)"
+                     class="text-xs text-amber-600 bg-amber-50 rounded-lg px-3 py-2 flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">warning</span>
+                    No packing data recorded for this order.
+                </div>
+
+                <!-- Dispatch Form -->
                 <div class="grid grid-cols-2 gap-3">
                     <div>
                         <label class="block text-xs font-medium text-gray-700 mb-1">Vehicle Number <span class="text-red-500">*</span></label>
@@ -195,11 +488,13 @@
                     </div>
                 </div>
                 <div x-show="error" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" x-text="error"></div>
-                <div class="flex justify-end gap-3 pt-1">
+            </div>
+            <div class="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
                     <button @click="showModal = false"
                         class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                    <button @click="submitDispatch()" :disabled="submitting"
-                        class="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-50 font-semibold flex items-center gap-2">
+                    <button @click="submitDispatch()"
+                            :disabled="submitting || !allBoxesChecked()"
+                            class="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-40 font-semibold flex items-center gap-2">
                         <span class="material-symbols-outlined text-base">local_shipping</span>
                         <span x-text="submitting ? 'Dispatching...' : 'Confirm Dispatch'"></span>
                     </button>
@@ -247,18 +542,22 @@
                             <!-- Product Info -->
                             <div class="mb-3">
                                 <p class="text-sm font-bold text-gray-900" x-text="label.product_name"></p>
-                                <p class="text-xs text-gray-500" x-text="label.product_code"></p>
-                                <div class="flex items-center gap-3 mt-1">
+                                <p class="text-xs text-gray-400 font-mono" x-text="label.product_code"></p>
+                                <div class="flex flex-wrap items-center gap-2 mt-1.5">
                                     <span class="text-xs bg-teal-50 text-teal-700 px-2 py-0.5 rounded font-semibold"
-                                          x-text="'Qty: ' + label.qty + ' ' + label.uom"></span>
-                                    <span class="text-xs text-gray-500" x-text="'To: ' + label.customer"></span>
+                                          x-text="'Qty: ' + label.qty + (label.uom ? ' ' + label.uom : '')"></span>
+                                    <span x-show="label.box_no"
+                                          class="text-xs bg-indigo-50 text-indigo-700 px-2 py-0.5 rounded font-semibold"
+                                          x-text="'Box: ' + label.box_no"></span>
                                 </div>
+                                <p class="text-xs text-gray-500 mt-1" x-text="'To: ' + label.customer"></p>
+                                <p class="text-xs text-gray-400 mt-0.5" x-text="'Driver: ' + label.driver"></p>
                             </div>
-                            <!-- Barcode -->
-                            <div class="flex justify-center mt-2">
-                                <svg :id="'barcode-' + idx" class="barcode-svg"></svg>
+                            <!-- Barcode — id set via x-bind so Alpine can target it -->
+                            <div class="flex flex-col items-center mt-2">
+                                <svg x-bind:id="'barcode-' + idx" class="barcode-svg max-w-full"></svg>
+                                <p class="text-center text-xs text-gray-400 mt-1 font-mono" x-text="label.barcode_value"></p>
                             </div>
-                            <p class="text-center text-xs text-gray-400 mt-1" x-text="label.barcode_value"></p>
                         </div>
                     </template>
                 </div>
@@ -276,150 +575,4 @@
     .label-card { break-inside: avoid; page-break-inside: avoid; border: 2px solid #000 !important; }
 }
 </style>
-
-<script>
-function dispatchApp() {
-    return {
-        tab: 'packed',
-        loading: false,
-        packed: [],
-        dispatched: [],
-        stats: { packed: 0, dispatched_today: 0 },
-
-        // Dispatch modal
-        showModal: false,
-        dispatchSO: null,
-        form: { vehicle_number: '', driver_name: '', logistics_partner: '', expected_delivery_date: '' },
-        error: '',
-        submitting: false,
-
-        // Labels modal
-        showLabels: false,
-        labelSO: null,
-        labels: [],
-        labelsLoading: false,
-
-        token() { return localStorage.getItem('access_token') || localStorage.getItem('auth_token') || ''; },
-        headers() { return { 'Authorization': 'Bearer ' + this.token(), 'Accept': 'application/json', 'Content-Type': 'application/json' }; },
-
-        async init() { await this.load(); },
-
-        async load() {
-            this.loading = true;
-            try {
-                const h = this.headers();
-                const [pkRes, dRes] = await Promise.all([
-                    fetch('/api/v1/sales-orders?per_page=100&status=PACKED', { headers: h }),
-                    fetch('/api/v1/sales-orders?per_page=100&status=DISPATCHED', { headers: h }),
-                ]);
-                const [pkJson, dJson] = await Promise.all([pkRes.json(), dRes.json()]);
-                this.packed     = pkJson.success ? (pkJson.data.data ?? pkJson.data ?? []) : [];
-                this.dispatched = dJson.success  ? (dJson.data.data  ?? dJson.data  ?? []) : [];
-                const today = new Date().toDateString();
-                this.stats = {
-                    packed: this.packed.length,
-                    dispatched_today: this.dispatched.filter(o => o.dispatched_at && new Date(o.dispatched_at).toDateString() === today).length,
-                };
-            } catch(e) { console.error('Dispatch load error', e); }
-            this.loading = false;
-        },
-
-        openDispatch(so) {
-            this.dispatchSO = so;
-            this.form = {
-                vehicle_number: '',
-                driver_name: '',
-                logistics_partner: '',
-                expected_delivery_date: so.required_delivery_date ? so.required_delivery_date.split('T')[0] : ''
-            };
-            this.error = '';
-            this.submitting = false;
-            this.showModal = true;
-        },
-
-        async submitDispatch() {
-            this.error = '';
-            if (!this.form.vehicle_number || !this.form.driver_name || !this.form.expected_delivery_date) {
-                this.error = 'Vehicle number, driver name and delivery date are required.'; return;
-            }
-            this.submitting = true;
-            try {
-                const res = await fetch('/api/v1/sales-orders/' + this.dispatchSO.id + '/dispatch', {
-                    method: 'PATCH', headers: this.headers(), body: JSON.stringify(this.form)
-                });
-                const json = await res.json();
-                if (json.success) {
-                    this.showModal = false;
-                    // Generate labels immediately after dispatch
-                    const dispatchedSO = { ...this.dispatchSO, ...this.form, dispatched_at: new Date().toISOString() };
-                    await this.load();
-                    this.tab = 'dispatched';
-                    await this.viewLabels(dispatchedSO);
-                } else {
-                    this.error = json.message || 'Dispatch failed.';
-                }
-            } catch(e) { this.error = 'Network error. Please try again.'; }
-            this.submitting = false;
-        },
-
-        async viewLabels(so) {
-            this.labelSO = so;
-            this.labels = [];
-            this.labelsLoading = true;
-            this.showLabels = true;
-
-            try {
-                // Fetch full SO details with line items
-                const res = await fetch('/api/v1/sales-orders/' + so.id, { headers: this.headers() });
-                const json = await res.json();
-                const soDetail = json.success ? json.data : so;
-                const lines = soDetail.line_items ?? soDetail.lineItems ?? [];
-                const dispatchDate = so.dispatched_at
-                    ? new Date(so.dispatched_at).toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'})
-                    : new Date().toLocaleDateString('en-IN', {day:'2-digit', month:'short', year:'numeric'});
-
-                this.labels = lines.map((line, idx) => ({
-                    so_number:    soDetail.so_number ?? so.so_number,
-                    product_name: line.product?.product_name ?? line.item_name ?? 'Product',
-                    product_code: line.product?.product_code ?? '',
-                    qty:          parseFloat(line.qty).toFixed(3),
-                    uom:          line.uom?.uom_code ?? '',
-                    customer:     soDetail.customer?.customer_name ?? so.customer?.customer_name ?? '—',
-                    vehicle:      so.vehicle_number ?? soDetail.vehicle_number ?? '—',
-                    dispatch_date: dispatchDate,
-                    // Barcode value: SO-LINEIDX-PRODUCTCODE
-                    barcode_value: (soDetail.so_number ?? so.so_number) + '-L' + String(idx + 1).padStart(2, '0') + (line.product?.product_code ? '-' + line.product.product_code : ''),
-                }));
-            } catch(e) {
-                console.error('Label load error', e);
-            }
-
-            this.labelsLoading = false;
-
-            // Render barcodes after DOM update
-            this.$nextTick(() => {
-                this.labels.forEach((label, idx) => {
-                    try {
-                        JsBarcode('#barcode-' + idx, label.barcode_value, {
-                            format: 'CODE128',
-                            width: 1.8,
-                            height: 50,
-                            displayValue: false,
-                            margin: 4,
-                        });
-                    } catch(e) { console.warn('Barcode render failed for idx ' + idx, e); }
-                });
-            });
-        },
-
-        printLabels() {
-            window.print();
-        },
-
-        isOverdue(date) {
-            return date && new Date(date) < new Date(new Date().toDateString());
-        },
-    }
-}
-</script>
 @endsection

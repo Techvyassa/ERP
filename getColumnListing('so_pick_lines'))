@@ -1,0 +1,1 @@
+implode(', ', DB::connection('tenant')- . "\n";
