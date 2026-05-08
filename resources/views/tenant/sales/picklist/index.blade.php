@@ -318,32 +318,6 @@
                         <div class="flex gap-3">
                             <button type="button" @click="showPicklistModal = false"
                                 class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Close</button>
-                            <!-- STOCK_CHECKED: confirm generates picklist & sends to HHT -->
-                            <template x-if="picklistSO && picklistSO.status === 'STOCK_CHECKED'">
-                                <button type="button" @click="confirmGeneratePicklist()" :disabled="picklistConfirming"
-                                    class="px-5 py-2 text-sm bg-purple-600 text-white rounded-lg hover:bg-purple-700 disabled:opacity-50 font-semibold flex items-center gap-2">
-                                    <span class="material-symbols-outlined text-base">checklist</span>
-                                    <span
-                                        x-text="picklistConfirming ? 'Processing...' : 'Send Picklist to Store'"></span>
-                                </button>
-                            </template>
-                            <!-- PICKING: already sent to HHT -->
-                            <template x-if="picklistSO && picklistSO.status === 'PICKING'">
-                                <button type="button" disabled
-                                    class="px-5 py-2 text-sm bg-amber-100 text-amber-700 rounded-lg font-semibold flex items-center gap-2 cursor-default">
-                                    <span class="material-symbols-outlined text-base">send_to_mobile</span>
-                                    Sent to HHT
-                                </button>
-                            </template>
-                            <!-- PACKED / DISPATCHED / DELIVERED: view only -->
-                            <template
-                                x-if="picklistSO && ['PACKED','DISPATCHED','DELIVERED'].includes(picklistSO.status)">
-                                <button type="button" disabled
-                                    class="px-5 py-2 text-sm bg-gray-100 text-gray-500 rounded-lg font-semibold flex items-center gap-2 cursor-default">
-                                    <span class="material-symbols-outlined text-base">visibility</span>
-                                    View Only
-                                </button>
-                            </template>
                         </div>
                     </div>
                 </div>

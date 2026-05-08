@@ -148,94 +148,13 @@
                                     </td>
                                     <td class="px-5 py-3">
                                         <div class="flex flex-col items-start gap-1">
-                                            <!-- DRAFT: Confirm → Check Stock → Cancel -->
-                                            <template x-if="so.status === 'DRAFT'">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <button @click="confirmSO(so.id)"
-                                                        class="text-xs bg-emerald-600 text-white hover:bg-emerald-700 px-2.5 py-1 rounded font-semibold">Confirm</button>
-                                                    <button @click="checkStock(so.id)"
-                                                        class="text-xs bg-blue-100 text-blue-700 hover:bg-blue-200 px-2.5 py-1 rounded font-semibold">Check
-                                                        Stock</button>
-                                                    <button @click="cancelSO(so.id)"
-                                                        class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
-                                                </div>
-                                            </template>
-                                            <!-- CONFIRMED: Check Stock → Cancel -->
-                                            <template x-if="so.status === 'CONFIRMED'">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <button @click="checkStock(so.id)"
-                                                        class="text-xs bg-blue-600 text-white hover:bg-blue-700 px-2.5 py-1 rounded font-semibold">Check
-                                                        Stock</button>
-                                                    <button @click="cancelSO(so.id)"
-                                                        class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
-                                                </div>
-                                            </template>
-                                            <!-- STOCK_CHECKED + AVAILABLE: Send Picklist to Store → Cancel -->
-                                            <template
-                                                x-if="so.status === 'STOCK_CHECKED' && so.stock_status === 'AVAILABLE'">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <button @click="generatePicklist(so.id)"
-                                                        class="text-xs bg-purple-600 text-white hover:bg-purple-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
-                                                        <span
-                                                            class="material-symbols-outlined text-sm">send_to_mobile</span>
-                                                        Send Picklist to Store
-                                                    </button>
-                                                    <button @click="cancelSO(so.id)"
-                                                        class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
-                                                </div>
-                                            </template>
-                                            <!-- STOCK_CHECKED + UNAVAILABLE/PARTIAL: Create PR → Cancel -->
-                                            <template
-                                                x-if="so.status === 'STOCK_CHECKED' && ['UNAVAILABLE','PARTIAL'].includes(so.stock_status)">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <template x-if="!soPrMap[so.id]">
-                                                        <button @click="createPRFromSO(so)"
-                                                            class="text-xs bg-orange-500 text-white hover:bg-orange-600 px-2.5 py-1 rounded font-semibold">Create
-                                                            PR</button>
-                                                    </template>
-                                                    <template x-if="soPrMap[so.id]">
-                                                        <span
-                                                            class="text-xs bg-orange-100 text-orange-700 px-2.5 py-1 rounded font-semibold"
-                                                            x-text="'PR: ' + soPrMap[so.id]"></span>
-                                                    </template>
-                                                    <button @click="cancelSO(so.id)"
-                                                        class="text-xs bg-red-100 text-red-700 hover:bg-red-200 px-2.5 py-1 rounded font-semibold">Cancel</button>
-                                                </div>
-                                            </template>
-                                            <!-- PICKING: Sent to Store — view only -->
-                                            <template x-if="so.status === 'PICKING'">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <span
-                                                        class="text-xs bg-amber-100 text-amber-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
-                                                        <span
-                                                            class="material-symbols-outlined text-sm">send_to_mobile</span>
-                                                        Sent to Store
-                                                    </span>
-                                                    <button @click="generatePicklist(so.id)"
-                                                        class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2.5 py-1 rounded font-semibold">View
-                                                        Picklist</button>
-                                                </div>
-                                            </template>
-                                            <!-- PACKED: Awaiting Security Dispatch — view only -->
-                                            <template x-if="so.status === 'PACKED'">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <span
-                                                        class="text-xs bg-purple-100 text-purple-700 px-2.5 py-1 rounded font-semibold flex items-center gap-1">
-                                                        <span class="material-symbols-outlined text-sm">inventory_2</span>
-                                                        Packed
-                                                    </span>
-                                                    <button @click="generatePicklist(so.id)"
-                                                        class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2.5 py-1 rounded font-semibold">View
-                                                        Picklist</button>
-                                                </div>
-                                            </template>
-                                            <!-- DISPATCHED / DELIVERED: View Picklist only -->
-                                            <template x-if="['DISPATCHED','DELIVERED'].includes(so.status)">
-                                                <div class="flex flex-wrap gap-1">
-                                                    <button @click="generatePicklist(so.id)"
-                                                        class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-2.5 py-1 rounded font-semibold">View
-                                                        Picklist</button>
-                                                </div>
+                                            <!-- View button for all statuses except CANCELLED -->
+                                            <template x-if="so.status !== 'CANCELLED'">
+                                                <button @click="generatePicklist(so.id)"
+                                                    class="text-xs bg-purple-100 text-purple-700 hover:bg-purple-200 px-3 py-1.5 rounded font-semibold flex items-center gap-1">
+                                                    <span class="material-symbols-outlined text-sm">visibility</span>
+                                                    View
+                                                </button>
                                             </template>
                                             <!-- CANCELLED -->
                                             <template x-if="so.status === 'CANCELLED'">
