@@ -9,8 +9,8 @@
 
 {{-- dispatchApp must be defined BEFORE Alpine processes x-data --}}
 <script>
-function dispatchApp() {
-    return {
+(function () {
+    const factory = () => ({
         tab: 'packed',
         loading: false,
         packed: [],
@@ -194,24 +194,7 @@ function dispatchApp() {
             }
 
             this.labelsLoading = false;
-
-            // Double nextTick + setTimeout: ensure Alpine renders x-show cards AND SVGs are in DOM
-            await this.$nextTick();
-            await this.$nextTick();
-            setTimeout(() => {
-                this.labels.forEach((label, idx) => {
-                    const el = document.getElementById('barcode-' + idx);
-                    if (!el) { console.warn('SVG not found: barcode-' + idx); return; }
-                    try {
-                        JsBarcode(el, label.barcode_value, {
-                            format: 'CODE128', width: 1.8, height: 50,
-                            displayValue: false, margin: 4,
-                        });
-                    } catch(e) {
-                        console.warn('Barcode render failed idx=' + idx, label.barcode_value, e.message);
-                    }
-                });
-            }, 100);
+            // x-init on each SVG element handles barcode rendering automatically
         },
 
         printLabels() { window.print(); },
@@ -219,8 +202,19 @@ function dispatchApp() {
         isOverdue(date) {
             return date && new Date(date) < new Date(new Date().toDateString());
         },
-    }
-}
+    });
+
+    window.dispatchApp = factory;
+
+    const register = () => {
+        if (window.Alpine) {
+            window.Alpine.data('dispatchApp', factory);
+        }
+    };
+
+    document.addEventListener('alpine:init', register);
+    register();
+})();
 </script>
 
 <div x-data="dispatchApp()" x-init="init()">
@@ -402,7 +396,7 @@ function dispatchApp() {
                         <div class="flex items-center gap-3">
                             <span class="text-xs font-semibold"
                                   :class="allBoxesChecked() ? 'text-teal-600' : 'text-amber-600'"
-                                  x-text="Object.values(checkedBoxes).filter(Boolean).length + ' / ' + (dispatchSO.packing_data?.length ?? 0) + ' verified'">
+                                  x-text="Object.values(checkedBoxes).filter(Boolean).length + ' / ' + (dispatchSO?.packing_data?.length ?? 0) + ' verified'">
                             </span>
                             <button @click="toggleAllBoxes()"
                                     class="text-xs text-indigo-600 hover:text-indigo-800 font-semibold underline"
@@ -426,7 +420,7 @@ function dispatchApp() {
                                 </tr>
                             </thead>
                             <tbody class="divide-y divide-gray-100">
-                                <template x-for="(bl, i) in (dispatchSO.packing_data ?? [])" :key="i">
+                                <template x-for="(bl, i) in (dispatchSO?.packing_data ?? [])" :key="i">
                                     <tr class="cursor-pointer transition-colors"
                                         :class="checkedBoxes[i] ? 'bg-teal-50 hover:bg-teal-100' : 'hover:bg-gray-50'"
                                         @click="checkedBoxes[i] = !checkedBoxes[i]; checkedBoxes = {...checkedBoxes}">
@@ -489,16 +483,16 @@ function dispatchApp() {
                 </div>
                 <div x-show="error" class="text-sm text-red-600 bg-red-50 rounded-lg px-3 py-2" x-text="error"></div>
             </div>
+            <!-- Footer -->
             <div class="flex justify-end gap-3 p-5 border-t border-gray-200 flex-shrink-0">
-                    <button @click="showModal = false"
-                        class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
-                    <button @click="submitDispatch()"
-                            :disabled="submitting || !allBoxesChecked()"
-                            class="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-40 font-semibold flex items-center gap-2">
-                        <span class="material-symbols-outlined text-base">local_shipping</span>
-                        <span x-text="submitting ? 'Dispatching...' : 'Confirm Dispatch'"></span>
-                    </button>
-                </div>
+                <button @click="showModal = false"
+                    class="px-4 py-2 text-sm text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50">Cancel</button>
+                <button @click="submitDispatch()"
+                        :disabled="submitting || !allBoxesChecked()"
+                        class="px-4 py-2 text-sm bg-teal-600 text-white rounded-lg hover:bg-teal-700 disabled:opacity-40 font-semibold flex items-center gap-2">
+                    <span class="material-symbols-outlined text-base">local_shipping</span>
+                    <span x-text="submitting ? 'Dispatching...' : 'Confirm Dispatch'"></span>
+                </button>
             </div>
         </div>
     </div>
@@ -553,9 +547,17 @@ function dispatchApp() {
                                 <p class="text-xs text-gray-500 mt-1" x-text="'To: ' + label.customer"></p>
                                 <p class="text-xs text-gray-400 mt-0.5" x-text="'Driver: ' + label.driver"></p>
                             </div>
-                            <!-- Barcode — id set via x-bind so Alpine can target it -->
+                            <!-- Barcode: x-init fires after Alpine inserts this element into DOM -->
                             <div class="flex flex-col items-center mt-2">
-                                <svg x-bind:id="'barcode-' + idx" class="barcode-svg max-w-full"></svg>
+                                <svg x-init="$nextTick(() => {
+                                        try {
+                                            JsBarcode($el, label.barcode_value, {
+                                                format: 'CODE128', width: 1.8, height: 50,
+                                                displayValue: false, margin: 4
+                                            });
+                                        } catch(e) { console.warn('Barcode err', label.barcode_value, e.message); }
+                                     })"
+                                     class="barcode-svg max-w-full"></svg>
                                 <p class="text-center text-xs text-gray-400 mt-1 font-mono" x-text="label.barcode_value"></p>
                             </div>
                         </div>
