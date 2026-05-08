@@ -63,62 +63,35 @@
                         <span class="text-xs font-semibold text-gray-400 uppercase">Sales</span>
                     </li>
 
+                   
+
                     <li>
                         <a href="{{ url("/org/{$organization->org_slug}/sales/orders") }}"
                            class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.orders*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
                             <span class="material-symbols-outlined text-lg w-5">receipt_long</span>
-                            <span x-show="sidebarOpen" class="font-medium">Sales Orders</span>
+                            <span x-show="sidebarOpen" class="font-medium">Sales Order</span>
                         </a>
                     </li>
-
-                    <!-- <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/sales/customers") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.customers*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">group</span>
-                            <span x-show="sidebarOpen" class="font-medium">Customers</span>
+                  
+                    <li>
+                        <a href="{{ url("/org/{$organization->org_slug}/sales/approval") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.approval*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">task_alt</span>
+                            <span x-show="sidebarOpen" class="font-medium">Sales Approval</span>
                         </a>
                     </li>
 
                     <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/sales/invoices") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.invoices*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">description</span>
-                            <span x-show="sidebarOpen" class="font-medium">Invoices</span>
+                        <a href="{{ url("/org/{$organization->org_slug}/sales/picklist") }}"
+                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.picklist*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
+                            <span class="material-symbols-outlined text-lg w-5">checklist</span>
+                            <span x-show="sidebarOpen" class="font-medium">Send Picklist To Store</span>
                         </a>
-                    </li> -->
-
-                    <!-- <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/sales/dispatch") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.dispatch*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
-                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
+                    </li>
                         </a>
-                    </li> -->
-                    <!-- <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/sales/dispatch") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.dispatch*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
-                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
-                        </a>
-                    </li> -->
-                    <!-- <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/sales/dispatch") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.dispatch*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
-                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
-                        </a>
-                    </li> -->
-                    <!-- <li>
-                        <a href="{{ url("/org/{$organization->org_slug}/sales/dispatch") }}"
-                           class="flex items-center space-x-3 px-3 py-2 rounded-lg {{ request()->routeIs('tenant.sales.dispatch*') ? 'bg-emerald-50 text-sales font-semibold' : 'text-gray-700 hover:bg-gray-100' }} transition-colors">
-                            <span class="material-symbols-outlined text-lg w-5">local_shipping</span>
-                            <span x-show="sidebarOpen" class="font-medium">Dispatch</span>
-                        </a>
-                    </li> -->
-
-                    <li class="pt-2 border-t border-gray-200"></li>
-                </ul>
-            </nav>
+                    </li>
+                    
+                   
 
             <!-- User Profile -->
             <div class="border-t border-gray-200 p-4">

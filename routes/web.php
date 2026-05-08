@@ -944,6 +944,16 @@ Route::prefix('org/{org_slug}')->middleware(['resolve.tenant', 'switch.tenant.db
                 return view('tenant.sales.dashboard', ['organization' => $org, 'tenantType' => $tenantType]);
             })->name('dashboard');
 
+            Route::get('/approval', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.sales.approval.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('approval');
+
+            Route::get('/picklist', function ($orgSlug) use ($getOrg) {
+                extract($getOrg($orgSlug));
+                return view('tenant.sales.picklist.index', ['organization' => $org, 'tenantType' => $tenantType]);
+            })->name('picklist');
+
             Route::get('/orders', function ($orgSlug) use ($getOrg) {
                 extract($getOrg($orgSlug));
                 return view('tenant.sales.orders.index', ['organization' => $org, 'tenantType' => $tenantType]);
